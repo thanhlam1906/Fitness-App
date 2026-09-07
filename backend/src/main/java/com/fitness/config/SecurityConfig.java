@@ -8,10 +8,10 @@ import org.springframework.security.web.SecurityFilterChain;
 
 /**
  * Khung tối thiểu. concept-backend-v1.md §5 và §3.2: JWT verify sẽ gắn vào đây
- * bằng oauth2ResourceServer() khi package auth/ có JwtIssuer thật — CHƯA có ở
- * đợt nền tảng này. Hiện tại: mở health/docs, còn lại yêu cầu xác thực (nhưng
- * chưa có cơ chế xác thực nào chạy, nên request tới các endpoint đó luôn 401 —
- * đúng, vì backend chưa có endpoint nghiệp vụ nào ở đợt này).
+ * bằng oauth2ResourceServer() khi package auth/ có JwtIssuer thật.
+ * /api/** mở tạm (permitAll) — auth chưa xây ở đợt TN1 backend này, quyết
+ * định của PM. Đóng lại (anyRequest().authenticated() + oauth2ResourceServer)
+ * khi package auth/ có JwtIssuer.
  */
 @Configuration
 public class SecurityConfig {
@@ -24,6 +24,7 @@ public class SecurityConfig {
 			.authorizeHttpRequests(auth -> auth
 				.requestMatchers("/actuator/health", "/actuator/info").permitAll()
 				.requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+				.requestMatchers("/api/**").permitAll()
 				.anyRequest().authenticated());
 		return http.build();
 	}
