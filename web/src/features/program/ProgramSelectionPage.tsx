@@ -2,7 +2,6 @@ import { Link } from "react-router"
 import { useForm, useFieldArray } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Plus, Trash2 } from "lucide-react"
-import { useCurrentUser } from "@/auth/CurrentUserContext"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -18,9 +17,8 @@ import { useCreateProgram } from "./useCreateProgram"
  * theo slug vì cùng lý do — chưa có endpoint liệt kê bài của một template.
  */
 export function ProgramSelectionPage() {
-  const { userId } = useCurrentUser()
-  const candidates = useCandidates(userId!)
-  const createProgram = useCreateProgram(userId!)
+  const candidates = useCandidates()
+  const createProgram = useCreateProgram()
 
   const {
     register,

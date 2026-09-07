@@ -1,6 +1,5 @@
 import { useState } from "react"
 import { useNavigate, useParams } from "react-router"
-import { useCurrentUser } from "@/auth/CurrentUserContext"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -13,10 +12,9 @@ import { useFinishSession, useWorkoutSession } from "./useWorkoutSession"
 /** concept-frontend-v1.md màn 5–6 — buổi tập chi tiết + kết buổi (báo đau). */
 export function WorkoutPage() {
   const { scheduledWorkoutId } = useParams<{ scheduledWorkoutId: string }>()
-  const { userId } = useCurrentUser()
   const navigate = useNavigate()
-  const schedule = useSchedule(userId!)
-  const { sessionId, isStarting, startError, clearSession } = useWorkoutSession(userId!, scheduledWorkoutId!)
+  const schedule = useSchedule()
+  const { sessionId, isStarting, startError, clearSession } = useWorkoutSession(scheduledWorkoutId!)
   const finish = useFinishSession(sessionId)
 
   const [hasPain, setHasPain] = useState(false)

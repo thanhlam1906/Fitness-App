@@ -1,6 +1,9 @@
 import { Navigate, Route, Routes } from "react-router"
 import { AppShell } from "@/components/AppShell"
-import { RequireUser } from "@/auth/RequireUser"
+import { RequireAdmin } from "@/auth/RequireAdmin"
+import { RequireAuth } from "@/auth/RequireAuth"
+import { LoginPage } from "@/auth/LoginPage"
+import { RegisterPage } from "@/auth/RegisterPage"
 import { OnboardingPage } from "@/features/onboarding/OnboardingPage"
 import { ProgramSelectionPage } from "@/features/program/ProgramSelectionPage"
 import { ExerciseFormPage } from "@/features/admin/exercises/ExerciseFormPage"
@@ -11,23 +14,59 @@ import { SchedulePage } from "@/features/schedule/SchedulePage"
 import { WorkoutPage } from "@/features/workout/WorkoutPage"
 
 // Route thật cho các màn có API backend — xem README của thư mục web/.
-// /admin/** chưa có guard theo role (chưa có auth thật, xem RequireUser).
 export function App() {
   return (
-    <RequireUser>
-      <AppShell>
-        <Routes>
-          <Route path="/" element={<Navigate to="/onboarding" replace />} />
-          <Route path="/onboarding" element={<OnboardingPage />} />
-          <Route path="/program" element={<ProgramSelectionPage />} />
-          <Route path="/schedule" element={<SchedulePage />} />
-          <Route path="/workout/:scheduledWorkoutId" element={<WorkoutPage />} />
-          <Route path="/admin/exercises" element={<ExerciseListPage />} />
-          <Route path="/admin/exercises/:id" element={<ExerciseFormPage />} />
-          <Route path="/admin/templates" element={<TemplateListPage />} />
-          <Route path="/admin/templates/:id" element={<TemplateFormPage />} />
-        </Routes>
-      </AppShell>
-    </RequireUser>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route
+        path="/*"
+        element={
+          <RequireAuth>
+            <AppShell>
+              <Routes>
+                <Route path="/" element={<Navigate to="/onboarding" replace />} />
+                <Route path="/onboarding" element={<OnboardingPage />} />
+                <Route path="/program" element={<ProgramSelectionPage />} />
+                <Route path="/schedule" element={<SchedulePage />} />
+                <Route path="/workout/:scheduledWorkoutId" element={<WorkoutPage />} />
+                <Route
+                  path="/admin/exercises"
+                  element={
+                    <RequireAdmin>
+                      <ExerciseListPage />
+                    </RequireAdmin>
+                  }
+                />
+                <Route
+                  path="/admin/exercises/:id"
+                  element={
+                    <RequireAdmin>
+                      <ExerciseFormPage />
+                    </RequireAdmin>
+                  }
+                />
+                <Route
+                  path="/admin/templates"
+                  element={
+                    <RequireAdmin>
+                      <TemplateListPage />
+                    </RequireAdmin>
+                  }
+                />
+                <Route
+                  path="/admin/templates/:id"
+                  element={
+                    <RequireAdmin>
+                      <TemplateFormPage />
+                    </RequireAdmin>
+                  }
+                />
+              </Routes>
+            </AppShell>
+          </RequireAuth>
+        }
+      />
+    </Routes>
   )
 }

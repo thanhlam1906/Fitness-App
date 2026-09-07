@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useCurrentUser } from "@/auth/CurrentUserContext"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -22,9 +21,8 @@ import { useSaveOnboarding } from "./useSaveOnboarding"
  * mức tạ khởi điểm nhập ở màn Chọn chương trình (đi kèm POST /programs).
  */
 export function OnboardingPage() {
-  const { userId } = useCurrentUser()
   const navigate = useNavigate()
-  const saveOnboarding = useSaveOnboarding(userId!)
+  const saveOnboarding = useSaveOnboarding()
 
   const {
     register,

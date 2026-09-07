@@ -11,14 +11,13 @@ const sessionStorageKey = (scheduledWorkoutId: string) => `fitness.session.${sch
  * sessionId qua localStorage theo scheduledWorkoutId để tab/trình duyệt này
  * mở lại vẫn đúng chỗ đang dở. Máy khác thì chưa resume được, cần thêm API.
  */
-export function useWorkoutSession(userId: string, scheduledWorkoutId: string) {
+export function useWorkoutSession(scheduledWorkoutId: string) {
   const [sessionId, setSessionId] = useState<string | null>(() =>
     localStorage.getItem(sessionStorageKey(scheduledWorkoutId)),
   )
 
   const start = useMutation({
-    mutationFn: () =>
-      api.post<SessionResponse>("/sessions", { userId, scheduledWorkoutId }),
+    mutationFn: () => api.post<SessionResponse>("/sessions", { scheduledWorkoutId }),
     onSuccess: (session) => {
       localStorage.setItem(sessionStorageKey(scheduledWorkoutId), session.id)
       setSessionId(session.id)

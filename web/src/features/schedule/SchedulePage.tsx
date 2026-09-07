@@ -1,5 +1,4 @@
 import { Link } from "react-router"
-import { useCurrentUser } from "@/auth/CurrentUserContext"
 import { ApiError } from "@/api/client"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -15,8 +14,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 /** concept-frontend-v1.md màn 4 — "Lịch tuần", nguồn sự thật. */
 export function SchedulePage() {
-  const { userId } = useCurrentUser()
-  const schedule = useSchedule(userId!)
+  const schedule = useSchedule()
 
   if (schedule.isLoading) {
     return <p className="text-sm text-[var(--color-text-muted)]">Đang tải…</p>

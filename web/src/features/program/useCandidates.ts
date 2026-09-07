@@ -8,9 +8,9 @@ export type TemplateCandidate = {
   methodology: string | null
 }
 
-export function useCandidates(userId: string) {
+export function useCandidates() {
   return useQuery({
-    queryKey: ["program-candidates", userId],
-    queryFn: () => api.get<TemplateCandidate[]>(`/programs/candidates?userId=${userId}`),
+    queryKey: ["program-candidates"],
+    queryFn: () => api.get<TemplateCandidate[]>("/programs/candidates"),
   })
 }

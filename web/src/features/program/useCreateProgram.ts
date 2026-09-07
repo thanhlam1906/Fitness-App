@@ -4,11 +4,10 @@ import type { CreateProgramFormValues } from "./schema"
 
 type CreateProgramResponse = { programId: string }
 
-export function useCreateProgram(userId: string) {
+export function useCreateProgram() {
   return useMutation({
     mutationFn: (values: CreateProgramFormValues) =>
       api.post<CreateProgramResponse>("/programs", {
-        userId,
         templateId: values.templateId,
         startingLoadsBySlug: Object.fromEntries(
           values.startingLoads.map((l) => [l.slug, l.kg]),
