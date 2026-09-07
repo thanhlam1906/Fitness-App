@@ -1,0 +1,8 @@
+# gradlew là shell script — CRLF sẽ làm hỏng shebang khi checkout trên máy khác
+gradlew text eol=lf
+*.sh text eol=lf
+
+# binary, không normalize line ending
+gradle-wrapper.jar binary
+*.jar binary
+*.task binary
