@@ -6,6 +6,7 @@ import { cn } from "@/lib/cn"
 const NAV_LINKS = [
   { to: "/onboarding", label: "Onboarding" },
   { to: "/program", label: "Chọn chương trình" },
+  { to: "/schedule", label: "Lịch tập" },
   { to: "/admin/exercises", label: "Admin · Bài tập" },
   { to: "/admin/templates", label: "Admin · Template" },
 ]

@@ -1,3 +1,4 @@
+import { Link } from "react-router"
 import { useForm, useFieldArray } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Plus, Trash2 } from "lucide-react"
@@ -54,14 +55,11 @@ export function ProgramSelectionPage() {
 
   if (createProgram.isSuccess) {
     return (
-      <Card className="space-y-2">
+      <Card className="space-y-3">
         <h1 className="text-lg font-semibold text-[var(--color-success)]">Đã tạo chương trình</h1>
-        <p className="text-sm text-[var(--color-text-muted)]">
-          Program ID: <span className="num">{createProgram.data.programId}</span>
-        </p>
-        <p className="text-sm text-[var(--color-text-muted)]">
-          Màn Lịch tuần chưa có (backend chưa có API đọc lịch) — kiểm tra kết quả qua DB hoặc API test.
-        </p>
+        <Link to="/schedule">
+          <Button>Xem lịch tập</Button>
+        </Link>
       </Card>
     )
   }
