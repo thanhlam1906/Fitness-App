@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demo — Gửi video Squat, nhận phân tích AI</title>
+<style>
+  :root{
+    --bg:#0e1116; --panel:#171c24; --line:#262e3a; --txt:#e8edf4; --mut:#93a1b3;
+    --acc:#4cc38a; --warn:#e8b34b; --bad:#e2605c; --na:#7c8aa0; --acc2:#5b8def;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{background:var(--bg); color:var(--txt); font:15px/1.55 system-ui,"Segoe UI",Roboto,sans-serif; min-height:100vh}
+  .wrap{max-width:860px; margin:0 auto; padding:28px 18px 60px}
+  header h1{font-size:22px; letter-spacing:.2px}
+  header p{color:var(--mut); margin-top:4px}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:18px}
+  @media(max-width:760px){ .grid{grid-template-columns:1fr} }
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px}
+  .card h2{font-size:13px; text-transform:uppercase; letter-spacing:1.4px; color:var(--acc2); margin-bottom:12px}
+  #drop{border:2px dashed var(--line); border-radius:10px; padding:26px 14px; text-align:center; cursor:pointer; transition:.15s}
+  #drop:hover,#drop.over{border-color:var(--acc2); background:#1a2230}
+  #drop .big{font-size:15px; font-weight:600}
+  #drop .sub{color:var(--mut); font-size:13px; margin-top:6px}
+  #file{display:none}
+  .row{display:flex; gap:8px; align-items:center; margin-top:12px; flex-wrap:wrap}
+  button{background:var(--acc2); color:#fff; border:0; border-radius:8px; padding:10px 16px; font-size:14px; font-weight:600; cursor:pointer}
+  button:disabled{opacity:.5; cursor:not-allowed}
+  button.ghost{background:transparent; border:1px solid var(--line); color:var(--txt)}
+  #fileName{color:var(--mut); font-size:13px; word-break:break-all}
+  #status{margin-top:12px; display:none}
+  #status .bar{height:6px; border-radius:3px; background:var(--line); overflow:hidden; margin-top:8px}
+  #status .bar i{display:block; height:100%; width:30%; background:var(--acc); border-radius:3px; animation:slide 1.1s ease-in-out infinite}
+  @keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(400%)}}
+  ul.steps{list-style:none; margin-top:10px}
+  ul.steps li{color:var(--mut); font-size:13px; padding:3px 0; position:relative; padding-left:18px}
+  ul.steps li::before{content:"•"; position:absolute; left:4px; color:var(--acc2)}
+  .note{font-size:12.5px; color:var(--mut); border-left:3px solid var(--line); padding:6px 10px; margin-top:10px; background:#131923}
+  .result{margin-top:16px; display:none}
+  .big-card{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-top:14px}
+  .overall{display:flex; gap:14px; align-items:center; flex-wrap:wrap}
+  .pill{border-radius:20px; padding:4px 14px; font-size:13px; font-weight:700}
+  .pill.good{background:#123524; color:var(--acc)} .pill.bad{background:#3a1d1c; color:var(--bad)}
+  .advice{font-size:16px; font-weight:600; margin-top:10px}
+  .chk{display:flex; gap:12px; padding:12px 0; border-top:1px solid var(--line); align-items:flex-start}
+  .chk:first-of-type{border-top:0}
+  .ico{flex:0 0 26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800}
+  .ico.pass{background:#123524; color:var(--acc)} .ico.warn{background:#3a2f16; color:var(--warn)}
+  .ico.fail{background:#3a1d1c; color:var(--bad)} .ico.na{background:#1d2430; color:var(--na)}
+  .chk .name{font-weight:700; font-size:14.5px}
+  .chk .txt{color:var(--mut); font-size:13.5px; margin-top:3px}
+  .chk .metric{color:var(--acc2); font-size:12.5px; margin-top:5px; font-family:ui-monospace,Consolas,monospace}
+  .meta{color:var(--mut); font-size:12.5px; margin-top:8px}
+  .err-card{background:#3a1d1c; border:1px solid #5a2a28; border-radius:12px; padding:16px; margin-top:14px; display:none}
+  .err-card h3{color:var(--bad); font-size:15px}
+  .err-card ul{list-style:none; margin-top:8px} .err-card li{color:var(--txt); font-size:13.5px; padding:2px 0}
+  .llm-card{margin-top:14px; border:1px solid #3a4a6b; background:#141b2b; border-radius:10px; padding:12px 14px}
+  .llm-card .llm-title{font-size:12px; letter-spacing:1.2px; text-transform:uppercase; color:#8fa8e8; margin-bottom:8px}
+  .llm-card .llm-text{font-size:14px; line-height:1.65; white-space:pre-wrap}
+  footer{margin-top:26px; color:var(--mut); font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🏋️ Demo: Gửi video Squat → Phân tích kỹ thuật bằng AI</h1>
+    <p>Pose 33 điểm khớp (MediaPipe) + chấm theo rule — chạy server, video tự xóa ngay sau khi phân tích.</p>
+    <p style="margin-top:8px"><a href="/live" style="color:#5b8def;font-weight:600">🎥 Thử bản nhận diện khớp trực tiếp qua camera →</a></p>
+  </header>
+
+  <div class="grid">
+    <div class="card">
+      <h2>1 · Chọn video</h2>
+      <div id="drop">
+        <div class="big">Kéo thả video vào đây</div>
+        <div class="sub">hoặc bấm để chọn file (.mp4/.mov/.webm, ≤ 20 giây)</div>
+        <input type="file" id="file" accept="video/*">
+      </div>
+      <div class="row">
+        <button id="sendBtn" disabled>Gửi &amp; phân tích</button>
+        <span id="fileName"></span>
+      </div>
+      <div class="note">Video chỉ được dùng để phân tích rồi <b>xóa ngay</b> trên server —
+        không lưu trữ. Đây là bản demo, ngưỡng chấm là số tạm.</div>
+    </div>
+
+    <div class="card">
+      <h2>2 · Hướng dẫn quay</h2>
+      <ul class="steps">
+        <li>Toàn bộ cơ thể nằm gọn trong khung hình</li>
+        <li>Điện thoại cố định (tựa vào vật gì đó), ngang tầm hông</li>
+        <li>Đủ sáng, không ngược sáng, nền đơn giản</li>
+        <li>Quay <b>3–5 rep squat</b> liên tục, hạ sâu rõ ràng</li>
+        <li>Góc <b>NGANG</b>: kiểm tra độ sâu &amp; thân/lưng</li>
+        <li>Góc <b>CHÍNH DIỆN</b>: kiểm tra gối chụm vào trong</li>
+        <li>Quay cả 2 góc để được kiểm tra đầy đủ nhất</li>
+      </ul>
+    </div>
+  </div>
+
+  <div id="status">
+    <div>⏳ Đang phân tích — thường mất 5–40 giây tùy clip…</div>
+    <div class="bar"><i></i></div>
+    <ul class="steps">
+      <li>Đọc video &amp; tách khung hình</li>
+      <li>Pose estimator: tìm 33 điểm khớp mỗi frame</li>
+      <li>Phân loại góc quay → chọn check hợp lệ</li>
+      <li>Phân đoạn rep → chấm từng rep theo rule</li>
+    </ul>
+  </div>
+
+  <div class="result" id="result">
+    <div class="big-card">
+      <div class="overall">
+        <div id="verdictPill" class="pill">—</div>
+        <div class="meta" id="viewMeta">—</div>
+      </div>
+      <div class="advice" id="advice"></div>
+      <div id="checks"></div>
+      <div class="llm-card" id="llmCard" style="display:none">
+        <div class="llm-title">💬 Phân tích AI (LLM) — dựa trên số liệu đo được</div>
+        <div class="llm-text" id="llmText"></div>
+      </div>
+      <div class="meta" id="notes"></div>
+      <div class="meta" id="perf"></div>
+    </div>
+    <div class="row">
+      <button id="againBtn" class="ghost">↺ Gửi video khác</button>
+    </div>
+  </div>
+
+  <div class="err-card" id="errCard">
+    <h3>Không phân tích được</h3>
+    <ul id="errList"></ul>
+    <div class="row"><button id="errAgain" class="ghost">Thử lại</button></div>
+  </div>
+
+  <footer>Demo MVP — pipeline: pose server-side + rule engine (không LLM, không bịa số).</footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const drop=$('drop'), file=$('file'), sendBtn=$('sendBtn'), fileName=$('fileName');
+const statusBox=$('status'), resultBox=$('result'), errBox=$('errCard');
+
+drop.addEventListener('click', ()=>file.click());
+drop.addEventListener('dragover', e=>{e.preventDefault(); drop.classList.add('over');});
+drop.addEventListener('dragleave', ()=>drop.classList.remove('over'));
+drop.addEventListener('drop', e=>{e.preventDefault(); drop.classList.remove('over'); if(e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);});
+file.addEventListener('change', ()=>{ if(file.files[0]) setFile(file.files[0]); });
+
+function setFile(f){
+  fileName.textContent = `${f.name} — ${(f.size/1048576).toFixed(1)} MB`;
+  sendBtn.disabled = false;
+}
+
+function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
+
+sendBtn.addEventListener('click', async ()=>{
+  if(!file.files[0]){
+    flash('Chưa có video — hãy kéo thả hoặc bấm chọn file trước.');
+    return;
+  }
+  resultBox.style.display='none'; errBox.style.display='none';
+  statusBox.style.display='block'; sendBtn.disabled=true;
+  const fd=new FormData(); fd.append('file', file.files[0]);
+  try{
+    const res=await fetch('/api/analyze',{method:'POST', body:fd});
+    let j=null; try{ j=await res.json(); }catch(_){}
+    statusBox.style.display='none';
+    if(!res.ok){
+      const d=(j&&j.detail)?j.detail:(j||{});
+      showError({error: d.error || `Server trả lỗi HTTP ${res.status}.`, hints: d.hints || []});
+      return;
+    }
+    if(!j.ok) showError(j); else render(j);
+  }catch(e){
+    statusBox.style.display='none';
+    showError({error:'Không gửi được tới server.', hints:[`Chi tiết kỹ thuật: ${e.message||e}`,'Kiểm tra server đang chạy ở cổng 8000.']});
+  }finally{ sendBtn.disabled=false; }
+});
+
+function flash(msg){
+  fileName.textContent = msg;
+  fileName.style.color = '#e8b34b';
+  setTimeout(()=>{ fileName.style.color=''; }, 4000);
+}
+
+// Mọi lỗi JS không lường trước đều hiện lên trang thay vì chỉ nằm trong console
+window.addEventListener('error', ev=>{
+  const box=document.getElementById('errCard');
+  if(box && box.style.display!=='block'){
+    box.style.display='block';
+    document.getElementById('errList').innerHTML=
+      `<li>⚠️ Lỗi giao diện: ${esc(ev.message||'không xác định')}</li>
+       <li>💡 Hãy tải lại trang bằng <b>Ctrl+Shift+R</b> rồi thử lại. Nếu vẫn lỗi, gửi nội dung này cho người phát triển.</li>`;
+  }
+});
+
+function showError(j){
+  errBox.style.display='block';
+  const items=[];
+  if(j && j.error) items.push(`<li><b>${esc(j.error)}</b></li>`);
+  (j && j.hints||[]).forEach(h=>items.push(`<li>💡 ${esc(h)}</li>`));
+  $('errList').innerHTML = items.join('') || '<li>Lỗi không xác định</li>';
+}
+
+function render(j){
+  resultBox.style.display='block';
+  const allOk=j.overall_ok;
+  $('verdictPill').textContent= allOk ? '✅ Kỹ thuật ổn' : '⚠️ Cần cải thiện';
+  $('verdictPill').className='pill '+(allOk?'good':'bad');
+  $('viewMeta').textContent=`Bài: Squat · Góc quay: ${j.viewpoint.label} · Số rep phát hiện: ${j.reps}`;
+  $('advice').textContent = j.primary_advice || 'Không thấy lỗi rõ ràng nào. Tiếp tục giữ kỹ thuật này!';
+  const icons={pass:'✓',warn:'!',fail:'✕',na:'–'};
+  $('checks').innerHTML = j.checks.map(c=>`
+    <div class="chk">
+      <div class="ico ${c.status}">${icons[c.status]||'?'}</div>
+      <div>
+        <div class="name">${esc(c.name)}</div>
+        <div class="txt">${esc(c.text)}</div>
+        ${c.metric?`<div class="metric">${esc(c.metric)}</div>`:''}
+      </div>
+    </div>`).join('');
+  $('notes').innerHTML = j.notes.map(n=>`• ${esc(n)}`).join('<br>');
+  const llmCard=$('llmCard');
+  if(j.llm && j.llm.ok && j.llm.advice){
+    llmCard.style.display='block';
+    $('llmText').textContent=j.llm.advice;
+  } else {
+    llmCard.style.display='none';
+  }
+  const llmNote = (j.llm && j.llm.ok) ? ` · LLM: ${j.llm.model}` : ' · LLM: tắt';
+  $('perf').textContent = `Thời gian xử lý: ${(j.perf_ms/1000).toFixed(1)}s · ${j.disclaimer}${llmNote}`;
+}
+
+$('againBtn').addEventListener('click', ()=>{ resultBox.style.display='none'; file.value=''; fileName.textContent=''; sendBtn.disabled=true; });
+$('errAgain').addEventListener('click', ()=>{ errBox.style.display='none'; });
+</script>
+</body>
+</html>

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demo — Nhận diện khớp trực tiếp (camera)</title>
+<style>
+  :root{--bg:#0e1116; --panel:#171c24; --line:#262e3a; --txt:#e8edf4; --mut:#93a1b3; --acc:#4cc38a; --acc2:#5b8def; --warn:#e8b34b}
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{background:var(--bg); color:var(--txt); font:15px/1.5 system-ui,"Segoe UI",Roboto,sans-serif; min-height:100vh}
+  .wrap{max-width:980px; margin:0 auto; padding:22px 16px 40px}
+  h1{font-size:20px}
+  .sub{color:var(--mut); margin-top:4px; font-size:13.5px}
+  .stage{margin-top:16px; position:relative; border:1px solid var(--line); border-radius:14px; overflow:hidden; background:#000; min-height:360px}
+  video{position:absolute; width:100%; height:100%; object-fit:contain; opacity:0}
+  canvas{display:block; width:100%}
+  .overlay-note{position:absolute; left:10px; top:10px; background:rgba(0,0,0,.55); padding:6px 10px; border-radius:8px; font-size:12.5px; color:var(--txt)}
+  .panel{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px}
+  @media(max-width:720px){ .panel{grid-template-columns:1fr} }
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px}
+  .card h2{font-size:12.5px; text-transform:uppercase; letter-spacing:1.3px; color:var(--acc2); margin-bottom:10px}
+  .metric{font-size:22px; font-weight:700; font-variant-numeric:tabular-nums}
+  .metric small{font-size:13px; color:var(--mut); font-weight:400}
+  .row{display:flex; gap:10px; margin-top:14px; flex-wrap:wrap}
+  button{background:var(--acc2); color:#fff; border:0; border-radius:8px; padding:10px 18px; font-size:14px; font-weight:600; cursor:pointer}
+  button.ghost{background:transparent; border:1px solid var(--line); color:var(--txt)}
+  #status{margin-top:10px; font-size:13.5px; color:var(--warn); min-height:20px; white-space:pre-wrap}
+  .legend{display:flex; gap:16px; flex-wrap:wrap; margin-top:10px; font-size:12.5px; color:var(--mut)}
+  .dot{display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; vertical-align:middle}
+  .note{font-size:12.5px; color:var(--mut); border-left:3px solid var(--line); padding:6px 10px; margin-top:12px; background:#131923}
+  a{color:var(--acc2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🎥 Nhận diện khớp trực tiếp — 33 điểm trên cơ thể</h1>
+  <p class="sub">Đứng trước camera, toàn thân trong khung. Toàn bộ xử lý chạy <b>ngay trong trình duyệt</b> (MediaPipe on-device) — không gửi ảnh/video đi đâu. ← <a href="/">về trang gửi video</a></p>
+
+  <div class="stage" id="stage">
+    <video id="video" playsinline muted></video>
+    <canvas id="canvas"></canvas>
+    <div class="overlay-note" id="fpsNote">—</div>
+  </div>
+
+  <div class="row">
+    <button id="startBtn">▶ Bật camera</button>
+    <button id="stopBtn" class="ghost" disabled>⏹ Tắt</button>
+  </div>
+  <div id="status"></div>
+
+  <div class="panel">
+    <div class="card">
+      <h2>Số đo trực tiếp (từ world 3D)</h2>
+      <div class="metric" id="hipAng">—°<small> góc hông</small></div>
+      <div class="metric" id="depthRatio">—<small> tỷ lệ độ sâu (≈1 = ngang gối)</small></div>
+      <div class="metric" id="phase">—</div>
+    </div>
+    <div class="card">
+      <h2>Cách đọc màu điểm</h2>
+      <div class="legend">
+        <span><span class="dot" style="background:#4cc38a"></span>Rõ (tin cậy &gt; 0.8)</span>
+        <span><span class="dot" style="background:#e8b34b"></span>Tạm (0.5–0.8)</span>
+        <span><span class="dot" style="background:#e2605c"></span>Mờ (&lt; 0.5)</span>
+        <span><span class="dot" style="background:#5b8def"></span>Khớp quan trọng</span>
+      </div>
+      <div class="note">Góc hông = góc (vai–hông–gối). Squat: góc &lt; 128° = "đang hạ", trở lại &gt; 148° = "đứng" — đúng state machine của engine phân tích video.</div>
+    </div>
+  </div>
+
+  <div class="note">
+    ⚠️ Demo kỹ thuật: webcam càng tốt (đủ sáng, đứng cách ~2–3 m, không ngược sáng) thì điểm khớp càng bám đúng.
+    Cần mạng lần đầu để tải thư viện MediaPipe từ CDN (cdn.jsdelivr.net).
+  </div>
+</div>
+
+<script>
+// Báo sớm nếu module chính không tải được (mạng/CDN lỗi) — module sẽ ghi cờ __liveReady
+window.__liveReady = false;
+setTimeout(()=>{
+  if(!window.__liveReady){
+    document.getElementById('status').textContent =
+      'Không tải được thư viện MediaPipe từ CDN (cdn.jsdelivr.net) — kiểm tra kết nối mạng rồi tải lại trang (Ctrl+Shift+R).';
+  }
+}, 4000);
+</script>
+
+<script type="module">
+import { FilesetResolver, PoseLandmarker } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+window.__liveReady = true;
+
+const $ = id => document.getElementById(id);
+const video=$('video'), canvas=$('canvas'), ctx=canvas.getContext('2d');
+const startBtn=$('startBtn'), stopBtn=$('stopBtn'), statusEl=$('status');
+
+// Bảng nối 33 khớp chuẩn BlazePose (dự phòng nếu PoseLandmarker.POSE_CONNECTIONS không khả dụng)
+const POSE_CONNECTIONS = (PoseLandmarker && PoseLandmarker.POSE_CONNECTIONS) || [
+  [0,1],[1,2],[2,3],[3,7],[0,4],[4,5],[5,6],[6,8],[9,10],
+  [11,12],[11,13],[13,15],[15,17],[15,19],[15,21],[17,19],
+  [12,14],[14,16],[16,18],[16,20],[16,22],[18,20],
+  [11,23],[12,24],[23,24],
+  [23,25],[25,27],[27,29],[29,31],[27,31],
+  [24,26],[26,28],[28,30],[30,32],[28,32],
+];
+const KEY_IDS = new Set([11,12,23,24,25,26,27,28]);
+
+let landmarker=null, stream=null, raf=0, running=false;
+let fps=0, frames=0, lastFpsT=performance.now();
+let drawErrors=0;
+
+function angleDeg(a,b){
+  const dot=a.x*b.x+a.y*b.y+a.z*b.z;
+  const na=Math.hypot(a.x,a.y,a.z), nb=Math.hypot(b.x,b.y,b.z);
+  if(na<1e-9||nb<1e-9) return 0;
+  return Math.acos(Math.max(-1,Math.min(1,dot/(na*nb))))*180/Math.PI;
+}
+
+async function initModel(){
+  statusEl.textContent='Đang tải thư viện wasm từ CDN…';
+  const vision = await FilesetResolver.forVisionTasks(
+    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
+  statusEl.textContent='Đang tải model pose (~10 MB)…';
+  const base={ modelAssetPath: "/model/pose_landmarker_full.task" };
+  try{
+    return await PoseLandmarker.createFromOptions(vision,
+      {baseOptions:{...base,delegate:"GPU"},runningMode:"VIDEO",numPoses:1});
+  }catch(e){
+    return await PoseLandmarker.createFromOptions(vision,
+      {baseOptions:{...base,delegate:"CPU"},runningMode:"VIDEO",numPoses:1});
+  }
+}
+
+startBtn.addEventListener('click', async ()=>{
+  statusEl.textContent='Đang khởi tạo…';
+  startBtn.disabled=true;
+  try{
+    stream = await navigator.mediaDevices.getUserMedia(
+      {video:{width:{ideal:1280},height:{ideal:720},facingMode:"user"},audio:false});
+    video.srcObject=stream;
+    await video.play();
+    if(!landmarker) landmarker=await initModel();
+    running=true; drawErrors=0; stopBtn.disabled=false; statusEl.textContent='';
+    loop();
+  }catch(e){
+    statusEl.textContent=(e && e.name && e.name==='NotAllowedError')
+      ? 'Bạn chưa cấp quyền dùng camera cho trang này. Bấm biểu tượng 🔒/camera trên thanh địa chỉ → Cho phép camera → tải lại trang.'
+      : 'Lỗi khởi động: '+(e&&e.name?e.name+': ':'')+(e&&e.message?e.message:e);
+    startBtn.disabled=false;
+  }
+});
+
+stopBtn.addEventListener('click', ()=>{
+  running=false; cancelAnimationFrame(raf);
+  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+  video.srcObject=null; ctx.clearRect(0,0,canvas.width,canvas.height);
+  stopBtn.disabled=true; startBtn.disabled=false; statusEl.textContent='Đã tắt camera.';
+  $('hipAng').textContent='—°'; $('depthRatio').textContent='—'; $('phase').textContent='—';
+});
+
+function loop(){
+  raf=requestAnimationFrame(loop);
+  if(!running || !landmarker) return;
+  if(!video.videoWidth) return;
+  try{
+    canvas.width=video.videoWidth; canvas.height=video.videoHeight;
+    const ts=performance.now();
+    const res=landmarker.detectForVideo(video, ts);
+    draw(res);
+    frames++;
+    if(ts-lastFpsT>1000){ fps=frames*1000/(ts-lastFpsT); frames=0; lastFpsT=ts; }
+  }catch(e){
+    drawErrors++;
+    if(drawErrors===1){
+      statusEl.textContent='Lỗi khi vẽ/phân tích frame: '+(e&&e.name?e.name+': ':'')+(e&&e.message?e.message:e);
+    }
+    if(drawErrors>30){ // lỗi liên tục → dừng để tránh treo máy
+      running=false; cancelAnimationFrame(raf);
+      statusEl.textContent='Dừng do lỗi lặp lại: '+(e&&e.name?e.name+': ':'')+(e&&e.message?e.message:e);
+      startBtn.disabled=false; stopBtn.disabled=true;
+    }
+  }
+}
+
+function draw(res){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const W=canvas.width, H=canvas.height;
+  // vẽ hình camera lên canvas (lật gương cho giống soi gương), rồi vẽ khung xương lên trên
+  if(video.videoWidth){
+    ctx.save();
+    ctx.translate(W,0); ctx.scale(-1,1);
+    ctx.drawImage(video, 0, 0, W, H);
+    ctx.restore();
+  }
+  const lm=(res && res.landmarks && res.landmarks.length)?res.landmarks[0]:null;
+  if(!lm) return;
+  const pts=[];
+  for(let i=0;i<lm.length;i++){
+    const p=lm[i];
+    pts.push({x:(1-(p&&p.x!==undefined?p.x:0))*W, y:(p&&p.y!==undefined?p.y:0)*H, v:(p&&p.visibility!==undefined?p.visibility:0)});
+  }
+  ctx.lineWidth=2; ctx.strokeStyle='rgba(91,141,239,.85)';
+  for(const pair of POSE_CONNECTIONS){
+    if(!pair || pair.length<2) continue;
+    const a=pts[pair[0]], b=pts[pair[1]];
+    if(!a||!b) continue;
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+  }
+  for(let i=0;i<pts.length;i++){
+    const p=pts[i];
+    ctx.beginPath(); ctx.arc(p.x,p.y, KEY_IDS.has(i)?6:4, 0, Math.PI*2);
+    ctx.fillStyle = p.v>0.8 ? '#4cc38a' : p.v>0.5 ? '#e8b34b' : '#e2605c';
+    ctx.fill();
+    if(KEY_IDS.has(i)){ ctx.lineWidth=2; ctx.strokeStyle='#5b8def'; ctx.stroke(); }
+  }
+  const wl=(res && res.worldLandmarks && res.worldLandmarks.length)?res.worldLandmarks[0]:null;
+  if(wl){
+    const mid=(i,j)=>({x:(wl[i].x+wl[j].x)/2, y:(wl[i].y+wl[j].y)/2, z:(wl[i].z+wl[j].z)/2});
+    const sho=mid(11,12), hip=mid(23,24), kne=mid(25,26);
+    const ang=angleDeg({x:sho.x-hip.x,y:sho.y-hip.y,z:sho.z-hip.z},
+                       {x:kne.x-hip.x,y:kne.y-hip.y,z:kne.z-hip.z});
+    $('hipAng').innerHTML=`${ang.toFixed(0)}°<small> góc hông</small>`;
+    const up={x:sho.x-hip.x,y:sho.y-hip.y,z:sho.z-hip.z};
+    const ulen=Math.hypot(up.x,up.y,up.z)||1e-9; up.x/=ulen; up.y/=ulen; up.z/=ulen;
+    const dot=(a,b)=>a.x*b.x+a.y*b.y+a.z*b.z;
+    const hA=dot({x:hip.x-wl[27].x,y:hip.y-wl[27].y,z:hip.z-wl[27].z},up);
+    const kA=Math.max(dot({x:wl[25].x-wl[27].x,y:wl[25].y-wl[27].y,z:wl[25].z-wl[27].z},up),0.05);
+    $('depthRatio').innerHTML=`${(hA/kA).toFixed(2)}<small> tỷ lệ độ sâu (≈1 = ngang gối)</small>`;
+    $('phase').textContent = ang<128 ? '⬇ ĐANG HẠ' : ang>148 ? '⬆ ĐANG ĐỨNG' : '● TRONG REP';
+  } else {
+    $('hipAng').textContent='—°'; $('depthRatio').textContent='—'; $('phase').textContent='Chưa có world landmarks';
+  }
+  $('fpsNote').textContent=`${fps.toFixed(0)} fps · pose on-device (MediaPipe)`;
+}
+</script>
+</body>
+</html>

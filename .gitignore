@@ -1,0 +1,40 @@
+# secrets
+.env
+*.env
+!.env.example
+
+# Python (analyzer, analyzer-demo)
+.venv/
+__pycache__/
+*.pyc
+.uv-cache/
+.mplcache/
+
+# model weights — tải lại lúc chạy, không commit
+**/models/*.task
+
+# dữ liệu người dùng / test nặng — không commit
+video/
+tests/clips/
+analyzer-demo/test_videos/
+
+# Java / Gradle
+backend/build/
+backend/.gradle/
+backend/out/
+!backend/gradle/wrapper/gradle-wrapper.jar
+
+# Node / web
+web/node_modules/
+web/dist/
+web/.vite/
+node_modules/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
