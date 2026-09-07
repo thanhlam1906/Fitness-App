@@ -22,6 +22,10 @@ spring:
 
 server:
   port: ${SERVER_PORT:8080}
+  error:
+    # Admin editor cần thấy lý do lỗi thật (vd "thresholds không phải JSON hợp lệ") — mặc định
+    # Spring ẩn message, chỉ trả {status, error, path}. API nội bộ, không expose ra người dùng cuối.
+    include-message: always
 
 management:
   endpoints:

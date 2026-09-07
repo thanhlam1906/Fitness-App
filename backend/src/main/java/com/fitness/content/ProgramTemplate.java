@@ -12,8 +12,8 @@ import org.hibernate.type.SqlTypes;
 
 /**
  * Bảng program_templates, V1__init.sql. week_structure/progression giữ raw
- * JSON text — service layer tự parse bằng ObjectMapper khi cần, entity không
- * biết về CycleDay/CycleExercise của package program.
+ * JSON text — F4 concept-frontend-v1.md: editor admin sửa JSON thô trước,
+ * dựng form riêng khi thấy vướng.
  */
 @Entity
 @Table(name = "program_templates")
@@ -59,6 +59,33 @@ public class ProgramTemplate {
 	protected ProgramTemplate() {
 	}
 
+	public ProgramTemplate(
+			String slug, String name, String methodology, short sessionsMin, short sessionsMax,
+			String[] requiredEquipment, String weekStructure, String progression) {
+		this.slug = slug;
+		this.name = name;
+		this.methodology = methodology;
+		this.sessionsMin = sessionsMin;
+		this.sessionsMax = sessionsMax;
+		this.requiredEquipment = requiredEquipment;
+		this.weekStructure = weekStructure;
+		this.progression = progression;
+	}
+
+	public void update(
+			String name, String methodology, short sessionsMin, short sessionsMax,
+			String[] requiredEquipment, String weekStructure, String progression, boolean active) {
+		this.name = name;
+		this.methodology = methodology;
+		this.sessionsMin = sessionsMin;
+		this.sessionsMax = sessionsMax;
+		this.requiredEquipment = requiredEquipment;
+		this.weekStructure = weekStructure;
+		this.progression = progression;
+		this.active = active;
+		this.updatedAt = Instant.now();
+	}
+
 	public UUID getId() {
 		return id;
 	}
@@ -89,6 +116,10 @@ public class ProgramTemplate {
 
 	public String getWeekStructure() {
 		return weekStructure;
+	}
+
+	public String getProgression() {
+		return progression;
 	}
 
 	public boolean isActive() {

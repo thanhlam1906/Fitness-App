@@ -10,7 +10,11 @@ import java.util.UUID;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-/** Bảng exercises, V1__init.sql. filming_guide giữ raw JSON text — chưa cần đọc ở slice này. */
+/**
+ * Bảng exercises, V1__init.sql. filming_guide giữ raw JSON text — chưa có
+ * trong editor admin (F2 concept-frontend-v1.md: cần ảnh minh hoạ, không
+ * code được ở đợt này).
+ */
 @Entity
 @Table(name = "exercises")
 public class Exercise {
@@ -58,6 +62,31 @@ public class Exercise {
 	protected Exercise() {
 	}
 
+	public Exercise(
+			String slug, String nameEn, String nameVi, String[] muscleGroups,
+			String[] equipment, String description, boolean analyzable) {
+		this.slug = slug;
+		this.nameEn = nameEn;
+		this.nameVi = nameVi;
+		this.muscleGroups = muscleGroups;
+		this.equipment = equipment;
+		this.description = description;
+		this.analyzable = analyzable;
+	}
+
+	public void update(
+			String nameEn, String nameVi, String[] muscleGroups,
+			String[] equipment, String description, boolean analyzable, boolean active) {
+		this.nameEn = nameEn;
+		this.nameVi = nameVi;
+		this.muscleGroups = muscleGroups;
+		this.equipment = equipment;
+		this.description = description;
+		this.analyzable = analyzable;
+		this.active = active;
+		this.updatedAt = Instant.now();
+	}
+
 	public UUID getId() {
 		return id;
 	}
@@ -68,5 +97,29 @@ public class Exercise {
 
 	public String getNameEn() {
 		return nameEn;
+	}
+
+	public String getNameVi() {
+		return nameVi;
+	}
+
+	public String[] getMuscleGroups() {
+		return muscleGroups;
+	}
+
+	public String[] getEquipment() {
+		return equipment;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public boolean isAnalyzable() {
+		return analyzable;
+	}
+
+	public boolean isActive() {
+		return active;
 	}
 }
