@@ -36,3 +36,9 @@ management:
     health:
       # bật chi tiết (gồm trạng thái DB) khi gọi có xác thực — an toàn hơn "always"
       show-details: when-authorized
+
+app:
+  # concept-backend-v1.md §9: tối thiểu 32 byte. Default chỉ để dev local chạy được
+  # ngay không cần set env — cùng kiểu với DB_PASSWORD ở trên. KHÔNG dùng default này
+  # ở môi trường thật, luôn set JWT_SECRET.
+  jwt-secret: ${JWT_SECRET:dev-only-jwt-secret-not-for-production-32b}

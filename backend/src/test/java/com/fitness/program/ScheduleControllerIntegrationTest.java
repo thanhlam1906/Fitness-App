@@ -2,30 +2,26 @@ package com.fitness.program;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fitness.auth.Role;
 import com.fitness.content.ProgramTemplate;
 import com.fitness.content.ProgramTemplateRepository;
 import com.fitness.support.PostgresIntegrationTest;
-import com.fitness.user.Role;
-import com.fitness.user.User;
-import com.fitness.user.UserRepository;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 
 class ScheduleControllerIntegrationTest extends PostgresIntegrationTest {
 
 	@Autowired
 	private TestRestTemplate rest;
-	@Autowired
-	private UserRepository userRepository;
 	@Autowired
 	private ProgramTemplateRepository templateRepository;
 	@Autowired
@@ -36,14 +32,15 @@ class ScheduleControllerIntegrationTest extends PostgresIntegrationTest {
 
 	@Test
 	void getSchedule_returnsWorkoutsWithResolvedExerciseNames() {
-		UUID userId = userRepository.save(new User("sched+" + UUID.randomUUID() + "@example.com", "x", Role.USER)).getId();
+		var user = newAuthedUser(Role.USER);
 		ProgramTemplate template = templateRepository.findAll().stream()
 				.filter(t -> t.getSlug().equals("full-body-3x")).findFirst().orElseThrow();
 		programService.createProgram(
-				userId, template.getId(), Map.of("barbell-back-squat", 60.0),
+				user.userId(), template.getId(), Map.of("barbell-back-squat", 60.0),
 				Set.of(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY), A_MONDAY);
 
-		var response = rest.getForEntity("/api/v1/schedule?userId=" + userId, ScheduleResponse.class);
+		var response = rest.exchange("/api/v1/schedule", HttpMethod.GET,
+				new HttpEntity<>(user.headers()), ScheduleResponse.class);
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 		assertThat(response.getBody().workouts()).hasSize(20);
@@ -56,9 +53,26 @@ class ScheduleControllerIntegrationTest extends PostgresIntegrationTest {
 
 	@Test
 	void getSchedule_noActiveProgram_returns404() {
-		UUID userId = userRepository.save(new User("sched-none+" + UUID.randomUUID() + "@example.com", "x", Role.USER)).getId();
+		var user = newAuthedUser(Role.USER);
 
-		var response = rest.getForEntity("/api/v1/schedule?userId=" + userId, Map.class);
+		var response = rest.exchange("/api/v1/schedule", HttpMethod.GET,
+				new HttpEntity<>(user.headers()), java.util.Map.class);
+
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+	}
+
+	@Test
+	void getSchedule_seesOnlyOwnProgram_notOtherUsers() {
+		var userA = newAuthedUser(Role.USER);
+		var userB = newAuthedUser(Role.USER);
+		ProgramTemplate template = templateRepository.findAll().stream()
+				.filter(t -> t.getSlug().equals("full-body-3x")).findFirst().orElseThrow();
+		programService.createProgram(
+				userA.userId(), template.getId(), Map.of(), Set.of(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY), A_MONDAY);
+
+		// userB chưa có chương trình riêng — dù userA vừa tạo, JWT của B không cho thấy lịch của A
+		var response = rest.exchange("/api/v1/schedule", HttpMethod.GET,
+				new HttpEntity<>(userB.headers()), java.util.Map.class);
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
 	}

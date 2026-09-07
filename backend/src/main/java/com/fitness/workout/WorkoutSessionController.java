@@ -1,5 +1,6 @@
 package com.fitness.workout;
 
+import com.fitness.common.CurrentUser;
 import com.fitness.program.ScheduledWorkout;
 import com.fitness.program.ScheduledWorkoutRepository;
 import jakarta.validation.Valid;
@@ -23,28 +24,31 @@ public class WorkoutSessionController {
 	private final PainReportRepository painReports;
 	private final ScheduledWorkoutRepository scheduledWorkouts;
 	private final ProgressionApplicationService progressionApplicationService;
+	private final CurrentUser currentUser;
 
 	public WorkoutSessionController(
 			WorkoutSessionRepository sessions, SetLogRepository setLogs, PainReportRepository painReports,
-			ScheduledWorkoutRepository scheduledWorkouts, ProgressionApplicationService progressionApplicationService) {
+			ScheduledWorkoutRepository scheduledWorkouts, ProgressionApplicationService progressionApplicationService,
+			CurrentUser currentUser) {
 		this.sessions = sessions;
 		this.setLogs = setLogs;
 		this.painReports = painReports;
 		this.scheduledWorkouts = scheduledWorkouts;
 		this.progressionApplicationService = progressionApplicationService;
+		this.currentUser = currentUser;
 	}
 
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
 	public SessionResponse start(@Valid @RequestBody StartSessionRequest request) {
-		WorkoutSession session = new WorkoutSession(request.userId(), request.scheduledWorkoutId());
+		WorkoutSession session = new WorkoutSession(currentUser.id(), request.scheduledWorkoutId());
 		sessions.save(session);
 		return SessionResponse.from(session);
 	}
 
 	@PostMapping("/{id}/sets")
 	public SetLogResponse logSet(@PathVariable UUID id, @Valid @RequestBody SetLogRequest request) {
-		findSessionOrThrow(id);
+		findOwnSessionOrThrow(id);
 		SetLog setLog = setLogs.findBySessionIdAndExerciseIdAndSetIndex(id, request.exerciseId(), request.setIndex())
 				.orElseGet(() -> new SetLog(id, request.exerciseId(), request.setIndex()));
 		setLog.apply(
@@ -56,7 +60,7 @@ public class WorkoutSessionController {
 
 	@PostMapping("/{id}/finish")
 	public SessionResponse finish(@PathVariable UUID id, @RequestBody FinishSessionRequest request) {
-		WorkoutSession session = findSessionOrThrow(id);
+		WorkoutSession session = findOwnSessionOrThrow(id);
 		session.finish();
 		sessions.save(session);
 
@@ -77,8 +81,9 @@ public class WorkoutSessionController {
 		return SessionResponse.from(session);
 	}
 
-	private WorkoutSession findSessionOrThrow(UUID id) {
-		return sessions.findById(id)
+	/** concept-backend-v1.md §5 Lớp 1: findByIdAndUserId, không findById — session của A không lộ cho B. */
+	private WorkoutSession findOwnSessionOrThrow(UUID id) {
+		return sessions.findByIdAndUserId(id, currentUser.id())
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy buổi tập"));
 	}
 }

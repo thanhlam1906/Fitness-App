@@ -1,4 +1,4 @@
-package com.fitness.user;
+package com.fitness.auth;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -58,6 +58,10 @@ public class User {
 
 	public String getEmail() {
 		return email;
+	}
+
+	public String getPasswordHash() {
+		return passwordHash;
 	}
 
 	public Role getRole() {

@@ -1,5 +1,6 @@
 package com.fitness.program;
 
+import com.fitness.common.CurrentUser;
 import com.fitness.content.Exercise;
 import com.fitness.content.ExerciseRepository;
 import java.time.LocalDate;
@@ -11,7 +12,6 @@ import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -25,21 +25,23 @@ public class ScheduleController {
 	private final ScheduledExerciseRepository scheduledExercises;
 	private final ExerciseRepository exercises;
 	private final LoadDecisionRepository loadDecisions;
+	private final CurrentUser currentUser;
 
 	public ScheduleController(
 			ProgramRepository programs, ScheduledWorkoutRepository scheduledWorkouts,
 			ScheduledExerciseRepository scheduledExercises, ExerciseRepository exercises,
-			LoadDecisionRepository loadDecisions) {
+			LoadDecisionRepository loadDecisions, CurrentUser currentUser) {
 		this.programs = programs;
 		this.scheduledWorkouts = scheduledWorkouts;
 		this.scheduledExercises = scheduledExercises;
 		this.exercises = exercises;
 		this.loadDecisions = loadDecisions;
+		this.currentUser = currentUser;
 	}
 
 	@GetMapping
-	public ScheduleResponse get(@RequestParam UUID userId) {
-		Program program = programs.findByUserIdAndStatus(userId, "ACTIVE")
+	public ScheduleResponse get() {
+		Program program = programs.findByUserIdAndStatus(currentUser.id(), "ACTIVE")
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Chưa có chương trình đang chạy"));
 
 		List<ScheduledWorkout> workouts = scheduledWorkouts.findByProgramIdOrderByScheduledOn(program.getId());

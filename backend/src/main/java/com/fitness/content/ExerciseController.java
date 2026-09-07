@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,6 +42,7 @@ public class ExerciseController {
 
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
+	@PreAuthorize("hasRole('ADMIN')")
 	public ExerciseResponse create(@Valid @RequestBody ExerciseRequest request) {
 		if (request.slug() == null || request.slug().isBlank()) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "slug bắt buộc khi tạo mới");
@@ -57,6 +59,7 @@ public class ExerciseController {
 	}
 
 	@PutMapping("/{id}")
+	@PreAuthorize("hasRole('ADMIN')")
 	public ExerciseResponse update(@PathVariable UUID id, @Valid @RequestBody ExerciseRequest request) {
 		Exercise exercise = findOrThrow(id);
 		exercise.update(
@@ -68,6 +71,7 @@ public class ExerciseController {
 	}
 
 	@DeleteMapping("/{id}")
+	@PreAuthorize("hasRole('ADMIN')")
 	public ExerciseResponse deactivate(@PathVariable UUID id) {
 		Exercise exercise = findOrThrow(id);
 		exercise.update(

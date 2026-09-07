@@ -1,5 +1,6 @@
 package com.fitness.program;
 
+import com.fitness.common.CurrentUser;
 import jakarta.validation.Valid;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -13,7 +14,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,14 +22,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class ProgramController {
 
 	private final ProgramService programService;
+	private final CurrentUser currentUser;
 
-	public ProgramController(ProgramService programService) {
+	public ProgramController(ProgramService programService, CurrentUser currentUser) {
 		this.programService = programService;
+		this.currentUser = currentUser;
 	}
 
 	@GetMapping("/candidates")
-	public List<TemplateCandidate> candidates(@RequestParam UUID userId) {
-		return programService.findCandidateTemplates(userId).stream()
+	public List<TemplateCandidate> candidates() {
+		return programService.findCandidateTemplates(currentUser.id()).stream()
 				.map(TemplateCandidate::from)
 				.toList();
 	}
@@ -43,7 +45,7 @@ public class ProgramController {
 		LocalDate startDate = request.startDate() == null ? LocalDate.now() : request.startDate();
 
 		UUID programId = programService.createProgram(
-				request.userId(), request.templateId(), startingLoads, restDays, startDate);
+				currentUser.id(), request.templateId(), startingLoads, restDays, startDate);
 		return new CreateProgramResponse(programId);
 	}
 }

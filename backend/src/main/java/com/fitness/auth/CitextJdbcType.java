@@ -1,4 +1,4 @@
-package com.fitness.user;
+package com.fitness.auth;
 
 import java.sql.Types;
 import org.hibernate.type.descriptor.jdbc.VarcharJdbcType;

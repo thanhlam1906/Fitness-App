@@ -11,7 +11,6 @@ import java.util.UUID;
  * startDate null → mặc định hôm nay, xử lý ở controller.
  */
 public record CreateProgramRequest(
-		@NotNull UUID userId,
 		@NotNull UUID templateId,
 		Map<String, Double> startingLoadsBySlug,
 		List<Integer> restDays,

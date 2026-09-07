@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,12 +18,14 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * CRUD template cho admin (màn 12 concept-frontend-v1.md). Khác với
- * {@code GET /programs/candidates} ở ProgramController — endpoint đó lọc
- * theo hồ sơ user, còn ở đây admin thấy và sửa toàn bộ, kể cả template tắt.
+ * CRUD template cho admin (màn 12 concept-frontend-v1.md), admin-only kể cả
+ * GET. Khác với {@code GET /programs/candidates} ở ProgramController —
+ * endpoint đó lọc theo hồ sơ user và mở cho mọi user, còn ở đây admin thấy
+ * và sửa toàn bộ, kể cả template tắt.
  */
 @RestController
 @RequestMapping("/api/v1/program-templates")
+@PreAuthorize("hasRole('ADMIN')")
 public class ProgramTemplateAdminController {
 
 	private final ProgramTemplateRepository templates;
