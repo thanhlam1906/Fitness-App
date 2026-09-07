@@ -32,6 +32,9 @@ public class ScheduledExercise {
 	@Column(name = "target_reps", nullable = false)
 	private short targetReps;
 
+	@Column(name = "target_reps_max", nullable = false)
+	private short targetRepsMax;
+
 	@Column(name = "target_load_kg", precision = 6, scale = 2)
 	private BigDecimal targetLoadKg;
 
@@ -45,17 +48,55 @@ public class ScheduledExercise {
 	}
 
 	public ScheduledExercise(UUID scheduledWorkoutId, UUID exerciseId, short orderIndex, short targetSets,
-			short targetReps, BigDecimal targetLoadKg, Short restSeconds) {
+			short targetReps, short targetRepsMax, BigDecimal targetLoadKg, Short restSeconds) {
 		this.scheduledWorkoutId = scheduledWorkoutId;
 		this.exerciseId = exerciseId;
 		this.orderIndex = orderIndex;
 		this.targetSets = targetSets;
 		this.targetReps = targetReps;
+		this.targetRepsMax = targetRepsMax;
 		this.targetLoadKg = targetLoadKg;
 		this.restSeconds = restSeconds;
 	}
 
 	public UUID getId() {
 		return id;
+	}
+
+	public UUID getScheduledWorkoutId() {
+		return scheduledWorkoutId;
+	}
+
+	public UUID getExerciseId() {
+		return exerciseId;
+	}
+
+	public int getOrderIndex() {
+		return orderIndex;
+	}
+
+	public int getTargetSets() {
+		return targetSets;
+	}
+
+	public int getTargetReps() {
+		return targetReps;
+	}
+
+	public int getTargetRepsMax() {
+		return targetRepsMax;
+	}
+
+	public BigDecimal getTargetLoadKg() {
+		return targetLoadKg;
+	}
+
+	public Short getRestSeconds() {
+		return restSeconds;
+	}
+
+	/** Progression đợt sau ghi tải mới vào ScheduledExercise của tuần kế tiếp — chưa tồn tại tuần đã tập xong. */
+	public void updateTargetLoad(BigDecimal targetLoadKg) {
+		this.targetLoadKg = targetLoadKg;
 	}
 }

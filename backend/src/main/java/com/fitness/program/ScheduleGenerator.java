@@ -54,6 +54,7 @@ public class ScheduleGenerator {
 					orderIndex++,
 					ex.sets(),
 					ex.repsMin(),
+					ex.repsMax(),
 					startingLoadsBySlug.get(ex.exerciseSlug()),
 					ex.restSec()));
 		}

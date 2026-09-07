@@ -50,7 +50,27 @@ public class ScheduledWorkout {
 		return id;
 	}
 
+	public UUID getProgramId() {
+		return programId;
+	}
+
 	public LocalDate getScheduledOn() {
 		return scheduledOn;
+	}
+
+	public int getWeekIndex() {
+		return weekIndex;
+	}
+
+	public String getLabel() {
+		return label;
+	}
+
+	public String getStatus() {
+		return status;
+	}
+
+	public void updateStatus(String status) {
+		this.status = status;
 	}
 }

@@ -115,7 +115,7 @@ public class ProgramService {
 				BigDecimal targetLoadKg = ex.targetLoadKg() == null ? null : BigDecimal.valueOf(ex.targetLoadKg());
 				scheduledExerciseRepository.save(new ScheduledExercise(
 						scheduledWorkout.getId(), exerciseId, (short) ex.orderIndex(),
-						(short) ex.targetSets(), (short) ex.targetReps(), targetLoadKg,
+						(short) ex.targetSets(), (short) ex.targetReps(), (short) ex.targetRepsMax(), targetLoadKg,
 						(short) ex.restSeconds()));
 			}
 		}

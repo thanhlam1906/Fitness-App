@@ -64,6 +64,10 @@ public class Program {
 		return userId;
 	}
 
+	public UUID getTemplateId() {
+		return templateId;
+	}
+
 	public String getStatus() {
 		return status;
 	}
