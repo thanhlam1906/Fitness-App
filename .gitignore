@@ -3,6 +3,18 @@
 *.env
 !.env.example
 
+# internal tooling and planning docs — not for the public repo
+.claude/
+concept-analyzer-v1.md
+concept-backend-v1.md
+concept-chatbot-v1.md
+concept-frontend-v1.md
+concept-ui-v1.html
+content-seed-v1.md
+dac-ta-phat-trien-app-fitness-v1.md
+ke-hoach-chi-tiet-chuc-nang-v1.md
+ke-hoach-ky-thuat-v1.md
+
 # Python (analyzer, analyzer-demo)
 .venv/
 __pycache__/
