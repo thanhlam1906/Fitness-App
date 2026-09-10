@@ -105,6 +105,20 @@ public class ScheduledExercise {
 	}
 
 	/**
+	 * Màn "Lịch riêng" — người dùng tự đặt lại set/rep/tạ/nghỉ của ĐÚNG buổi
+	 * đang mở. Thay cả 5 field một lượt: tạ và nghỉ vốn nullable, nên "gửi null
+	 * là giữ nguyên hay là xoá" sẽ không phân biệt được nếu nhận từng field lẻ.
+	 */
+	public void updateTargets(int targetSets, int targetReps, int targetRepsMax,
+			BigDecimal targetLoadKg, Integer restSeconds) {
+		this.targetSets = (short) targetSets;
+		this.targetReps = (short) targetReps;
+		this.targetRepsMax = (short) targetRepsMax;
+		this.targetLoadKg = targetLoadKg;
+		this.restSeconds = restSeconds == null ? null : restSeconds.shortValue();
+	}
+
+	/**
 	 * §5.5 — thay bài khi thiếu thiết bị. Set/rep giữ nguyên; tải bỏ trống vì
 	 * mức tạ của bài cũ không chuyển được sang bài mới (khác đòn bẩy, khác thiết
 	 * bị). substituted_from giữ vết bài gốc, thay lần hai vẫn trỏ về bài gốc đầu.
