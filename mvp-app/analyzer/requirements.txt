@@ -1,0 +1,7 @@
+# concept-analyzer-v1.md §3: worker doc hang doi Postgres, KHONG nhan HTTP
+# -> khong co fastapi/uvicorn/python-multipart nhu analyzer-demo.
+psycopg[binary]>=3.2
+numpy>=1.26
+opencv-python-headless>=4.9.0
+mediapipe>=0.10.14
+httpx>=0.27

@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+/* concept-frontend-v1.md §3 — token dùng chung web/mobile, giá trị thuần không dính Tailwind */
+@theme {
+  --font-sans: Archivo, system-ui, "Segoe UI", sans-serif;
+
+  --color-bg: #0a0c0e;
+  --color-surface: #14181b;
+  --color-surface-2: #1d2226;
+  --color-border: #2a3136;
+
+  --color-text: #e8edef;
+  --color-text-muted: #8d9aa1;
+
+  --color-accent: #b8ff3c;
+  --color-accent-fg: #0a0c0e;
+
+  --color-success: #2fbf71;
+  --color-warn: #f5b544;
+  --color-danger: #f2635f;
+
+  /* Nền pill có màu — design "Fitness MVP" dùng 16% của chính màu trạng thái,
+     không dùng viền. Giữ đúng giá trị trong design. */
+  --color-accent-tint: rgba(184, 255, 60, 0.16);
+  --color-success-tint: rgba(47, 191, 113, 0.16);
+  --color-warn-tint: rgba(245, 181, 68, 0.16);
+  --color-danger-tint: rgba(242, 99, 95, 0.16);
+
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 20px;
+  --text-2xl: 32px;
+  /* Số tải trên màn buổi tập — design để 64px, to gấp đôi mọi thứ quanh nó. */
+  --text-load: 64px;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+}
+
+/* Bắt buộc cho MỌI số kg, rep, RPE — §3.4 */
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Nhãn nhỏ in hoa giãn chữ — lặp ở cả 12 màn của design. */
+.kicker {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}

@@ -5,15 +5,7 @@
 
 # internal tooling and planning docs — not for the public repo
 .claude/
-concept-analyzer-v1.md
-concept-backend-v1.md
-concept-chatbot-v1.md
-concept-frontend-v1.md
-concept-ui-v1.html
-content-seed-v1.md
-dac-ta-phat-trien-app-fitness-v1.md
-ke-hoach-chi-tiet-chuc-nang-v1.md
-ke-hoach-ky-thuat-v1.md
+doc/
 
 # Python (analyzer, analyzer-demo)
 .venv/
@@ -26,20 +18,24 @@ __pycache__/
 **/models/*.task
 
 # dữ liệu người dùng / test nặng — không commit
-video/
+mvp-app/video/
 tests/clips/
-analyzer-demo/test_videos/
+mvp-app/analyzer-demo/test_videos/
+
+# clip người dùng gửi lên — N2: xoá ngay sau khi chấm, không bao giờ vào git
+mvp-app/backend/var/
+var/clips/
 
 # Java / Gradle
-backend/build/
-backend/.gradle/
-backend/out/
-!backend/gradle/wrapper/gradle-wrapper.jar
+mvp-app/backend/build/
+mvp-app/backend/.gradle/
+mvp-app/backend/out/
+!mvp-app/backend/gradle/wrapper/gradle-wrapper.jar
 
 # Node / web
-web/node_modules/
-web/dist/
-web/.vite/
+mvp-app/web/node_modules/
+mvp-app/web/dist/
+mvp-app/web/.vite/
 node_modules/
 
 # IDE
