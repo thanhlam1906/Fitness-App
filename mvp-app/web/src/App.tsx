@@ -16,6 +16,7 @@ import { UserListPage } from "@/features/admin/users/UserListPage"
 import { FilmingGuidePage } from "@/features/review/FilmingGuidePage"
 import { FormCheckListPage } from "@/features/review/FormCheckListPage"
 import { ReviewResultPage } from "@/features/review/ReviewResultPage"
+import { MyProgramPage } from "@/features/schedule/MyProgramPage"
 import { SchedulePage } from "@/features/schedule/SchedulePage"
 import { FinishSessionPage } from "@/features/workout/FinishSessionPage"
 import { WorkoutPage } from "@/features/workout/WorkoutPage"
@@ -37,6 +38,7 @@ export function App() {
                 <Route path="/onboarding" element={<OnboardingPage />} />
                 <Route path="/program" element={<ProgramSelectionPage />} />
                 <Route path="/schedule" element={<SchedulePage />} />
+                <Route path="/my-schedule" element={<MyProgramPage />} />
                 <Route path="/workout/:scheduledWorkoutId" element={<WorkoutPage />} />
                 <Route
                   path="/workout/:scheduledWorkoutId/finish"
