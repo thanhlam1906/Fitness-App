@@ -44,6 +44,23 @@ public class ScheduleGenerator {
 		return result;
 	}
 
+	/**
+	 * Lịch tự thiết kế: cấu trúc buổi gắn với THỨ trong tuần, nên tuần nào cũng
+	 * tập đúng các thứ đã chọn — khác generate() quay vòng chu kỳ theo thứ tự
+	 * các ngày tập thật sự diễn ra.
+	 */
+	public List<LocalDate> customDates(
+			Set<DayOfWeek> trainingDays, LocalDate startDate, int weeksToGenerate) {
+		List<LocalDate> dates = new ArrayList<>();
+		LocalDate endExclusive = startDate.plusWeeks(weeksToGenerate);
+		for (LocalDate date = startDate; date.isBefore(endExclusive); date = date.plusDays(1)) {
+			if (trainingDays.contains(date.getDayOfWeek())) {
+				dates.add(date);
+			}
+		}
+		return dates;
+	}
+
 	private List<GeneratedExercise> toGeneratedExercises(
 			List<CycleExercise> exercises, Map<String, Double> startingLoadsBySlug) {
 		List<GeneratedExercise> out = new ArrayList<>();

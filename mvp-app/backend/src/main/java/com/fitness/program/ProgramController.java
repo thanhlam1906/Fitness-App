@@ -63,4 +63,10 @@ public class ProgramController {
 				currentUser.id(), request.templateId(), startingLoads, restDays, startDate);
 		return new CreateProgramResponse(programId);
 	}
+
+	@PostMapping("/custom")
+	@ResponseStatus(HttpStatus.CREATED)
+	public CreateProgramResponse createCustom(@Valid @RequestBody CreateCustomProgramRequest request) {
+		return new CreateProgramResponse(programService.createCustomProgram(currentUser.id(), request));
+	}
 }
