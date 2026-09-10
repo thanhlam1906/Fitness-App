@@ -46,7 +46,9 @@ public class ProgramController {
 	public CurrentProgramResponse current() {
 		Program program = programs.findByUserIdAndStatus(currentUser.id(), "ACTIVE")
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Chưa có chương trình đang chạy"));
-		return CurrentProgramResponse.of(program, templates.findById(program.getTemplateId()).orElseThrow());
+		return program.getTemplateId() == null
+				? CurrentProgramResponse.ofCustom(program)
+				: CurrentProgramResponse.of(program, templates.findById(program.getTemplateId()).orElseThrow());
 	}
 
 	@PostMapping

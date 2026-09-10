@@ -172,12 +172,15 @@ public class AdminUserController {
 	private Map<UUID, String> activeProgramNames() {
 		List<Program> active = programs.findByStatus("ACTIVE");
 		Map<UUID, String> nameByTemplate = templates
-				.findAllById(active.stream().map(Program::getTemplateId).distinct().toList())
+				.findAllById(active.stream().map(Program::getTemplateId)
+						.filter(java.util.Objects::nonNull).distinct().toList())
 				.stream()
 				.collect(HashMap::new, (m, t) -> m.put(t.getId(), t.getName()), HashMap::putAll);
 		Map<UUID, String> byUser = new HashMap<>();
 		for (Program program : active) {
-			byUser.put(program.getUserId(), nameByTemplate.get(program.getTemplateId()));
+			byUser.put(program.getUserId(), program.getTemplateId() == null
+					? "Lịch tự thiết kế"
+					: nameByTemplate.get(program.getTemplateId()));
 		}
 		return byUser;
 	}
