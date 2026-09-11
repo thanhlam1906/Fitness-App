@@ -47,12 +47,13 @@ public class AssistantTools {
 	private final LoadDecisionRepository loadDecisions;
 	private final WorkoutSessionRepository workoutSessions;
 	private final SetLogRepository setLogs;
+	private final ToolCallLog toolCallLog;
 
 	public AssistantTools(
 			CurrentUser currentUser, ProgramRepository programs, ScheduledWorkoutRepository scheduledWorkouts,
 			ScheduledExerciseRepository scheduledExercises, ExerciseRepository exercises,
 			LoadDecisionRepository loadDecisions, WorkoutSessionRepository workoutSessions,
-			SetLogRepository setLogs) {
+			SetLogRepository setLogs, ToolCallLog toolCallLog) {
 		this.currentUser = currentUser;
 		this.programs = programs;
 		this.scheduledWorkouts = scheduledWorkouts;
@@ -61,6 +62,7 @@ public class AssistantTools {
 		this.loadDecisions = loadDecisions;
 		this.workoutSessions = workoutSessions;
 		this.setLogs = setLogs;
+		this.toolCallLog = toolCallLog;
 	}
 
 	// ── B2: "Tuần này tôi tập gì?" ──────────────────────────────────────────
@@ -79,7 +81,9 @@ public class AssistantTools {
 	public ThisWeekSchedule getThisWeekSchedule() {
 		Optional<Program> program = programs.findByUserIdAndStatus(currentUser.id(), "ACTIVE");
 		if (program.isEmpty()) {
-			return new ThisWeekSchedule(false, List.of());
+			ThisWeekSchedule empty = new ThisWeekSchedule(false, List.of());
+			toolCallLog.record("getThisWeekSchedule", empty);
+			return empty;
 		}
 		LocalDate today = LocalDate.now();
 		LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
@@ -98,7 +102,9 @@ public class AssistantTools {
 								.map(se -> toTarget(se, exerciseById))
 								.toList()))
 				.toList();
-		return new ThisWeekSchedule(true, days);
+		ThisWeekSchedule result = new ThisWeekSchedule(true, days);
+		toolCallLog.record("getThisWeekSchedule", result);
+		return result;
 	}
 
 	private ExerciseTarget toTarget(ScheduledExercise se, Map<UUID, Exercise> exerciseById) {
@@ -121,18 +127,23 @@ public class AssistantTools {
 			@ToolParam(description = "slug của bài tập, ví dụ 'barbell-back-squat'") String exerciseSlug) {
 		Optional<Exercise> exercise = exercises.findBySlug(exerciseSlug);
 		if (exercise.isEmpty()) {
-			return new LoadChangeExplanation(false, false, null, null, null,
-					"Không tìm thấy bài tập với slug '" + exerciseSlug + "'.");
+			return logAndReturn(new LoadChangeExplanation(false, false, null, null, null,
+					"Không tìm thấy bài tập với slug '" + exerciseSlug + "'."));
 		}
 		Optional<LoadDecision> decision = loadDecisions
 				.findFirstByUserIdAndExerciseIdOrderByEffectiveFromDesc(currentUser.id(), exercise.get().getId());
 		if (decision.isEmpty()) {
-			return new LoadChangeExplanation(true, false, exercise.get().getNameVi(), null, null,
-					"Chưa có quyết định thay đổi tải nào được ghi nhận cho bài này.");
+			return logAndReturn(new LoadChangeExplanation(true, false, exercise.get().getNameVi(), null, null,
+					"Chưa có quyết định thay đổi tải nào được ghi nhận cho bài này."));
 		}
 		LoadDecision d = decision.get();
-		return new LoadChangeExplanation(true, true, exercise.get().getNameVi(), d.getDirection(), d.getDeltaKg(),
-				d.getMessageVi());
+		return logAndReturn(new LoadChangeExplanation(true, true, exercise.get().getNameVi(), d.getDirection(),
+				d.getDeltaKg(), d.getMessageVi()));
+	}
+
+	private LoadChangeExplanation logAndReturn(LoadChangeExplanation result) {
+		toolCallLog.record("explainLoadChange", result);
+		return result;
 	}
 
 	// ── B3: "Tiến bộ thế nào?" ───────────────────────────────────────────────
@@ -158,7 +169,9 @@ public class AssistantTools {
 				.average();
 		BigDecimal tonnage = setLogs.totalTonnageSince(userId, since);
 
-		return new ProgressSummary(
+		ProgressSummary result = new ProgressSummary(
 				clampedWeeks, sessions.size(), finished, tonnage, avgRpe.isPresent() ? avgRpe.getAsDouble() : null);
+		toolCallLog.record("getProgressSummary", result);
+		return result;
 	}
 }
