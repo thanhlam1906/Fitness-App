@@ -36,15 +36,24 @@ class CorpusLoaderIntegrationTest extends PostgresIntegrationTest {
 
 		// 3 mục "##" nhưng "Đặc điểm:" quá ngắn → gộp vào mục trước → 2 chunk.
 		assertThat(result).isEqualTo(new CorpusLoader.Result(1, 2));
-		assertThat(jdbc.queryForObject("SELECT count(*) FROM documents", Integer.class)).isEqualTo(1);
-		assertThat(jdbc.queryForObject("SELECT license FROM documents", String.class)).isEqualTo("unknown");
+		// count(*) toàn bảng thay vì lọc theo source: container Postgres dùng chung
+		// giữa các test class (PostgresIntegrationTest), test khác cũng ghi vào
+		// documents/doc_chunks — bảng này không theo userId nên không tự cô lập.
+		assertThat(jdbc.queryForObject(
+				"SELECT count(*) FROM documents WHERE source = 'bai-test.md'", Integer.class)).isEqualTo(1);
+		assertThat(jdbc.queryForObject(
+				"SELECT license FROM documents WHERE source = 'bai-test.md'", String.class)).isEqualTo("unknown");
 
 		// Hỏi không dấu, tài liệu có dấu; "&amp;" đã unescape.
-		List<String> hits = jdbc.queryForList(
-				"SELECT heading_path FROM doc_chunks WHERE ts @@ plainto_tsquery('simple', immutable_unaccent(?))",
-				String.class, "giam tai");
+		List<String> hits = jdbc.queryForList("""
+				SELECT c.heading_path FROM doc_chunks c JOIN documents d ON d.id = c.document_id
+				WHERE d.source = 'bai-test.md' AND c.ts @@ plainto_tsquery('simple', immutable_unaccent(?))
+				""", String.class, "giam tai");
 		assertThat(hits).containsExactly("Tuần giảm tải");
-		assertThat(jdbc.queryForObject("SELECT content FROM doc_chunks WHERE ord = 1", String.class))
+		assertThat(jdbc.queryForObject("""
+				SELECT c.content FROM doc_chunks c JOIN documents d ON d.id = c.document_id
+				WHERE d.source = 'bai-test.md' AND c.ord = 1
+				""", String.class))
 				.contains("strength & skill").contains("Đặc điểm:");
 	}
 
