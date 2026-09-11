@@ -23,4 +23,11 @@ public record CurrentProgramResponse(
 				template.getMethodology(), program.getStartDate(),
 				Arrays.asList(program.getRestDays()), program.getParams());
 	}
+
+	/** Lịch tự thiết kế không có template — vẫn phải hiện được tên ở màn Hồ sơ. */
+	static CurrentProgramResponse ofCustom(Program program) {
+		return new CurrentProgramResponse(
+				program.getId(), null, null, "Lịch tự thiết kế", null, program.getStartDate(),
+				Arrays.asList(program.getRestDays()), program.getParams());
+	}
 }

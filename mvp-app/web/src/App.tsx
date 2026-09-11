@@ -4,6 +4,7 @@ import { RequireAdmin } from "@/auth/RequireAdmin"
 import { RequireAuth } from "@/auth/RequireAuth"
 import { LoginPage } from "@/auth/LoginPage"
 import { RegisterPage } from "@/auth/RegisterPage"
+import { AssistantPage } from "@/features/assistant/AssistantPage"
 import { OnboardingPage } from "@/features/onboarding/OnboardingPage"
 import { ProgramSelectionPage } from "@/features/program/ProgramSelectionPage"
 import { SettingsPage } from "@/features/profile/SettingsPage"
@@ -16,6 +17,7 @@ import { UserListPage } from "@/features/admin/users/UserListPage"
 import { FilmingGuidePage } from "@/features/review/FilmingGuidePage"
 import { FormCheckListPage } from "@/features/review/FormCheckListPage"
 import { ReviewResultPage } from "@/features/review/ReviewResultPage"
+import { MyProgramPage } from "@/features/schedule/MyProgramPage"
 import { SchedulePage } from "@/features/schedule/SchedulePage"
 import { FinishSessionPage } from "@/features/workout/FinishSessionPage"
 import { WorkoutPage } from "@/features/workout/WorkoutPage"
@@ -37,6 +39,8 @@ export function App() {
                 <Route path="/onboarding" element={<OnboardingPage />} />
                 <Route path="/program" element={<ProgramSelectionPage />} />
                 <Route path="/schedule" element={<SchedulePage />} />
+                <Route path="/assistant" element={<AssistantPage />} />
+                <Route path="/my-schedule" element={<MyProgramPage />} />
                 <Route path="/workout/:scheduledWorkoutId" element={<WorkoutPage />} />
                 <Route
                   path="/workout/:scheduledWorkoutId/finish"

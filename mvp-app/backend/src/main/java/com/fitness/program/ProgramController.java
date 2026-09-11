@@ -46,7 +46,9 @@ public class ProgramController {
 	public CurrentProgramResponse current() {
 		Program program = programs.findByUserIdAndStatus(currentUser.id(), "ACTIVE")
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Chưa có chương trình đang chạy"));
-		return CurrentProgramResponse.of(program, templates.findById(program.getTemplateId()).orElseThrow());
+		return program.getTemplateId() == null
+				? CurrentProgramResponse.ofCustom(program)
+				: CurrentProgramResponse.of(program, templates.findById(program.getTemplateId()).orElseThrow());
 	}
 
 	@PostMapping
@@ -60,5 +62,11 @@ public class ProgramController {
 		UUID programId = programService.createProgram(
 				currentUser.id(), request.templateId(), startingLoads, restDays, startDate);
 		return new CreateProgramResponse(programId);
+	}
+
+	@PostMapping("/custom")
+	@ResponseStatus(HttpStatus.CREATED)
+	public CreateProgramResponse createCustom(@Valid @RequestBody CreateCustomProgramRequest request) {
+		return new CreateProgramResponse(programService.createCustomProgram(currentUser.id(), request));
 	}
 }

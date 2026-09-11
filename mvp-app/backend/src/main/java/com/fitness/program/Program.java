@@ -23,7 +23,8 @@ public class Program {
 	@Column(name = "user_id", nullable = false)
 	private UUID userId;
 
-	@Column(name = "template_id", nullable = false)
+	// null = lịch tự thiết kế (V5__custom_program.sql), không gắn template nào.
+	@Column(name = "template_id")
 	private UUID templateId;
 
 	// {"<slug>": <kg>} — mức tạ khởi điểm từng bài, raw JSON text.
