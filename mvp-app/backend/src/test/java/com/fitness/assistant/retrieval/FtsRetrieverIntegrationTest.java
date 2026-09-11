@@ -30,6 +30,19 @@ class FtsRetrieverIntegrationTest extends PostgresIntegrationTest {
 	}
 
 	@Test
+	void search_findsChunk_whenQuestionIsMostlyDomainGenericWords() {
+		// eval-v1 A08 (eval/report-v1.md): "RPE dùng để làm gì trong theo dõi tập
+		// luyện?" ra 0 chunk dù corpus nói rất nhiều về RPE — "tập"/"luyện"/"theo
+		// dõi"/"dùng"/"làm" xuất hiện trong gần MỌI chunk nên pha loãng ngưỡng 50%.
+		seedChunk("RPE và mức độ cố gắng", "RPE (Rate of Perceived Exertion) là thang đo mức độ cố gắng "
+				+ "trong một set, từ 1 đến 10. RPE giúp điều chỉnh tải trọng tập luyện cho phù hợp.");
+
+		List<FtsRetriever.Chunk> hits = retriever.search("RPE dùng để làm gì trong theo dõi tập luyện?", 5);
+
+		assertThat(hits).extracting(FtsRetriever.Chunk::headingPath).contains("RPE và mức độ cố gắng");
+	}
+
+	@Test
 	void search_returnsEmpty_whenQuestionOutsideCorpus() {
 		seedChunk("RPE và mức độ cố gắng", "RPE (Rate of Perceived Exertion) là thang đo mức độ cố gắng.");
 

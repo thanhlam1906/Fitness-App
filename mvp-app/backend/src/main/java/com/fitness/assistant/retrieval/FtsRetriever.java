@@ -25,10 +25,20 @@ public class FtsRetriever {
 	// ponytail: danh sách cứng, không phải bộ stopword đầy đủ tiếng Việt — đủ
 	// cho câu hỏi kiểu "X là gì", "có nên Y không". Mở rộng khi eval (§11) chỉ
 	// ra từ nào còn lọt.
+	//
+	// eval-v1 (44 câu, xem eval/report-v1.md): "RPE dùng để làm gì trong theo dõi
+	// tập luyện?" tìm ra 0 chunk dù corpus nói rất nhiều về RPE — "tập"/"luyện"
+	// xuất hiện trong gần MỌI chunk (corpus nào chẳng nói về tập luyện), nên chúng
+	// pha loãng ngưỡng khớp 50% chứ không lọc được gì. Thêm nhóm "phổ biến trong
+	// domain, không phân biệt được chunk nào" — khác STOPWORDS ngữ pháp ở trên,
+	// nhưng cùng tác dụng khi tính minMatches.
 	private static final Set<String> STOPWORDS = Set.of(
 			"là", "gì", "có", "không", "nên", "thì", "và", "hay", "hoặc", "hoặc là",
 			"của", "cho", "được", "bị", "ạ", "vậy", "à", "sao", "như", "thế", "nào",
-			"mình", "tôi", "bạn", "mấy", "một", "các", "những", "để", "khi", "với");
+			"mình", "tôi", "bạn", "mấy", "một", "các", "những", "để", "khi", "với",
+			"dùng", "làm", "trong", "theo", "dõi", "luyện", "tập", "việc", "giúp",
+			"cách", "ra", "đi", "lại", "đây", "đó", "này", "kia", "đang", "sẽ", "đã",
+			"rất", "cả", "hơn", "từ", "đến");
 
 	private static final Pattern WORD = Pattern.compile("\\p{L}+");
 

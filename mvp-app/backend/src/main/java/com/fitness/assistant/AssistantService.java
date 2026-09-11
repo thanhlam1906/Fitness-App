@@ -86,8 +86,18 @@ public class AssistantService {
 					.map(c -> "[%s — %s]\n%s".formatted(c.documentTitle(), c.headingPath(), c.content()))
 					.collect(Collectors.joining("\n\n"));
 
+			// eval-v1 A08/A10/A12 (eval/report-v1.md): không chunk nào thì gửi thẳng
+			// câu hỏi trần, model không có tín hiệu là ĐÃ tìm và không thấy gì — nó
+			// im lặng dùng kiến thức nền của chính nó để trả lời (đúng nội dung
+			// nhưng vi phạm §8: không trích được thì phải nói "không có", không
+			// suy diễn). Phải nói RÕ trong chính message này, không dựa vào system
+			// prompt chung chung — model nhỏ theo tín hiệu gần hơn tín hiệu xa.
 			String userPrompt = knowledgeContext.isBlank()
-					? question
+					? question + "\n\n---\n(Đã tìm trong kho tài liệu nhưng KHÔNG có mục nào liên quan đến câu "
+							+ "hỏi này. Nếu đây là câu hỏi kiến thức chung — không phải hỏi lịch/tải/tiến bộ của "
+							+ "người dùng — bắt buộc trả lời đúng dạng \"Không có thông tin trong tài liệu về "
+							+ "[chủ đề]\", KHÔNG dùng kiến thức có sẵn của bạn để tự trả lời, kể cả khi bạn biết "
+							+ "đáp án.)"
 					: question + "\n\n---\nTài liệu tham khảo (chỉ dùng đúng nội dung này, trích nguồn nếu trả lời "
 							+ "dựa vào đây):\n" + knowledgeContext;
 
