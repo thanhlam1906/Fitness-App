@@ -58,6 +58,7 @@ function useGroups(): { title: string; items: Item[] }[] {
       title: "Cấu hình",
       items: [
         { label: "Template chương trình", to: "/admin/templates", count: templates.data?.length },
+        { label: "Kho kiến thức", to: "/admin/corpus" },
       ],
     },
   ]

@@ -8,6 +8,7 @@ import { AssistantPage } from "@/features/assistant/AssistantPage"
 import { OnboardingPage } from "@/features/onboarding/OnboardingPage"
 import { ProgramSelectionPage } from "@/features/program/ProgramSelectionPage"
 import { SettingsPage } from "@/features/profile/SettingsPage"
+import { CorpusPage } from "@/features/admin/corpus/CorpusPage"
 import { ExerciseFormPage } from "@/features/admin/exercises/ExerciseFormPage"
 import { ExerciseListPage } from "@/features/admin/exercises/ExerciseListPage"
 import { TemplateFormPage } from "@/features/admin/templates/TemplateFormPage"
@@ -87,6 +88,14 @@ export function App() {
                   element={
                     <RequireAdmin>
                       <TemplateListPage />
+                    </RequireAdmin>
+                  }
+                />
+                <Route
+                  path="/admin/corpus"
+                  element={
+                    <RequireAdmin>
+                      <CorpusPage />
                     </RequireAdmin>
                   }
                 />
