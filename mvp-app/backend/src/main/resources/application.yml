@@ -25,6 +25,25 @@ spring:
       max-file-size: 60MB
       max-request-size: 200MB
 
+  ai:
+    model:
+      # Chỉ bật chat — Spring AI starter mặc định tự cấu hình cả audio/image/
+      # moderation, mỗi cái đòi hỏi api-key riêng lúc khởi động dù không dùng.
+      chat: openai
+      embedding: none
+      image: none
+      moderation: none
+      audio:
+        speech: none
+        transcription: none
+    openai:
+      # Placeholder để context load được khi chưa set (test, dev chưa cần gọi
+      # thật) — cùng kiểu JWT_SECRET ở dưới. Gọi thật thì PHẢI set OPENAI_API_KEY.
+      api-key: ${OPENAI_API_KEY:sk-dev-placeholder-not-a-real-key}
+      chat:
+        options:
+          model: ${OPENAI_CHAT_MODEL:gpt-4o-mini}
+
 server:
   port: ${SERVER_PORT:8080}
   error:
