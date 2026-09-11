@@ -1,5 +1,6 @@
 package com.fitness.assistant.ingest;
 
+import com.fitness.assistant.retrieval.EmbeddingFormat;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -10,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -35,10 +38,12 @@ public class CorpusLoader {
 	static final int MAX_CHUNK_CHARS = 3200;
 
 	private final JdbcTemplate jdbc;
+	private final EmbeddingModel embeddingModel;
 	private final Path corpusPath;
 
-	public CorpusLoader(JdbcTemplate jdbc, @Value("${app.corpus-path}") String corpusPath) {
+	public CorpusLoader(JdbcTemplate jdbc, EmbeddingModel embeddingModel, @Value("${app.corpus-path}") String corpusPath) {
 		this.jdbc = jdbc;
+		this.embeddingModel = embeddingModel;
 		this.corpusPath = Path.of(corpusPath);
 	}
 
@@ -76,9 +81,16 @@ public class CorpusLoader {
 				UUID.class,
 				meta.getOrDefault("title", chunks.get(0)[0]), source, meta.get("topic"),
 				meta.getOrDefault("license", "unknown"));
+
+		// Bậc 2 (§5.2): 1 lời gọi cho cả tài liệu (batch), không phải N lời gọi rời.
+		EmbeddingResponse response = embeddingModel.embedForResponse(chunks.stream().map(c -> c[1]).toList());
 		for (int i = 0; i < chunks.size(); i++) {
-			jdbc.update("INSERT INTO doc_chunks (document_id, ord, heading_path, content) VALUES (?, ?, ?, ?)",
-					docId, i, chunks.get(i)[0], chunks.get(i)[1]);
+			String vector = EmbeddingFormat.toVectorLiteral(response.getResults().get(i).getOutput());
+			jdbc.update("""
+					INSERT INTO doc_chunks (document_id, ord, heading_path, content, embedding)
+					VALUES (?, ?, ?, ?, ?::vector)
+					""",
+					docId, i, chunks.get(i)[0], chunks.get(i)[1], vector);
 		}
 		return chunks.size();
 	}

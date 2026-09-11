@@ -27,10 +27,11 @@ spring:
 
   ai:
     model:
-      # Chỉ bật chat — Spring AI starter mặc định tự cấu hình cả audio/image/
-      # moderation, mỗi cái đòi hỏi api-key riêng lúc khởi động dù không dùng.
+      # Chỉ bật chat + embedding — Spring AI starter mặc định tự cấu hình cả
+      # audio/image/moderation, mỗi cái đòi hỏi api-key riêng lúc khởi động dù
+      # không dùng. embedding: bậc 2 trợ lý, concept-chatbot-v1.md §5.2.
       chat: openai
-      embedding: none
+      embedding: openai
       image: none
       moderation: none
       audio:
@@ -43,6 +44,10 @@ spring:
       chat:
         options:
           model: ${OPENAI_CHAT_MODEL:gpt-4o-mini}
+      embedding:
+        options:
+          model: text-embedding-3-small
+          dimensions: 512
 
 server:
   port: ${SERVER_PORT:8080}

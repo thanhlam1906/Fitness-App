@@ -1,6 +1,13 @@
+# Ghim tên project: chạy từ thư mục nào cũng ra cùng stack/volume. Không ghim thì
+# chạy từ mvp-app/ sẽ tạo stack "mvp-app" thứ hai với Postgres rỗng.
+name: fitnessapp
+
 services:
   postgres:
-    image: postgres:16-alpine
+    # Bậc 2 trợ lý (concept-chatbot-v1.md §5.2): cần extension pgvector, không có
+    # sẵn trong postgres:16-alpine. Image chính chủ pgvector — cùng Postgres 16,
+    # chỉ thêm extension, ghim patch version.
+    image: pgvector/pgvector:0.8.6-pg16
     environment:
       POSTGRES_DB: fitness
       POSTGRES_USER: fitness
@@ -16,6 +23,36 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  backend:
+    image: gradle:jdk21-jammy
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+      - fitness-gradle-cache:/home/gradle/.gradle
+    command: sh -c "gradle bootRun --no-daemon"
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/fitness
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    image: node:22-alpine
+    working_dir: /app
+    volumes:
+      - ./web:/app
+      - fitness-web-node-modules:/app/node_modules
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    ports:
+      - "5173:5173"
+    environment:
+      BACKEND_URL: http://backend:8080
+    depends_on:
+      - backend
 
   # Worker chấm form. Không mở cổng nào — nó chỉ đọc Postgres và thư mục clip
   # (concept-analyzer-v1.md §1). Chạy khi cần TN2:  docker compose --profile tn2 up -d
@@ -40,3 +77,5 @@ services:
 volumes:
   fitness-postgres-data:
   fitness-pose-models:
+  fitness-gradle-cache:
+  fitness-web-node-modules:

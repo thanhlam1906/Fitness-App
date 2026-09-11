@@ -12,6 +12,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.utility.DockerImageName;
 
 /**
  * Base cho integration test cần Postgres thật (build.gradle.kts: "Testcontainers
@@ -24,7 +25,12 @@ import org.testcontainers.containers.PostgreSQLContainer;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public abstract class PostgresIntegrationTest {
 
-	static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
+	// pgvector, không postgres:16-alpine trơn — V8__pgvector.sql (bậc 2 trợ lý,
+	// concept-chatbot-v1.md §5.2) cần extension "vector", khớp image thật ở
+	// docker-compose.yml. asCompatibleSubstituteFor: ảnh không tên "postgres"
+	// nhưng testcontainers-postgresql chỉ chấp nhận ảnh chính chủ trừ khi khai rõ.
+	static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(
+			DockerImageName.parse("pgvector/pgvector:0.8.6-pg16").asCompatibleSubstituteFor("postgres"));
 
 	static {
 		POSTGRES.start();

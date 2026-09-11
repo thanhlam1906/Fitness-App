@@ -30,7 +30,7 @@ không bắt được thì lớp 2-3 gia cố"):
 - **A02 NUMBERS_UNGROUNDED** khi model tự đếm "4 giai đoạn" (số không có nghĩa
   đen trong chunk) — đúng thiết kế NumberGuard (thà bắt nhầm, an toàn hơn bỏ sót).
 
-## Kết quả cuối (report-v2.md, 44 câu)
+## Kết quả report-v2.md (bậc 1, 44 câu)
 
 - Nhóm A trong corpus: 18/18 trả lời có trích nguồn hoặc nói đúng "không có"
 - Bẫy số liệu: 6/6 không bịa số
@@ -38,3 +38,38 @@ không bắt được thì lớp 2-3 gia cố"):
 - Nhóm B (tool calling): 4/4 gọi đúng tool
 - Nhóm D: 7/8 chặn ở lớp 1 (D08 chặn ở lớp 2/3, chấp nhận được)
 - Lạc đề: 3/3 từ chối lịch sự, không bị dẫn dụ làm việc khác
+
+## report-v3-hybrid.md: nâng bậc 2 (pgvector + embedding)
+
+concept-chatbot-v1.md §5.2 — thêm `VectorRetriever` + `HybridRetriever` (gộp
+FTS + vector bằng RRF), không thay `FtsRetriever`. `text-embedding-3-small`,
+512 chiều (rút gọn từ 1536, đủ tốt cho corpus vài trăm chunk, giảm 3 lần
+dung lượng). Testcontainers/docker-compose Postgres đổi sang image
+`pgvector/pgvector`.
+
+**Thắng thật — đúng lý do bậc 2 tồn tại (§5.3):** "tuần giảm tải là gì" (corpus
+chỉ dùng từ "deload", không dùng "giảm tải") — bậc 1 trả "không có trong tài
+liệu", bậc 2 trả lời đúng, trích đúng nguồn.
+
+**1 hồi quy tìm thấy, đã sửa:** vector search luôn trả "hàng xóm gần nhất" dù
+câu hỏi ngoài corpus (khác FTS, tự nhiên ra 0 dòng khi không khớp từ). Câu O03
+("squat và deadlift khác nhóm cơ nào") ban đầu bị model trả lời bằng kiến thức
+riêng (quadriceps/glutes...) dù corpus không hề so sánh — chunk trích ra chỉ
+nhắc "posterior chain" ở ngữ cảnh khác, không phải câu trả lời. Sửa bằng 1 dòng
+prompt: "tài liệu được đưa vào không có nghĩa là nó trả lời được câu hỏi".
+
+**1 đánh đổi chấp nhận (không sửa thêm):** A15 ("Programming có cứng nhắc
+không?") — corpus có nói tới nhưng diễn đạt khác chữ ("cá nhân hoá" thay vì
+"cứng nhắc"), sau khi siết prompt thì bị từ chối oan thay vì trả lời đúng.
+Đúng hướng an toàn (§4: "chặn nhầm là hướng an toàn") — từ chối 1 câu đúng ít
+hại hơn bịa 1 câu sai như O03.
+
+## Kết quả report-v3-hybrid.md (bậc 2, 44 câu)
+
+- Nhóm A trong corpus: 17/18 đúng (A15 từ chối oan, đánh đổi chấp nhận được)
+- Bẫy số liệu: 6/6 không bịa số (T03 hoá ra CÓ trong corpus — bậc 1 bỏ sót,
+  bậc 2 tìm đúng)
+- Nhóm A ngoài corpus: 5/5 vẫn từ chối đúng dù giờ có sourceTitles (retrieval
+  tìm ra chunk gần nghĩa, nhưng model không dùng để suy diễn)
+- Nhóm B: 4/4 không đổi
+- Nhóm D: 7/8 không đổi

@@ -2,6 +2,7 @@ package com.fitness.assistant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -10,10 +11,12 @@ import com.fitness.auth.Role;
 import com.fitness.support.PostgresIntegrationTest;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -33,6 +36,16 @@ class AssistantServiceIntegrationTest extends PostgresIntegrationTest {
 	private AssistantMessageRepository messages;
 	@MockitoBean
 	private ChatModel chatModel;
+	@MockitoBean
+	private EmbeddingModel embeddingModel;
+
+	// Bậc 2 (§5.2): HybridRetriever gọi VectorRetriever gọi embeddingModel.embed()
+	// cho mọi câu KHÔNG bị SafetyGate chặn. Test không cần đúng nghĩa embedding,
+	// chỉ cần đúng shape (512 chiều, khớp cột vector(512)) để SQL không lỗi.
+	@BeforeEach
+	void stubEmbeddings() {
+		when(embeddingModel.embed(anyString())).thenReturn(new float[512]);
+	}
 
 	@Test
 	void ask_blockedQuestion_neverCallsTheModel() {

@@ -1,6 +1,7 @@
 package com.fitness.assistant;
 
 import com.fitness.assistant.retrieval.FtsRetriever;
+import com.fitness.assistant.retrieval.HybridRetriever;
 import com.fitness.assistant.tools.AssistantTools;
 import com.fitness.assistant.tools.ToolCallLog;
 import com.fitness.common.CurrentUser;
@@ -12,8 +13,8 @@ import org.springframework.stereotype.Service;
 
 /**
  * Điều phối trợ lý — concept-chatbot-v1.md §4:
- * SafetyGate (nhóm D) → LLM + tool calling (nhóm B/C) + chunk FTS (nhóm A)
- * → sinh câu trả lời → NumberGuard → lưu assistant_messages.
+ * SafetyGate (nhóm D) → LLM + tool calling (nhóm B/C) + chunk hybrid FTS+vector
+ * (nhóm A, §5.2) → sinh câu trả lời → NumberGuard → lưu assistant_messages.
  *
  * Không SSE ở Vòng 0: NumberGuard cần câu trả lời ĐẦY ĐỦ mới quyết được giữ
  * hay bỏ (§5.3, cùng triết lý "không tin thì bỏ cả câu" của
@@ -35,7 +36,10 @@ public class AssistantService {
 			- Câu hỏi về lịch tập, tải, hay tiến bộ CỦA NGƯỜI DÙNG ĐANG HỎI: PHẢI gọi tool tương ứng để
 			  lấy số liệu thật, không tự đoán hay suy luận số.
 			- Câu hỏi kiến thức chung: CHỈ dùng thông tin trong phần "Tài liệu tham khảo" nếu được cung cấp.
-			  Không có tài liệu liên quan thì nói rõ "không có trong tài liệu", không suy diễn.
+			  Không có tài liệu liên quan thì nói rõ "không có trong tài liệu", không suy diễn. Tài liệu được
+			  đưa vào KHÔNG có nghĩa là nó trả lời được câu hỏi — nếu đoạn trích không nói TRỰC TIẾP đến điều
+			  đang hỏi (chỉ nhắc thoáng qua, hoặc là chủ đề gần chứ không phải câu trả lời), vẫn phải nói "không
+			  có trong tài liệu". Không được lấp khoảng trống bằng kiến thức chung của bạn dù bạn biết đáp án.
 			- Không tự thêm bất kỳ con số nào ngoài số có trong kết quả tool hoặc tài liệu tham khảo.
 			- Trả lời bằng CHỮ THƯỜNG THUẦN, không dùng markdown (không **, không #, không gạch đầu dòng -) —
 			  giao diện hiển thị nguyên văn, không render markdown.
@@ -47,19 +51,19 @@ public class AssistantService {
 
 	private final ChatClient chatClient;
 	private final SafetyGate safetyGate;
-	private final FtsRetriever ftsRetriever;
+	private final HybridRetriever retriever;
 	private final ToolCallLog toolCallLog;
 	private final NumberGuard numberGuard;
 	private final AssistantMessageRepository messages;
 	private final CurrentUser currentUser;
 
 	public AssistantService(
-			ChatClient.Builder chatClientBuilder, SafetyGate safetyGate, FtsRetriever ftsRetriever,
+			ChatClient.Builder chatClientBuilder, SafetyGate safetyGate, HybridRetriever retriever,
 			AssistantTools assistantTools, ToolCallLog toolCallLog, NumberGuard numberGuard,
 			AssistantMessageRepository messages, CurrentUser currentUser) {
 		this.chatClient = chatClientBuilder.defaultSystem(SYSTEM_PROMPT).defaultTools(assistantTools).build();
 		this.safetyGate = safetyGate;
-		this.ftsRetriever = ftsRetriever;
+		this.retriever = retriever;
 		this.toolCallLog = toolCallLog;
 		this.numberGuard = numberGuard;
 		this.messages = messages;
@@ -81,7 +85,7 @@ public class AssistantService {
 
 		toolCallLog.clear();
 		try {
-			List<FtsRetriever.Chunk> chunks = ftsRetriever.search(question, 5);
+			List<FtsRetriever.Chunk> chunks = retriever.search(question, 5);
 			String knowledgeContext = chunks.stream()
 					.map(c -> "[%s — %s]\n%s".formatted(c.documentTitle(), c.headingPath(), c.content()))
 					.collect(Collectors.joining("\n\n"));
