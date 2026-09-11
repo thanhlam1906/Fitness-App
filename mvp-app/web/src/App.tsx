@@ -4,6 +4,7 @@ import { RequireAdmin } from "@/auth/RequireAdmin"
 import { RequireAuth } from "@/auth/RequireAuth"
 import { LoginPage } from "@/auth/LoginPage"
 import { RegisterPage } from "@/auth/RegisterPage"
+import { AssistantPage } from "@/features/assistant/AssistantPage"
 import { OnboardingPage } from "@/features/onboarding/OnboardingPage"
 import { ProgramSelectionPage } from "@/features/program/ProgramSelectionPage"
 import { SettingsPage } from "@/features/profile/SettingsPage"
@@ -38,6 +39,7 @@ export function App() {
                 <Route path="/onboarding" element={<OnboardingPage />} />
                 <Route path="/program" element={<ProgramSelectionPage />} />
                 <Route path="/schedule" element={<SchedulePage />} />
+                <Route path="/assistant" element={<AssistantPage />} />
                 <Route path="/my-schedule" element={<MyProgramPage />} />
                 <Route path="/workout/:scheduledWorkoutId" element={<WorkoutPage />} />
                 <Route

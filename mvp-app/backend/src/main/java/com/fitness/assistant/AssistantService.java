@@ -37,6 +37,8 @@ public class AssistantService {
 			- Câu hỏi kiến thức chung: CHỈ dùng thông tin trong phần "Tài liệu tham khảo" nếu được cung cấp.
 			  Không có tài liệu liên quan thì nói rõ "không có trong tài liệu", không suy diễn.
 			- Không tự thêm bất kỳ con số nào ngoài số có trong kết quả tool hoặc tài liệu tham khảo.
+			- Trả lời bằng CHỮ THƯỜNG THUẦN, không dùng markdown (không **, không #, không gạch đầu dòng -) —
+			  giao diện hiển thị nguyên văn, không render markdown.
 			""";
 
 	private static final String FALLBACK_UNGROUNDED =
