@@ -1,0 +1,80 @@
+package com.fitness.assistant.ingest;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.fitness.support.PostgresIntegrationTest;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+
+/** Nạp corpus từ thư mục tạm, kiểm chunk gộp đúng và FTS không dấu tìm ra được. */
+class CorpusLoaderIntegrationTest extends PostgresIntegrationTest {
+
+	static final Path CORPUS = writeFixture();
+
+	@DynamicPropertySource
+	static void corpusPath(DynamicPropertyRegistry registry) {
+		registry.add("app.corpus-path", CORPUS::toString);
+	}
+
+	@Autowired
+	private CorpusLoader loader;
+	@Autowired
+	private JdbcTemplate jdbc;
+
+	@Test
+	void reload_isIdempotent_mergesShortSections_andFtsFindsUnaccented() {
+		loader.reload();
+		CorpusLoader.Result result = loader.reload();
+
+		// 3 mục "##" nhưng "Đặc điểm:" quá ngắn → gộp vào mục trước → 2 chunk.
+		assertThat(result).isEqualTo(new CorpusLoader.Result(1, 2));
+		assertThat(jdbc.queryForObject("SELECT count(*) FROM documents", Integer.class)).isEqualTo(1);
+		assertThat(jdbc.queryForObject("SELECT license FROM documents", String.class)).isEqualTo("unknown");
+
+		// Hỏi không dấu, tài liệu có dấu; "&amp;" đã unescape.
+		List<String> hits = jdbc.queryForList(
+				"SELECT heading_path FROM doc_chunks WHERE ts @@ plainto_tsquery('simple', immutable_unaccent(?))",
+				String.class, "giam tai");
+		assertThat(hits).containsExactly("Tuần giảm tải");
+		assertThat(jdbc.queryForObject("SELECT content FROM doc_chunks WHERE ord = 1", String.class))
+				.contains("strength & skill").contains("Đặc điểm:");
+	}
+
+	private static Path writeFixture() {
+		try {
+			Path dir = Files.createTempDirectory("fitness-corpus-test");
+			Files.writeString(dir.resolve("bai-test.md"), """
+					---
+					title: Bài kiểm thử
+					topic: programming
+					---
+					## Tuần giảm tải
+
+					Giảm tải là tuần tập nhẹ để phục hồi sau một mesocycle. Volume giảm còn khoảng
+					một nửa, intensity giữ 60-80% 1RM, RPE dưới 7. Mục đích là xoá mệt mỏi tích luỹ
+					trước khi bước sang khối tiếp theo với mức tạ cao hơn.
+
+					## Tuần chuyển tiếp
+
+					Nghỉ ngơi cả thể chất lẫn tinh thần sau thi đấu. Duy trì strength &amp; skill,
+					xử lý các vấn đề đau nhức còn tồn đọng để sẵn sàng cho macrocycle tiếp theo.
+					Không ép tăng tải, không kiểm tra 1RM trong giai đoạn này.
+
+					## Đặc điểm:
+
+					RPE < 7
+					""");
+			return dir;
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
+}

@@ -58,3 +58,7 @@ app:
   # Q8 của đặc tả còn treo (PM chốt khi biết chi phí xử lý thật), để ở config
   # nên đổi không cần sửa code.
   review-weekly-limit: ${REVIEW_WEEKLY_LIMIT:10}
+
+  # Kho kiến thức trợ lý: *.md do Docling sinh (concept-chatbot-v1.md §7). Trong
+  # container backend mount ./backend:/app nên đường dẫn tương đối này vẫn đúng.
+  corpus-path: ${CORPUS_PATH:./content/corpus}
