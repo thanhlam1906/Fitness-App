@@ -27,8 +27,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class CorpusLoader {
 
-	// ponytail: ngưỡng gộp cố định; tinh chỉnh khi eval (§11) cho thấy chunk quá nhỏ/quá to
+	// ponytail: ngưỡng gộp/cắt cố định; tinh chỉnh khi eval (§11) cho thấy chunk quá nhỏ/quá to.
+	// MAX theo đích "500-800 token" của concept-chatbot-v1.md §5.1 (~4 ký tự/token
+	// tiếng Việt) — 3 tài liệu đầu (slide bài giảng, mục ngắn) chưa từng chạm
+	// ngưỡng này nên chưa lộ ra, nhưng một cuốn sách với mục dài cả chương thì có.
 	static final int MIN_CHUNK_CHARS = 200;
+	static final int MAX_CHUNK_CHARS = 3200;
 
 	private final JdbcTemplate jdbc;
 	private final Path corpusPath;
@@ -104,14 +108,38 @@ public class CorpusLoader {
 				continue;
 			}
 			String heading = s.lines().findFirst().orElse("");
-			if (!out.isEmpty() && s.length() < MIN_CHUNK_CHARS) {
-				String[] prev = out.get(out.size() - 1);
-				prev[1] = prev[1] + "\n\n" + s;
-			} else {
-				out.add(new String[] {heading, s});
+			for (String part : splitIfTooLong(s, heading)) {
+				if (!out.isEmpty() && part.length() < MIN_CHUNK_CHARS) {
+					String[] prev = out.get(out.size() - 1);
+					prev[1] = prev[1] + "\n\n" + part;
+				} else {
+					out.add(new String[] {heading, part});
+				}
 			}
 		}
 		return out;
+	}
+
+	/**
+	 * Mục dài hơn MAX_CHUNK_CHARS (chương sách, không phải slide) thì cắt theo
+	 * đoạn văn (dòng trống) — không cắt giữa câu. Mỗi mảnh nhắc lại heading để
+	 * vẫn tự đứng được khi FTS trả về riêng mảnh đó, không kèm mảnh đầu.
+	 */
+	private static List<String> splitIfTooLong(String section, String heading) {
+		if (section.length() <= MAX_CHUNK_CHARS) {
+			return List.of(section);
+		}
+		List<String> parts = new ArrayList<>();
+		StringBuilder current = new StringBuilder(heading);
+		for (String paragraph : section.split("\n\n+")) {
+			if (current.length() > heading.length() && current.length() + paragraph.length() > MAX_CHUNK_CHARS) {
+				parts.add(current.toString());
+				current = new StringBuilder(heading);
+			}
+			current.append("\n\n").append(paragraph);
+		}
+		parts.add(current.toString());
+		return parts;
 	}
 
 	private static String unescape(String s) {
