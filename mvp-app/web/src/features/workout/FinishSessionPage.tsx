@@ -1,12 +1,13 @@
 import { useState } from "react"
 import { useNavigate, useParams } from "react-router"
+import { BodyMap } from "@/components/BodyMap"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { FlowScreen } from "@/components/UserShell"
 import { cn } from "@/lib/cn"
 import { formatDayMonth, formatNumber } from "@/lib/format"
 import { useSchedule } from "@/features/schedule/useSchedule"
-import { BODY_AREAS, type SetLogResponse } from "./types"
+import type { SetLogResponse } from "./types"
 import { useFinishSession, useWorkoutSession } from "./useWorkoutSession"
 
 const RPE_CHOICES = [4, 5, 6, 7, 8, 9, 10]
@@ -109,27 +110,11 @@ export function FinishSessionPage() {
           Bỏ qua nếu không đau. Báo đau làm giảm tải hoặc đổi bài ở tuần kế — đây không phải chẩn
           đoán y tế, đau kéo dài thì đi khám.
         </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {BODY_AREAS.map((area) => {
-            const on = bodyArea === area.value
-            return (
-              <button
-                key={area.value}
-                type="button"
-                aria-pressed={on}
-                onClick={() => setBodyArea(on ? null : area.value)}
-                className={cn(
-                  "rounded-full px-3.5 py-2 text-[13px]",
-                  on
-                    ? "border border-[var(--color-danger)] bg-[var(--color-danger-tint)] font-semibold text-[var(--color-danger)]"
-                    : "bg-[var(--color-surface)] text-[var(--color-text-muted)]",
-                )}
-              >
-                {area.label}
-                {on && " ✓"}
-              </button>
-            )
-          })}
+        <div className="mt-3">
+          <BodyMap
+            value={bodyArea}
+            onChange={(area) => setBodyArea(bodyArea === area ? null : area)}
+          />
         </div>
 
         {bodyArea && (
