@@ -1,6 +1,7 @@
 import { Link } from "react-router"
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/api/client"
+import { ExerciseImage } from "@/components/ExerciseImage"
 import { StatusBadge } from "@/components/StatusBadge"
 import { Stepper } from "@/components/Stepper"
 import { Card } from "@/components/ui/card"
@@ -60,6 +61,7 @@ export function FormCheckListPage() {
             to={`/form-check/${exercise.id}`}
             className="flex items-center gap-2.5 rounded-[var(--radius-md)] bg-[var(--color-surface)] p-4"
           >
+            <ExerciseImage slug={exercise.slug} alt={exercise.nameVi ?? exercise.nameEn} variant="thumb" />
             <span className="min-w-0 flex-1 truncate text-base font-semibold">
               {exercise.nameVi ?? exercise.nameEn}
             </span>

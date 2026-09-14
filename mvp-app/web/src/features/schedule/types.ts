@@ -5,6 +5,7 @@ export type ScheduledExerciseView = {
   exerciseId: string
   exerciseSlug: string
   exerciseName: string
+  description: string | null
   analyzable: boolean
   orderIndex: number
   targetSets: number

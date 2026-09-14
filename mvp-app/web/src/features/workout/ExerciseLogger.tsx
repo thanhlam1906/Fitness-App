@@ -1,4 +1,5 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { ExerciseImage } from "@/components/ExerciseImage"
 import { LoadDeltaBadge } from "@/components/LoadDeltaBadge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/cn"
@@ -41,6 +42,8 @@ export function ExerciseLogger({
           thay cho {exercise.substitutedFromName}
         </p>
       )}
+
+      <CoachingPanel exercise={exercise} />
 
       <div className="mt-1.5 flex items-end gap-2.5">
         <span className="num text-[length:var(--text-load)] leading-none font-extrabold tracking-[-0.03em]">
@@ -327,6 +330,52 @@ function formatRest(seconds: number): string {
   const m = Math.floor(seconds / 60)
   const s = `${seconds % 60}`.padStart(2, "0")
   return `${m}:${s}`
+}
+
+/**
+ * §3.4/§4.1 concept-frontend-v1.md — số tải là nội dung chính của màn này,
+ * không phải nhãn, nên khối ảnh + mô tả PHẢI mặc định đóng. Mở sẵn nghĩa là
+ * đẩy ảnh cao 200px+ lên trên con số 64px mà design cố tình phóng to để liếc
+ * một cái là thấy khi đang cầm tạ — phá đúng thứ design đang bảo vệ.
+ *
+ * Nút chỉ hiện khi mở ra có gì để xem, không dò được ảnh có tồn tại hay
+ * không mà không thử tải, nên dò trước bằng Image() gốc trình duyệt.
+ */
+function CoachingPanel({ exercise }: { exercise: ScheduledExerciseView }) {
+  const [open, setOpen] = useState(false)
+  const hasDescription = !!exercise.description
+  const [hasImage, setHasImage] = useState(false)
+
+  useEffect(() => {
+    const probe = new Image()
+    probe.onload = () => setHasImage(true)
+    probe.onerror = () => setHasImage(false)
+    probe.src = `/exercises/${exercise.exerciseSlug}-0.jpg`
+  }, [exercise.exerciseSlug])
+
+  if (!hasDescription && !hasImage) return null
+
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+      >
+        {open ? "Ẩn cách tập" : "Xem cách tập"}
+      </button>
+      {open && (
+        <div className="mt-2.5">
+          <ExerciseImage slug={exercise.exerciseSlug} alt={exercise.exerciseName} variant="large" />
+          {hasDescription && (
+            <p className="mt-2 text-xs leading-relaxed text-[var(--color-text-muted)]">
+              {exercise.description}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  )
 }
 
 /** §5.5 — người dùng báo thiếu thiết bị, hệ thống đề xuất, NGƯỜI DÙNG xác nhận rồi mới đổi. */
