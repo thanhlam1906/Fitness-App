@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useNavigate, useParams } from "react-router"
 import { ApiError } from "@/api/client"
 import { Stepper } from "@/components/Stepper"
@@ -35,6 +35,9 @@ export function FilmingGuidePage() {
   const [files, setFiles] = useState<File[]>([])
   const [viewpoints, setViewpoints] = useState<string[]>([])
   const [optIn, setOptIn] = useState(false)
+
+  const previews = useMemo(() => files.map((f) => URL.createObjectURL(f)), [files])
+  useEffect(() => () => previews.forEach((u) => URL.revokeObjectURL(u)), [previews])
 
   if (exercise.isLoading) {
     return <p className="text-sm text-[var(--color-text-muted)]">Đang tải…</p>
@@ -96,6 +99,17 @@ export function FilmingGuidePage() {
         <div className="mt-4 flex flex-col gap-2.5">
           {files.map((file, i) => (
             <div key={file.name + i} className="flex items-end gap-2.5">
+              {/* Khung hình đầu clip để nhận ra đây là góc nào — bấm để xem thử. */}
+              <video
+                src={`${previews[i]}#t=0.1`}
+                muted
+                playsInline
+                preload="metadata"
+                className="h-20 w-16 shrink-0 rounded-[var(--radius-md)] bg-black object-cover"
+                onClick={(e) =>
+                  e.currentTarget.paused ? void e.currentTarget.play() : e.currentTarget.pause()
+                }
+              />
               <span className="min-w-0 flex-1 truncate text-sm">{file.name}</span>
               <div className="space-y-1">
                 <Label htmlFor={`viewpoint-${i}`}>Góc quay</Label>
