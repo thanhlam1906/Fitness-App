@@ -227,7 +227,7 @@ public class ScheduleController {
 		Exercise exercise = exerciseById.get(se.getExerciseId());
 		Exercise original = se.getSubstitutedFrom() == null ? null : exerciseById.get(se.getSubstitutedFrom());
 		return new ScheduledExerciseView(
-				se.getId(), se.getExerciseId(), exercise.getSlug(), displayName(exercise), exercise.isAnalyzable(),
+				se.getId(), se.getExerciseId(), exercise.getSlug(), displayName(exercise), exercise.getDescription(), exercise.isAnalyzable(),
 				se.getOrderIndex(), se.getTargetSets(), se.getTargetReps(), se.getTargetRepsMax(),
 				se.getTargetLoadKg(), se.getRestSeconds() == null ? null : (int) se.getRestSeconds(),
 				original == null ? null : displayName(original),

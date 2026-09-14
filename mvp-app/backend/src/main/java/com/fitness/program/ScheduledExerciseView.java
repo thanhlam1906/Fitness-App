@@ -14,6 +14,7 @@ public record ScheduledExerciseView(
 		UUID exerciseId,
 		String exerciseSlug,
 		String exerciseName,
+		String description,
 		boolean analyzable,
 		int orderIndex,
 		int targetSets,
