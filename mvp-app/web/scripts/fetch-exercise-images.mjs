@@ -1,7 +1,10 @@
 // Tải ảnh minh hoạ động tác (2 khung/bài) từ free-exercise-db
 // (github.com/yuhonas/free-exercise-db, giấy phép Unlicense — public domain).
 // Chạy: node scripts/fetch-exercise-images.mjs (từ mvp-app/web).
-//
+import { access, mkdir, writeFile } from "node:fs/promises"
+import path from "node:path"
+import { fileURLToPath } from "node:url"
+
 // Bảng map dưới đây viết TAY, không tự suy ra được từ slug: tên thư mục nguồn
 // không theo quy ước đặt tên của ta, và có thư mục dễ nhầm — vd
 // Barbell_Shoulder_Press là đẩy vai NGỒI GHẾ, khác overhead-press của ta là đẩy
@@ -14,10 +17,6 @@ const SLUG_TO_SOURCE_DIR = {
   "push-up": "Pushups",
   "bent-over-row": "Bent_Over_Barbell_Row",
 }
-
-import { access, mkdir, writeFile } from "node:fs/promises"
-import path from "node:path"
-import { fileURLToPath } from "node:url"
 
 const BASE_URL = "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises"
 const OUT_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public", "exercises")
