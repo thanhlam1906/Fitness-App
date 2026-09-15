@@ -61,9 +61,8 @@ export function FilmingGuidePage() {
       <Stepper label="Kiểm tra form" steps={3} current={1} />
       <h1 className="mt-3 text-[26px] font-extrabold tracking-[-0.02em]">Quay một set {name}</h1>
 
-      {/* F2 §8 còn treo: hình minh hoạ khung người cần chụp hoặc vẽ, không code được. */}
-      <div className="mt-4 flex h-[180px] items-center justify-center rounded-xl bg-[var(--color-surface)] px-6 text-center text-xs text-[var(--color-text-muted)]">
-        Hình khung người — góc 45°, cả người và tạ trong khung
+      <div className="mt-4 flex h-[180px] items-center justify-center rounded-xl bg-[var(--color-surface)] px-3">
+        <FramingDiagram />
       </div>
 
       <ol className="mt-4 flex flex-col gap-2">
@@ -175,6 +174,101 @@ export function FilmingGuidePage() {
         </Button>
       )}
     </FlowScreen>
+  )
+}
+
+/**
+ * Sơ đồ nhìn từ trên xuống cho màn hướng dẫn quay (đóng mục F2 §8 — vẽ được
+ * bằng SVG, không cần ảnh chụp).
+ *
+ * Nhìn từ trên nên người tập là hình bầu dục chứ không phải hình đứng —
+ * tam giác nhỏ trên đầu bầu dục chỉ hướng mặt để người đọc định hình được góc
+ * nhìn. Thanh tạ cắt ngang qua người vì lúc quay tạ nằm ngang trước thân, nhìn
+ * từ trên chỉ còn là một đoạn thẳng. Vùng tô mờ và hai tia đậm toả từ điện
+ * thoại là khung hình — phải trùm hết cả hai đầu tạ mới đúng ý "cả người và
+ * tạ trong khung" mà danh sách bước bên dưới đã nói bằng chữ.
+ */
+function FramingDiagram() {
+  return (
+    <svg
+      viewBox="0 0 390 170"
+      className="block w-full"
+      role="img"
+      aria-label="Sơ đồ nhìn từ trên: điện thoại đặt chéo 45 độ, cách người tập 2 đến 3 mét ngang tầm hông, khung hình chứa cả người và thanh tạ."
+    >
+      {/* Vùng khung hình tô rất mờ để thấy ngay đây là một VÙNG, không chỉ hai đường kẻ. */}
+      <polygon points="242,53 50,165 210,165" fill="var(--color-accent)" fillOpacity={0.08} />
+      <g stroke="var(--color-accent)" strokeWidth={2.5} strokeLinecap="round">
+        <line x1={242} y1={53} x2={50} y2={165} />
+        <line x1={242} y1={53} x2={210} y2={165} />
+      </g>
+
+      {/* Đường chấm chỉ hướng "thẳng trước mặt" — làm mốc 0° để so với đường tới điện thoại. */}
+      <line
+        x1={150}
+        y1={145}
+        x2={150}
+        y2={75}
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeDasharray="4 4"
+        opacity={0.5}
+      />
+      {/* Đường tới điện thoại: vừa là cạnh còn lại của góc 45°, vừa là đường đo khoảng cách. */}
+      <line x1={150} y1={145} x2={242} y2={53} stroke="var(--color-accent)" strokeWidth={1.5} />
+      <path
+        d="M150 117 A28 28 0 0 1 169.8 125.2"
+        fill="none"
+        stroke="var(--color-accent)"
+        strokeWidth={1.5}
+      />
+
+      {/* Tạ nằm ngang qua người — nhìn từ trên chỉ còn là một đoạn thẳng có hai đầu tạ. */}
+      <line
+        x1={95}
+        y1={145}
+        x2={205}
+        y2={145}
+        stroke="currentColor"
+        strokeWidth={3}
+        strokeLinecap="round"
+      />
+      <circle cx={95} cy={145} r={7} fill="none" stroke="currentColor" strokeWidth={3} />
+      <circle cx={205} cy={145} r={7} fill="none" stroke="currentColor" strokeWidth={3} />
+
+      {/* Người tập nhìn từ trên là hình bầu dục; tam giác nhỏ chỉ hướng mặt đang quay về. */}
+      <ellipse
+        cx={150}
+        cy={145}
+        rx={20}
+        ry={14}
+        fill="currentColor"
+        fillOpacity={0.15}
+        stroke="currentColor"
+        strokeWidth={1.5}
+      />
+      <path d="M150 116 L141 131 L159 131 Z" fill="currentColor" />
+
+      {/* Điện thoại — đặt đúng vị trí 45°/2-3 m tính từ người. */}
+      <rect
+        x={237}
+        y={44}
+        width={10}
+        height={18}
+        rx={2}
+        fill="var(--color-surface)"
+        stroke="currentColor"
+        strokeWidth={1.5}
+      />
+      <circle cx={242} cy={48} r={1.6} fill="currentColor" />
+
+      <text x={163} y={112} fontSize={12} fontWeight={700} fill="var(--color-accent)">
+        45°
+      </text>
+      <text x={250} y={95} fontSize={12} fontWeight={700} fill="var(--color-accent)">
+        2–3 m
+      </text>
+    </svg>
   )
 }
 
