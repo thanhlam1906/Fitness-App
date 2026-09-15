@@ -179,7 +179,7 @@ export function BodyMap({
               aria-pressed={on}
               onClick={() => onChange(area.value)}
               className={cn(
-                "rounded-full px-3.5 py-2 text-[13px]",
+                "rounded-full px-3.5 py-2 text-[13px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]",
                 on
                   ? "border border-[var(--color-danger)] bg-[var(--color-danger-tint)] font-semibold text-[var(--color-danger)]"
                   : "bg-[var(--color-surface)] text-[var(--color-text-muted)]",
