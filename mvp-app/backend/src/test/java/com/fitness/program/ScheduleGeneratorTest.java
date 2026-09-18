@@ -122,4 +122,27 @@ class ScheduleGeneratorTest {
 		assertThat(result).hasSize(7);
 		assertThat(result.get(6).scheduledOn()).isEqualTo(start.plusDays(6));
 	}
+
+	@Test
+	void customDates_repeatsChosenWeekdaysEveryWeek() {
+		LocalDate start = aMonday();
+
+		List<LocalDate> dates = generator.customDates(
+				Set.of(DayOfWeek.MONDAY, DayOfWeek.THURSDAY), start, 2);
+
+		// 2 thứ × 2 tuần = 4 buổi, đúng thứ đã chọn, không quay vòng chu kỳ.
+		assertThat(dates).containsExactly(
+				start, start.plusDays(3), start.plusWeeks(1), start.plusWeeks(1).plusDays(3));
+	}
+
+	@Test
+	void customDates_startingMidWeek_onlyCountsDaysInsideTheWindow() {
+		LocalDate wednesday = aMonday().plusDays(2);
+
+		List<LocalDate> dates = generator.customDates(
+				Set.of(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY), wednesday, 1);
+
+		// Cửa sổ là 7 ngày kể từ ngày bắt đầu: T4 (hôm nay) và T2 tuần sau.
+		assertThat(dates).containsExactly(wednesday, wednesday.plusDays(5));
+	}
 }

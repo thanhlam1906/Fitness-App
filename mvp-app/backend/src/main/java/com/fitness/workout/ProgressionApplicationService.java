@@ -83,6 +83,9 @@ public class ProgressionApplicationService {
 		}
 		ScheduledWorkout workout = scheduledWorkouts.findById(session.getScheduledWorkoutId()).orElseThrow();
 		Program program = programs.findById(workout.getProgramId()).orElseThrow();
+		if (program.getTemplateId() == null) {
+			return; // lịch tự thiết kế: người dùng tự đặt set/rep/tạ, không có config progression để chỉnh
+		}
 		ProgramTemplate template = templates.findById(program.getTemplateId()).orElseThrow();
 
 		JsonNode progressionConfig = readJson(template.getProgression());

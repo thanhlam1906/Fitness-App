@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { MessageCircle } from "lucide-react"
 import { Link } from "react-router"
 import { ApiError } from "@/api/client"
 import { LoadDeltaBadge } from "@/components/LoadDeltaBadge"
@@ -39,6 +40,14 @@ export function SchedulePage() {
           <p className="text-sm text-[var(--color-text-muted)]">Chưa có chương trình đang chạy.</p>
           <Link to="/program">
             <Button>Chọn chương trình</Button>
+          </Link>
+          {/* Chưa có chương trình vẫn hỏi được kiến thức chung (nhóm A) — không khoá
+              lối vào trợ lý sau khi có lịch. */}
+          <Link
+            to="/assistant"
+            className="block text-sm text-[var(--color-text-muted)] underline-offset-2 hover:text-[var(--color-text)] hover:underline"
+          >
+            Hoặc hỏi trợ lý trước
           </Link>
         </Card>
       )
@@ -92,6 +101,15 @@ export function SchedulePage() {
 
       <div className="mt-3.5 flex items-center gap-3">
         <h1 className="flex-1 text-[30px] font-extrabold tracking-[-0.02em]">Lịch tuần</h1>
+        {/* concept-chatbot-v1.md §12: trợ lý là tab phụ, không chiếm chỗ ở thanh tab
+            đáy (đã vừa đúng 4 tab) — vào từ đây, ở màn mở đầu. */}
+        <Link
+          to="/assistant"
+          aria-label="Hỏi trợ lý"
+          className="flex size-9 shrink-0 items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+        >
+          <MessageCircle className="size-4.5" aria-hidden />
+        </Link>
         <WeekNav
           canPrev={current > 0}
           canNext={current < weeks.length - 1}

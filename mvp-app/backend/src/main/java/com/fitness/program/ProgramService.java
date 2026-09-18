@@ -12,7 +12,10 @@ import com.fitness.profile.ProfileRepository;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -151,6 +154,78 @@ public class ProgramService {
 		}
 
 		return program.getId();
+	}
+
+	/**
+	 * Lịch tự thiết kế: sinh thẳng từ input người dùng, template_id = null.
+	 * Không gắn progression — người dùng đã tự đặt set/rep/tạ, engine chỉnh vào
+	 * đó là chỉnh đè lên ý muốn của họ (ProgressionApplicationService bỏ qua
+	 * chương trình không có template).
+	 */
+	@Transactional
+	public UUID createCustomProgram(UUID userId, CreateCustomProgramRequest request) {
+		LocalDate startDate = request.startDate() == null ? LocalDate.now() : request.startDate();
+		int weeks = request.weeksToGenerate() == null ? WEEKS_TO_GENERATE : request.weeksToGenerate();
+
+		Map<DayOfWeek, CreateCustomProgramRequest.CustomDay> dayByWeekday = new HashMap<>();
+		for (CreateCustomProgramRequest.CustomDay day : request.days()) {
+			if (dayByWeekday.put(DayOfWeek.of(day.dayOfWeek()), day) != null) {
+				throw new ResponseStatusException(
+						HttpStatus.BAD_REQUEST, "Mỗi thứ trong tuần chỉ cấu hình được một lần");
+			}
+		}
+
+		requireKnownExercises(request);
+
+		// saveAndFlush như createProgram: INSERT chương trình mới trước UPDATE
+		// archive sẽ vi phạm one_active_program_per_user.
+		programRepository.findByUserIdAndStatus(userId, "ACTIVE").ifPresent(existing -> {
+			existing.archive();
+			programRepository.saveAndFlush(existing);
+		});
+
+		Short[] restDays = Arrays.stream(DayOfWeek.values())
+				.filter(d -> !dayByWeekday.containsKey(d))
+				.map(d -> (short) d.getValue())
+				.toArray(Short[]::new);
+		Program program = new Program(userId, null, "{}", restDays, startDate);
+		programRepository.save(program);
+
+		for (LocalDate date : scheduleGenerator.customDates(dayByWeekday.keySet(), startDate, weeks)) {
+			CreateCustomProgramRequest.CustomDay day = dayByWeekday.get(date.getDayOfWeek());
+			int weekIndex = (int) (ChronoUnit.DAYS.between(startDate, date) / 7) + 1;
+			ScheduledWorkout workout = new ScheduledWorkout(
+					program.getId(), date, (short) weekIndex, day.label());
+			scheduledWorkoutRepository.save(workout);
+
+			short orderIndex = 1;
+			for (CreateCustomProgramRequest.CustomExercise ex : day.exercises()) {
+				scheduledExerciseRepository.save(new ScheduledExercise(
+						workout.getId(), ex.exerciseId(), orderIndex++,
+						ex.sets().shortValue(), ex.repsMin().shortValue(), ex.repsMax().shortValue(),
+						ex.loadKg() == null ? null : BigDecimal.valueOf(ex.loadKg()),
+						ex.restSeconds() == null ? null : ex.restSeconds().shortValue()));
+			}
+		}
+
+		return program.getId();
+	}
+
+	private void requireKnownExercises(CreateCustomProgramRequest request) {
+		List<UUID> ids = request.days().stream()
+				.flatMap(d -> d.exercises().stream())
+				.map(CreateCustomProgramRequest.CustomExercise::exerciseId)
+				.distinct()
+				.toList();
+		Map<UUID, Exercise> byId = exerciseRepository.findAllById(ids).stream()
+				.collect(Collectors.toMap(Exercise::getId, e -> e));
+		for (UUID id : ids) {
+			Exercise exercise = byId.get(id);
+			if (exercise == null || !exercise.isActive()) {
+				throw new ResponseStatusException(
+						HttpStatus.BAD_REQUEST, "Bài tập không tồn tại hoặc đã ngưng dùng: " + id);
+			}
+		}
 	}
 
 	private Map<String, UUID> resolveExerciseIds(List<CycleDay> weekStructure) {

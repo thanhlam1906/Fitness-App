@@ -29,4 +29,7 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSession, 
 	long countByStartedAtAfter(Instant since);
 
 	long countByUserId(UUID userId);
+
+	/** ProgressSummaryTool §9 nhóm B3 — tiến bộ N tuần qua, theo userId. */
+	List<WorkoutSession> findByUserIdAndStartedAtAfter(UUID userId, Instant since);
 }

@@ -103,6 +103,12 @@ export function ProgramSelectionPage() {
         ))}
       </div>
 
+      <Link to="/my-schedule" className="mt-3 block">
+        <Button variant="secondary" className="w-full">
+          Tự thiết kế lịch riêng
+        </Button>
+      </Link>
+
       {selected && (
         <>
           <div className="kicker mt-6">Ngày tập trong tuần</div>

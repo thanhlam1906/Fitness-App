@@ -22,6 +22,12 @@ repositories {
 }
 
 dependencies {
+	// Trợ lý — concept-chatbot-v1.md §3 (đổi DeepSeek → OpenAI theo quyết định
+	// thật của dự án). Boot 3.5.x đi với nhánh Spring AI 1.1 (2.0 nhắm Boot
+	// 4/Spring 7, chưa khớp). Ghim bản vá mới nhất của 1.1.
+	implementation(platform("org.springframework.ai:spring-ai-bom:1.1.8"))
+	implementation("org.springframework.ai:spring-ai-starter-model-openai")
+
 	// web + validation
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.springframework.boot:spring-boot-starter-validation")

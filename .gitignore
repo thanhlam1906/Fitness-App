@@ -22,6 +22,9 @@ mvp-app/video/
 tests/clips/
 mvp-app/analyzer-demo/test_videos/
 
+# corpus trợ lý — tài liệu lấy trên mạng, chưa rà license (N5): giữ local, không commit
+mvp-app/backend/content/corpus/
+
 # clip người dùng gửi lên — N2: xoá ngay sau khi chấm, không bao giờ vào git
 mvp-app/backend/var/
 var/clips/
