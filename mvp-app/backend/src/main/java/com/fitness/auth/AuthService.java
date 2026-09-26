@@ -1,5 +1,7 @@
 package com.fitness.auth;
 
+import com.fitness.profile.Profile;
+import com.fitness.profile.ProfileRepository;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -10,6 +12,7 @@ import java.util.Base64;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
@@ -23,26 +26,40 @@ public class AuthService {
 	private static final Duration REFRESH_TOKEN_TTL = Duration.ofDays(30);
 
 	private final UserRepository users;
+	private final ProfileRepository profiles;
 	private final RefreshTokenRepository refreshTokens;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtIssuer jwtIssuer;
 	private final SecureRandom random = new SecureRandom();
 
 	public AuthService(
-			UserRepository users, RefreshTokenRepository refreshTokens, PasswordEncoder passwordEncoder,
-			JwtIssuer jwtIssuer) {
+			UserRepository users, ProfileRepository profiles, RefreshTokenRepository refreshTokens,
+			PasswordEncoder passwordEncoder, JwtIssuer jwtIssuer) {
 		this.users = users;
+		this.profiles = profiles;
 		this.refreshTokens = refreshTokens;
 		this.passwordEncoder = passwordEncoder;
 		this.jwtIssuer = jwtIssuer;
 	}
 
-	public AuthTokens register(String email, String password) {
-		if (users.existsByEmail(email)) {
+	/**
+	 * User và hồ sơ ghi trong cùng transaction: lỗi ở bước nào thì cũng không để lại
+	 * tài khoản thiếu thông tin đăng ký.
+	 */
+	@Transactional
+	public AuthTokens register(RegisterRequest request) {
+		// @Size kiểm trước khi bỏ khoảng trắng, nên " a" lọt qua annotation — kiểm lại sau strip.
+		String fullName = request.fullName().strip();
+		if (fullName.length() < 2) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Họ tên không hợp lệ");
+		}
+		if (users.existsByEmail(request.email())) {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "Email đã được đăng ký");
 		}
-		User user = new User(email, passwordEncoder.encode(password), Role.USER);
-		users.save(user);
+		User user = users.save(new User(request.email(), passwordEncoder.encode(request.password()), Role.USER));
+		Profile profile = new Profile(user.getId());
+		profile.applyRegistration(fullName, request.phone());
+		profiles.save(profile);
 		return issueTokens(user);
 	}
 

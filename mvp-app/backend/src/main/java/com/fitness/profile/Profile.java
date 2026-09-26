@@ -45,6 +45,12 @@ public class Profile {
 	@Column
 	private String gender;
 
+	@Column(name = "full_name")
+	private String fullName;
+
+	@Column
+	private String phone;
+
 	@Column(name = "disclaimer_at")
 	private Instant disclaimerAt;
 
@@ -89,12 +95,27 @@ public class Profile {
 		return gender;
 	}
 
+	public String getFullName() {
+		return fullName;
+	}
+
+	public String getPhone() {
+		return phone;
+	}
+
 	public Instant getDisclaimerAt() {
 		return disclaimerAt;
 	}
 
 	public String getOnboardingStep() {
 		return onboardingStep;
+	}
+
+	/** Ghi thông tin từ form đăng ký. Chỉ gọi lúc tạo tài khoản. */
+	public void applyRegistration(String fullName, String phone) {
+		this.fullName = fullName;
+		this.phone = phone;
+		this.updatedAt = Instant.now();
 	}
 
 	/** null = không đổi trường đó. Disclaimer chỉ ghi dấu thời gian một lần, không xoá được. */

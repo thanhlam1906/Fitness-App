@@ -2,6 +2,8 @@ package com.fitness.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fitness.profile.Profile;
+import com.fitness.profile.ProfileRepository;
 import com.fitness.support.PostgresIntegrationTest;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -16,8 +18,53 @@ class AuthControllerIntegrationTest extends PostgresIntegrationTest {
 	@Autowired
 	private TestRestTemplate rest;
 
+	@Autowired
+	private ProfileRepository profiles;
+
 	private static String uniqueEmail() {
 		return "auth+" + UUID.randomUUID() + "@example.com";
+	}
+
+	private static RegisterRequest registerRequest(String email, String password) {
+		return new RegisterRequest(email, password, "Nguyễn Văn A", "0912345678");
+	}
+
+	@Test
+	void register_savesProfileDetails() {
+		var body = rest.postForEntity("/api/v1/auth/register",
+				new RegisterRequest(uniqueEmail(), "correct-password", "  Trần Thị B ", "+84912345678"),
+				AuthTokens.class).getBody();
+
+		Profile profile = profiles.findById(body.userId()).orElseThrow();
+		assertThat(profile.getFullName()).isEqualTo("Trần Thị B");
+		assertThat(profile.getPhone()).isEqualTo("+84912345678");
+		// Năm sinh, giới tính hỏi ở onboarding, không phải lúc đăng ký.
+		assertThat(profile.getBirthYear()).isNull();
+		assertThat(profile.getOnboardingStep()).isEqualTo("DISCLAIMER");
+	}
+
+	@Test
+	void register_invalidPhone_returns400() {
+		var resp = rest.postForEntity("/api/v1/auth/register",
+				new RegisterRequest(uniqueEmail(), "correct-password", "Nguyễn Văn A", "12345"),
+				java.util.Map.class);
+		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+	}
+
+	@Test
+	void register_fullNameTooShortAfterStrip_returns400() {
+		var resp = rest.postForEntity("/api/v1/auth/register",
+				new RegisterRequest(uniqueEmail(), "correct-password", " a", "0912345678"),
+				java.util.Map.class);
+		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+	}
+
+	@Test
+	void register_missingFullName_returns400() {
+		var resp = rest.postForEntity("/api/v1/auth/register",
+				new RegisterRequest(uniqueEmail(), "correct-password", null, "0912345678"),
+				java.util.Map.class);
+		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 	}
 
 	@Test
@@ -25,7 +72,7 @@ class AuthControllerIntegrationTest extends PostgresIntegrationTest {
 		String email = uniqueEmail();
 
 		var registerResp = rest.postForEntity(
-				"/api/v1/auth/register", new RegisterRequest(email, "correct-password"), AuthTokens.class);
+				"/api/v1/auth/register", registerRequest(email, "correct-password"), AuthTokens.class);
 		assertThat(registerResp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 		assertThat(registerResp.getBody().accessToken()).isNotBlank();
 		assertThat(registerResp.getBody().role()).isEqualTo(Role.USER);
@@ -39,10 +86,10 @@ class AuthControllerIntegrationTest extends PostgresIntegrationTest {
 	@Test
 	void register_duplicateEmail_returns409() {
 		String email = uniqueEmail();
-		rest.postForEntity("/api/v1/auth/register", new RegisterRequest(email, "correct-password"), AuthTokens.class);
+		rest.postForEntity("/api/v1/auth/register", registerRequest(email, "correct-password"), AuthTokens.class);
 
 		var second = rest.postForEntity(
-				"/api/v1/auth/register", new RegisterRequest(email, "another-password"), java.util.Map.class);
+				"/api/v1/auth/register", registerRequest(email, "another-password"), java.util.Map.class);
 
 		assertThat(second.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
 	}
@@ -50,7 +97,7 @@ class AuthControllerIntegrationTest extends PostgresIntegrationTest {
 	@Test
 	void login_wrongPassword_returns401() {
 		String email = uniqueEmail();
-		rest.postForEntity("/api/v1/auth/register", new RegisterRequest(email, "correct-password"), AuthTokens.class);
+		rest.postForEntity("/api/v1/auth/register", registerRequest(email, "correct-password"), AuthTokens.class);
 
 		var resp = rest.postForEntity(
 				"/api/v1/auth/login", new LoginRequest(email, "wrong-password"), java.util.Map.class);
@@ -62,7 +109,7 @@ class AuthControllerIntegrationTest extends PostgresIntegrationTest {
 	void refresh_rotatesToken_oldRefreshTokenNoLongerUsable() {
 		String email = uniqueEmail();
 		AuthTokens original = rest.postForEntity(
-				"/api/v1/auth/register", new RegisterRequest(email, "correct-password"), AuthTokens.class).getBody();
+				"/api/v1/auth/register", registerRequest(email, "correct-password"), AuthTokens.class).getBody();
 
 		var refreshResp = rest.postForEntity(
 				"/api/v1/auth/refresh", new RefreshRequest(original.refreshToken()), AuthTokens.class);
@@ -79,7 +126,7 @@ class AuthControllerIntegrationTest extends PostgresIntegrationTest {
 	void logout_revokesRefreshToken() {
 		String email = uniqueEmail();
 		AuthTokens tokens = rest.postForEntity(
-				"/api/v1/auth/register", new RegisterRequest(email, "correct-password"), AuthTokens.class).getBody();
+				"/api/v1/auth/register", registerRequest(email, "correct-password"), AuthTokens.class).getBody();
 
 		var logoutResp = rest.postForEntity(
 				"/api/v1/auth/logout", new RefreshRequest(tokens.refreshToken()), Void.class);
@@ -99,7 +146,7 @@ class AuthControllerIntegrationTest extends PostgresIntegrationTest {
 	@Test
 	void login_withExpiredBearerHeader_stillWorks() {
 		String email = uniqueEmail();
-		rest.postForEntity("/api/v1/auth/register", new RegisterRequest(email, "correct-password"), AuthTokens.class);
+		rest.postForEntity("/api/v1/auth/register", registerRequest(email, "correct-password"), AuthTokens.class);
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setBearerAuth("eyJhbGciOiJIUzI1NiJ9.token-het-han.chu-ky-sai");
