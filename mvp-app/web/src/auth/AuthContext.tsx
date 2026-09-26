@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 import { api, onLoggedOut } from "@/api/client"
+import type { RegisterPayload } from "./registerSchema"
 import { clearSession, getRefreshToken, getStoredSession, setSession } from "./tokenStorage"
 
 type AuthTokens = { accessToken: string; refreshToken: string; userId: string; role: string }
@@ -9,7 +10,7 @@ type AuthContextValue = {
   role: string | null
   isAuthenticated: boolean
   login: (email: string, password: string) => Promise<void>
-  register: (email: string, password: string) => Promise<void>
+  register: (payload: RegisterPayload) => Promise<void>
   logout: () => void
 }
 
@@ -29,8 +30,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     applyTokens(await api.post<AuthTokens>("/auth/login", { email, password }))
   }
 
-  async function register(email: string, password: string) {
-    applyTokens(await api.post<AuthTokens>("/auth/register", { email, password }))
+  async function register(payload: RegisterPayload) {
+    applyTokens(await api.post<AuthTokens>("/auth/register", payload))
   }
 
   function logout() {

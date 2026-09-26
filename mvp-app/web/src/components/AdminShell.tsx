@@ -1,6 +1,7 @@
 import type { ReactNode } from "react"
 import { NavLink } from "react-router"
 import { useAuth } from "@/auth/AuthContext"
+import { Logo } from "@/components/Logo"
 import { useExercises } from "@/features/admin/exercises/useExercises"
 import { useTemplates } from "@/features/admin/templates/useTemplates"
 import { useAdminOverview, useAdminUsers } from "@/features/admin/users/useAdminUsers"
@@ -72,7 +73,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen bg-[var(--color-bg)]">
       <nav className="flex w-[248px] flex-none flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)] py-5.5">
         <div className="border-b border-[var(--color-border)] px-5 pb-5">
-          <div className="text-lg font-extrabold tracking-tight">Sổ Tập</div>
+          <Logo />
           <div className="kicker mt-1">Bảng quản trị</div>
         </div>
 
