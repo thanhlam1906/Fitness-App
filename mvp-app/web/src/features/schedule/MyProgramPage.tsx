@@ -1,60 +1,30 @@
-import { useState } from "react"
-import { ApiError } from "@/api/client"
-import { Button } from "@/components/ui/button"
+import { ChevronLeft } from "lucide-react"
+import { Link } from "react-router"
 import { ScheduleBuilder } from "./ScheduleBuilder"
-import { useSchedule } from "./useSchedule"
-import { WorkoutEditor } from "./WorkoutEditor"
+import { useOpenFirstWorkout } from "./useSchedule"
 
 /**
- * Màn "Lịch riêng" — nơi người dùng tự thiết kế lịch và tự sửa buổi tập, khác
- * màn "Lịch tuần" chỉ để xem và bắt đầu buổi.
+ * "Tự thiết kế lịch" — mở từ Lịch › Sửa lịch (doc/design-ui-m3-v1.md §3). Sửa MỘT
+ * buổi không còn ở đây mà ở thẻ ngày của màn Lịch ("Sửa buổi này").
  */
 export function MyProgramPage() {
-  const schedule = useSchedule()
-  const [building, setBuilding] = useState(false)
-
-  if (schedule.isLoading) {
-    return <p className="text-sm text-[var(--color-text-muted)]">Đang tải lịch…</p>
-  }
-
-  const noProgram =
-    schedule.isError && schedule.error instanceof ApiError && schedule.error.status === 404
-  if (schedule.isError && !noProgram) {
-    return (
-      <p className="text-sm text-[var(--color-danger)]">
-        Không tải được lịch: {schedule.error.message}
-      </p>
-    )
-  }
-
+  const openFirstWorkout = useOpenFirstWorkout()
   return (
     <div>
-      <h1 className="text-[30px] font-extrabold tracking-[-0.02em]">Lịch riêng</h1>
-
-      {building || noProgram ? (
-        <>
-          <p className="mt-2 text-[13px] leading-relaxed text-[var(--color-text-muted)]">
-            Chọn thứ bạn tập, thêm bài và tự đặt set, rep, mức tạ.
-          </p>
-          <div className="mt-5">
-            <ScheduleBuilder onCreated={() => setBuilding(false)} />
-          </div>
-        </>
-      ) : (
-        <>
-          <p className="mt-2 text-[13px] leading-relaxed text-[var(--color-text-muted)]">
-            Sửa bài tập, set, rep và mức tạ của từng buổi. Thay đổi chỉ áp cho buổi đó.
-          </p>
-          <Button variant="secondary" className="mt-4 w-full" onClick={() => setBuilding(true)}>
-            Tạo lịch mới
-          </Button>
-          <div className="mt-5 space-y-3">
-            {schedule.data!.workouts.map((workout) => (
-              <WorkoutEditor key={workout.id} workout={workout} />
-            ))}
-          </div>
-        </>
-      )}
+      <Link
+        to="/schedule"
+        className="inline-flex items-center gap-0.5 text-sm font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+      >
+        <ChevronLeft className="size-4" aria-hidden />
+        Lịch
+      </Link>
+      <h1 className="mt-2 text-[28px] font-extrabold tracking-[-0.02em]">Tự thiết kế lịch</h1>
+      <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--color-text-muted)]">
+        Chọn ngày tập trong tuần, thêm bài cho từng ngày. Tuần nào cũng lặp lại y hệt.
+      </p>
+      <div className="mt-5">
+        <ScheduleBuilder onCreated={openFirstWorkout} />
+      </div>
     </div>
   )
 }

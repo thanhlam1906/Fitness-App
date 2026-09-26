@@ -4,10 +4,11 @@ import type { Profile, ProfilePatch } from "./types"
 
 export const profileKey = ["profile"] as const
 
-export function useProfile() {
+export function useProfile(enabled = true) {
   return useQuery({
     queryKey: profileKey,
     queryFn: () => api.get<Profile>("/me/profile"),
+    enabled,
   })
 }
 

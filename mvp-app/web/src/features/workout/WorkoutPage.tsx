@@ -1,4 +1,5 @@
 import { Link, useParams, useSearchParams } from "react-router"
+import { ApiError } from "@/api/client"
 import { SegmentBar, type Segment } from "@/components/SegmentBar"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -26,6 +27,17 @@ export function WorkoutPage() {
 
   if (schedule.isLoading || session.isLoading) {
     return <p className="text-sm text-[var(--color-text-muted)]">Đang chuẩn bị buổi tập…</p>
+  }
+  if (session.isError && session.error instanceof ApiError && session.error.status === 409) {
+    // Ngày đã tập xong (mở lại từ lịch sử trình duyệt): xem lại ở màn Lịch, không tạo buổi mới.
+    return (
+      <Card className="space-y-3">
+        <p className="text-sm text-[var(--color-text-muted)]">Buổi này đã tập xong.</p>
+        <Link to={workout ? `/schedule?ngay=${workout.scheduledOn}` : "/schedule"}>
+          <Button variant="secondary">Xem lại ở Lịch</Button>
+        </Link>
+      </Card>
+    )
   }
   if (session.isError) {
     return (

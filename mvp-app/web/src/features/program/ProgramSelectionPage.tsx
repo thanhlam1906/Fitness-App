@@ -9,6 +9,7 @@ import { FlowScreen } from "@/components/UserShell"
 import { cn } from "@/lib/cn"
 import { WEEKDAYS } from "./schema"
 import { loadableExercises, useCandidates, type TemplateCandidate } from "./useCandidates"
+import { useOpenFirstWorkout } from "@/features/schedule/useSchedule"
 import { useCreateProgram } from "./useCreateProgram"
 
 const ORDINALS = ["Đề xuất chính", "Phương án hai", "Phương án ba", "Phương án bốn"]
@@ -28,6 +29,7 @@ const ALL_DAYS = WEEKDAYS.map((d) => d.value)
 export function ProgramSelectionPage() {
   const candidates = useCandidates()
   const createProgram = useCreateProgram()
+  const openFirstWorkout = useOpenFirstWorkout()
 
   const [templateId, setTemplateId] = useState("")
   const [trainingDays, setTrainingDays] = useState<number[]>([1, 2, 3, 4, 5])
@@ -35,25 +37,6 @@ export function ProgramSelectionPage() {
   const [loads, setLoads] = useState<Record<string, string>>({})
 
   const selected = candidates.data?.find((c) => c.id === templateId) ?? null
-
-  if (createProgram.isSuccess) {
-    return (
-      <FlowScreen>
-        <div className="kicker">Xong</div>
-        <h1 className="mt-3 text-[28px] leading-tight font-extrabold tracking-[-0.02em]">
-          Đã tạo chương trình.
-        </h1>
-        <p className="mt-3 text-sm leading-relaxed text-[var(--color-text-muted)]">
-          Lịch 4 tuần đầu đã sinh từ template và mức tạ khởi điểm. Từ tuần sau, engine điều chỉnh
-          theo kết quả tập thật và luôn nói rõ lý do.
-        </p>
-        <div className="flex-1" />
-        <Link to="/schedule">
-          <Button className="w-full">Xem lịch tuần</Button>
-        </Link>
-      </FlowScreen>
-    )
-  }
 
   if (candidates.isLoading) {
     return <p className="text-sm text-[var(--color-text-muted)]">Đang tải đề xuất…</p>
@@ -196,18 +179,24 @@ export function ProgramSelectionPage() {
           <div className="flex-1" />
           <Button
             className="mt-6 w-full"
-            disabled={createProgram.isPending || trainingDays.length === 0}
+            // Còn khoá sau khi tạo xong: lúc đang lấy lịch mới để chuyển trang, bấm lần nữa
+            // sẽ tạo chương trình thứ hai và dừng chương trình vừa tạo.
+            disabled={createProgram.isPending || createProgram.isSuccess || trainingDays.length === 0}
             onClick={() =>
-              createProgram.mutate({
-                templateId: selected.id,
-                restDays,
-                startDate,
-                startingLoadsBySlug: Object.fromEntries(
-                  Object.entries(loads)
-                    .filter(([, value]) => value !== "")
-                    .map(([slug, value]) => [slug, Number(value)]),
-                ),
-              })
+              createProgram.mutate(
+                {
+                  templateId: selected.id,
+                  restDays,
+                  startDate,
+                  startingLoadsBySlug: Object.fromEntries(
+                    Object.entries(loads)
+                      .filter(([, value]) => value !== "")
+                      .map(([slug, value]) => [slug, Number(value)]),
+                  ),
+                },
+                // Không còn màn "Xong": vào thẳng Lịch ở buổi đầu tiên.
+                { onSuccess: openFirstWorkout },
+              )
             }
           >
             {createProgram.isPending ? "Đang tạo…" : "Bắt đầu chương trình"}

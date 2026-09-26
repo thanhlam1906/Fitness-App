@@ -1,18 +1,15 @@
 import { useEffect, useRef, useState } from "react"
-import { ArrowLeft, MessageCircleWarning, SendHorizontal } from "lucide-react"
-import { Link } from "react-router"
+import { MessageCircleWarning, SendHorizontal } from "lucide-react"
 import { ApiError } from "@/api/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { FlowScreen } from "@/components/UserShell"
 import { cn } from "@/lib/cn"
 import { useAssistant } from "./useAssistant"
 import type { ChatMessage } from "./types"
 
 /**
- * Màn trợ lý — concept-chatbot-v1.md §12. Tab phụ (không nằm trong thanh tab
- * đáy — 4 tab đã vừa đúng khung 402px ở UserShell, thêm một tab thứ 5 là vỡ
- * layout đó), vào từ nút nhỏ trên màn Lịch tuần. Lịch tuần vẫn là màn mở đầu.
+ * Màn trợ lý — concept-chatbot-v1.md §12. Là một tab ở thanh tab đáy từ M3
+ * (doc/design-ui-m3-v1.md §4); Lịch vẫn là màn mở đầu.
  *
  * Không SSE (AssistantService.java giải thích lý do: NumberGuard cần câu trả
  * lời đầy đủ mới quyết được giữ hay bỏ) — nên có "đang trả lời…" thay vì chữ
@@ -60,17 +57,10 @@ export function AssistantPage() {
   }
 
   return (
-    <FlowScreen>
-      {/* /assistant không nằm trong thanh tab đáy (UserShell), nên cần lối quay lại
-          Lịch tuần — không thì đây là ngõ cụt. */}
-      <Link
-        to="/schedule"
-        className="inline-flex w-fit items-center gap-1.5 text-sm font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
-      >
-        <ArrowLeft className="size-4" aria-hidden />
-        Lịch tuần
-      </Link>
-      <h1 className="mt-2 text-[30px] font-extrabold tracking-[-0.02em]">Trợ lý</h1>
+    // Cao đúng một màn trừ lề trên (pt-8) và phần chừa cho thanh tab (pb-28), để ô nhập
+    // nằm ngay trên thanh tab thay vì bị đẩy xuống phải cuộn.
+    <div className="flex min-h-[calc(100dvh-144px)] flex-col">
+      <h1 className="text-[30px] font-extrabold tracking-[-0.02em]">Trợ lý</h1>
       <p className="mt-1 text-sm text-[var(--color-text-muted)]">
         Hỏi về nguyên lý tập luyện, lịch tuần, hay tiến bộ của bạn. Không thay được bác sĩ hay HLV.
       </p>
@@ -114,7 +104,7 @@ export function AssistantPage() {
           <SendHorizontal className="size-4" aria-hidden />
         </Button>
       </div>
-    </FlowScreen>
+    </div>
   )
 }
 

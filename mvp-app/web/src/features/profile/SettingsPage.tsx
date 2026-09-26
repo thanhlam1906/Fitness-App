@@ -1,7 +1,5 @@
 import { useState, type ReactNode } from "react"
-import { Link } from "react-router"
-import { useQuery } from "@tanstack/react-query"
-import { api, ApiError } from "@/api/client"
+import { ApiError } from "@/api/client"
 import { useAuth } from "@/auth/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -9,15 +7,8 @@ import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/cn"
 import { formatDayMonth, formatKg } from "@/lib/format"
 import { EQUIPMENT_OPTIONS, EXPERIENCE_LEVELS, GOALS, labelOf } from "./types"
+import { useCurrentProgram } from "@/features/program/useCurrentProgram"
 import { useProfile, usePatchProfile, useSaveBodyMetric } from "./useProfile"
-
-type CurrentProgram = {
-  id: string
-  templateName: string
-  methodology: string | null
-  startDate: string
-  restDays: number[]
-}
 
 const WEEKDAY_LABEL = ["", "T2", "T3", "T4", "T5", "T6", "T7", "CN"]
 
@@ -38,11 +29,7 @@ export function SettingsPage() {
   const profile = useProfile()
   const patch = usePatchProfile()
   const saveBodyMetric = useSaveBodyMetric()
-  const program = useQuery({
-    queryKey: ["program-current"],
-    queryFn: () => api.get<CurrentProgram>("/programs/current"),
-    retry: false, // 404 = chưa có chương trình, không phải lỗi tạm thời
-  })
+  const program = useCurrentProgram()
 
   if (profile.isLoading) {
     return <p className="text-sm text-[var(--color-text-muted)]">Đang tải…</p>
@@ -186,15 +173,11 @@ export function SettingsPage() {
             </>
           )}
         </div>
-        <Link to="/program" className="text-[13px] font-semibold text-[var(--color-accent)]">
-          {program.data ? "Đổi" : "Chọn"}
-        </Link>
       </div>
-      {program.data && (
-        <p className="mt-2 text-[11px] text-[var(--color-text-muted)]">
-          Đổi chương trình không xoá lịch sử tập cũ, và không tự sinh lại lịch đang chạy.
-        </p>
-      )}
+      {/* Đổi chương trình gom về một chỗ: Lịch › Sửa lịch (doc/design-ui-m3-v1.md §3). */}
+      <p className="mt-2 text-[11px] text-[var(--color-text-muted)]">
+        {program.data ? "Đổi chương trình ở Lịch › Sửa lịch." : "Chọn chương trình ở tab Lịch."}
+      </p>
 
       {patch.isError && (
         <p className="mt-4 text-sm text-[var(--color-danger)]">Lưu thất bại: {patch.error.message}</p>

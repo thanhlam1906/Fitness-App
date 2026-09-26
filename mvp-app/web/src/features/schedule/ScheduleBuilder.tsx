@@ -77,21 +77,7 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
 
       {WEEKDAYS.filter((d) => d.value in draft).map((d) => (
         <div key={d.value} className="mt-5 rounded-xl bg-[var(--color-surface)] p-3.5">
-          <div className="flex items-center justify-between">
-            <span className="text-[15px] font-bold">Buổi {d.label}</span>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() =>
-                setDraft((prev) => ({
-                  ...prev,
-                  [d.value]: [...prev[d.value], emptyExercise(active[0].id)],
-                }))
-              }
-            >
-              Thêm bài
-            </Button>
-          </div>
+          <span className="text-[15px] font-bold">Buổi {d.label}</span>
 
           <div className="mt-3 space-y-3">
             {draft[d.value].map((ex, i) => (
@@ -145,6 +131,18 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
               </div>
             ))}
           </div>
+          <button
+            type="button"
+            onClick={() =>
+              setDraft((prev) => ({
+                ...prev,
+                [d.value]: [...prev[d.value], emptyExercise(active[0].id)],
+              }))
+            }
+            className="mt-3 h-10 w-full rounded-[var(--radius-md)] border-[1.5px] border-dashed border-[var(--color-border)] text-sm font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+          >
+            + Thêm bài
+          </button>
         </div>
       ))}
 
@@ -180,20 +178,22 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
         </p>
       )}
 
+      {/* Người dùng chốt viết ngắn (09-26): chỉ hai điều cần biết trước khi bấm. */}
+      <p className="mt-4 rounded-[var(--radius-md)] border border-[color-mix(in_srgb,var(--color-warn)_30%,transparent)] bg-[var(--color-warn-tint)] px-3 py-2.5 text-xs text-[var(--color-warn)]">
+        Chương trình đang dùng sẽ dừng. Lịch này không tự tăng tải.
+      </p>
+
       <Button
-        className="mt-5 w-full"
-        disabled={!!error || createProgram.isPending}
+        className="mt-4 w-full"
+        disabled={!!error || createProgram.isPending || createProgram.isSuccess}
         onClick={() =>
           createProgram.mutate(toCustomProgramRequest(draft, startDate, Number(weeks)), {
             onSuccess: onCreated,
           })
         }
       >
-        {createProgram.isPending ? "Đang tạo…" : "Tạo lịch này"}
+        {createProgram.isPending ? "Đang tạo…" : "Tạo lịch"}
       </Button>
-      <p className="mt-2 text-[11px] text-[var(--color-text-muted)]">
-        Lịch mới thay chương trình đang chạy. Lịch cũ được lưu lại, không mất dữ liệu buổi đã tập.
-      </p>
     </div>
   )
 }

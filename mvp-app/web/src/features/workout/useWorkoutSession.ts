@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { api } from "@/api/client"
+import { api, ApiError } from "@/api/client"
 import type { FinishSessionInput, SessionResponse, SetLogInput, SetLogResponse } from "./types"
 
 const sessionKey = (scheduledWorkoutId: string) => ["session", scheduledWorkoutId] as const
@@ -20,6 +20,8 @@ export function useWorkoutSession(scheduledWorkoutId: string) {
     queryKey: sessionKey(scheduledWorkoutId),
     queryFn: () => api.post<SessionResponse>("/sessions", { scheduledWorkoutId }),
     staleTime: Infinity, // cache đã được ghi lại sau mỗi log set, không cần refetch nền
+    // 409 = ngày đã tập xong: thử lại vẫn 409, chỉ làm người dùng chờ thêm.
+    retry: (count, error) => !(error instanceof ApiError && error.status === 409) && count < 3,
   })
 }
 
@@ -52,7 +54,12 @@ export function useFinishSession(sessionId: string | undefined) {
   return useMutation({
     mutationFn: (input: FinishSessionInput) =>
       api.post<SessionResponse>(`/sessions/${sessionId}/finish`, input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["schedule"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["schedule"] })
+      // Thẻ ngày ở màn Lịch đọc buổi qua ["session-of-day", id]; không làm mới thì vừa kết
+      // buổi xong vẫn thấy bản cũ (chưa tập / đang dở) một nhịp.
+      queryClient.invalidateQueries({ queryKey: ["session-of-day"] })
+    },
   })
 }
 
