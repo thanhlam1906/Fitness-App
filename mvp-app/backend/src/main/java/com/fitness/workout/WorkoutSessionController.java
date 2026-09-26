@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -54,6 +55,12 @@ public class WorkoutSessionController {
 			if (existing.isPresent()) {
 				return ResponseEntity.ok(withSets(existing.get()));
 			}
+			// Ngày đã tập xong: mở lại thì trước đây sinh thêm một buổi IN_PROGRESS cho cùng ngày.
+			// Chỉ tra buổi của chính người gọi, nên không lộ trạng thái lịch của người khác.
+			if (sessions.existsByUserIdAndScheduledWorkoutIdAndStatus(
+					currentUser.id(), request.scheduledWorkoutId(), "DONE")) {
+				throw new ResponseStatusException(HttpStatus.CONFLICT, "Buổi này đã tập xong");
+			}
 		}
 		WorkoutSession session = new WorkoutSession(currentUser.id(), request.scheduledWorkoutId());
 		sessions.save(session);
@@ -63,6 +70,20 @@ public class WorkoutSessionController {
 	@GetMapping("/{id}")
 	public SessionResponse get(@PathVariable UUID id) {
 		return withSets(findOwnSessionOrThrow(id));
+	}
+
+	/**
+	 * Màn Lịch (M3): xem lại buổi đã tập của một ngày. Ngày của người khác cũng chỉ ra 404.
+	 * Ưu tiên buổi DONE: lỗi cũ (mở lại ngày đã tập sinh buổi mới) để lại buổi IN_PROGRESS
+	 * rỗng mới hơn, lấy "mới nhất" thì che mất buổi tập thật.
+	 */
+	@GetMapping(params = "scheduledWorkoutId")
+	public SessionResponse getByScheduledWorkout(@RequestParam UUID scheduledWorkoutId) {
+		UUID userId = currentUser.id();
+		return sessions.findFirstByUserIdAndScheduledWorkoutIdAndStatusOrderByStartedAtDesc(userId, scheduledWorkoutId, "DONE")
+				.or(() -> sessions.findFirstByUserIdAndScheduledWorkoutIdOrderByStartedAtDesc(userId, scheduledWorkoutId))
+				.map(this::withSets)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Chưa có buổi tập cho ngày này"));
 	}
 
 	@PostMapping("/{id}/sets")

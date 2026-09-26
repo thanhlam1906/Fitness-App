@@ -5,8 +5,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fitness.auth.Role;
 import com.fitness.content.Exercise;
 import com.fitness.content.ExerciseRepository;
+import com.fitness.program.CreateCustomProgramRequest;
+import com.fitness.program.ProgramService;
+import com.fitness.program.ScheduleResponse;
 import com.fitness.support.PostgresIntegrationTest;
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -23,6 +29,10 @@ class WorkoutSessionControllerIntegrationTest extends PostgresIntegrationTest {
 	private TestRestTemplate rest;
 	@Autowired
 	private ExerciseRepository exerciseRepository;
+	@Autowired
+	private ProgramService programService;
+	@Autowired
+	private WorkoutSessionRepository sessionRepository;
 
 	@Test
 	void startLogFinish_fullFlow() {
@@ -88,6 +98,86 @@ class WorkoutSessionControllerIntegrationTest extends PostgresIntegrationTest {
 				new HttpEntity<>(setReq, headers), java.util.Map.class);
 
 		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+	}
+
+	/** Màn Lịch (M3): bấm ngày đã tập thì xem lại đúng buổi đó kèm set đã log. */
+	@Test
+	void getByScheduledWorkout_returnsDoneSessionWithSets() {
+		var user = newAuthedUser(Role.USER);
+		UUID workoutId = firstWorkoutOfNewProgram(user);
+		UUID sessionId = start(workoutId, user.headers()).getBody().id();
+		Exercise pushUp = exerciseRepository.findBySlug("push-up").orElseThrow();
+		rest.exchange("/api/v1/sessions/" + sessionId + "/sets", HttpMethod.POST, new HttpEntity<>(
+				new SetLogRequest(pushUp.getId(), (short) 1, (short) 8, (short) 8, null, null, false, null),
+				user.headers()), SetLogResponse.class);
+		rest.exchange("/api/v1/sessions/" + sessionId + "/finish", HttpMethod.POST,
+				new HttpEntity<>(new FinishSessionRequest(List.of(), (short) 7), user.headers()), SessionResponse.class);
+
+		var resp = rest.exchange("/api/v1/sessions?scheduledWorkoutId=" + workoutId, HttpMethod.GET,
+				new HttpEntity<>(user.headers()), SessionResponse.class);
+
+		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(resp.getBody().id()).isEqualTo(sessionId);
+		assertThat(resp.getBody().status()).isEqualTo("DONE");
+		assertThat(resp.getBody().sets()).hasSize(1);
+	}
+
+	/** Dữ liệu do lỗi cũ để lại: buổi DONE thật, sau đó một buổi IN_PROGRESS rỗng cho cùng ngày. */
+	@Test
+	void getByScheduledWorkout_prefersDoneOverNewerEmptySession() {
+		var user = newAuthedUser(Role.USER);
+		UUID workoutId = firstWorkoutOfNewProgram(user);
+		UUID doneId = start(workoutId, user.headers()).getBody().id();
+		rest.exchange("/api/v1/sessions/" + doneId + "/finish", HttpMethod.POST,
+				new HttpEntity<>(new FinishSessionRequest(List.of(), null), user.headers()), SessionResponse.class);
+		sessionRepository.save(new WorkoutSession(user.userId(), workoutId));
+
+		var resp = rest.exchange("/api/v1/sessions?scheduledWorkoutId=" + workoutId, HttpMethod.GET,
+				new HttpEntity<>(user.headers()), SessionResponse.class);
+
+		assertThat(resp.getBody().id()).isEqualTo(doneId);
+	}
+
+	@Test
+	void getByScheduledWorkout_otherUser_returns404() {
+		var owner = newAuthedUser(Role.USER);
+		UUID workoutId = firstWorkoutOfNewProgram(owner);
+		start(workoutId, owner.headers());
+
+		var resp = rest.exchange("/api/v1/sessions?scheduledWorkoutId=" + workoutId, HttpMethod.GET,
+				new HttpEntity<>(newAuthedUser(Role.USER).headers()), java.util.Map.class);
+
+		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+	}
+
+	/** Trước đây mở lại ngày đã tập tạo thêm một buổi IN_PROGRESS mới cho ngày đó. */
+	@Test
+	void start_onDoneWorkout_returns409() {
+		var user = newAuthedUser(Role.USER);
+		UUID workoutId = firstWorkoutOfNewProgram(user);
+		UUID sessionId = start(workoutId, user.headers()).getBody().id();
+		rest.exchange("/api/v1/sessions/" + sessionId + "/finish", HttpMethod.POST,
+				new HttpEntity<>(new FinishSessionRequest(List.of(), null), user.headers()), SessionResponse.class);
+
+		var again = rest.exchange("/api/v1/sessions", HttpMethod.POST,
+				new HttpEntity<>(new StartSessionRequest(workoutId), user.headers()), java.util.Map.class);
+
+		assertThat(again.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+	}
+
+	private org.springframework.http.ResponseEntity<SessionResponse> start(UUID workoutId, HttpHeaders headers) {
+		return rest.exchange("/api/v1/sessions", HttpMethod.POST,
+				new HttpEntity<>(new StartSessionRequest(workoutId), headers), SessionResponse.class);
+	}
+
+	private UUID firstWorkoutOfNewProgram(AuthedUser user) {
+		UUID pushUpId = exerciseRepository.findBySlug("push-up").orElseThrow().getId();
+		LocalDate monday = LocalDate.of(2026, 1, 1).with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY));
+		programService.createCustomProgram(user.userId(), new CreateCustomProgramRequest(monday, 2, List.of(
+				new CreateCustomProgramRequest.CustomDay(1, "Đẩy", List.of(
+						new CreateCustomProgramRequest.CustomExercise(pushUpId, 3, 8, 12, null, 90))))));
+		return rest.exchange("/api/v1/schedule", HttpMethod.GET, new HttpEntity<>(user.headers()),
+				ScheduleResponse.class).getBody().workouts().get(0).id();
 	}
 
 	/** concept-backend-v1.md §5 Lớp 3: user B gọi tài nguyên của user A → 404, không phải 403. */
