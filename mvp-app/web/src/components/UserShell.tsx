@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { CalendarDays, Camera, ListChecks, User } from "lucide-react"
+import { CalendarDays, Camera, MessageCircle, User } from "lucide-react"
 import { NavLink, useLocation } from "react-router"
 import { cn } from "@/lib/cn"
 
@@ -10,9 +10,9 @@ import { cn } from "@/lib/cn"
 // Nhãn tối đa 2 chữ để 4 tab vừa một hàng trên khung 402px; icon gánh phần
 // nhận diện, chữ chỉ để khỏi phải đoán icon.
 const TABS = [
-  { to: "/schedule", label: "Lịch tuần", Icon: CalendarDays },
-  { to: "/my-schedule", label: "Lịch riêng", Icon: ListChecks },
-  { to: "/form-check", label: "Kiểm tra", Icon: Camera },
+  { to: "/schedule", label: "Lịch", Icon: CalendarDays },
+  { to: "/assistant", label: "Trợ lý", Icon: MessageCircle },
+  { to: "/form-check", label: "Chấm form", Icon: Camera },
   { to: "/settings", label: "Hồ sơ", Icon: User },
 ]
 

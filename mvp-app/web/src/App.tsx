@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router"
 import { AppShell } from "@/components/AppShell"
 import { RequireAdmin } from "@/auth/RequireAdmin"
 import { RequireAuth } from "@/auth/RequireAuth"
+import { RequireOnboarding } from "@/auth/RequireOnboarding"
 import { LoginPage } from "@/auth/LoginPage"
 import { RegisterPage } from "@/auth/RegisterPage"
 import { AssistantPage } from "@/features/assistant/AssistantPage"
@@ -33,83 +34,85 @@ export function App() {
         path="/*"
         element={
           <RequireAuth>
-            <AppShell>
-              <Routes>
-                {/* Lịch tuần là màn chính, nguồn sự thật — vào app là thấy nó trước. */}
-                <Route path="/" element={<Navigate to="/schedule" replace />} />
-                <Route path="/onboarding" element={<OnboardingPage />} />
-                <Route path="/program" element={<ProgramSelectionPage />} />
-                <Route path="/schedule" element={<SchedulePage />} />
-                <Route path="/assistant" element={<AssistantPage />} />
-                <Route path="/my-schedule" element={<MyProgramPage />} />
-                <Route path="/workout/:scheduledWorkoutId" element={<WorkoutPage />} />
-                <Route
-                  path="/workout/:scheduledWorkoutId/finish"
-                  element={<FinishSessionPage />}
-                />
-                <Route path="/form-check" element={<FormCheckListPage />} />
-                <Route path="/form-check/result/:reviewId" element={<ReviewResultPage />} />
-                <Route path="/form-check/:exerciseId" element={<FilmingGuidePage />} />
-                <Route path="/settings" element={<SettingsPage />} />
-                <Route
-                  path="/admin/users"
-                  element={
-                    <RequireAdmin>
-                      <UserListPage />
-                    </RequireAdmin>
-                  }
-                />
-                <Route
-                  path="/admin/users/:userId"
-                  element={
-                    <RequireAdmin>
-                      <UserDetailPage />
-                    </RequireAdmin>
-                  }
-                />
-                <Route
-                  path="/admin/exercises"
-                  element={
-                    <RequireAdmin>
-                      <ExerciseListPage />
-                    </RequireAdmin>
-                  }
-                />
-                <Route
-                  path="/admin/exercises/:id"
-                  element={
-                    <RequireAdmin>
-                      <ExerciseFormPage />
-                    </RequireAdmin>
-                  }
-                />
-                <Route
-                  path="/admin/templates"
-                  element={
-                    <RequireAdmin>
-                      <TemplateListPage />
-                    </RequireAdmin>
-                  }
-                />
-                <Route
-                  path="/admin/corpus"
-                  element={
-                    <RequireAdmin>
-                      <CorpusPage />
-                    </RequireAdmin>
-                  }
-                />
-                <Route
-                  path="/admin/templates/:id"
-                  element={
-                    <RequireAdmin>
-                      <TemplateFormPage />
-                    </RequireAdmin>
-                  }
-                />
-                <Route path="*" element={<Navigate to="/schedule" replace />} />
-              </Routes>
-            </AppShell>
+            <RequireOnboarding>
+              <AppShell>
+                <Routes>
+                  {/* Lịch tuần là màn chính, nguồn sự thật — vào app là thấy nó trước. */}
+                  <Route path="/" element={<Navigate to="/schedule" replace />} />
+                  <Route path="/onboarding" element={<OnboardingPage />} />
+                  <Route path="/program" element={<ProgramSelectionPage />} />
+                  <Route path="/schedule" element={<SchedulePage />} />
+                  <Route path="/assistant" element={<AssistantPage />} />
+                  <Route path="/my-schedule" element={<MyProgramPage />} />
+                  <Route path="/workout/:scheduledWorkoutId" element={<WorkoutPage />} />
+                  <Route
+                    path="/workout/:scheduledWorkoutId/finish"
+                    element={<FinishSessionPage />}
+                  />
+                  <Route path="/form-check" element={<FormCheckListPage />} />
+                  <Route path="/form-check/result/:reviewId" element={<ReviewResultPage />} />
+                  <Route path="/form-check/:exerciseId" element={<FilmingGuidePage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route
+                    path="/admin/users"
+                    element={
+                      <RequireAdmin>
+                        <UserListPage />
+                      </RequireAdmin>
+                    }
+                  />
+                  <Route
+                    path="/admin/users/:userId"
+                    element={
+                      <RequireAdmin>
+                        <UserDetailPage />
+                      </RequireAdmin>
+                    }
+                  />
+                  <Route
+                    path="/admin/exercises"
+                    element={
+                      <RequireAdmin>
+                        <ExerciseListPage />
+                      </RequireAdmin>
+                    }
+                  />
+                  <Route
+                    path="/admin/exercises/:id"
+                    element={
+                      <RequireAdmin>
+                        <ExerciseFormPage />
+                      </RequireAdmin>
+                    }
+                  />
+                  <Route
+                    path="/admin/templates"
+                    element={
+                      <RequireAdmin>
+                        <TemplateListPage />
+                      </RequireAdmin>
+                    }
+                  />
+                  <Route
+                    path="/admin/corpus"
+                    element={
+                      <RequireAdmin>
+                        <CorpusPage />
+                      </RequireAdmin>
+                    }
+                  />
+                  <Route
+                    path="/admin/templates/:id"
+                    element={
+                      <RequireAdmin>
+                        <TemplateFormPage />
+                      </RequireAdmin>
+                    }
+                  />
+                  <Route path="*" element={<Navigate to="/schedule" replace />} />
+                </Routes>
+              </AppShell>
+            </RequireOnboarding>
           </RequireAuth>
         }
       />
