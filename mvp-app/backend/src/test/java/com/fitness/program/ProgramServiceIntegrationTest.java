@@ -56,16 +56,75 @@ class ProgramServiceIntegrationTest extends PostgresIntegrationTest {
 
 	@Test
 	void candidatesMatchSessionsAndEquipment() {
-		Profile profile = new Profile(userId);
-		profile.patch("STRENGTH", "NEW", (short) 3, new String[] {"BARBELL_RACK"}, null, null, true, "DONE");
-		profileRepository.save(profile);
+		saveProfile((short) 3, "BARBELL_RACK");
 
 		List<TemplateCandidate> candidates = programService.findCandidateTemplates(userId);
 
-		assertThat(candidates).extracting(TemplateCandidate::slug).containsExactly("full-body-3x");
+		// Template dùng thiết bị người dùng có đứng trước template tay không cùng số buổi.
+		assertThat(candidates.get(0).slug()).isEqualTo("full-body-3x");
+		assertThat(candidates.get(0).matchesSessions()).isTrue();
+		assertThat(candidates).allMatch(c -> Set.of("BARBELL_RACK").containsAll(c.requiredEquipment()));
+		// Đúng số buổi đứng trước, lệch số buổi xếp sau.
+		assertThat(candidates).extracting(TemplateCandidate::matchesSessions)
+				.isSortedAccordingTo((a, b) -> Boolean.compare(b, a));
 		// §5.1: người dùng phải XEM ĐƯỢC cấu trúc trước khi xác nhận
 		assertThat(candidates.get(0).days()).isNotEmpty();
 		assertThat(candidates.get(0).days().get(0).exercises()).isNotEmpty();
+	}
+
+	@Test
+	void candidatesStillOfferEquipmentMatchesWhenSessionCountDiffers() {
+		// Hồ sơ thật gây lỗi: 6 buổi/tuần, chỉ có giá gánh tạ — trước đây ra danh sách rỗng.
+		saveProfile((short) 6, "BARBELL_RACK");
+
+		List<TemplateCandidate> candidates = programService.findCandidateTemplates(userId);
+
+		assertThat(candidates).filteredOn(c -> c.slug().equals("upper-lower-4x"))
+				.singleElement().extracting(TemplateCandidate::matchesSessions).isEqualTo(false);
+	}
+
+	@Test
+	void candidatesNeverNeedEquipmentTheUserLacks() {
+		saveProfile((short) 3, "DUMBBELL");
+
+		List<TemplateCandidate> candidates = programService.findCandidateTemplates(userId);
+
+		assertThat(candidates).isNotEmpty();
+		assertThat(candidates).allMatch(c -> Set.of("DUMBBELL").containsAll(c.requiredEquipment()));
+		assertThat(candidates).extracting(TemplateCandidate::slug).contains("dumbbell-full-body");
+	}
+
+	@Test
+	void everySessionCountHasAnExactMatchForEveryEquipment() {
+		for (String equipment : List.of("BARBELL_RACK", "DUMBBELL", "KETTLEBELL", "BENCH")) {
+			for (short sessions = 2; sessions <= 6; sessions++) {
+				saveProfile(sessions, equipment);
+				assertThat(programService.findCandidateTemplates(userId))
+						.as("%s, %d buổi", equipment, sessions)
+						.anyMatch(TemplateCandidate::matchesSessions);
+			}
+		}
+	}
+
+	@Test
+	void everySeededTemplateGeneratesASchedule() {
+		// Slug trong week_structure mà thiếu ở bảng exercises thì createProgram ném lỗi.
+		// Liệt kê slug seed thay vì findAll(): test admin khác tạo template nháp cùng DB.
+		for (String slug : List.of("full-body-3x", "upper-lower-4x", "bodyweight-full-body",
+				"bodyweight-upper-lower", "dumbbell-full-body", "dumbbell-upper-lower-4x",
+				"dumbbell-push-pull-legs", "kettlebell-full-body", "strength-3x5", "gym-push-pull-legs")) {
+			ProgramTemplate template = templateRepository.findBySlug(slug).orElseThrow();
+			UUID programId = programService.createProgram(userId, template.getId(), Map.of(),
+					Set.of(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY), A_MONDAY);
+			assertThat(scheduledWorkoutRepository.findByProgramIdOrderByScheduledOn(programId))
+					.as(template.getSlug()).isNotEmpty();
+		}
+	}
+
+	private void saveProfile(short sessions, String... equipment) {
+		Profile profile = profileRepository.findById(userId).orElseGet(() -> new Profile(userId));
+		profile.patch("STRENGTH", "NEW", sessions, equipment, null, null, true, "DONE");
+		profileRepository.save(profile);
 	}
 
 	@Test

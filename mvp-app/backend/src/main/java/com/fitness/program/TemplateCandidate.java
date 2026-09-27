@@ -17,6 +17,7 @@ public record TemplateCandidate(
 		short sessionsMin,
 		short sessionsMax,
 		List<String> requiredEquipment,
+		boolean matchesSessions,
 		List<CycleDayView> days) {
 
 	public record CycleDayView(int order, String label, List<CycleExerciseView> exercises) {

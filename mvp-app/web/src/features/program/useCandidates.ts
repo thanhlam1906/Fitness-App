@@ -25,6 +25,8 @@ export type TemplateCandidate = {
   sessionsMin: number
   sessionsMax: number
   requiredEquipment: string[]
+  /** false = hợp thiết bị nhưng lệch số buổi/tuần đã khai; backend xếp sau nhóm đúng số buổi. */
+  matchesSessions: boolean
   days: CycleDayView[]
 }
 

@@ -15,6 +15,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -72,15 +73,26 @@ public class ProgramService {
 		short sessions = profile.getSessionsPerWeek();
 		Set<String> userEquipment = Set.of(profile.getEquipment());
 
-		return templateRepository
-				.findByActiveTrueAndSessionsMinLessThanEqualAndSessionsMaxGreaterThanEqual(sessions, sessions)
-				.stream()
+		// Thiết bị là điều kiện cứng: thiếu giá thì không squat gánh được. Số buổi chỉ là
+		// gợi ý vì người dùng tự chọn ngày tập ở màn sau, nên template lệch số buổi vẫn
+		// đưa ra, xếp sau. Cùng nhóm thì template dùng nhiều thiết bị của họ lên trước.
+		return templateRepository.findByActiveTrue().stream()
 				.filter(t -> userEquipment.containsAll(List.of(t.getRequiredEquipment())))
-				.map(this::toCandidate)
+				.sorted(Comparator.comparingInt((ProgramTemplate t) -> sessionGap(t, sessions))
+						.thenComparing(t -> -t.getRequiredEquipment().length)
+						.thenComparing(ProgramTemplate::getName))
+				.map(t -> toCandidate(t, sessionGap(t, sessions) == 0))
 				.toList();
 	}
 
-	private TemplateCandidate toCandidate(ProgramTemplate template) {
+	private static int sessionGap(ProgramTemplate template, short sessions) {
+		if (sessions < template.getSessionsMin()) {
+			return template.getSessionsMin() - sessions;
+		}
+		return Math.max(0, sessions - template.getSessionsMax());
+	}
+
+	private TemplateCandidate toCandidate(ProgramTemplate template, boolean matchesSessions) {
 		List<CycleDay> weekStructure = parseWeekStructure(template.getWeekStructure());
 		Map<String, Exercise> bySlug = exerciseRepository.findBySlugIn(
 				weekStructure.stream().flatMap(d -> d.exercises().stream())
@@ -96,7 +108,7 @@ public class ProgramService {
 		return new TemplateCandidate(
 				template.getId(), template.getSlug(), template.getName(), template.getMethodology(),
 				template.getSessionsMin(), template.getSessionsMax(),
-				List.of(template.getRequiredEquipment()), days);
+				List.of(template.getRequiredEquipment()), matchesSessions, days);
 	}
 
 	private TemplateCandidate.CycleExerciseView toExerciseView(CycleExercise ex, Exercise exercise) {

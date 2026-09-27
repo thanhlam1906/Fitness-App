@@ -7,8 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ProgramTemplateRepository extends JpaRepository<ProgramTemplate, UUID> {
 
-	List<ProgramTemplate> findByActiveTrueAndSessionsMinLessThanEqualAndSessionsMaxGreaterThanEqual(
-			short sessionsPerWeekAsMin, short sessionsPerWeekAsMax);
+	List<ProgramTemplate> findByActiveTrue();
 
 	Optional<ProgramTemplate> findBySlug(String slug);
 }
