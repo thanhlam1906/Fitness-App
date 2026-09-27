@@ -3,7 +3,7 @@ import { nextPlannedAfter, nextWorkout, programMonths, toMonth, weekProgress } f
 import type { ScheduledWorkoutView } from "./types"
 
 function workout(scheduledOn: string, status: ScheduledWorkoutView["status"]): ScheduledWorkoutView {
-  return { id: scheduledOn, scheduledOn, weekIndex: 1, label: "A", status, exercises: [] }
+  return { id: scheduledOn, scheduledOn, weekIndex: 1, label: "A", status, inProgress: false, exercises: [] }
 }
 
 describe("toMonth", () => {

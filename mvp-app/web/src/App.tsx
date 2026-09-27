@@ -20,6 +20,7 @@ import { FilmingGuidePage } from "@/features/review/FilmingGuidePage"
 import { FormCheckListPage } from "@/features/review/FormCheckListPage"
 import { ReviewResultPage } from "@/features/review/ReviewResultPage"
 import { MyProgramPage } from "@/features/schedule/MyProgramPage"
+import { ProgramPage } from "@/features/schedule/ProgramPage"
 import { SchedulePage } from "@/features/schedule/SchedulePage"
 import { FinishSessionPage } from "@/features/workout/FinishSessionPage"
 import { WorkoutPage } from "@/features/workout/WorkoutPage"
@@ -44,6 +45,7 @@ export function App() {
                   <Route path="/schedule" element={<SchedulePage />} />
                   <Route path="/assistant" element={<AssistantPage />} />
                   <Route path="/my-schedule" element={<MyProgramPage />} />
+                  <Route path="/my-program" element={<ProgramPage />} />
                   <Route path="/workout/:scheduledWorkoutId" element={<WorkoutPage />} />
                   <Route
                     path="/workout/:scheduledWorkoutId/finish"

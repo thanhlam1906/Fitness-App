@@ -23,6 +23,8 @@ export type ScheduledWorkoutView = {
   weekIndex: number
   label: string | null
   status: "PLANNED" | "DONE" | "SKIPPED" | "MISSED"
+  /** Có buổi tập đang dở cho ngày này: màn Chương trình không sửa, không dời buổi đó. */
+  inProgress: boolean
   exercises: ScheduledExerciseView[]
 }
 

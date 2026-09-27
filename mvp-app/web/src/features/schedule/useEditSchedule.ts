@@ -37,3 +37,30 @@ export function useAddScheduledExercise() {
 export function useRemoveScheduledExercise() {
   return useScheduleMutation((id: string) => api.del<void>(`/schedule/exercises/${id}`))
 }
+
+export type ExerciseTarget = {
+  exerciseId: string
+  targetSets: number
+  targetReps: number
+  targetRepsMax: number
+  targetLoadKg: number | null
+}
+
+/** Sửa một loại buổi cho mọi buổi còn lại — một lời gọi, một transaction ở backend. */
+export function useEditProgramDay() {
+  return useScheduleMutation((body: { label: string; remove: string[]; update: ExerciseTarget[]; add: ExerciseTarget[] }) =>
+    api.put<{ updatedWorkouts: number }>("/schedule/days", body),
+  )
+}
+
+/** Đổi ngày tập: ngày các buổi và ngày nghỉ của chương trình cùng đổi. */
+export function useChangeTrainingDays() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (days: number[]) => api.put<{ movedWorkouts: number }>("/programs/current/training-days", { days }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["schedule"] })
+      queryClient.invalidateQueries({ queryKey: ["program-current"] })
+    },
+  })
+}

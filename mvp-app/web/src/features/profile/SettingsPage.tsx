@@ -1,9 +1,11 @@
 import { useState, type ReactNode } from "react"
+import { Link } from "react-router"
 import { ApiError } from "@/api/client"
 import { useAuth } from "@/auth/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
+import { SHEET_FOCUS } from "@/components/ui/sheet"
 import { cn } from "@/lib/cn"
 import { formatDayMonth, formatKg } from "@/lib/format"
 import { EQUIPMENT_OPTIONS, EXPERIENCE_LEVELS, GOALS, labelOf } from "./types"
@@ -174,10 +176,16 @@ export function SettingsPage() {
           )}
         </div>
       </div>
-      {/* Đổi chương trình gom về một chỗ: Lịch › Sửa lịch (doc/design-ui-m3-v1.md §3). */}
-      <p className="mt-2 text-[11px] text-[var(--color-text-muted)]">
-        {program.data ? "Đổi chương trình ở Lịch › Sửa lịch." : "Chọn chương trình ở tab Lịch."}
-      </p>
+      {program.data ? (
+        <Link
+          to="/my-program"
+          className={cn("mt-2 inline-block rounded-[var(--radius-sm)] text-[13px] font-semibold text-[var(--color-accent)]", SHEET_FOCUS)}
+        >
+          Xem và sửa chương trình ›
+        </Link>
+      ) : (
+        <p className="mt-2 text-[11px] text-[var(--color-text-muted)]">Chọn chương trình ở tab Lịch.</p>
+      )}
 
       {patch.isError && (
         <p className="mt-4 text-sm text-[var(--color-danger)]">Lưu thất bại: {patch.error.message}</p>

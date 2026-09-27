@@ -1,11 +1,9 @@
-import { useState } from "react"
-import { ChevronLeft, ChevronRight, LayoutTemplate, Pencil, PencilRuler } from "lucide-react"
-import { Link, useNavigate, useSearchParams } from "react-router"
+import { ChevronLeft, ChevronRight, List } from "lucide-react"
+import { Link, useSearchParams } from "react-router"
 import { ApiError } from "@/api/client"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Sheet, SHEET_FOCUS, SheetHeader } from "@/components/ui/sheet"
-import { useCurrentProgram } from "@/features/program/useCurrentProgram"
+import { SHEET_FOCUS } from "@/components/ui/sheet"
 import { cn } from "@/lib/cn"
 import { DayCard } from "./DayCard"
 import type { ScheduledWorkoutView } from "./types"
@@ -25,7 +23,6 @@ const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 export function SchedulePage() {
   const schedule = useSchedule()
   const [params, setParams] = useSearchParams()
-  const [menuOpen, setMenuOpen] = useState(false)
 
   if (schedule.isLoading) return <MonthSkeleton />
 
@@ -106,17 +103,17 @@ export function SchedulePage() {
 
       <div className="mt-2.5 flex items-center gap-3">
         <h1 className="flex-1 text-[30px] font-extrabold tracking-[-0.02em]">Lịch</h1>
-        <button
-          type="button"
-          onClick={() => setMenuOpen(true)}
+        {/* Sửa cả chương trình ở màn riêng (doc/design-chuong-trinh-v1.md); sửa một ngày ở thẻ ngày. */}
+        <Link
+          to="/my-program"
           className={cn(
             "flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3.5 text-[13px] font-semibold hover:bg-[var(--color-surface)]",
             SHEET_FOCUS,
           )}
         >
-          <Pencil className="size-3.5" aria-hidden />
-          Sửa lịch
-        </button>
+          <List className="size-3.5" aria-hidden />
+          Chương trình
+        </Link>
       </div>
 
       <div className="mt-4 flex items-center justify-between">
@@ -148,7 +145,6 @@ export function SchedulePage() {
 
       <DayCard cell={cell} workouts={workouts} totalWeeks={progress.totalWeeks} />
 
-      <ScheduleMenu open={menuOpen} onClose={() => setMenuOpen(false)} progress={progress} />
     </div>
   )
 }
@@ -238,70 +234,6 @@ function Legend() {
         Hôm nay
       </span>
     </div>
-  )
-}
-
-/** "Sửa lịch": sửa cả lịch. Sửa MỘT buổi nằm ở thẻ ngày ("Sửa buổi này"). */
-function ScheduleMenu({
-  open,
-  onClose,
-  progress,
-}: {
-  open: boolean
-  onClose: () => void
-  progress: ReturnType<typeof weekProgress>
-}) {
-  const navigate = useNavigate()
-  const program = useCurrentProgram()
-  const options = [
-    {
-      Icon: LayoutTemplate,
-      title: "Đổi chương trình mẫu",
-      desc: "Chọn từ các chương trình soạn sẵn. App tự tăng tải theo luật.",
-      to: "/program",
-    },
-    {
-      Icon: PencilRuler,
-      title: "Tự thiết kế lịch riêng",
-      desc: "Tự chọn ngày tập, bài và con số. App không tự tăng tải.",
-      to: "/my-schedule",
-    },
-  ]
-  return (
-    <Sheet open={open} onClose={onClose} label="Sửa lịch">
-      <SheetHeader title="Sửa lịch" onCancel={onClose} />
-      <div className="overflow-y-auto px-4 pb-7">
-        {program.data && (
-          <p className="rounded-[var(--radius-md)] bg-[var(--color-bg)] px-3 py-2.5 text-xs text-[var(--color-text-muted)]">
-            Đang dùng: <b className="text-[var(--color-text)]">{program.data.templateName}</b>
-            {progress.weekIndex !== null && ` · tuần ${progress.weekIndex}/${progress.totalWeeks}`}
-          </p>
-        )}
-        {options.map(({ Icon, title, desc, to }) => (
-          <button
-            key={to}
-            type="button"
-            onClick={() => navigate(to)}
-            className={cn(
-              "mt-2.5 flex w-full items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-bg)] p-3.5 text-left",
-              SHEET_FOCUS,
-            )}
-          >
-            <span className="grid size-10.5 flex-none place-items-center rounded-[var(--radius-md)] bg-[var(--color-accent-tint)] text-[var(--color-accent)]">
-              <Icon className="size-5.5" aria-hidden />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-[15px] font-bold">{title}</span>
-              <span className="mt-0.5 block text-xs leading-snug text-[var(--color-text-muted)]">{desc}</span>
-            </span>
-            <ChevronRight className="size-4.5 flex-none text-[var(--color-text-muted)]" aria-hidden />
-          </button>
-        ))}
-        <p className="mt-3 text-xs text-[var(--color-text-muted)]">
-          Muốn đổi một buổi thôi? Bấm vào ngày đó trên lịch rồi chọn "Sửa buổi này".
-        </p>
-      </div>
-    </Sheet>
   )
 }
 

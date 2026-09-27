@@ -1,16 +1,24 @@
-import { useState } from "react"
+import { useState, type Dispatch, type ReactNode, type SetStateAction } from "react"
 import { X } from "lucide-react"
 import { Sheet, SHEET_FOCUS, SheetHeader } from "@/components/ui/sheet"
 import { useExercises } from "@/features/admin/exercises/useExercises"
 import { cn } from "@/lib/cn"
 import { formatDayMonth } from "@/lib/format"
 import { diffDraft, nudge, toDraft, type DraftRow } from "./editDraft"
-import type { ScheduledWorkoutView } from "./types"
+import { shortDayTitle } from "./programDays"
+import type { ScheduledExerciseView, ScheduledWorkoutView } from "./types"
 import {
   useAddScheduledExercise,
+  useEditProgramDay,
   useRemoveScheduledExercise,
   useUpdateScheduledExercise,
+  type ExerciseTarget,
 } from "./useEditSchedule"
+
+type SaveFn = (
+  changes: ReturnType<typeof diffDraft>,
+  setRows: Dispatch<SetStateAction<DraftRow[]>>,
+) => Promise<void>
 
 /**
  * Khung "Sửa buổi này" của màn Lịch (doc/design-ui-m3-v1.md §3). Sửa ĐÚNG buổi này:
@@ -27,33 +35,143 @@ export function WorkoutEditSheet({
   onClose: () => void
 }) {
   const [saving, setSaving] = useState(false)
+  const update = useUpdateScheduledExercise()
+  const add = useAddScheduledExercise()
+  const remove = useRemoveScheduledExercise()
+
+  // Gọi lần lượt để bài thêm vào giữ đúng thứ tự. Mỗi bước xong thì ghi vào nháp, để lỗi
+  // giữa chừng rồi bấm Lưu lại không xoá lại bài đã xoá hay thêm trùng bài đã thêm.
+  const save: SaveFn = async (changes, setRows) => {
+    for (const id of changes.removes) {
+      await remove.mutateAsync(id)
+      setRows((prev) => prev.filter((r) => r.id !== id))
+    }
+    for (const r of changes.updates) {
+      await update.mutateAsync({
+        id: r.id!,
+        targetSets: r.sets,
+        targetReps: r.reps,
+        targetRepsMax: r.repsMax,
+        targetLoadKg: r.loadKg,
+        restSeconds: r.restSeconds,
+      })
+    }
+    for (const r of changes.adds) {
+      const created = await add.mutateAsync({
+        workoutId: workout.id,
+        exerciseId: r.exerciseId,
+        targetSets: r.sets,
+        targetReps: r.reps,
+        targetRepsMax: r.repsMax,
+        targetLoadKg: r.loadKg,
+        restSeconds: null,
+      })
+      setRows((prev) => prev.map((x) => (x.key === r.key ? { ...x, id: (created as { id: string }).id } : x)))
+    }
+  }
+
   return (
     <Sheet open={open} onClose={onClose} label={`Sửa buổi ${workout.label ?? ""}`} dismissible={!saving}>
       {/* Thân khung mount lại mỗi lần mở (Sheet chỉ render con khi đã mở): nháp luôn bắt đầu từ lịch hiện tại. */}
-      <EditBody workout={workout} onClose={onClose} saving={saving} setSaving={setSaving} />
+      <EditBody
+        title={`Sửa buổi ${workout.label ?? ""}`}
+        subtitle={`${formatDayMonth(workout.scheduledOn)} · chỉ đổi buổi này, các buổi khác giữ nguyên`}
+        addLabel="Thêm bài vào buổi này"
+        exercises={workout.exercises}
+        onSave={save}
+        onClose={onClose}
+        saving={saving}
+        setSaving={setSaving}
+      />
+    </Sheet>
+  )
+}
+
+/**
+ * "Sửa buổi {nhãn}" ở màn Chương trình (doc/design-chuong-trinh-v1.md §3.1): áp cho mọi buổi
+ * mở cùng nhãn. Một lời gọi, một transaction: lỗi thì không buổi nào đổi, nháp giữ để Lưu lại.
+ */
+export function ProgramDayEditSheet({
+  label,
+  remaining,
+  workout,
+  open,
+  onClose,
+}: {
+  label: string
+  remaining: number
+  workout: ScheduledWorkoutView
+  open: boolean
+  onClose: () => void
+}) {
+  const [saving, setSaving] = useState(false)
+  const edit = useEditProgramDay()
+  const target = (r: DraftRow): ExerciseTarget => ({
+    exerciseId: r.exerciseId,
+    targetSets: r.sets,
+    targetReps: r.reps,
+    targetRepsMax: r.repsMax,
+    targetLoadKg: r.loadKg,
+  })
+  const save: SaveFn = async (changes) => {
+    // diffDraft chỉ trả id có trong danh sách gốc, nên tra ra exerciseId luôn có.
+    const exerciseOf = new Map(workout.exercises.map((e) => [e.id, e.exerciseId]))
+    await edit.mutateAsync({
+      label,
+      remove: changes.removes.map((id) => exerciseOf.get(id)!),
+      update: changes.updates.map(target),
+      add: changes.adds.map(target),
+    })
+  }
+  return (
+    <Sheet open={open} onClose={onClose} label={`Sửa buổi ${label}`} dismissible={!saving}>
+      <EditBody
+        title={`Sửa buổi ${label}`}
+        subtitle={
+          <>
+            Áp cho {remaining} buổi {label} còn lại, từ {shortDayTitle(workout.scheduledOn)}.
+            <br />
+            Buổi đã tập giữ nguyên.
+          </>
+        }
+        addLabel={`Thêm bài vào buổi ${label}`}
+        note='Muốn đổi một ngày thôi? Mở ngày đó ở Lịch rồi chọn "Sửa buổi này".'
+        exercises={workout.exercises}
+        onSave={save}
+        onClose={onClose}
+        saving={saving}
+        setSaving={setSaving}
+      />
     </Sheet>
   )
 }
 
 function EditBody({
-  workout,
+  title,
+  subtitle,
+  addLabel,
+  note,
+  exercises: original,
+  onSave,
   onClose,
   saving,
   setSaving,
 }: {
-  workout: ScheduledWorkoutView
+  title: string
+  subtitle: ReactNode
+  addLabel: string
+  note?: string
+  exercises: ScheduledExerciseView[]
+  onSave: SaveFn
   onClose: () => void
   saving: boolean
   setSaving: (saving: boolean) => void
 }) {
   const exercises = useExercises()
-  const update = useUpdateScheduledExercise()
-  const add = useAddScheduledExercise()
-  const remove = useRemoveScheduledExercise()
-  const [rows, setRows] = useState<DraftRow[]>(() => toDraft(workout.exercises))
+  const [rows, setRows] = useState<DraftRow[]>(() => toDraft(original))
   const [error, setError] = useState<string | null>(null)
 
-  const changes = diffDraft(workout.exercises, rows)
+  const changes = diffDraft(original, rows)
   const dirty = changes.updates.length + changes.adds.length + changes.removes.length > 0
   // Không cho thêm bài đã có trong buổi: set_logs khoá theo (buổi, bài, số set), hai dòng
   // cùng bài sẽ đè set của nhau khi tập.
@@ -64,38 +182,11 @@ function EditBody({
     setRows((prev) => prev.map((r) => (r.key === key ? fn(r) : r)))
   }
 
-  // Gọi lần lượt để bài thêm vào giữ đúng thứ tự. Mỗi bước xong thì ghi vào nháp, để lỗi
-  // giữa chừng rồi bấm Lưu lại không xoá lại bài đã xoá hay thêm trùng bài đã thêm.
   async function save() {
     setSaving(true)
     setError(null)
     try {
-      for (const id of changes.removes) {
-        await remove.mutateAsync(id)
-        setRows((prev) => prev.filter((r) => r.id !== id))
-      }
-      for (const r of changes.updates) {
-        await update.mutateAsync({
-          id: r.id!,
-          targetSets: r.sets,
-          targetReps: r.reps,
-          targetRepsMax: r.repsMax,
-          targetLoadKg: r.loadKg,
-          restSeconds: r.restSeconds,
-        })
-      }
-      for (const r of changes.adds) {
-        const created = await add.mutateAsync({
-          workoutId: workout.id,
-          exerciseId: r.exerciseId,
-          targetSets: r.sets,
-          targetReps: r.reps,
-          targetRepsMax: r.repsMax,
-          targetLoadKg: r.loadKg,
-          restSeconds: null,
-        })
-        setRows((prev) => prev.map((x) => (x.key === r.key ? { ...x, id: (created as { id: string }).id } : x)))
-      }
+      await onSave(changes, setRows)
       onClose()
     } catch (e) {
       setError(e instanceof Error ? e.message : "Lưu thất bại")
@@ -107,14 +198,14 @@ function EditBody({
   return (
     <>
       <SheetHeader
-        title={`Sửa buổi ${workout.label ?? ""}`}
+        title={title}
         confirmLabel={saving ? "Đang lưu…" : "Lưu"}
         confirmDisabled={!dirty || saving}
         onCancel={() => !saving && onClose()}
         onConfirm={save}
       />
-      <p className="num flex-none px-4 pb-2.5 text-center text-xs text-[var(--color-text-muted)]">
-        {formatDayMonth(workout.scheduledOn)} · chỉ đổi buổi này, các buổi khác giữ nguyên
+      <p className="num flex-none px-4 pb-2.5 text-center text-xs leading-relaxed text-[var(--color-text-muted)]">
+        {subtitle}
       </p>
       <div className="overflow-y-auto px-4 pb-7">
         {rows
@@ -154,7 +245,7 @@ function EditBody({
 
         {active.length > 0 && (
           <select
-            aria-label="Thêm bài vào buổi này"
+            aria-label={addLabel}
             value=""
             onChange={(e) => {
               const picked = active.find((x) => x.id === e.target.value)
@@ -180,7 +271,7 @@ function EditBody({
               SHEET_FOCUS,
             )}
           >
-            <option value="">+ Thêm bài vào buổi này</option>
+            <option value="">+ {addLabel}</option>
             {active.map((option) => (
               <option key={option.id} value={option.id}>
                 {option.nameVi ?? option.nameEn}
@@ -190,6 +281,7 @@ function EditBody({
         )}
 
         <p className="mt-3 text-xs text-[var(--color-text-muted)]">Tạ mỗi lần bấm đổi 2,5 kg.</p>
+        {note && <p className="mt-1.5 text-xs text-[var(--color-text-muted)]">{note}</p>}
         {error && <p className="mt-2 text-sm text-[var(--color-danger)]">Lưu thất bại: {error}</p>}
       </div>
     </>
