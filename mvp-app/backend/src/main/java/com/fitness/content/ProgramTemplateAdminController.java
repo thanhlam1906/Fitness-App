@@ -1,9 +1,14 @@
 package com.fitness.content;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fitness.program.CycleDay;
+import com.fitness.program.CycleExercise;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -29,10 +34,13 @@ import org.springframework.web.server.ResponseStatusException;
 public class ProgramTemplateAdminController {
 
 	private final ProgramTemplateRepository templates;
+	private final ExerciseRepository exercises;
 	private final ObjectMapper objectMapper;
 
-	public ProgramTemplateAdminController(ProgramTemplateRepository templates, ObjectMapper objectMapper) {
+	public ProgramTemplateAdminController(
+			ProgramTemplateRepository templates, ExerciseRepository exercises, ObjectMapper objectMapper) {
 		this.templates = templates;
+		this.exercises = exercises;
 		this.objectMapper = objectMapper;
 	}
 
@@ -55,7 +63,7 @@ public class ProgramTemplateAdminController {
 		if (templates.findBySlug(request.slug()).isPresent()) {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "slug đã tồn tại");
 		}
-		JsonText.requireValid(objectMapper, "weekStructure", request.weekStructure());
+		requireUsableWeekStructure(request.weekStructure());
 		JsonText.requireValid(objectMapper, "progression", request.progression());
 
 		ProgramTemplate template = new ProgramTemplate(
@@ -70,7 +78,7 @@ public class ProgramTemplateAdminController {
 	public ProgramTemplateAdminResponse update(
 			@PathVariable UUID id, @Valid @RequestBody ProgramTemplateRequest request) {
 		ProgramTemplate template = findOrThrow(id);
-		JsonText.requireValid(objectMapper, "weekStructure", request.weekStructure());
+		requireUsableWeekStructure(request.weekStructure());
 		JsonText.requireValid(objectMapper, "progression", request.progression());
 		template.update(
 				request.name(), request.methodology(), request.sessionsMin(), request.sessionsMax(),
@@ -78,6 +86,46 @@ public class ProgramTemplateAdminController {
 				request.active());
 		templates.save(template);
 		return ProgramTemplateAdminResponse.from(template);
+	}
+
+	/**
+	 * Template không có buổi, có buổi không bài, hoặc gọi bài chưa có trong bảng exercises
+	 * thì người dùng chọn xong sẽ lỗi 500 lúc sinh lịch. Chặn ngay lúc admin lưu.
+	 */
+	private void requireUsableWeekStructure(String json) {
+		List<CycleDay> days;
+		try {
+			days = objectMapper.readValue(json, new TypeReference<List<CycleDay>>() {
+			});
+		} catch (Exception e) {
+			throw badRequest("weekStructure không đúng định dạng JSON của lịch tập");
+		}
+		// JSON "null", buổi null, bài thiếu slug đều qua được readValue nên phải chặn tay.
+		if (days == null || days.isEmpty()) {
+			throw badRequest("weekStructure cần ít nhất một buổi");
+		}
+		for (CycleDay day : days) {
+			if (day == null || day.exercises() == null || day.exercises().isEmpty()) {
+				throw badRequest("Có buổi chưa có bài nào");
+			}
+			for (CycleExercise exercise : day.exercises()) {
+				if (exercise == null || exercise.exerciseSlug() == null || exercise.exerciseSlug().isBlank()) {
+					throw badRequest("Buổi " + day.label() + " có bài thiếu slug");
+				}
+			}
+		}
+		Set<String> slugs = days.stream().flatMap(d -> d.exercises().stream())
+				.map(CycleExercise::exerciseSlug).collect(Collectors.toSet());
+		Set<String> known = exercises.findBySlugIn(List.copyOf(slugs)).stream()
+				.map(Exercise::getSlug).collect(Collectors.toSet());
+		List<String> missing = slugs.stream().filter(slug -> !known.contains(slug)).sorted().toList();
+		if (!missing.isEmpty()) {
+			throw badRequest("Bài chưa có trong danh sách bài tập: " + String.join(", ", missing));
+		}
+	}
+
+	private static ResponseStatusException badRequest(String message) {
+		return new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
 	}
 
 	@DeleteMapping("/{id}")

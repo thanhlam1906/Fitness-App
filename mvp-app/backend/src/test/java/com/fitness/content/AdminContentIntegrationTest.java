@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpEntity;
@@ -168,7 +170,7 @@ class AdminContentIntegrationTest extends PostgresIntegrationTest {
 		HttpHeaders admin = adminHeaders();
 		var req = new ProgramTemplateRequest(
 				"test-template-" + UUID.randomUUID(), "Test Template", "mô tả", (short) 2, (short) 3,
-				List.of("ADMIN_TEST_EQUIPMENT"), "[{\"order\":1,\"label\":\"A\",\"exercises\":[]}]",
+				List.of("ADMIN_TEST_EQUIPMENT"), VALID_WEEK,
 				"{\"mode\":\"LINEAR\",\"target_rpe\":8,\"increment_kg\":{}}", true);
 
 		var response = rest.exchange("/api/v1/program-templates", HttpMethod.POST,
@@ -196,13 +198,13 @@ class AdminContentIntegrationTest extends PostgresIntegrationTest {
 		HttpHeaders admin = adminHeaders();
 		var req = new ProgramTemplateRequest(
 				"upd-template-" + UUID.randomUUID(), "Before", null, (short) 2, (short) 3,
-				List.of("ADMIN_TEST_EQUIPMENT"), "[]", "{\"mode\":\"LINEAR\",\"target_rpe\":8,\"increment_kg\":{}}", true);
+				List.of("ADMIN_TEST_EQUIPMENT"), VALID_WEEK, "{\"mode\":\"LINEAR\",\"target_rpe\":8,\"increment_kg\":{}}", true);
 		var created = rest.exchange("/api/v1/program-templates", HttpMethod.POST,
 				new HttpEntity<>(req, admin), ProgramTemplateAdminResponse.class).getBody();
 
 		var updateReq = new ProgramTemplateRequest(
 				"ignored", "After", "cập nhật", (short) 4, (short) 4,
-				List.of("ADMIN_TEST_EQUIPMENT_2"), "[]", "{\"mode\":\"DOUBLE\",\"target_rpe\":9,\"increment_kg\":{}}", true);
+				List.of("ADMIN_TEST_EQUIPMENT_2"), VALID_WEEK, "{\"mode\":\"DOUBLE\",\"target_rpe\":9,\"increment_kg\":{}}", true);
 		rest.exchange("/api/v1/program-templates/" + created.id(), HttpMethod.PUT,
 				new HttpEntity<>(updateReq, admin), ProgramTemplateAdminResponse.class);
 
@@ -212,6 +214,46 @@ class AdminContentIntegrationTest extends PostgresIntegrationTest {
 		assertThat(fetched.sessionsMin()).isEqualTo((short) 4);
 		assertThat(fetched.slug()).isEqualTo(created.slug());
 	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {
+			"[]",
+			"null",
+			"[null]",
+			"[{\"order\":1,\"label\":\"A\",\"exercises\":[{\"sets\":3}]}]",
+			"[{\"order\":1,\"label\":\"A\",\"exercises\":[]}]",
+			"[{\"order\":1,\"label\":\"A\",\"exercises\":[{\"slug\":\"khong-co-bai-nay\",\"sets\":3,\"reps_min\":5,\"reps_max\":5,\"rest_sec\":60}]}]"})
+	void createTemplate_unusableWeekStructure_returns400(String weekStructure) {
+		// Người dùng chọn template như vậy sẽ lỗi 500 lúc sinh lịch (chia cho 0, bài không tồn tại).
+		var req = new ProgramTemplateRequest(
+				"unusable-" + UUID.randomUUID(), "Hỏng", null, (short) 2, (short) 3,
+				List.of("ADMIN_TEST_EQUIPMENT"), weekStructure, PROGRESSION, true);
+
+		var response = rest.exchange("/api/v1/program-templates", HttpMethod.POST,
+				new HttpEntity<>(req, adminHeaders()), Map.class);
+
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+	}
+
+	@Test
+	void updateTemplate_toEmptyWeekStructure_returns400() {
+		HttpHeaders admin = adminHeaders();
+		var created = rest.exchange("/api/v1/program-templates", HttpMethod.POST,
+				new HttpEntity<>(new ProgramTemplateRequest("upd-empty-" + UUID.randomUUID(), "Trước", null,
+						(short) 2, (short) 3, List.of("ADMIN_TEST_EQUIPMENT"), VALID_WEEK, PROGRESSION, true), admin),
+				ProgramTemplateAdminResponse.class).getBody();
+
+		var response = rest.exchange("/api/v1/program-templates/" + created.id(), HttpMethod.PUT,
+				new HttpEntity<>(new ProgramTemplateRequest(null, "Sau", null, (short) 2, (short) 3,
+						List.of("ADMIN_TEST_EQUIPMENT"), "[]", PROGRESSION, true), admin),
+				Map.class);
+
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+	}
+
+	private static final String VALID_WEEK =
+			"[{\"order\":1,\"label\":\"A\",\"exercises\":[{\"slug\":\"push-up\",\"sets\":3,\"reps_min\":8,\"reps_max\":12,\"rest_sec\":60}]}]";
+	private static final String PROGRESSION = "{\"mode\":\"LINEAR\",\"target_rpe\":8,\"increment_kg\":{}}";
 
 	private HttpHeaders adminHeaders() {
 		return newAuthedUser(Role.ADMIN).headers();
