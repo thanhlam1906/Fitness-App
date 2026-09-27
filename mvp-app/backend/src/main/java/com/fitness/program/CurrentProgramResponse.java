@@ -15,19 +15,22 @@ public record CurrentProgramResponse(
 		String methodology,
 		LocalDate startDate,
 		List<Short> restDays,
-		String params) {
+		String params,
+		Short sessionsMin,
+		Short sessionsMax) {
 
 	static CurrentProgramResponse of(Program program, ProgramTemplate template) {
 		return new CurrentProgramResponse(
 				program.getId(), program.getTemplateId(), template.getSlug(), template.getName(),
 				template.getMethodology(), program.getStartDate(),
-				Arrays.asList(program.getRestDays()), program.getParams());
+				Arrays.asList(program.getRestDays()), program.getParams(),
+				template.getSessionsMin(), template.getSessionsMax());
 	}
 
 	/** Lịch tự thiết kế không có template — vẫn phải hiện được tên ở màn Hồ sơ. */
 	static CurrentProgramResponse ofCustom(Program program) {
 		return new CurrentProgramResponse(
 				program.getId(), null, null, "Lịch tự thiết kế", null, program.getStartDate(),
-				Arrays.asList(program.getRestDays()), program.getParams());
+				Arrays.asList(program.getRestDays()), program.getParams(), null, null);
 	}
 }

@@ -3,6 +3,8 @@ package com.fitness.program;
 import com.fitness.common.CurrentUser;
 import com.fitness.content.Exercise;
 import com.fitness.content.ExerciseRepository;
+import com.fitness.workout.WorkoutSession;
+import com.fitness.workout.WorkoutSessionRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -13,6 +15,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
@@ -38,17 +41,22 @@ public class ScheduleController {
 	private final ExerciseRepository exercises;
 	private final LoadDecisionRepository loadDecisions;
 	private final CurrentUser currentUser;
+	private final ProgramEditService programEdits;
+	private final WorkoutSessionRepository sessions;
 
 	public ScheduleController(
 			ProgramRepository programs, ScheduledWorkoutRepository scheduledWorkouts,
 			ScheduledExerciseRepository scheduledExercises, ExerciseRepository exercises,
-			LoadDecisionRepository loadDecisions, CurrentUser currentUser) {
+			LoadDecisionRepository loadDecisions, CurrentUser currentUser, ProgramEditService programEdits,
+			WorkoutSessionRepository sessions) {
 		this.programs = programs;
 		this.scheduledWorkouts = scheduledWorkouts;
 		this.scheduledExercises = scheduledExercises;
 		this.exercises = exercises;
 		this.loadDecisions = loadDecisions;
 		this.currentUser = currentUser;
+		this.programEdits = programEdits;
+		this.sessions = sessions;
 	}
 
 	@GetMapping
@@ -69,10 +77,13 @@ public class ScheduleController {
 				list.sort(Comparator.comparing(LoadDecision::getEffectiveFrom).reversed()));
 
 		LocalDate today = LocalDate.now();
+		Set<UUID> inProgress = sessions.findByUserIdAndStatus(currentUser.id(), "IN_PROGRESS").stream()
+				.map(WorkoutSession::getScheduledWorkoutId)
+				.collect(Collectors.toSet());
 		List<ScheduledWorkoutView> views = workouts.stream()
 				.map(w -> new ScheduledWorkoutView(
 						w.getId(), w.getScheduledOn(), w.getWeekIndex(), w.getLabel(),
-						displayStatus(w, today),
+						displayStatus(w, today), inProgress.contains(w.getId()),
 						exercisesByWorkout.get(w.getId()).stream()
 								.sorted(Comparator.comparingInt(ScheduledExercise::getOrderIndex))
 								.map(se -> toView(se, exerciseById,
@@ -150,6 +161,15 @@ public class ScheduleController {
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void removeExercise(@PathVariable UUID scheduledExerciseId) {
 		scheduledExercises.delete(editableExerciseOrThrow(scheduledExerciseId));
+	}
+
+	/** Sửa một loại buổi cho mọi buổi còn lại (doc/design-chuong-trinh-v1.md §4.1). */
+	@PutMapping("/days")
+	public EditDayResponse editDay(@Valid @RequestBody EditDayRequest request) {
+		return new EditDayResponse(programEdits.editDay(currentUser.id(), request));
+	}
+
+	public record EditDayResponse(int updatedWorkouts) {
 	}
 
 	public record UpdateExerciseRequest(

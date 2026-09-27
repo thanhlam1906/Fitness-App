@@ -10,5 +10,7 @@ public record ScheduledWorkoutView(
 		int weekIndex,
 		String label,
 		String status,
+		/** Có workout_session IN_PROGRESS: màn Chương trình không sửa, không dời buổi này. */
+		boolean inProgress,
 		List<ScheduledExerciseView> exercises) {
 }

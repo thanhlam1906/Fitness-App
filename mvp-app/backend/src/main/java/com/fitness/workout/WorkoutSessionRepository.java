@@ -25,6 +25,8 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSession, 
 	/** exists chứ không find: dữ liệu cũ có thể có hai buổi DONE cùng ngày, Optional sẽ văng 500. */
 	boolean existsByUserIdAndScheduledWorkoutIdAndStatus(UUID userId, UUID scheduledWorkoutId, String status);
 
+	List<WorkoutSession> findByUserIdAndStatus(UUID userId, String status);
+
 	/** "Hoạt động gần nhất" ở màn admin Người dùng (màn 11). Một query gộp, không N+1. */
 	@Query("select s.userId, max(s.startedAt) from WorkoutSession s group by s.userId")
 	List<Object[]> lastActivityPerUser();

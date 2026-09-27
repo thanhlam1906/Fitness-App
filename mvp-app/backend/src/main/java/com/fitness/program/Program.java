@@ -85,6 +85,10 @@ public class Program {
 		return startDate;
 	}
 
+	public void changeRestDays(Short[] restDays) {
+		this.restDays = restDays;
+	}
+
 	public void archive() {
 		this.status = "ARCHIVED";
 	}

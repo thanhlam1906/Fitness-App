@@ -70,6 +70,12 @@ public class ScheduledWorkout {
 		return status;
 	}
 
+	/** Đổi ngày tập: dời buổi chưa tập sang ngày mới (doc/design-chuong-trinh-v1.md §4.2). */
+	public void reschedule(LocalDate scheduledOn, short weekIndex) {
+		this.scheduledOn = scheduledOn;
+		this.weekIndex = weekIndex;
+	}
+
 	public void updateStatus(String status) {
 		this.status = status;
 	}
