@@ -25,13 +25,28 @@ describe("ảnh minh hoạ động tác đủ cho mọi bài trong seed", () => 
   const sql = readFileSync(SEED_SQL_PATH, "utf-8")
   const slugs = extractExerciseSlugs(sql)
 
-  it("rút đúng 5 slug từ khối exercises — regex hỏng phải đỏ, không xanh giả", () => {
+  it("rút đúng 20 slug từ khối exercises — regex hỏng phải đỏ, không xanh giả", () => {
     expect(slugs).toEqual([
       "barbell-back-squat",
       "romanian-deadlift",
       "overhead-press",
       "push-up",
       "bent-over-row",
+      "bodyweight-squat",
+      "reverse-lunge",
+      "glute-bridge",
+      "decline-push-up",
+      "superman",
+      "dead-bug",
+      "goblet-squat",
+      "lunge-dumbbell",
+      "dumbbell-floor-press",
+      "one-arm-row",
+      "biceps-curl",
+      "lateral-raise",
+      "kettlebell-swing",
+      "barbell-bench-press",
+      "deadlift",
     ])
   })
 

@@ -16,6 +16,23 @@ const SLUG_TO_SOURCE_DIR = {
   "overhead-press": "Standing_Military_Press",
   "push-up": "Pushups",
   "bent-over-row": "Bent_Over_Barbell_Row",
+  // 09-26, đã xem từng ảnh. Lunge lùi dùng ảnh lunge bước tới: khung đáy giống hệt,
+  // còn Crossover_Reverse_Lunge có xoay người dễ hiểu sai. Swing là biến thể một tay.
+  "bodyweight-squat": "Bodyweight_Squat",
+  "reverse-lunge": "Bodyweight_Walking_Lunge",
+  "glute-bridge": "Butt_Lift_Bridge",
+  "decline-push-up": "Push-Ups_With_Feet_Elevated",
+  superman: "Superman",
+  "dead-bug": "Dead_Bug",
+  "goblet-squat": "Goblet_Squat",
+  "lunge-dumbbell": "Dumbbell_Rear_Lunge",
+  "dumbbell-floor-press": "Dumbbell_Floor_Press",
+  "one-arm-row": "One-Arm_Dumbbell_Row",
+  "biceps-curl": "Dumbbell_Bicep_Curl",
+  "lateral-raise": "Side_Lateral_Raise",
+  "kettlebell-swing": "One-Arm_Kettlebell_Swings",
+  "barbell-bench-press": "Barbell_Bench_Press_-_Medium_Grip",
+  deadlift: "Barbell_Deadlift",
 }
 
 const BASE_URL = "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises"
