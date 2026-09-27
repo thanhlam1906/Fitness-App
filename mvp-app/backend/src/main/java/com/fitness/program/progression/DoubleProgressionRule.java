@@ -12,8 +12,6 @@ public class DoubleProgressionRule implements ProgressionRule {
 
 	private static final int MISSED_SETS_FOR_DELOAD_ELIGIBLE = 2;
 	private static final int STREAK_FOR_DELOAD = 2;
-	private static final double ROUND_STEP_KG = 2.5;
-
 	@Override
 	public Optional<LoadDecisionResult> evaluate(ProgressionSignal signal) {
 		if (signal.setsMetTarget() == signal.setsTotal()) {
@@ -29,7 +27,7 @@ public class DoubleProgressionRule implements ProgressionRule {
 				&& signal.consecutiveFailStreak() >= STREAK_FOR_DELOAD;
 
 		if (eligibleForDeload) {
-			double delta = LoadRounding.deloadDelta(signal.currentLoadKg(), signal.deloadPct(), ROUND_STEP_KG);
+			double delta = LoadRounding.deloadDelta(signal.currentLoadKg(), signal.deloadPct(), signal.incrementKg());
 			return Optional.of(new LoadDecisionResult(
 					Direction.DOWN, delta, "REPEATED_REP_FAILURE",
 					Map.of("missed_sets", missed, "consecutive_weeks", signal.consecutiveFailStreak()),

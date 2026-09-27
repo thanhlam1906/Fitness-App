@@ -33,6 +33,14 @@ class PainRuleTest {
 	}
 
 	@Test
+	void painReported_lightDumbbell_roundsToItsOwnStep_notToZero() {
+		// Nâng tạ ngang vai 2 kg, bước 1 kg: 1.8 → 1 kg. Làm tròn bội 2.5 thì về 0 kg.
+		ProgressionSignal light = new ProgressionSignal(true, false, 1.0, null, false, 5, 5, 0, 2.0, 1.0, 10.0);
+
+		assertThat(rule.evaluate(light)).get().extracting(LoadDecisionResult::deltaKg).isEqualTo(-1.0);
+	}
+
+	@Test
 	void painRepeatedFromLastWeek_substitutesExerciseInstead() {
 		Optional<LoadDecisionResult> result = rule.evaluate(signal(true, true));
 

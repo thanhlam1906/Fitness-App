@@ -9,8 +9,6 @@ import java.util.Optional;
  */
 public class PainRule implements ProgressionRule {
 
-	private static final double ROUND_STEP_KG = 2.5;
-
 	@Override
 	public Optional<LoadDecisionResult> evaluate(ProgressionSignal signal) {
 		if (!signal.painReported()) {
@@ -21,7 +19,7 @@ public class PainRule implements ProgressionRule {
 					Direction.SUBSTITUTE, null, "PAIN_REPEATED",
 					Map.of(), "Báo đau lặp lại tuần thứ hai → đề xuất bài thay thế"));
 		}
-		double delta = LoadRounding.deloadDelta(signal.currentLoadKg(), signal.deloadPct(), ROUND_STEP_KG);
+		double delta = LoadRounding.deloadDelta(signal.currentLoadKg(), signal.deloadPct(), signal.incrementKg());
 		return Optional.of(new LoadDecisionResult(
 				Direction.DOWN, delta, "PAIN_REPORTED",
 				Map.of("deload_pct", signal.deloadPct(), "from_kg", signal.currentLoadKg()),
