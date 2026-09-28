@@ -2,7 +2,8 @@ export type ReviewStatus = "PENDING" | "PROCESSING" | "DONE" | "FAILED" | "REJEC
 
 export type CheckResult = {
   id: string
-  code: string | null
+  code: string | null // kết quả rule cũ (trước V11)
+  name: string | null // mục do LLM chấm
   verdict: string
   confidence: number | null
   measured: string | null // jsonb thô, hiển thị khi cần soi số
@@ -10,9 +11,21 @@ export type CheckResult = {
   isPrimary: boolean
 }
 
+/** Một dẫn chứng của mục do LLM chấm: đúng một ô của bộ số, nhãn và đơn vị do analyzer ghi. */
+export type Evidence = {
+  clip: number
+  view: string
+  view_vi: string
+  rep: number
+  feature: string
+  label_vi: string
+  value: number
+  unit?: string
+}
+
 export type Review = {
   id: string
-  exerciseId: string
+  exerciseId: string | null // null khi màn camera gửi lên mà analyzer chưa nhận diện xong
   exerciseName: string | null
   status: ReviewStatus
   rejectReason: string | null

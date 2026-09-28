@@ -27,6 +27,8 @@ const STYLES: Record<string, { label: string; tone: string }> = {
     label: "Clip chưa dùng được",
     tone: "text-[var(--color-danger)] bg-[var(--color-danger-tint)]",
   },
+  // REJECTED vì AI chưa nhận ra bài: số đo vẫn dùng được, chỉ cần người dùng chọn bài.
+  NEEDS_EXERCISE: { label: "Cần chọn bài", tone: "text-[var(--color-warn)] bg-[var(--color-warn-tint)]" },
 }
 
 /**

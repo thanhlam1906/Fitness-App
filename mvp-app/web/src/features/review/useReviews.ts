@@ -58,6 +58,19 @@ export function useSubmitReview() {
   })
 }
 
+/** "Sai bài?" (design-cham-form-llm-v1.md §3.3): đổi bài, server chấm lại từ số đo đã lưu. */
+export function useChangeExercise(reviewId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (exerciseId: string) => api.put<Review>(`/reviews/${reviewId}/exercise`, { exerciseId }),
+    onSuccess: (review) => {
+      // Đặt thẳng vào cache: trạng thái PENDING làm useReview tự poll lại tới khi chấm xong.
+      queryClient.setQueryData(["review", reviewId], review)
+      void queryClient.invalidateQueries({ queryKey: ["reviews"] })
+    },
+  })
+}
+
 /**
  * Màn camera (design-cham-form-llm-v1.md §3.2): mỗi góc một file .json toạ độ khớp, gửi như clip
  * thường. Không kèm exerciseId: analyzer tự nhận diện bài. optIn đã tick ở màn camera.
