@@ -15,10 +15,11 @@ Thiếu DEEPSEEK_API_KEY thì lớp này tắt hẳn và hệ thống chạy bì
 from __future__ import annotations
 
 import json
-import re
 from typing import Any
 
 import httpx
+
+from .judge import numbers_are_grounded
 
 _SYSTEM_PROMPT = (
     "Bạn viết lại lời góp ý tập luyện cho người mới, bằng tiếng Việt. "
@@ -27,22 +28,6 @@ _SYSTEM_PROMPT = (
     "ngoài các số có trong dữ liệu; nêu đúng MỘT hành động cần sửa; tối đa 2 câu; "
     "không chào hỏi, không xưng danh."
 )
-
-_NUMBER = re.compile(r"\d+(?:[.,]\d+)?")
-
-
-def numbers_are_grounded(answer: str, context: str) -> bool:
-    """Thô, và cố ý thô: không tin thì bỏ cả câu, không sửa từng số.
-
-    Sửa từng số là bắt đầu tin một phần vào output của LLM.
-
-    ponytail: so khớp bằng regex sẽ bắt nhầm khi LLM viết "một" thay vì "1"
-    hoặc làm tròn 1.30 thành 1.3. Trần chấp nhận được — bắt nhầm thì dùng text
-    của rule, an toàn hơn bỏ sót. Nếu tỉ lệ bỏ nhầm cao thì chuẩn hoá số trước
-    khi so, đừng nới lỏng điều kiện.
-    """
-    return set(_NUMBER.findall(answer)) <= set(_NUMBER.findall(context))
-
 
 class Advisor:
     def __init__(self, api_key: str | None, base_url: str, model: str, timeout_s: float = 20.0):
