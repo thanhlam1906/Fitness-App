@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from analyzer.feature_keys import glossary, label_vi, rounded  # noqa: E402
+from analyzer.feature_keys import glossary, label_vi, rounded, unit  # noqa: E402
 from analyzer.judge import (  # noqa: E402
     LlmError, judgment_messages, numbers_are_grounded, parse_recognition, recognition_messages,
     validate_judgment,
@@ -56,7 +56,7 @@ def test_valid_items_kept_with_labels():
     assert depth["confidence"] is None and depth["cue_text_vi"] == "Hạ hông thấp hơn."
     assert depth["measured"] == {"evidence": [{
         "clip": 1, "view": "SAGITTAL", "view_vi": "ngang", "rep": 1, "feature": "depth_ratio_P",
-        "label_vi": "tỉ lệ độ sâu ở điểm xa nhất", "value": 1.42}]}
+        "label_vi": "tỉ lệ độ sâu ở điểm xa nhất", "value": 1.42, "unit": ""}]}
     assert knee["verdict"] == LOW_CONFIDENCE and knee["measured"] == {"evidence": []}
     assert not knee["is_primary"]
 
@@ -126,6 +126,8 @@ def test_feature_keys():
     assert rounded("depth_ratio", 1.4249) == 1.42 and rounded("knee_l", 94.6) == 95
     assert isinstance(rounded("knee_l", 94.6), int)
     assert "knee_l_S, knee_l_P" in glossary()
+    # Góc có °, tỉ lệ không đơn vị: "thân đổ thêm 31°" chứ không phải "thân đổ thêm 31".
+    assert (unit("torso_lean"), unit("knee_l_S"), unit("depth_ratio_P"), unit("knee_in")) == ("°", "°", "", "")
 
 
 def test_numbers_are_grounded():

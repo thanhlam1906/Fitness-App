@@ -13,7 +13,7 @@ import json
 import re
 from typing import Any
 
-from .feature_keys import glossary, label_vi
+from .feature_keys import glossary, label_vi, unit
 from .scoring import FAIL, LOW_CONFIDENCE, NOT_APPLICABLE, PASS, WARN
 from .viewpoints import LABEL_VI
 
@@ -147,7 +147,7 @@ def _evidence(e: Any, cells: dict) -> dict[str, Any] | None:
         return None
     view, real = cells[key]
     return {"clip": key[0], "view": view, "view_vi": LABEL_VI.get(view, view), "rep": key[1],
-            "feature": key[2], "label_vi": label_vi(key[2]), "value": real}
+            "feature": key[2], "label_vi": label_vi(key[2]), "value": real, "unit": unit(key[2])}
 
 
 def _mark_primary(rows: list[dict[str, Any]], wanted: Any) -> None:

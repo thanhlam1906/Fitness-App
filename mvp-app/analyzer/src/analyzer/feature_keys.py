@@ -57,6 +57,12 @@ def label_vi(feature: str) -> str:
     return feature
 
 
+def unit(feature: str) -> str:
+    """'°' cho số góc, '' cho tỉ lệ: dòng dẫn chứng đọc được "thân đổ thêm 31°"."""
+    base = feature if feature in REP_KEYS else feature.rpartition("_")[0]
+    return "" if base in RATIO_KEYS else "°"
+
+
 def glossary() -> dict[str, str]:
     """Bảng giải thích cho prompt: khoá → nghĩa, đơn vị, góc quay tin được."""
     out = {f"{k}_S, {k}_P": f"{label} ({note}); tin ở góc {views}"
