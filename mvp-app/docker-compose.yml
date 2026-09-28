@@ -13,9 +13,11 @@ services:
       POSTGRES_USER: fitness
       POSTGRES_PASSWORD: fitness_dev_only
     ports:
-      # 55432, không phải 5432: máy dev này đã có postgres.exe (Windows Service,
-      # dự án khác) chiếm sẵn 5432. Container bên trong vẫn dùng 5432 bình thường.
-      - "55432:5432"
+      # 15432, không phải 5432: máy dev này đã có postgres.exe (Windows Service,
+      # dự án khác) chiếm sẵn 5432. Không dùng cổng >= 49152: Hyper-V/WinNAT giữ
+      # chỗ ngẫu nhiên trong vùng đó mỗi lần Docker khởi động lại (55432 từng dính
+      # 09-27). Container bên trong vẫn dùng 5432 bình thường.
+      - "15432:5432"
     volumes:
       - fitness-postgres-data:/var/lib/postgresql/data
     healthcheck:

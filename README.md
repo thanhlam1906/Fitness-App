@@ -60,7 +60,7 @@ python mvp-app/analyzer/tests/test_scoring.py
 
 | Biến | Thành phần | Mặc định | Ghi chú |
 |---|---|---|---|
-| `DB_URL` `DB_USER` `DB_PASSWORD` | backend, analyzer | postgres local ở cổng 55432 | |
+| `DB_URL` `DB_USER` `DB_PASSWORD` | backend, analyzer | postgres local ở cổng 15432 | |
 | `JWT_SECRET` | backend | dev-only | **Bắt buộc đặt ở môi trường thật**, ≥32 byte |
 | `CLIP_STORAGE_PATH` | backend, analyzer | `mvp-app/backend/var` | Hai bên phải trỏ CÙNG một thư mục |
 | `REVIEW_WEEKLY_LIMIT` | backend | `10` | Lượt gửi clip mỗi 7 ngày |
