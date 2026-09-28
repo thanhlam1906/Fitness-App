@@ -27,7 +27,8 @@ public class ReviewResult {
 	@Column(name = "request_id", nullable = false)
 	private UUID requestId;
 
-	@Column(name = "form_check_id", nullable = false)
+	// null với mục do LLM chấm (từ V11); kết quả rule cũ vẫn gắn form_check.
+	@Column(name = "form_check_id")
 	private UUID formCheckId;
 
 	@Column(nullable = false)
@@ -42,6 +43,9 @@ public class ReviewResult {
 
 	@Column(name = "cue_text_vi")
 	private String cueTextVi;
+
+	@Column(name = "name_vi")
+	private String nameVi;
 
 	@Column(name = "is_primary", nullable = false)
 	private boolean primary;
@@ -74,6 +78,10 @@ public class ReviewResult {
 
 	public String getCueTextVi() {
 		return cueTextVi;
+	}
+
+	public String getNameVi() {
+		return nameVi;
 	}
 
 	public boolean isPrimary() {

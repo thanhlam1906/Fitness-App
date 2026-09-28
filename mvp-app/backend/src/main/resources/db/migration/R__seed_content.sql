@@ -26,72 +26,72 @@ INSERT INTO exercises (slug, name_en, name_vi, muscle_groups, equipment, descrip
 
   ('bent-over-row', 'Bent-over Row', 'Kéo tạ tư thế gập người',
    '{LATS,UPPER_BACK,BICEPS}', '{BARBELL_RACK,DUMBBELL}',
-   'Gập hông khoảng 45 độ, lưng thẳng, kéo tạ về phía bụng dưới.', false),
+   'Gập hông khoảng 45 độ, lưng thẳng, kéo tạ về phía bụng dưới.', true),
 
-  -- Bài cho các template tay không, tạ đơn, tạ ấm, phòng gym (09-26). Chưa bài nào
-  -- analyzable: analyzer chưa map tới các slug này.
+  -- Bài cho các template tay không, tạ đơn, tạ ấm, phòng gym (09-26). Mọi bài analyzable:
+  -- LLM nhận diện và chấm, không cần cấu hình theo bài (doc/design-cham-form-llm-v1.md).
   -- ponytail: equipment chỉ ghi thiết bị chính. Goblet squat, kéo một tay làm được bằng
   -- tạ ấm nhưng ghi DUMBBELL, nên SubstituteController (containsAll) không gợi ý chúng
   -- cho người chỉ có tạ ấm. Cần kiểu "một trong các thiết bị" thì thêm cột riêng.
   ('bodyweight-squat', 'Bodyweight Squat', 'Squat tay không',
    '{QUADS,GLUTES}', '{}',
-   'Chân rộng bằng vai, đẩy hông ra sau và hạ tới khi đùi ngang sàn, gót chân bám sàn.', false),
+   'Chân rộng bằng vai, đẩy hông ra sau và hạ tới khi đùi ngang sàn, gót chân bám sàn.', true),
 
   ('reverse-lunge', 'Reverse Lunge', 'Lunge lùi',
    '{QUADS,GLUTES}', '{}',
-   'Bước một chân ra sau, hạ tới khi gối sau gần chạm sàn, đẩy gót chân trước để đứng lên. Đổi chân mỗi rep.', false),
+   'Bước một chân ra sau, hạ tới khi gối sau gần chạm sàn, đẩy gót chân trước để đứng lên. Đổi chân mỗi rep.', true),
 
   ('glute-bridge', 'Glute Bridge', 'Cầu mông',
    '{GLUTES,HAMSTRINGS}', '{}',
-   'Nằm ngửa, gập gối, đẩy hông lên tới khi thân và đùi thành một đường thẳng, siết mông ở đỉnh.', false),
+   'Nằm ngửa, gập gối, đẩy hông lên tới khi thân và đùi thành một đường thẳng, siết mông ở đỉnh.', true),
 
   ('decline-push-up', 'Decline Push-up', 'Chống đẩy chân cao',
    '{CHEST,SHOULDERS,TRICEPS}', '{}',
-   'Gác mũi chân lên ghế hoặc bậc cao, hạ ngực sát sàn rồi đẩy lên. Chân càng cao càng dồn lực lên vai.', false),
+   'Gác mũi chân lên ghế hoặc bậc cao, hạ ngực sát sàn rồi đẩy lên. Chân càng cao càng dồn lực lên vai.', true),
 
   ('superman', 'Superman', 'Superman',
    '{LOWER_BACK,UPPER_BACK,GLUTES}', '{}',
-   'Nằm sấp, nâng cùng lúc tay, ngực và chân khỏi sàn, giữ 1–2 giây rồi hạ.', false),
+   'Nằm sấp, nâng cùng lúc tay, ngực và chân khỏi sàn, giữ 1–2 giây rồi hạ.', true),
 
   ('dead-bug', 'Dead Bug', 'Dead bug',
    '{CORE}', '{}',
-   'Nằm ngửa, tay chân co 90 độ, duỗi tay và chân đối diện ra xa. Lưng dưới luôn ép sàn.', false),
+   'Nằm ngửa, tay chân co 90 độ, duỗi tay và chân đối diện ra xa. Lưng dưới luôn ép sàn.', true),
 
   ('goblet-squat', 'Goblet Squat', 'Goblet squat',
    '{QUADS,GLUTES,CORE}', '{DUMBBELL}',
-   'Ôm một tạ đơn hoặc tạ ấm trước ngực, hạ hông giữa hai gối tới khi đùi ngang sàn, ngực giữ thẳng.', false),
+   'Ôm một tạ đơn hoặc tạ ấm trước ngực, hạ hông giữa hai gối tới khi đùi ngang sàn, ngực giữ thẳng.', true),
 
   ('lunge-dumbbell', 'Dumbbell Lunge', 'Lunge tạ đơn',
    '{QUADS,GLUTES}', '{DUMBBELL}',
-   'Hai tay cầm tạ đơn, bước lùi một chân và hạ tới khi gối sau gần chạm sàn. Đổi chân mỗi rep.', false),
+   'Hai tay cầm tạ đơn, bước lùi một chân và hạ tới khi gối sau gần chạm sàn. Đổi chân mỗi rep.', true),
 
   ('dumbbell-floor-press', 'Dumbbell Floor Press', 'Đẩy ngực tạ đơn nằm sàn',
    '{CHEST,TRICEPS,SHOULDERS}', '{DUMBBELL}',
-   'Nằm ngửa trên sàn, hạ tạ tới khi khuỷu chạm nhẹ sàn rồi đẩy thẳng lên. Không cần ghế.', false),
+   'Nằm ngửa trên sàn, hạ tạ tới khi khuỷu chạm nhẹ sàn rồi đẩy thẳng lên. Không cần ghế.', true),
 
   ('one-arm-row', 'One-arm Row', 'Kéo tạ một tay',
    '{LATS,UPPER_BACK,BICEPS}', '{DUMBBELL}',
-   'Một tay chống lên ghế hoặc đùi, lưng thẳng, kéo tạ đơn hoặc tạ ấm về hông. Đủ rep một bên rồi đổi.', false),
+   'Một tay chống lên ghế hoặc đùi, lưng thẳng, kéo tạ đơn hoặc tạ ấm về hông. Đủ rep một bên rồi đổi.', true),
 
   ('biceps-curl', 'Biceps Curl', 'Cuốn tạ tay',
    '{BICEPS}', '{DUMBBELL}',
-   'Khuỷu sát thân, cuốn tạ lên ngang vai rồi hạ chậm, không đưa người lấy đà.', false),
+   'Khuỷu sát thân, cuốn tạ lên ngang vai rồi hạ chậm, không đưa người lấy đà.', true),
 
   ('lateral-raise', 'Lateral Raise', 'Nâng tạ ngang vai',
    '{SHOULDERS}', '{DUMBBELL}',
-   'Khuỷu hơi cong, nâng tạ sang hai bên tới ngang vai rồi hạ chậm.', false),
+   'Khuỷu hơi cong, nâng tạ sang hai bên tới ngang vai rồi hạ chậm.', true),
 
   ('kettlebell-swing', 'Kettlebell Swing', 'Swing tạ ấm',
    '{GLUTES,HAMSTRINGS,CORE}', '{KETTLEBELL}',
-   'Gập hông đưa tạ ra sau giữa hai chân, bật hông để tạ lên ngang ngực. Lực đến từ hông, không từ tay.', false),
+   'Gập hông đưa tạ ra sau giữa hai chân, bật hông để tạ lên ngang ngực. Lực đến từ hông, không từ tay.', true),
 
   ('barbell-bench-press', 'Barbell Bench Press', 'Đẩy ngực tạ đòn',
    '{CHEST,TRICEPS,SHOULDERS}', '{BARBELL_RACK,BENCH}',
-   'Nằm trên ghế, bả vai ép vào ghế, hạ thanh đòn chạm giữa ngực rồi đẩy thẳng lên.', false),
+   'Nằm trên ghế, bả vai ép vào ghế, hạ thanh đòn chạm giữa ngực rồi đẩy thẳng lên.', true),
 
   ('deadlift', 'Deadlift', 'Deadlift',
    '{HAMSTRINGS,GLUTES,LOWER_BACK}', '{BARBELL_RACK}',
-   'Thanh đòn sát ống chân, lưng thẳng, đạp chân xuống sàn để kéo tạ lên tới khi đứng thẳng.', false)
+   'Thanh đòn sát ống chân, lưng thẳng, đạp chân xuống sàn để kéo tạ lên tới khi đứng thẳng.', true)
 ON CONFLICT (slug) DO UPDATE SET
   name_en = EXCLUDED.name_en, name_vi = EXCLUDED.name_vi,
   muscle_groups = EXCLUDED.muscle_groups, equipment = EXCLUDED.equipment,

@@ -7,4 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface ReviewResultRepository extends JpaRepository<ReviewResult, UUID> {
 
 	List<ReviewResult> findByRequestId(UUID requestId);
+
+	void deleteByRequestId(UUID requestId);
 }

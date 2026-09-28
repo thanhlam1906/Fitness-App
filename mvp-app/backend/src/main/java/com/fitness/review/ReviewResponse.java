@@ -22,9 +22,11 @@ public record ReviewResponse(
 		List<String> viewpoints,
 		List<CheckResult> checks) {
 
+	/** code: kết quả rule cũ (qua form_checks). name: mục do LLM chấm (từ V11). */
 	public record CheckResult(
 			UUID id,
 			String code,
+			String name,
 			String verdict,
 			BigDecimal confidence,
 			String measured,
