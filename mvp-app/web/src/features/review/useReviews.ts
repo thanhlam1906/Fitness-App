@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/api/client"
+import type { CaptureView, FrameJson } from "./livePose"
 import type { Exercise, Review } from "./types"
 
 const IN_FLIGHT: Review["status"][] = ["PENDING", "PROCESSING"]
@@ -51,6 +52,27 @@ export function useSubmitReview() {
       files.forEach((file) => form.append("clips", file))
       const query = new URLSearchParams({ exerciseId, optIn: "true" })
       viewpoints.forEach((v) => query.append("viewpoints", v))
+      return api.postForm<Review>(`/reviews?${query}`, form)
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["reviews"] }),
+  })
+}
+
+/**
+ * Màn camera (design-cham-form-llm-v1.md §3.2): mỗi góc một file .json toạ độ khớp, gửi như clip
+ * thường. Không kèm exerciseId: analyzer tự nhận diện bài. optIn đã tick ở màn camera.
+ */
+export function useSubmitLive() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (clips: { view: CaptureView; frames: FrameJson[] }[]) => {
+      const form = new FormData()
+      const query = new URLSearchParams({ optIn: "true" })
+      for (const clip of clips) {
+        const body = new Blob([JSON.stringify({ frames: clip.frames })], { type: "application/json" })
+        form.append("clips", body, `${clip.view.toLowerCase()}.json`)
+        query.append("viewpoints", clip.view)
+      }
       return api.postForm<Review>(`/reviews?${query}`, form)
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["reviews"] }),

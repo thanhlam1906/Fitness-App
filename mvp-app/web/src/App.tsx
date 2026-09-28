@@ -18,6 +18,7 @@ import { UserDetailPage } from "@/features/admin/users/UserDetailPage"
 import { UserListPage } from "@/features/admin/users/UserListPage"
 import { FilmingGuidePage } from "@/features/review/FilmingGuidePage"
 import { FormCheckListPage } from "@/features/review/FormCheckListPage"
+import { LiveCheckPage } from "@/features/review/LiveCheckPage"
 import { ReviewResultPage } from "@/features/review/ReviewResultPage"
 import { MyProgramPage } from "@/features/schedule/MyProgramPage"
 import { ProgramPage } from "@/features/schedule/ProgramPage"
@@ -52,6 +53,7 @@ export function App() {
                     element={<FinishSessionPage />}
                   />
                   <Route path="/form-check" element={<FormCheckListPage />} />
+                  <Route path="/form-check/live" element={<LiveCheckPage />} />
                   <Route path="/form-check/result/:reviewId" element={<ReviewResultPage />} />
                   <Route path="/form-check/:exerciseId" element={<FilmingGuidePage />} />
                   <Route path="/settings" element={<SettingsPage />} />
