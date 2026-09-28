@@ -3,8 +3,8 @@
 
     python -m analyzer.cli --exercise barbell-back-squat clip1.mp4 clip2.mp4
 
-Ngưỡng vẫn đọc từ DB, đúng như worker: hiệu chỉnh bằng ngưỡng khác với ngưỡng
-chạy thật thì vòng lặp "chỉnh ngưỡng → chấm lại → so sánh" là vô nghĩa.
+Chấm bằng rule theo ngưỡng form_checks trong DB. Từ 09-27 worker chấm bằng LLM
+(doc/design-cham-form-llm-v1.md); CLI này giữ để đối chứng rule với LLM ở việc 2.
 """
 from __future__ import annotations
 

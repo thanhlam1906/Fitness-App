@@ -32,7 +32,7 @@ def load() -> Config:
         raise SystemExit(f"Thiếu biến môi trường bắt buộc: {', '.join(missing)}")
 
     return Config(
-        # libpq URI, ví dụ postgresql://fitness:...@localhost:55432/fitness
+        # libpq URI, ví dụ postgresql://fitness:...@localhost:15432/fitness
         db_url=os.environ["DB_URL"],
         clip_storage_path=Path(os.environ["CLIP_STORAGE_PATH"]),
         pose_model=os.environ.get("POSE_MODEL", "full"),
@@ -40,8 +40,9 @@ def load() -> Config:
         # A2 concept-analyzer-v1.md §11 — số khởi điểm, phải đo lại trên bộ clip.
         min_visibility=float(os.environ.get("MIN_VISIBILITY", "0.5")),
         max_frames=int(os.environ.get("MAX_FRAMES", "900")),
-        # Thiếu key thì lớp diễn giải tắt, hệ thống chạy bằng text của rule.
-        llm_api_key=os.environ.get("DEEPSEEK_API_KEY") or None,
-        llm_base_url=os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
-        llm_model=os.environ.get("DEEPSEEK_MODEL", "deepseek-chat"),
+        # Chấm form cần LLM (doc/design-cham-form-llm-v1.md §4.8): thiếu key thì mọi job FAILED
+        # với lời nói rõ lý do, không âm thầm chấm bằng cách khác.
+        llm_api_key=os.environ.get("OPENAI_API_KEY") or None,
+        llm_base_url=os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+        llm_model=os.environ.get("OPENAI_CHAT_MODEL", "gpt-4o-mini"),
     )
