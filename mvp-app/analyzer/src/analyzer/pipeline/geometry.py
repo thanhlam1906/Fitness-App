@@ -21,6 +21,11 @@ class FrameMetrics:
     depth_ratio: float         # (hông trên cổ chân)/(gối trên cổ chân). ≈1 là ngang gối
     torso_axis: np.ndarray     # vector đơn vị hông→vai
     knee_lateral_m: list[float]  # lệch ngang gối so cổ chân, dương = RA NGOÀI, mét
+    knee_angle_deg: list[float]    # [trái, phải] góc hông–gối–cổ chân
+    elbow_angle_deg: list[float]   # [trái, phải] góc vai–khuỷu–cổ tay
+    elbow_mean_deg: float          # tín hiệu rep push-up
+    front_knee_angle_deg: float    # min hai gối — tín hiệu rep lunge
+    torso_tilt_deg: float          # trục hông→vai TRÊN ẢNH so với phương đứng của ảnh; ~90 = nằm ngang
 
 
 def angle_deg(a: np.ndarray, b: np.ndarray) -> float:
@@ -56,11 +61,29 @@ def frame_metrics(frame: Frame) -> FrameMetrics:
         +1.0 * float(np.dot(w[LM["r_knee"]] - w[LM["r_ankle"]], lateral_n)),
     ]
 
+    knee_angle = [
+        angle_deg(w[LM[f"{s}_hip"]] - w[LM[f"{s}_knee"]], w[LM[f"{s}_ankle"]] - w[LM[f"{s}_knee"]])
+        for s in ("l", "r")]
+    elbow_angle = [
+        angle_deg(w[LM[f"{s}_sho"]] - w[LM[f"{s}_elbow"]], w[LM[f"{s}_wrist"]] - w[LM[f"{s}_elbow"]])
+        for s in ("l", "r")]
+
+    # Trên ảnh y hướng xuống, nên "đứng thẳng" là vector (0, -1). world không có trọng lực
+    # để so — giả định máy quay đặt ngang (A6 concept-recognition-v1.md).
+    n = frame.norm
+    torso_img = ((n[LM["l_sho"]] + n[LM["r_sho"]]) / 2.0 - (n[LM["l_hip"]] + n[LM["r_hip"]]) / 2.0)[:2]
+    tilt = angle_deg(torso_img, np.array([0.0, -1.0]))
+
     return FrameMetrics(
         hip_angle_deg=angle_deg(shoulder - hip, knee - hip),
         depth_ratio=ratio,
         torso_axis=up,
         knee_lateral_m=knee_lateral,
+        knee_angle_deg=knee_angle,
+        elbow_angle_deg=elbow_angle,
+        elbow_mean_deg=(elbow_angle[0] + elbow_angle[1]) / 2.0,
+        front_knee_angle_deg=min(knee_angle),
+        torso_tilt_deg=tilt,
     )
 
 

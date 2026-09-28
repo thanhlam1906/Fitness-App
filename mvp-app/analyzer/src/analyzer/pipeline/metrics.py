@@ -13,7 +13,7 @@ from __future__ import annotations
 from typing import Callable
 
 from .geometry import FrameMetrics, angle_deg, shoulder_width_m
-from .pose import Frame
+from .pose import LM, Frame
 from .reps import Rep
 
 # Mỗi hàm đo nhận (rep, frames, metrics) và trả về MỘT số cho rep đó.
@@ -46,10 +46,32 @@ def knee_inward_travel(rep: Rep, frames: list[Frame], metrics: list[FrameMetrics
     return worst_m / width
 
 
+def pushup_depth_deg(rep: Rep, frames: list[Frame], metrics: list[FrameMetrics]) -> float:
+    """Góc khuỷu ở đáy push-up. Nhỏ = hạ sâu."""
+    return metrics[rep.bottom].elbow_mean_deg
+
+
+def hip_sag_deg(rep: Rep, frames: list[Frame], metrics: list[FrameMetrics]) -> float:
+    """Góc vai–hông–cổ chân ở đáy push-up. 180 = thân thẳng; nhỏ hơn = võng hông hoặc chổng mông."""
+    w = frames[rep.bottom].world
+    shoulder = (w[LM["l_sho"]] + w[LM["r_sho"]]) / 2.0
+    hip = (w[LM["l_hip"]] + w[LM["r_hip"]]) / 2.0
+    ankle = (w[LM["l_ankle"]] + w[LM["r_ankle"]]) / 2.0
+    return angle_deg(shoulder - hip, ankle - hip)
+
+
+def front_knee_angle_bottom(rep: Rep, frames: list[Frame], metrics: list[FrameMetrics]) -> float:
+    """Góc gối chân trước ở đáy lunge. ~90 là chuẩn."""
+    return metrics[rep.bottom].front_knee_angle_deg
+
+
 METRICS: dict[str, MetricFn] = {
     "hip_depth_ratio": hip_depth_ratio,
     "torso_lean_deg": torso_lean_deg,
     "knee_inward_travel": knee_inward_travel,
+    "pushup_depth_deg": pushup_depth_deg,
+    "hip_sag_deg": hip_sag_deg,
+    "front_knee_angle_bottom": front_knee_angle_bottom,
 }
 
 

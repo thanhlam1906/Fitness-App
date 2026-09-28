@@ -46,7 +46,7 @@
   .chk:first-of-type{border-top:0}
   .ico{flex:0 0 26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800}
   .ico.pass{background:#123524; color:var(--acc)} .ico.warn{background:#3a2f16; color:var(--warn)}
-  .ico.fail{background:#3a1d1c; color:var(--bad)} .ico.na{background:#1d2430; color:var(--na)}
+  .ico.fail{background:#3a1d1c; color:var(--bad)} .ico.na,.ico.low{background:#1d2430; color:var(--na)}
   .chk .name{font-weight:700; font-size:14.5px}
   .chk .txt{color:var(--mut); font-size:13.5px; margin-top:3px}
   .chk .metric{color:var(--acc2); font-size:12.5px; margin-top:5px; font-family:ui-monospace,Consolas,monospace}
@@ -210,9 +210,9 @@ function render(j){
   const allOk=j.overall_ok;
   $('verdictPill').textContent= allOk ? '✅ Kỹ thuật ổn' : '⚠️ Cần cải thiện';
   $('verdictPill').className='pill '+(allOk?'good':'bad');
-  $('viewMeta').textContent=`Bài: Squat · Góc quay: ${j.viewpoint.label} · Số rep phát hiện: ${j.reps}`;
+  $('viewMeta').textContent=`Bài: ${j.exercise} · Góc quay: ${j.viewpoint.label} · Số rep phát hiện: ${j.reps}`;
   $('advice').textContent = j.primary_advice || 'Không thấy lỗi rõ ràng nào. Tiếp tục giữ kỹ thuật này!';
-  const icons={pass:'✓',warn:'!',fail:'✕',na:'–'};
+  const icons={pass:'✓',warn:'!',fail:'✕',na:'–',low:'?'};
   $('checks').innerHTML = j.checks.map(c=>`
     <div class="chk">
       <div class="ico ${c.status}">${icons[c.status]||'?'}</div>

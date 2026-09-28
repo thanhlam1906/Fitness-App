@@ -44,8 +44,12 @@ PYTHONPATH=src python -m analyzer.cli --exercise barbell-back-squat clip1.mp4 cl
 ## Test
 
 ```bash
-python tests/test_scoring.py
+python tests/test_scoring.py     # luật chấm, không cần mediapipe
+python tests/test_pipeline.py    # pipeline đa bài trên landmark giả lập, cần mediapipe/numpy
 ```
+
+`test_pipeline.py` chốt cứng kết quả tách rep squat trước khi đa bài hoá
+(`concept-recognition-v1.md` §6) — đổi số đó là đổi hành vi worker.
 
 Chạy được trên máy **chưa cài mediapipe/opencv**: `scoring.py` cố ý không import
 tầng hình học. Bộ clip regression (`concept-analyzer-v1.md` §8) là việc khác —
@@ -66,8 +70,9 @@ Gõ nhầm tên metric là lỗi cấu hình, phải nhìn thấy ngay, không �
 
 - Ngưỡng trong `R__seed_content.sql` là **số suy ra, chưa hiệu chỉnh trên clip
   thật** (A1). Cần bộ clip regression trước khi tin kết quả.
-- Chỉ squat có `form_checks`. 4 bài còn lại là Đợt 5 (A4) — thêm metric mới,
-  không đổi kiến trúc.
+- Chỉ squat có `form_checks` trong DB. Pipeline đã chấm được push-up và lunge
+  (`exercises.py`, `concept-recognition-v1.md`) nhưng worker chưa dùng: chưa seed
+  `form_checks` cho hai bài đó, và worker vẫn tách rep theo tín hiệu squat mặc định.
 - Xử lý **một clip một lúc**: `landmarker.detect()` không an toàn khi gọi song
   song. Hàng đợi ùn thì chạy thêm một process analyzer nữa; `SKIP LOCKED` đã lo
   phần tranh chấp, không phải sửa code.
