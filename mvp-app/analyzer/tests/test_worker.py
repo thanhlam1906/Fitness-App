@@ -177,6 +177,19 @@ def test_standing_still_rejected_no_reps():
         assert db.status == ("REJECTED", "NO_REPS") and db.deleted == {"c1"}
 
 
+def test_clip_without_reps_kept_as_recorded_view():
+    # Góc đã quay nhưng không tách được rep phải còn trong features: LLM phân biệt "quay rồi
+    # nhưng không dùng được" (LOW_CONFIDENCE) với "chưa quay" (NOT_APPLICABLE).
+    with tempfile.TemporaryDirectory() as d:
+        still = [squat_frame(i, 0.0, view="frontal") for i in range(60)]
+        db, storage = setup(Path(d), {"sagittal.json": landmarks_json(clip(squat_frame, view="side")),
+                                      "frontal.json": landmarks_json(still)})
+        process(job(), db, storage, NoReader(), FakeLlm(RECOGNIZED, cite_first_rep), CFG)
+        assert db.status == ("DONE",)
+        second = db.features["views"][1]
+        assert (second["clip"], second["view"], second["reps_total"], second["reps"]) == (2, "FRONTAL", 0, [])
+
+
 def test_bad_llm_answer_raises_after_clips_deleted():
     with tempfile.TemporaryDirectory() as d:
         db, storage = setup(Path(d), {"sagittal.json": landmarks_json(clip(squat_frame, view="side"))})

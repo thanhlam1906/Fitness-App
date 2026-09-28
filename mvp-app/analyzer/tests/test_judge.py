@@ -64,13 +64,19 @@ def test_valid_items_kept_with_labels():
 def test_item_with_wrong_or_unknown_evidence_dropped():
     rows = judge(item("Độ sâu", FAIL, [{**DEPTH, "value": 1.5}]),       # sai số
                  item("Thân", WARN, [{**DEPTH, "feature": "khong_co"}]),   # ô không tồn tại
+                 item("Gối", WARN, [{**DEPTH, "value": "nan"}]),          # NaN so với gì cũng "không lệch"
                  item("Nghiêng", PASS, [{"clip": 1, "rep": 2, "feature": "torso_lean", "value": "28"}]))
     assert [r["name_vi"] for r in rows] == ["Nghiêng"]
 
 
 def test_verdict_needs_evidence_but_not_applicable_does_not():
-    rows = judge(item("Độ sâu", PASS), item("Gối", NOT_APPLICABLE))
-    assert [(r["name_vi"], r["verdict"]) for r in rows] == [("Gối", NOT_APPLICABLE)]
+    rows = judge(item("Độ sâu", PASS), item("Gối", NOT_APPLICABLE), item("Thân", PASS, [DEPTH]))
+    assert [(r["name_vi"], r["verdict"]) for r in rows] == [("Gối", NOT_APPLICABLE), ("Thân", PASS)]
+
+
+def test_number_in_item_name_must_be_grounded_too():
+    rows = judge(item("Gối dưới 90 độ", FAIL, [DEPTH]), item("Thân", PASS, [DEPTH]))
+    assert [r["name_vi"] for r in rows] == ["Thân"]
 
 
 def test_cue_with_number_not_in_input_dropped():
@@ -95,8 +101,9 @@ def test_duplicate_names_keep_first_and_cap_five():
 
 
 def test_nothing_valid_raises():
+    # Chỉ còn mục không cần dẫn chứng cũng là lỗi: màn kết quả sẽ báo "Kỹ thuật ổn" mà không có số nào.
     for raw in ("khong phai json", '{"items": []}', '{"items": "x"}', "[1, 2]",
-                answer(item("Độ sâu", FAIL))):
+                answer(item("Độ sâu", FAIL)), answer(item("Gối", NOT_APPLICABLE), item("Hông", LOW_CONFIDENCE))):
         expect_llm_error(lambda r: validate_judgment(r, FEATURES, EXERCISE), raw)
 
 

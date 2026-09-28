@@ -104,8 +104,10 @@ def validate_judgment(raw: str, features: dict[str, Any],
             rows.append(row)
         if len(rows) == MAX_ITEMS:
             break
-    if not rows:
-        raise LlmError(f"LLM không trả mục chấm nào hợp lệ: {raw[:200]}")
+    # Chỉ còn LOW_CONFIDENCE/NOT_APPLICABLE thì màn kết quả sẽ báo "Kỹ thuật ổn" mà không dựa trên
+    # số nào — thường là mục có lỗi vừa bị loại vì dẫn chứng sai. Coi như LLM lỗi để thử lại.
+    if not any(r["verdict"] in (PASS, WARN, FAIL) for r in rows):
+        raise LlmError(f"LLM không trả mục chấm nào có dẫn chứng hợp lệ: {raw[:200]}")
     _mark_primary(rows, data.get("primary"))
     return rows
 
@@ -123,7 +125,8 @@ def _row(item: Any, cells: dict, context: str) -> dict[str, Any] | None:
     name, verdict, cue = item.get("name_vi"), item.get("verdict"), item.get("cue_vi")
     if not (isinstance(name, str) and name.strip() and isinstance(cue, str) and cue.strip()):
         return None
-    if verdict not in VERDICTS or not numbers_are_grounded(cue, context):
+    # Tên mục cũng hiện trên màn kết quả (tiêu đề lỗi chính), nên số trong tên cũng phải có thật.
+    if verdict not in VERDICTS or not numbers_are_grounded(f"{name} {cue}", context):
         return None
     raw_evidence = item.get("evidence") or []
     if not isinstance(raw_evidence, list):
@@ -143,7 +146,8 @@ def _evidence(e: Any, cells: dict) -> dict[str, Any] | None:
         value = float(e["value"])
     except (KeyError, TypeError, ValueError):
         return None
-    if key not in cells or abs(cells[key][1] - value) > 1e-9:
+    # `not <=` chứ không phải `>`: NaN so sánh gì cũng False, viết `>` thì NaN khớp mọi ô.
+    if key not in cells or not abs(cells[key][1] - value) <= 1e-9:
         return None
     view, real = cells[key]
     return {"clip": key[0], "view": view, "view_vi": LABEL_VI.get(view, view), "rep": key[1],

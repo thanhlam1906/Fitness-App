@@ -85,9 +85,13 @@ def _features(clips, storage, reader, cfg) -> dict:
         frames = read_landmarks(path) if path.suffix == ".json" else reader.read(path, cfg.max_frames)[0]
         metrics = [frame_metrics(f) for f in frames]
         seg = segment_generic(frames, metrics, cfg.min_visibility)
-        if seg.reps:
-            views.append(view_features(n, classify(frames, cfg.min_visibility), frames, metrics, seg))
-    if not views:
+        view = classify(frames, cfg.min_visibility)
+        # Góc đã quay mà không tách được rep vẫn ghi lại: LLM cần phân biệt "chưa quay"
+        # (NOT_APPLICABLE) với "quay rồi nhưng không dùng được" (LOW_CONFIDENCE).
+        views.append(view_features(n, view, frames, metrics, seg) if seg.reps else
+                     {"clip": n, "view": view, "dominant": seg.joint,
+                      "reps_total": 0, "reps_used": 0, "reps": []})
+    if not any(v["reps_total"] for v in views):
         raise PoseError("Không tách được rep nào. Làm 5 rep liên tục, đi hết biên độ rồi trở về "
                         "tư thế đầu, và thử lại.", "NO_REPS")
     if not any(v["reps_used"] for v in views):
