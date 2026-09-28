@@ -16,12 +16,12 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from synth import clip, lunge_frame, pushup_frame, squat_frame  # noqa: E402
+from synth import clip, lunge_frame, pushup_frame, raise_frame, squat_frame  # noqa: E402
 from analyzer.analyze import analyze_frames  # noqa: E402
 from analyzer.exercises import LUNGE, PUSHUP, SQUAT  # noqa: E402
 from analyzer.pipeline.geometry import frame_metrics  # noqa: E402
 from analyzer.pipeline.recognize import recognize  # noqa: E402
-from analyzer.pipeline.reps import segment  # noqa: E402
+from analyzer.pipeline.reps import segment, segment_generic  # noqa: E402
 from analyzer.pipeline.viewpoint import classify  # noqa: E402
 from analyzer.scoring import FAIL, NOT_APPLICABLE, PASS  # noqa: E402
 from analyzer.viewpoints import FRONTAL, SAGITTAL  # noqa: E402
@@ -88,6 +88,34 @@ def test_recognize():
         assert r.label == label and r.confidence >= 0.5, (label, r)
     still = [squat_frame(i, 0.0) for i in range(30)]
     assert recognize(still, [frame_metrics(f) for f in still]).label == "unknown"
+
+
+def test_segment_generic_counts_every_exercise():
+    cases = ((squat_frame, dict(view="side")), (squat_frame, dict(view="frontal")),
+             (pushup_frame, {}), (lunge_frame, {}), (raise_frame, {}))
+    for make, kw in cases:
+        frames = clip(make, **kw)
+        metrics = [frame_metrics(f) for f in frames]
+        seg = segment_generic(frames, metrics, 0.5)
+        assert len(seg.reps) == 5, (make.__name__, kw, seg)
+        for rep in seg.reps:
+            assert rep.start < rep.bottom < rep.end, rep
+
+
+def test_segment_generic_raise_goes_up():
+    frames = clip(raise_frame)
+    metrics = [frame_metrics(f) for f in frames]
+    seg = segment_generic(frames, metrics, 0.5)
+    assert seg.joint == "shoulder", seg.joint
+    # Điểm xa nhất của nâng tay là góc vai LỚN nhất, không phải nhỏ nhất.
+    for rep in seg.reps:
+        assert metrics[rep.bottom].shoulder_mean_deg > metrics[rep.start].shoulder_mean_deg + 60
+
+
+def test_segment_generic_still_has_no_reps():
+    still = [squat_frame(i, 0.0) for i in range(60)]
+    seg = segment_generic(still, [frame_metrics(f) for f in still], 0.5)
+    assert seg.joint is None and seg.reps == []
 
 
 if __name__ == "__main__":

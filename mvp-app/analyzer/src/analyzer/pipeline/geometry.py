@@ -26,6 +26,9 @@ class FrameMetrics:
     elbow_mean_deg: float          # tín hiệu rep push-up
     front_knee_angle_deg: float    # min hai gối — tín hiệu rep lunge
     torso_tilt_deg: float          # trục hông→vai TRÊN ẢNH so với phương đứng của ảnh; ~90 = nằm ngang
+    hip_side_deg: list[float]        # [trái, phải] góc vai–hông–gối từng bên
+    shoulder_angle_deg: list[float]  # [trái, phải] góc hông–vai–khuỷu; 0 = tay sát thân
+    shoulder_mean_deg: float         # tín hiệu rep chung cho bài tay: nâng tạ ngang vai, đẩy vai
 
 
 def angle_deg(a: np.ndarray, b: np.ndarray) -> float:
@@ -74,6 +77,13 @@ def frame_metrics(frame: Frame) -> FrameMetrics:
     torso_img = ((n[LM["l_sho"]] + n[LM["r_sho"]]) / 2.0 - (n[LM["l_hip"]] + n[LM["r_hip"]]) / 2.0)[:2]
     tilt = angle_deg(torso_img, np.array([0.0, -1.0]))
 
+    hip_side = [
+        angle_deg(w[LM[f"{s}_sho"]] - w[LM[f"{s}_hip"]], w[LM[f"{s}_knee"]] - w[LM[f"{s}_hip"]])
+        for s in ("l", "r")]
+    shoulder_angle = [
+        angle_deg(w[LM[f"{s}_hip"]] - w[LM[f"{s}_sho"]], w[LM[f"{s}_elbow"]] - w[LM[f"{s}_sho"]])
+        for s in ("l", "r")]
+
     return FrameMetrics(
         hip_angle_deg=angle_deg(shoulder - hip, knee - hip),
         depth_ratio=ratio,
@@ -84,6 +94,9 @@ def frame_metrics(frame: Frame) -> FrameMetrics:
         elbow_mean_deg=(elbow_angle[0] + elbow_angle[1]) / 2.0,
         front_knee_angle_deg=min(knee_angle),
         torso_tilt_deg=tilt,
+        hip_side_deg=hip_side,
+        shoulder_angle_deg=shoulder_angle,
+        shoulder_mean_deg=(shoulder_angle[0] + shoulder_angle[1]) / 2.0,
     )
 
 

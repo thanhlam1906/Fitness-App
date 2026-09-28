@@ -87,6 +87,19 @@ def lunge_frame(i, d):
     return f
 
 
+def raise_frame(i, d, view="frontal"):
+    """Nâng tạ ngang vai: tay duỗi dạng từ 10° (thả) lên 90° (ngang vai). Góc vai TĂNG khi tập,
+    ngược với squat — để kiểm tách rep chung không ngầm giả định "rep là đi xuống"."""
+    a = math.radians(10 + 80 * d)
+    sho = (0.0, 1.4)
+
+    def arm(r):
+        return (sho[0], sho[1] - r * math.cos(a), r * math.sin(a))
+
+    return _frame(i, dict(sho=sho, hip=(0.0, 0.9), knee=(0.0, 0.45), ankle=(0.0, 0.0),
+                          elbow=arm(0.3), wrist=arm(0.55)), view)
+
+
 def clip(make, reps=5, hold=8, half=15, **kw):
     """Chuỗi frame: [đứng]*hold, hạ 1..half, lên half-1..0, lặp `reps` lần, kết thúc đứng."""
     frames, i = [], 0
