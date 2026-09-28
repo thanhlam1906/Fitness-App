@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from synth import clip, lunge_frame, pushup_frame, raise_frame, squat_frame  # noqa: E402
 from analyzer.analyze import analyze_frames  # noqa: E402
 from analyzer.exercises import LUNGE, PUSHUP, SQUAT  # noqa: E402
+from analyzer.pipeline.features import view_features  # noqa: E402
 from analyzer.pipeline.geometry import frame_metrics  # noqa: E402
 from analyzer.pipeline.recognize import recognize  # noqa: E402
 from analyzer.pipeline.reps import segment, segment_generic  # noqa: E402
@@ -116,6 +117,36 @@ def test_segment_generic_still_has_no_reps():
     still = [squat_frame(i, 0.0) for i in range(60)]
     seg = segment_generic(still, [frame_metrics(f) for f in still], 0.5)
     assert seg.joint is None and seg.reps == []
+
+
+def test_features_side_squat():
+    frames = clip(squat_frame, view="side")
+    metrics = [frame_metrics(f) for f in frames]
+    v = view_features(1, SAGITTAL, frames, metrics, segment_generic(frames, metrics, 0.5))
+    assert (v["clip"], v["view"], v["reps_total"], v["reps_used"]) == (1, SAGITTAL, 5, 5)
+    first = v["reps"][0]
+    assert first["rep"] == 1
+    assert first["hip_l_S"] > 170 and first["hip_l_P"] < 80     # đứng thẳng → ngồi sâu
+    assert first["depth_ratio_P"] < 1.0                           # hông xuống dưới gối
+    assert first["knee_asym"] == 0 and first["knee_in"] == 0.0    # squat giả lập đối xứng
+    assert isinstance(first["knee_l_P"], int) and isinstance(first["depth_ratio_P"], float)
+
+
+def test_features_frontal_valgus_shows_knee_in():
+    frames = clip(squat_frame, view="frontal", valgus=0.12)
+    metrics = [frame_metrics(f) for f in frames]
+    v = view_features(2, FRONTAL, frames, metrics, segment_generic(frames, metrics, 0.5))
+    assert all(r["knee_in"] > 0.13 for r in v["reps"]), v["reps"]
+
+
+def test_features_drop_low_confidence_reps():
+    frames = clip(squat_frame, view="side")
+    for f in frames[8:31]:   # rep 1 lúc hạ và đáy: đủ để tách rep (≥ 0.5) nhưng dưới 0.7
+        f.vis[:] = 0.6
+    metrics = [frame_metrics(f) for f in frames]
+    v = view_features(1, SAGITTAL, frames, metrics, segment_generic(frames, metrics, 0.5))
+    assert v["reps_total"] == 5 and v["reps_used"] == 4
+    assert [r["rep"] for r in v["reps"]] == [2, 3, 4, 5]    # giữ số thứ tự gốc
 
 
 if __name__ == "__main__":
