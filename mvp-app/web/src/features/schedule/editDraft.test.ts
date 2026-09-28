@@ -3,7 +3,7 @@ import { diffDraft, nudge, toDraft, type DraftRow } from "./editDraft"
 import type { ScheduledExerciseView } from "./types"
 
 const squat: ScheduledExerciseView = {
-  id: "se1", exerciseId: "squat", exerciseSlug: "squat", exerciseName: "Squat", description: null,
+  id: "se1", exerciseId: "squat", exerciseSlug: "squat", exerciseName: "Squat", description: null, muscleGroups: [], stepsVi: [], mistakesVi: [],
   analyzable: true, orderIndex: 1, targetSets: 3, targetReps: 5, targetRepsMax: 8,
   targetLoadKg: 60, restSeconds: 120, substitutedFromName: null, loadDecision: null,
 }

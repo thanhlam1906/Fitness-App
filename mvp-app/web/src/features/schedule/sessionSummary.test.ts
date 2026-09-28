@@ -5,7 +5,7 @@ import type { ScheduledExerciseView } from "./types"
 
 function exercise(exerciseId: string, name: string, targetSets: number, targetReps: number): ScheduledExerciseView {
   return {
-    id: "se-" + exerciseId, exerciseId, exerciseSlug: exerciseId, exerciseName: name, description: null,
+    id: "se-" + exerciseId, exerciseId, exerciseSlug: exerciseId, exerciseName: name, description: null, muscleGroups: [], stepsVi: [], mistakesVi: [],
     analyzable: false, orderIndex: 1, targetSets, targetReps, targetRepsMax: targetReps + 2,
     targetLoadKg: null, restSeconds: null, substitutedFromName: null, loadDecision: null,
   }

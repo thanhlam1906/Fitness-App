@@ -35,7 +35,33 @@ const SLUG_TO_SOURCE_DIR = {
   deadlift: "Barbell_Deadlift",
 }
 
+// Ảnh động cho khung chi tiết bài (doc/design-anh-dong-v1.md): mã GIF của ExerciseDB bản
+// miễn phí (oss.exercisedb.dev). Cũng viết tay và đã mở từng ảnh xem tận mắt. API giới hạn số
+// lần gọi nên app không gọi lúc chạy, chỉ tải một lần về public/exercises/<slug>.gif.
+const SLUG_TO_EXERCISEDB_GIF = {
+  // Không có bản đúng trong bản miễn phí nên giữ ảnh chụp: bodyweight-squat (chỉ có biến
+  // thể nhảy, một chân), reverse-lunge (chỉ có lunge bước tới), superman (chỉ có bản trên máy
+  // hoặc bóng), dumbbell-floor-press.
+  "barbell-back-squat": "qXTaZnJ", // barbell full squat
+  "romanian-deadlift": "wQ2c4XD", // barbell romanian deadlift
+  "overhead-press": "A6wtbuL", // dumbbell standing overhead press
+  "push-up": "I4hDWkc", // push-up
+  "bent-over-row": "eZyBC3j", // barbell bent over row
+  "glute-bridge": "u0cNiij", // low glute bridge on floor
+  "decline-push-up": "i5cEhka", // decline push-up
+  "dead-bug": "iny3m5y", // dead bug
+  "goblet-squat": "yn8yg1r", // dumbbell goblet squat
+  "lunge-dumbbell": "SSsBDwB", // dumbbell rear lunge
+  "one-arm-row": "C0MA9bC", // dumbbell one arm bent-over row
+  "biceps-curl": "NbVPDMW", // dumbbell biceps curl
+  "lateral-raise": "DsgkuIt", // dumbbell lateral raise
+  "kettlebell-swing": "UHJlbu3", // kettlebell swing
+  "barbell-bench-press": "EIeI8Vf", // barbell bench press
+  deadlift: "ila4NZS", // barbell deadlift
+}
+
 const BASE_URL = "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises"
+const GIF_BASE_URL = "https://static.exercisedb.dev/media"
 const OUT_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public", "exercises")
 
 async function fileExists(filePath) {
@@ -68,11 +94,28 @@ async function fetchFrame(slug, sourceDir, frame) {
   console.log(`đã tải: ${slug}-${frame}.jpg`)
 }
 
+async function download(url, outPath, label) {
+  if (await fileExists(outPath)) {
+    console.log(`bỏ qua (đã có): ${label}`)
+    return
+  }
+  const res = await fetch(url)
+  if (res.status !== 200) {
+    console.error(`Lỗi tải ${url}: HTTP ${res.status}`)
+    process.exit(1)
+  }
+  await writeFile(outPath, Buffer.from(await res.arrayBuffer()))
+  console.log(`đã tải: ${label}`)
+}
+
 async function main() {
   await mkdir(OUT_DIR, { recursive: true })
   for (const [slug, sourceDir] of Object.entries(SLUG_TO_SOURCE_DIR)) {
     await fetchFrame(slug, sourceDir, 0)
     await fetchFrame(slug, sourceDir, 1)
+  }
+  for (const [slug, id] of Object.entries(SLUG_TO_EXERCISEDB_GIF)) {
+    await download(`${GIF_BASE_URL}/${id}.gif`, path.join(OUT_DIR, `${slug}.gif`), `${slug}.gif`)
   }
 }
 

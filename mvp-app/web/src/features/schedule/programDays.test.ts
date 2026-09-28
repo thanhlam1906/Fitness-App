@@ -3,7 +3,7 @@ import { formatTarget, previewDates, programDays, shortDayTitle } from "./progra
 import type { ScheduledExerciseView, ScheduledWorkoutView } from "./types"
 
 const ex = (id: string, sets = 3, reps = 5, repsMax = 5, load: number | null = null): ScheduledExerciseView => ({
-  id, exerciseId: `ex-${id}`, exerciseSlug: id, exerciseName: id, description: null, analyzable: false,
+  id, exerciseId: `ex-${id}`, exerciseSlug: id, exerciseName: id, description: null, muscleGroups: [], stepsVi: [], mistakesVi: [], analyzable: false,
   orderIndex: 1, targetSets: sets, targetReps: reps, targetRepsMax: repsMax, targetLoadKg: load,
   restSeconds: null, substitutedFromName: null, loadDecision: null,
 })

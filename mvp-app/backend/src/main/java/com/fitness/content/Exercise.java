@@ -47,6 +47,15 @@ public class Exercise {
 	@Column(name = "filming_guide", columnDefinition = "jsonb")
 	private String filmingGuide;
 
+	// Chỉ sửa qua seed (R__seed_content.sql); form admin chưa có hai trường này.
+	@JdbcTypeCode(SqlTypes.ARRAY)
+	@Column(name = "steps_vi", columnDefinition = "text[]", nullable = false)
+	private String[] stepsVi = new String[0];
+
+	@JdbcTypeCode(SqlTypes.ARRAY)
+	@Column(name = "mistakes_vi", columnDefinition = "text[]", nullable = false)
+	private String[] mistakesVi = new String[0];
+
 	@Column(nullable = false)
 	private boolean analyzable;
 
@@ -119,6 +128,14 @@ public class Exercise {
 
 	public String getFilmingGuide() {
 		return filmingGuide;
+	}
+
+	public String[] getStepsVi() {
+		return stepsVi;
+	}
+
+	public String[] getMistakesVi() {
+		return mistakesVi;
 	}
 
 	public boolean isAnalyzable() {

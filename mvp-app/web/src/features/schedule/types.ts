@@ -6,6 +6,11 @@ export type ScheduledExerciseView = {
   exerciseSlug: string
   exerciseName: string
   description: string | null
+  /** Mã nhóm cơ (QUADS, GLUTES…); phần tử đầu là cơ chính. */
+  muscleGroups: string[]
+  /** Hướng dẫn ngắn ở khung chi tiết bài: 3 bước, 2 lỗi hay gặp. */
+  stepsVi: string[]
+  mistakesVi: string[]
   analyzable: boolean
   orderIndex: number
   targetSets: number

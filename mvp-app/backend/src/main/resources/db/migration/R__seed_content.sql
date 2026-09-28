@@ -98,6 +98,73 @@ ON CONFLICT (slug) DO UPDATE SET
   description = EXCLUDED.description, analyzable = EXCLUDED.analyzable,
   updated_at = now();
 
+-- ═══════════════ HƯỚNG DẪN NGẮN — khung chi tiết bài ═══════════════
+-- doc/design-anh-dong-v1.md §3: mỗi bài 3 bước cách tập và 2 lỗi hay gặp.
+UPDATE exercises e SET steps_vi = v.steps, mistakes_vi = v.mistakes
+FROM (VALUES
+  ('barbell-back-squat',
+   ARRAY['Gánh thanh đòn trên lưng trên, chân rộng bằng vai.', 'Đẩy hông ra sau, hạ tới khi đùi ngang sàn.', 'Đạp cả bàn chân để đứng lên, giữ ngực thẳng.'],
+   ARRAY['Gối chụm vào trong khi đứng lên.', 'Gót chân nhấc khỏi sàn.']),
+  ('romanian-deadlift',
+   ARRAY['Cầm tạ trước đùi, gối hơi cong và giữ cố định.', 'Đẩy hông ra sau, hạ tạ sát chân tới khi căng đùi sau.', 'Siết mông, đẩy hông ra trước để đứng thẳng lại.'],
+   ARRAY['Cong lưng khi hạ tạ.', 'Gập gối như squat thay vì đẩy hông ra sau.']),
+  ('overhead-press',
+   ARRAY['Đứng thẳng, tạ ngang vai, khuỷu nằm dưới cổ tay.', 'Đẩy tạ thẳng lên tới khi tay duỗi hết.', 'Hạ chậm về ngang vai rồi lặp lại.'],
+   ARRAY['Ngửa lưng dưới để đẩy.', 'Đẩy tạ ra trước mặt thay vì thẳng lên.']),
+  ('push-up',
+   ARRAY['Hai tay rộng hơn vai một chút, thân thẳng từ đầu tới gót.', 'Hạ ngực sát sàn, khuỷu chếch về sau khoảng 45 độ.', 'Đẩy sàn ra xa để lên, giữ bụng siết.'],
+   ARRAY['Võng hông hoặc chổng mông.', 'Khuỷu tay bè ngang ra hai bên.']),
+  ('bent-over-row',
+   ARRAY['Gập hông khoảng 45 độ, lưng thẳng, tay buông thẳng cầm tạ.', 'Kéo tạ về phía bụng dưới, ép hai bả vai lại.', 'Hạ chậm tới khi tay duỗi hết.'],
+   ARRAY['Giật người lấy đà.', 'Cong lưng khi gập người.']),
+  ('bodyweight-squat',
+   ARRAY['Đứng chân rộng bằng vai, mũi chân hơi mở.', 'Đẩy hông ra sau như ngồi xuống ghế, hạ tới khi đùi ngang sàn.', 'Đạp cả bàn chân để đứng lên, siết mông ở đỉnh.'],
+   ARRAY['Gối chụm vào trong.', 'Gót chân nhấc khỏi sàn.']),
+  ('reverse-lunge',
+   ARRAY['Đứng thẳng, bước một chân ra sau.', 'Hạ tới khi gối sau gần chạm sàn, thân giữ thẳng.', 'Đẩy gót chân trước để về tư thế đứng, đổi chân.'],
+   ARRAY['Gối trước đổ vào trong.', 'Ngả người ra trước quá nhiều.']),
+  ('glute-bridge',
+   ARRAY['Nằm ngửa, gập gối, bàn chân đặt gần mông.', 'Đẩy hông lên tới khi thân và đùi thành một đường thẳng.', 'Siết mông một nhịp rồi hạ chậm.'],
+   ARRAY['Ưỡn lưng thay vì đẩy bằng mông.', 'Đẩy bằng mũi chân, gót nhấc lên.']),
+  ('decline-push-up',
+   ARRAY['Gác mũi chân lên ghế hoặc bậc cao, hai tay rộng hơn vai.', 'Hạ ngực sát sàn, thân giữ thẳng.', 'Đẩy lên tới khi tay duỗi hết.'],
+   ARRAY['Võng hông khi hạ.', 'Ngửa cổ ra trước.']),
+  ('superman',
+   ARRAY['Nằm sấp, tay duỗi thẳng qua đầu.', 'Nâng cùng lúc tay, ngực và chân khỏi sàn.', 'Giữ 1–2 giây rồi hạ chậm.'],
+   ARRAY['Ngửa cổ quá mức.', 'Giật lên quá nhanh.']),
+  ('dead-bug',
+   ARRAY['Nằm ngửa, tay giơ thẳng lên, gối co 90 độ.', 'Duỗi tay và chân đối diện ra xa, lưng dưới ép sàn.', 'Thu về rồi đổi bên.'],
+   ARRAY['Lưng dưới nhấc khỏi sàn.', 'Làm quá nhanh, không kiểm soát.']),
+  ('goblet-squat',
+   ARRAY['Ôm một quả tạ trước ngực, chân rộng hơn vai.', 'Hạ hông giữa hai gối tới khi đùi ngang sàn.', 'Đạp chân đứng lên, ngực giữ thẳng.'],
+   ARRAY['Để tạ kéo người đổ về trước.', 'Gối chụm vào trong.']),
+  ('lunge-dumbbell',
+   ARRAY['Hai tay cầm tạ đơn buông dọc thân.', 'Bước lùi một chân, hạ tới khi gối sau gần chạm sàn.', 'Đẩy gót chân trước để đứng lên, đổi chân.'],
+   ARRAY['Gối trước đổ vào trong.', 'Bước quá ngắn làm gót chân trước nhấc lên.']),
+  ('dumbbell-floor-press',
+   ARRAY['Nằm ngửa trên sàn, gối co, tạ ngang ngực.', 'Đẩy tạ thẳng lên tới khi tay duỗi hết.', 'Hạ chậm tới khi khuỷu chạm nhẹ sàn.'],
+   ARRAY['Khuỷu tay bè ngang vai.', 'Thả rơi khuỷu xuống sàn.']),
+  ('one-arm-row',
+   ARRAY['Một tay và gối chống lên ghế, lưng thẳng.', 'Kéo tạ về phía hông, khuỷu sát thân.', 'Hạ chậm tới khi tay duỗi hết, đủ rep rồi đổi bên.'],
+   ARRAY['Xoay người để kéo.', 'Nhún vai lên tai.']),
+  ('biceps-curl',
+   ARRAY['Đứng thẳng, tạ buông dọc thân, lòng bàn tay hướng trước.', 'Cuốn tạ lên ngang vai, khuỷu giữ sát thân.', 'Hạ chậm về vị trí đầu.'],
+   ARRAY['Đưa người lấy đà.', 'Khuỷu tay trôi ra trước.']),
+  ('lateral-raise',
+   ARRAY['Đứng thẳng, tạ hai bên thân, khuỷu hơi cong.', 'Nâng tạ sang hai bên tới ngang vai.', 'Hạ chậm, không thả rơi.'],
+   ARRAY['Nhún vai khi nâng.', 'Nâng quá vai hoặc lấy đà.']),
+  ('kettlebell-swing',
+   ARRAY['Chân rộng hơn vai, hai tay cầm tạ ấm.', 'Gập hông đưa tạ ra sau giữa hai chân.', 'Bật hông, siết mông để tạ bay lên ngang ngực.'],
+   ARRAY['Dùng tay kéo tạ lên.', 'Squat xuống thay vì gập hông.']),
+  ('barbell-bench-press',
+   ARRAY['Nằm trên ghế, bả vai ép vào ghế, chân đặt vững.', 'Hạ thanh đòn chạm giữa ngực.', 'Đẩy thẳng lên tới khi tay duỗi hết.'],
+   ARRAY['Nảy tạ trên ngực.', 'Nhấc mông khỏi ghế.']),
+  ('deadlift',
+   ARRAY['Thanh đòn sát ống chân, cúi xuống cầm tạ, lưng thẳng.', 'Đạp chân xuống sàn, kéo tạ sát người lên.', 'Đứng thẳng hẳn rồi hạ tạ theo đường cũ.'],
+   ARRAY['Cong lưng khi kéo.', 'Để thanh đòn xa người.'])
+) AS v(slug, steps, mistakes)
+WHERE e.slug = v.slug;
+
 -- ═══════════════ HƯỚNG DẪN QUAY — màn 8 ═══════════════
 -- Góc nên quay lấy từ bảng §6.3 ke-hoach-chi-tiet-chuc-nang-v1.md.
 -- F2 còn treo: hình minh hoạ khung người cần chụp hoặc vẽ, không code được.

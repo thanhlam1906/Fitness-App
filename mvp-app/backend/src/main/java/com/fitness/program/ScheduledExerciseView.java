@@ -1,6 +1,7 @@
 package com.fitness.program;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -15,6 +16,10 @@ public record ScheduledExerciseView(
 		String exerciseSlug,
 		String exerciseName,
 		String description,
+		/** Phần tử đầu là cơ chính — khung chi tiết bài tô accent nhóm này. */
+		List<String> muscleGroups,
+		List<String> stepsVi,
+		List<String> mistakesVi,
 		boolean analyzable,
 		int orderIndex,
 		int targetSets,
