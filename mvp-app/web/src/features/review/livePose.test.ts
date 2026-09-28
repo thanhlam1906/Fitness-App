@@ -3,6 +3,7 @@ import {
   advance,
   COUNTDOWN_MS,
   HOLD_MS,
+  MAX_FRAMES,
   newSession,
   packFrame,
   readPose,
@@ -130,6 +131,18 @@ describe("advance", () => {
     expect(s.stage).toBe("done")
     expect(s.clips.map((c) => c.view)).toEqual(["SAGITTAL", "FRONTAL"])
     expect(s.clips[0].frames.length).toBeGreaterThan(0)
+  })
+
+  it("bộ đệm đầy thì giữ phần đầu: server cần tư thế đầu lúc đếm ngược", () => {
+    const s = newSession()
+    let t = 0
+    for (let i = 0; i < 2 * HOLD; i++) advance(s, pose(0.2), null, (t += 33))
+    expect(s.stage).toBe("countdown")
+    for (let i = 0; i < MAX_FRAMES + 50; i++) {
+      advance(s, pose(0.2), { norm: [[i, 0, 0]], vis: [1], world: [[0, 0, 0]] }, (t += 33))
+    }
+    expect(s.buffer).toHaveLength(MAX_FRAMES)
+    expect(s.buffer[0]!.norm[0][0]).toBe(0)
   })
 
   it("rời khung lúc đếm ngược thì quay lại bước xoay người", () => {

@@ -182,8 +182,9 @@ export function newSession(): Session {
 }
 
 function pushFrame(s: Session, frame: FrameJson) {
-  if (s.buffer.length >= MAX_FRAMES) s.buffer.shift()
-  s.buffer.push(frame)
+  // Đầy thì giữ phần đầu, bỏ phần sau: server lấy tư thế đầu ở các frame đếm ngược để biết rep đi
+  // hướng nào; vứt đầu bộ đệm thì server có thể đọc ngược đầu rep với điểm xa nhất.
+  if (s.buffer.length < MAX_FRAMES) s.buffer.push(frame)
 }
 
 /** Một frame vào máy trạng thái §3.2. Đổi `s` tại chỗ; page đọc `s` để vẽ HUD. */

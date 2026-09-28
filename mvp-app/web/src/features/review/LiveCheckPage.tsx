@@ -41,6 +41,7 @@ export function LiveCheckPage() {
   const landmarker = useRef<PoseLandmarker | null>(null)
   const stream = useRef<MediaStream | null>(null)
   const raf = useRef(0)
+  const lastVideoTime = useRef(-1)
   const session = useRef<Session>(newSession())
   const [screen, setScreen] = useState<Screen>("consent")
   const [optIn, setOptIn] = useState(false)
@@ -93,6 +94,10 @@ export function LiveCheckPage() {
     const c = canvas.current
     const detector = landmarker.current
     if (!v || !c || !detector || !v.videoWidth) return
+    // Màn 120–144 Hz gọi rAF nhiều lần cho mỗi frame camera 30 fps: chỉ xử lý frame mới, không thì
+    // bộ đệm đầy frame trùng và bộ đếm rep nhận cùng một tư thế nhiều lần.
+    if (v.currentTime === lastVideoTime.current) return
+    lastVideoTime.current = v.currentTime
     if (c.width !== v.videoWidth) {
       c.width = v.videoWidth
       c.height = v.videoHeight
