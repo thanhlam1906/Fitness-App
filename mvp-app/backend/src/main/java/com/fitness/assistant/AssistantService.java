@@ -6,8 +6,11 @@ import com.fitness.assistant.tools.AssistantTools;
 import com.fitness.assistant.tools.ToolCallLog;
 import com.fitness.common.CurrentUser;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
 
@@ -116,7 +119,7 @@ public class AssistantService {
 			boolean grounded = numberGuard.isGrounded(answer, groundingContext);
 
 			List<String> toolsCalled = toolCallLog.toolNames();
-			Classification classification = classify(toolsCalled, chunks);
+			Classification classification = classify(answer, toolsCalled, chunks);
 
 			if (!grounded) {
 				// Câu dự phòng không dựa vào tài liệu nào (thay hẳn câu trả lời của model) — kèm
@@ -134,20 +137,56 @@ public class AssistantService {
 	record Classification(String intent, List<String> sourceTitles) {
 	}
 
+	private static final Pattern TOKEN = Pattern.compile("[\\p{L}\\p{N}]+");
+	// Tiếng Việt: mỗi âm tiết là một token rời (không ghép từ như tiếng Anh), nên đếm SỐ TỪ RỜI
+	// trùng giữa câu trả lời và chunk gần như vô dụng — đo trên 94 chunk thật của corpus
+	// (content/corpus/*.md) và 44 câu trả lời eval thật (eval/report-v3-hybrid.md, review vòng 2):
+	// câu trả lời thuần tool ("Trong 4 tuần qua, bạn chưa bắt đầu buổi tập nào...") trùng ngưỡng 3
+	// từ rời với 28–47/94 chunk chỉ vì âm tiết phổ biến trong domain (buổi, tuần, khối, lượng, kg…)
+	// không nằm trong STOPWORDS (STOPWORDS lọc cho CÂU HỎI, không lọc được từ vựng câu trả lời).
+	// Trích dẫn thật luôn CHÉP NGUYÊN một cụm liên tiếp từ chunk; trùng ngẫu nhiên thì không — nên
+	// so cụm SHINGLE âm tiết liền nhau (giữ cả hư từ, vì thứ tự mới là tín hiệu phân biệt).
+	// ponytail: SHINGLE=4, MIN_SHARED_SHINGLES=2 đo trên cùng bộ 44 câu ở trên — không sai dương
+	// tính ở mọi câu B/UNKNOWN/từ chối, không sót câu A nào trích thật. Tinh khi có eval lớn hơn.
+	private static final int SHINGLE = 4;
+	private static final int MIN_SHARED_SHINGLES = 2;
+
 	/**
-	 * "Nguồn" chỉ đúng khi câu trả lời thực sự dựa vào tài liệu (intent A). Câu hỏi qua tool (B)
-	 * hay không có gì để trả lời (UNKNOWN) mà vẫn hiện "Nguồn: ..." là bịa nguồn — chunk tìm được
-	 * (retriever luôn chạy song song, kể cả câu hỏi qua tool) không có nghĩa model đã dùng nó.
+	 * intent chỉ để ghi log (đã có gọi tool hay không, có chunk hay không). sourceTitles quyết theo
+	 * một tín hiệu khác, không phụ thuộc intent: chunk có được trích trong CÂU TRẢ LỜI hay không.
+	 *
+	 * Trước đây gắn sourceTitles thẳng theo chunk retriever tìm được (thấy nếu không gọi tool),
+	 * dẫn tới hai lỗi ngược nhau: (1) câu trả lời hoàn toàn bằng tool nhưng retriever tình cờ tìm
+	 * ra chunk gần nghĩa vẫn hiện "Nguồn" — bịa nguồn; (2) câu trả lời NỬA bằng tool NỬA bằng tài
+	 * liệu (hỏi lịch kèm hỏi kiến thức) thì mất hẳn nguồn vì có gọi tool. Xem chunk có được CHÉP
+	 * LẠI trong câu trả lời hay không (so cụm âm tiết liền nhau) sửa đúng cả hai, bất kể có tool.
+	 *
 	 * Package-private để test thuần, không cần Spring/DB.
 	 */
-	static Classification classify(List<String> toolsCalled, List<FtsRetriever.Chunk> chunks) {
-		if (!toolsCalled.isEmpty()) {
-			return new Classification("B", List.of());
+	static Classification classify(String answer, List<String> toolsCalled, List<FtsRetriever.Chunk> chunks) {
+		String intent = !toolsCalled.isEmpty() ? "B" : !chunks.isEmpty() ? "A" : "UNKNOWN";
+		Set<String> answerShingles = shingles(answer);
+		List<String> sourceTitles = chunks.stream()
+				.filter(c -> isCited(answerShingles, c))
+				.map(FtsRetriever.Chunk::documentTitle)
+				.distinct()
+				.toList();
+		return new Classification(intent, sourceTitles);
+	}
+
+	private static boolean isCited(Set<String> answerShingles, FtsRetriever.Chunk chunk) {
+		Set<String> chunkShingles = shingles(chunk.content());
+		return answerShingles.stream().filter(chunkShingles::contains).count() >= MIN_SHARED_SHINGLES;
+	}
+
+	private static Set<String> shingles(String text) {
+		List<String> words = TOKEN.matcher(text.toLowerCase()).results().map(m -> m.group()).toList();
+		if (words.size() < SHINGLE) {
+			return Set.of(); // câu ngắn hơn một cụm: không đủ để so, coi như không trích gì
 		}
-		if (!chunks.isEmpty()) {
-			return new Classification("A", chunks.stream().map(FtsRetriever.Chunk::documentTitle).distinct().toList());
-		}
-		return new Classification("UNKNOWN", List.of());
+		return IntStream.rangeClosed(0, words.size() - SHINGLE)
+				.mapToObj(i -> String.join(" ", words.subList(i, i + SHINGLE)))
+				.collect(Collectors.toSet());
 	}
 
 	private Answer persistAndReturn(
