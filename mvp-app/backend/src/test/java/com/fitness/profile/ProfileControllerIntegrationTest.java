@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fitness.auth.Role;
 import com.fitness.support.PostgresIntegrationTest;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,8 @@ class ProfileControllerIntegrationTest extends PostgresIntegrationTest {
 
 	@Autowired
 	private TestRestTemplate rest;
+	@Autowired
+	private ProfileRepository profiles;
 
 	@Test
 	void onboarding_savesStepByStep_andResumes() {
@@ -58,6 +61,31 @@ class ProfileControllerIntegrationTest extends PostgresIntegrationTest {
 		assertThat(profile.latestBodyMetric().weightKg()).isEqualByComparingTo("69.50");
 		// heightCm không gửi lần hai → giữ nguyên, không bị xoá
 		assertThat(profile.latestBodyMetric().heightCm()).isEqualByComparingTo("172.0");
+	}
+
+	@Test
+	void bodyMetricHistory_newestFirst_onlyCallersRows() {
+		HttpHeaders me = newAuthedUser(Role.USER).headers();
+		post(me, new BodyMetricRequest(null, new BigDecimal("74.20"), LocalDate.of(2026, 8, 4)));
+		post(me, new BodyMetricRequest(null, new BigDecimal("72.50"), LocalDate.of(2026, 9, 25)));
+		post(newAuthedUser(Role.USER).headers(), new BodyMetricRequest(null, new BigDecimal("99.00"), null));
+
+		var resp = rest.exchange("/api/v1/me/body-metrics", HttpMethod.GET, new HttpEntity<>(me),
+				ProfileResponse.BodyMetricView[].class);
+
+		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(resp.getBody()).extracting(ProfileResponse.BodyMetricView::measuredOn)
+				.containsExactly(LocalDate.of(2026, 9, 25), LocalDate.of(2026, 8, 4));
+	}
+
+	@Test
+	void profile_returnsFullNameFromRegistration() {
+		AuthedUser me = newAuthedUser(Role.USER);
+		Profile profile = new Profile(me.userId());
+		profile.applyRegistration("Minh Anh", "0900000000");
+		profiles.save(profile);
+
+		assertThat(get(me.headers()).getBody().fullName()).isEqualTo("Minh Anh");
 	}
 
 	@Test

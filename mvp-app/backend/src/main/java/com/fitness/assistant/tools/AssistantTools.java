@@ -11,12 +11,9 @@ import com.fitness.program.ScheduledExercise;
 import com.fitness.program.ScheduledExerciseRepository;
 import com.fitness.program.ScheduledWorkout;
 import com.fitness.program.ScheduledWorkoutRepository;
-import com.fitness.workout.SetLogRepository;
-import com.fitness.workout.WorkoutSession;
-import com.fitness.workout.WorkoutSessionRepository;
+import com.fitness.workout.ProgressService;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
@@ -45,23 +42,20 @@ public class AssistantTools {
 	private final ScheduledExerciseRepository scheduledExercises;
 	private final ExerciseRepository exercises;
 	private final LoadDecisionRepository loadDecisions;
-	private final WorkoutSessionRepository workoutSessions;
-	private final SetLogRepository setLogs;
+	private final ProgressService progressService;
 	private final ToolCallLog toolCallLog;
 
 	public AssistantTools(
 			CurrentUser currentUser, ProgramRepository programs, ScheduledWorkoutRepository scheduledWorkouts,
 			ScheduledExerciseRepository scheduledExercises, ExerciseRepository exercises,
-			LoadDecisionRepository loadDecisions, WorkoutSessionRepository workoutSessions,
-			SetLogRepository setLogs, ToolCallLog toolCallLog) {
+			LoadDecisionRepository loadDecisions, ProgressService progressService, ToolCallLog toolCallLog) {
 		this.currentUser = currentUser;
 		this.programs = programs;
 		this.scheduledWorkouts = scheduledWorkouts;
 		this.scheduledExercises = scheduledExercises;
 		this.exercises = exercises;
 		this.loadDecisions = loadDecisions;
-		this.workoutSessions = workoutSessions;
-		this.setLogs = setLogs;
+		this.progressService = progressService;
 		this.toolCallLog = toolCallLog;
 	}
 
@@ -156,21 +150,10 @@ public class AssistantTools {
 			+ "lượng đã nâng (tonnage, kg), RPE trung bình mỗi buổi.")
 	public ProgressSummary getProgressSummary(
 			@ToolParam(description = "số tuần muốn xem lại, ví dụ 4") int weeks) {
-		int clampedWeeks = Math.max(1, Math.min(weeks, 52));
-		UUID userId = currentUser.id();
-		Instant since = Instant.now().minus(java.time.Duration.ofDays(clampedWeeks * 7L));
-
-		List<WorkoutSession> sessions = workoutSessions.findByUserIdAndStartedAtAfter(userId, since);
-		long finished = sessions.stream().filter(s -> "DONE".equals(s.getStatus())).count();
-		java.util.OptionalDouble avgRpe = sessions.stream()
-				.map(WorkoutSession::getSessionRpe)
-				.filter(java.util.Objects::nonNull)
-				.mapToInt(Short::intValue)
-				.average();
-		BigDecimal tonnage = setLogs.totalTonnageSince(userId, since);
-
+		// Cùng phép tính với màn Cài đặt › Tiến bộ — trợ lý và màn đó luôn ra cùng số.
+		ProgressService.Progress p = progressService.summary(currentUser.id(), weeks);
 		ProgressSummary result = new ProgressSummary(
-				clampedWeeks, sessions.size(), finished, tonnage, avgRpe.isPresent() ? avgRpe.getAsDouble() : null);
+				p.weeks(), p.sessionsStarted(), p.sessionsFinished(), p.totalTonnageKg(), p.avgSessionRpe());
 		toolCallLog.record("getProgressSummary", result);
 		return result;
 	}

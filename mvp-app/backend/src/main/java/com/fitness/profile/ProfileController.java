@@ -61,6 +61,14 @@ public class ProfileController {
 		return ResponseEntity.noContent().build();
 	}
 
+	/** Màn Cài đặt › Lịch sử cân nặng: mọi lần đo, mới nhất trước. */
+	@GetMapping("/body-metrics")
+	public List<ProfileResponse.BodyMetricView> bodyMetrics() {
+		return bodyMetrics.findByUserIdOrderByMeasuredOnDesc(currentUser.id()).stream()
+				.map(ProfileResponse.BodyMetricView::of)
+				.toList();
+	}
+
 	private BodyMetric latestBodyMetric(UUID userId) {
 		List<BodyMetric> all = bodyMetrics.findByUserIdOrderByMeasuredOnDesc(userId);
 		return all.isEmpty() ? null : all.get(0);

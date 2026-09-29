@@ -7,6 +7,7 @@ import java.util.List;
 
 /** Màn 2 (onboarding, resume dở dang) và màn 10 (hồ sơ & cài đặt) concept-frontend-v1.md. */
 public record ProfileResponse(
+		String fullName,
 		String goal,
 		String experience,
 		Short sessionsPerWeek,
@@ -18,13 +19,16 @@ public record ProfileResponse(
 		BodyMetricView latestBodyMetric) {
 
 	public record BodyMetricView(BigDecimal heightCm, BigDecimal weightKg, LocalDate measuredOn) {
+
+		static BodyMetricView of(BodyMetric m) {
+			return new BodyMetricView(m.getHeightCm(), m.getWeightKg(), m.getMeasuredOn());
+		}
 	}
 
 	static ProfileResponse of(Profile p, BodyMetric latest) {
 		return new ProfileResponse(
-				p.getGoal(), p.getExperience(), p.getSessionsPerWeek(), List.of(p.getEquipment()),
+				p.getFullName(), p.getGoal(), p.getExperience(), p.getSessionsPerWeek(), List.of(p.getEquipment()),
 				p.getBirthYear(), p.getGender(), p.getDisclaimerAt(), p.getOnboardingStep(),
-				latest == null ? null
-						: new BodyMetricView(latest.getHeightCm(), latest.getWeightKg(), latest.getMeasuredOn()));
+				latest == null ? null : BodyMetricView.of(latest));
 	}
 }
