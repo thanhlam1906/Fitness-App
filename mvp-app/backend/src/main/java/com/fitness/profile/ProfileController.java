@@ -51,7 +51,7 @@ public class ProfileController {
 
 	/** Đo lại cùng ngày là ghi đè, không tạo dòng thứ hai — UNIQUE (user_id, measured_on). */
 	@PostMapping("/body-metrics")
-	public ResponseEntity<Void> addBodyMetric(@RequestBody BodyMetricRequest request) {
+	public ResponseEntity<Void> addBodyMetric(@Valid @RequestBody BodyMetricRequest request) {
 		UUID userId = currentUser.id();
 		LocalDate measuredOn = request.measuredOn() == null ? LocalDate.now() : request.measuredOn();
 		BodyMetric metric = bodyMetrics.findByUserIdAndMeasuredOn(userId, measuredOn)
@@ -69,8 +69,7 @@ public class ProfileController {
 				.toList();
 	}
 
-	private BodyMetric latestBodyMetric(UUID userId) {
-		List<BodyMetric> all = bodyMetrics.findByUserIdOrderByMeasuredOnDesc(userId);
-		return all.isEmpty() ? null : all.get(0);
+	private ProfileResponse.BodyMetricView latestBodyMetric(UUID userId) {
+		return ProfileResponse.BodyMetricView.latestOf(bodyMetrics.findByUserIdOrderByMeasuredOnDesc(userId));
 	}
 }

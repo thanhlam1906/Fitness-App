@@ -64,6 +64,28 @@ class ProfileControllerIntegrationTest extends PostgresIntegrationTest {
 	}
 
 	@Test
+	void latestBodyMetric_takesEachValueFromItsOwnLatestMeasurement() {
+		// Màn Lịch sử cân nặng chỉ gửi cân nặng. Cập nhật vào ngày mới không được làm mất chiều
+		// cao đã khai (code-reviewer 09-29 #3).
+		HttpHeaders me = newAuthedUser(Role.USER).headers();
+		post(me, new BodyMetricRequest(new BigDecimal("172.0"), new BigDecimal("74.20"), LocalDate.of(2026, 8, 4)));
+		post(me, new BodyMetricRequest(null, new BigDecimal("72.50"), LocalDate.of(2026, 9, 25)));
+
+		var latest = get(me).getBody().latestBodyMetric();
+		assertThat(latest.weightKg()).isEqualByComparingTo("72.50");
+		assertThat(latest.heightCm()).isEqualByComparingTo("172.0");
+		assertThat(latest.measuredOn()).isEqualTo(LocalDate.of(2026, 9, 25));
+	}
+
+	@Test
+	void bodyMetric_outOfRange_rejected() {
+		HttpHeaders me = newAuthedUser(Role.USER).headers();
+		var resp = rest.exchange("/api/v1/me/body-metrics", HttpMethod.POST,
+				new HttpEntity<>(new BodyMetricRequest(null, new BigDecimal("-72"), null), me), String.class);
+		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+	}
+
+	@Test
 	void bodyMetricHistory_newestFirst_onlyCallersRows() {
 		HttpHeaders me = newAuthedUser(Role.USER).headers();
 		post(me, new BodyMetricRequest(null, new BigDecimal("74.20"), LocalDate.of(2026, 8, 4)));

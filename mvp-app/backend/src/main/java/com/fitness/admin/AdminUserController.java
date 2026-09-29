@@ -5,8 +5,8 @@ import com.fitness.auth.UserRepository;
 import com.fitness.content.ProgramTemplate;
 import com.fitness.content.ProgramTemplateRepository;
 import com.fitness.feedback.CueFeedbackRepository;
-import com.fitness.profile.BodyMetric;
 import com.fitness.profile.BodyMetricRepository;
+import com.fitness.profile.ProfileResponse;
 import com.fitness.profile.Profile;
 import com.fitness.profile.ProfileRepository;
 import com.fitness.program.Program;
@@ -147,7 +147,8 @@ public class AdminUserController {
 		User user = users.findById(id)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng"));
 		Profile profile = profiles.findById(id).orElseGet(() -> new Profile(id));
-		BodyMetric latest = bodyMetrics.findByUserIdOrderByMeasuredOnDesc(id).stream().findFirst().orElse(null);
+		ProfileResponse.BodyMetricView latest =
+				ProfileResponse.BodyMetricView.latestOf(bodyMetrics.findByUserIdOrderByMeasuredOnDesc(id));
 		String programName = programs.findByUserIdAndStatus(id, "ACTIVE")
 				.map(Program::getTemplateId)
 				.flatMap(templates::findById)
@@ -163,9 +164,9 @@ public class AdminUserController {
 				profile.getGoal(), profile.getExperience(), profile.getSessionsPerWeek(),
 				List.of(profile.getEquipment()), profile.getBirthYear(), profile.getGender(),
 				profile.getDisclaimerAt(), profile.getOnboardingStep(),
-				latest == null ? null : latest.getHeightCm(),
-				latest == null ? null : latest.getWeightKg(),
-				latest == null ? null : latest.getMeasuredOn(),
+				latest == null ? null : latest.heightCm(),
+				latest == null ? null : latest.weightKg(),
+				latest == null ? null : latest.measuredOn(),
 				programName);
 	}
 
