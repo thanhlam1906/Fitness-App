@@ -116,17 +116,38 @@ public class AssistantService {
 			boolean grounded = numberGuard.isGrounded(answer, groundingContext);
 
 			List<String> toolsCalled = toolCallLog.toolNames();
-			List<String> sourceTitles = chunks.stream().map(FtsRetriever.Chunk::documentTitle).distinct().toList();
-			String intent = !toolsCalled.isEmpty() ? "B" : !chunks.isEmpty() ? "A" : "UNKNOWN";
+			Classification classification = classify(toolsCalled, chunks);
 
 			if (!grounded) {
-				return persistAndReturn(userId, threadId, FALLBACK_UNGROUNDED, false, intent, sourceTitles,
-						toolsCalled, "NUMBERS_UNGROUNDED");
+				// Câu dự phòng không dựa vào tài liệu nào (thay hẳn câu trả lời của model) — kèm
+				// "Nguồn" ở đây cũng là bịa nguồn, dù intent vẫn ghi log đúng là A.
+				return persistAndReturn(userId, threadId, FALLBACK_UNGROUNDED, false, classification.intent(),
+						List.of(), toolsCalled, "NUMBERS_UNGROUNDED");
 			}
-			return persistAndReturn(userId, threadId, answer, false, intent, sourceTitles, toolsCalled, "OK");
+			return persistAndReturn(userId, threadId, answer, false, classification.intent(),
+					classification.sourceTitles(), toolsCalled, "OK");
 		} finally {
 			toolCallLog.clear();
 		}
+	}
+
+	record Classification(String intent, List<String> sourceTitles) {
+	}
+
+	/**
+	 * "Nguồn" chỉ đúng khi câu trả lời thực sự dựa vào tài liệu (intent A). Câu hỏi qua tool (B)
+	 * hay không có gì để trả lời (UNKNOWN) mà vẫn hiện "Nguồn: ..." là bịa nguồn — chunk tìm được
+	 * (retriever luôn chạy song song, kể cả câu hỏi qua tool) không có nghĩa model đã dùng nó.
+	 * Package-private để test thuần, không cần Spring/DB.
+	 */
+	static Classification classify(List<String> toolsCalled, List<FtsRetriever.Chunk> chunks) {
+		if (!toolsCalled.isEmpty()) {
+			return new Classification("B", List.of());
+		}
+		if (!chunks.isEmpty()) {
+			return new Classification("A", chunks.stream().map(FtsRetriever.Chunk::documentTitle).distinct().toList());
+		}
+		return new Classification("UNKNOWN", List.of());
 	}
 
 	private Answer persistAndReturn(
