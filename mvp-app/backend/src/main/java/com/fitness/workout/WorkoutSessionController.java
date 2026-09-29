@@ -1,6 +1,7 @@
 package com.fitness.workout;
 
 import com.fitness.common.CurrentUser;
+import com.fitness.program.ProgramRepository;
 import com.fitness.program.ScheduledWorkout;
 import com.fitness.program.ScheduledWorkoutRepository;
 import jakarta.validation.Valid;
@@ -26,17 +27,19 @@ public class WorkoutSessionController {
 	private final SetLogRepository setLogs;
 	private final PainReportRepository painReports;
 	private final ScheduledWorkoutRepository scheduledWorkouts;
+	private final ProgramRepository programs;
 	private final ProgressionApplicationService progressionApplicationService;
 	private final CurrentUser currentUser;
 
 	public WorkoutSessionController(
 			WorkoutSessionRepository sessions, SetLogRepository setLogs, PainReportRepository painReports,
-			ScheduledWorkoutRepository scheduledWorkouts, ProgressionApplicationService progressionApplicationService,
-			CurrentUser currentUser) {
+			ScheduledWorkoutRepository scheduledWorkouts, ProgramRepository programs,
+			ProgressionApplicationService progressionApplicationService, CurrentUser currentUser) {
 		this.sessions = sessions;
 		this.setLogs = setLogs;
 		this.painReports = painReports;
 		this.scheduledWorkouts = scheduledWorkouts;
+		this.programs = programs;
 		this.progressionApplicationService = progressionApplicationService;
 		this.currentUser = currentUser;
 	}
@@ -50,6 +53,16 @@ public class WorkoutSessionController {
 	@PostMapping
 	public ResponseEntity<SessionResponse> start(@Valid @RequestBody StartSessionRequest request) {
 		if (request.scheduledWorkoutId() != null) {
+			// Lớp 1 concept-backend-v1.md §5: buổi phải thuộc chương trình của người gọi. Thiếu
+			// kiểm này thì B tạo được buổi trên lịch của A, kết buổi làm lịch A thành DONE và
+			// engine tăng tải chạy theo. 404 chứ không 403: không xác nhận buổi đó tồn tại.
+			boolean own = scheduledWorkouts.findById(request.scheduledWorkoutId())
+					.flatMap(w -> programs.findById(w.getProgramId()))
+					.map(p -> p.getUserId().equals(currentUser.id()))
+					.orElse(false);
+			if (!own) {
+				throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy buổi tập");
+			}
 			var existing = sessions.findByUserIdAndScheduledWorkoutIdAndStatus(
 					currentUser.id(), request.scheduledWorkoutId(), "IN_PROGRESS");
 			if (existing.isPresent()) {

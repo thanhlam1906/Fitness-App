@@ -165,6 +165,24 @@ class WorkoutSessionControllerIntegrationTest extends PostgresIntegrationTest {
 		assertThat(again.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
 	}
 
+	/**
+	 * Lớp 1 concept-backend-v1.md §5: trước đây B gửi scheduledWorkoutId của A thì tạo được buổi,
+	 * kết buổi đó thì buổi của A thành DONE và engine tăng tải chạy theo (code-reviewer M3 #7).
+	 */
+	@Test
+	void start_withOtherUsersWorkout_returns404_andOwnersWorkoutUntouched() {
+		var owner = newAuthedUser(Role.USER);
+		UUID workoutId = firstWorkoutOfNewProgram(owner);
+
+		var resp = rest.exchange("/api/v1/sessions", HttpMethod.POST,
+				new HttpEntity<>(new StartSessionRequest(workoutId), newAuthedUser(Role.USER).headers()),
+				java.util.Map.class);
+
+		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+		assertThat(rest.exchange("/api/v1/schedule", HttpMethod.GET, new HttpEntity<>(owner.headers()),
+				ScheduleResponse.class).getBody().workouts().get(0).status()).isNotEqualTo("DONE");
+	}
+
 	private org.springframework.http.ResponseEntity<SessionResponse> start(UUID workoutId, HttpHeaders headers) {
 		return rest.exchange("/api/v1/sessions", HttpMethod.POST,
 				new HttpEntity<>(new StartSessionRequest(workoutId), headers), SessionResponse.class);
