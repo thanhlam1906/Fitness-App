@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { CalendarDays, Camera, MessageCircle, User } from "lucide-react"
+import { CalendarDays, Camera, MessageCircle, Settings } from "lucide-react"
 import { NavLink, useLocation } from "react-router"
 import { cn } from "@/lib/cn"
 
@@ -13,7 +13,7 @@ const TABS = [
   { to: "/schedule", label: "Lịch", Icon: CalendarDays },
   { to: "/assistant", label: "Trợ lý", Icon: MessageCircle },
   { to: "/form-check", label: "Chấm form", Icon: Camera },
-  { to: "/settings", label: "Hồ sơ", Icon: User },
+  { to: "/settings", label: "Cài đặt", Icon: Settings },
 ]
 
 export function UserShell({ children }: { children: ReactNode }) {

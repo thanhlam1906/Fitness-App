@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/api/client"
-import type { Profile, ProfilePatch } from "./types"
+import type { BodyMetric, Profile, ProfilePatch, Progress } from "./types"
 
 export const profileKey = ["profile"] as const
+const bodyMetricsKey = ["body-metrics"] as const
 
 export function useProfile(enabled = true) {
   return useQuery({
@@ -30,6 +31,27 @@ export function useSaveBodyMetric() {
   return useMutation({
     mutationFn: (body: { heightCm?: number | null; weightKg?: number | null }) =>
       api.post<void>("/me/body-metrics", body),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: profileKey }),
+    // Cả hồ sơ (cân nặng mới nhất) lẫn màn Lịch sử cân nặng đọc số này.
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: profileKey }),
+        queryClient.invalidateQueries({ queryKey: bodyMetricsKey }),
+      ]),
+  })
+}
+
+/** Mọi lần đo, mới nhất trước — màn Cài đặt › Lịch sử cân nặng. */
+export function useBodyMetrics() {
+  return useQuery({
+    queryKey: bodyMetricsKey,
+    queryFn: () => api.get<BodyMetric[]>("/me/body-metrics"),
+  })
+}
+
+/** Màn Cài đặt › Tiến bộ và dòng tóm tắt ở menu. Số do backend tính (ProgressService). */
+export function useProgress(weeks: number) {
+  return useQuery({
+    queryKey: ["progress", weeks],
+    queryFn: () => api.get<Progress>(`/me/progress?weeks=${weeks}`),
   })
 }

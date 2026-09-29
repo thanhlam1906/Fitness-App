@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { api, onLoggedOut } from "@/api/client"
 import type { RegisterPayload } from "./registerSchema"
 import { clearSession, getRefreshToken, getStoredSession, setSession } from "./tokenStorage"
@@ -18,8 +19,19 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSessionState] = useState(() => getStoredSession())
+  const queryClient = useQueryClient()
 
-  useEffect(() => onLoggedOut(() => setSessionState(null)), [])
+  // Đăng xuất (bấm nút hay hết phiên) phải xoá cả cache React Query: không thì người đăng nhập
+  // sau trên cùng tab thấy ngay tên, cân nặng, tiến bộ của người trước ở màn Cài đặt
+  // (code-reviewer 09-29 #1).
+  useEffect(
+    () =>
+      onLoggedOut(() => {
+        queryClient.clear()
+        setSessionState(null)
+      }),
+    [queryClient],
+  )
 
   function applyTokens(tokens: AuthTokens) {
     setSession(tokens.accessToken, tokens.refreshToken, tokens.userId, tokens.role)
@@ -37,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   function logout() {
     const refreshToken = getRefreshToken()
     clearSession()
+    queryClient.clear()
     setSessionState(null)
     // best-effort: thu hồi refresh token ở server, không chặn logout nếu request lỗi
     if (refreshToken) {

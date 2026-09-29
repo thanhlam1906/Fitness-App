@@ -18,6 +18,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { DisclaimerText } from "@/components/DisclaimerText"
 import { Label } from "@/components/ui/label"
 import { PickerField } from "@/components/ui/picker"
 import { Stepper } from "@/components/Stepper"
@@ -52,7 +53,7 @@ const HEADINGS: Record<Step, { title: string; hint: string; icon: Icon }> = {
     hint: "Nhập tay. Không đồng bộ từ ứng dụng sức khoẻ nào.",
     icon: Ruler,
   },
-  GOAL: { title: "Bạn muốn gì từ 8 tuần tới?", hint: "Chọn một. Đổi được sau ở màn Hồ sơ.", icon: Target },
+  GOAL: { title: "Bạn muốn gì từ 8 tuần tới?", hint: "Chọn một. Đổi được sau ở Cài đặt › Hồ sơ.", icon: Target },
   EQUIPMENT: {
     title: "Bạn tập ở đâu, có những gì?",
     hint: "Chương trình đề xuất chỉ dùng thiết bị bạn có.",
@@ -320,19 +321,7 @@ function DisclaimerStep({
   return (
     <div className="flex flex-1 flex-col">
       <div className="space-y-4">
-        <div className="space-y-2 rounded-[var(--radius-md)] bg-[var(--color-surface)] p-3.5 text-sm leading-relaxed">
-          <p>
-            Ứng dụng này <strong>không phải công cụ y tế hay vật lý trị liệu</strong>. Nội dung ở đây
-            là gợi ý tập luyện chung, không thay thế chẩn đoán hay điều trị của nhân viên y tế.
-          </p>
-          <p>
-            Bạn tự chịu trách nhiệm khi tập. Nếu thấy đau, chóng mặt hoặc khó chịu bất thường, hãy
-            dừng lại và hỏi ý kiến bác sĩ.
-          </p>
-          <p className="text-[var(--color-text-muted)]">
-            Phần chấm form qua video chạy bằng máy, có thể sai. Luôn có nút báo "góp ý này sai".
-          </p>
-        </div>
+        <DisclaimerText />
         <label className="flex items-center gap-2 text-sm">
           <Checkbox checked={checked} onChange={(e) => setChecked(e.target.checked)} />
           Tôi đã đọc và đồng ý

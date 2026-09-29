@@ -66,7 +66,7 @@ export function ProgramSelectionPage() {
     return (
       <EmptyState
         message="Chưa có chương trình nào hợp thiết bị bạn đã khai. Tự thiết kế lịch, hoặc chỉnh thiết bị ở Hồ sơ."
-        action={{ to: "/settings", label: "Mở hồ sơ" }}
+        action={{ to: "/settings/profile", label: "Mở hồ sơ" }}
       />
     )
   }

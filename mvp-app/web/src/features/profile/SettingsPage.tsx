@@ -1,327 +1,159 @@
-import { useState, type ReactNode } from "react"
+import type { ComponentType, ReactNode } from "react"
+import { ChevronRight, Info, ListChecks, Scale, ShieldCheck, TrendingUp, User } from "lucide-react"
 import { Link } from "react-router"
-import { ApiError } from "@/api/client"
 import { useAuth } from "@/auth/AuthContext"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
 import { SHEET_FOCUS } from "@/components/ui/sheet"
 import { cn } from "@/lib/cn"
-import { formatDayMonth, formatKg } from "@/lib/format"
-import { EQUIPMENT_OPTIONS, EXPERIENCE_LEVELS, GOALS, labelOf } from "./types"
+import { formatKg } from "@/lib/format"
 import { useCurrentProgram } from "@/features/program/useCurrentProgram"
-import { useProfile, usePatchProfile, useSaveBodyMetric } from "./useProfile"
-
-const WEEKDAY_LABEL = ["", "T2", "T3", "T4", "T5", "T6", "T7", "CN"]
+import { GOALS, labelOf } from "./types"
+import { useBodyMetrics, useProfile, useProgress } from "./useProfile"
 
 /**
- * Màn 10 concept-frontend-v1.md — sửa hồ sơ, cập nhật cân nặng, đổi chương
- * trình, đăng xuất.
- *
- * Design để màn này là danh sách dòng CHỈ ĐỌC, mỗi dòng một link "Sửa" mở ô
- * nhập ngay tại chỗ. Mở app ra là đọc được số của mình, không phải nhìn một
- * trang toàn form.
- *
- * Design có thêm công tắc "Gửi clip để chấm form" ở đây — không dựng. C4 §4
- * chốt opt-in nằm ở màn hướng dẫn quay (màn 8) và KHÔNG ở nơi nào khác, và
- * cũng không có trường hồ sơ nào để lưu công tắc đó.
+ * Tab Cài đặt (doc/design-cai-dat-v1.md, mockup doc/mockup-settings/demo.html): thẻ tóm tắt rồi
+ * các dòng mở màn con. Thay màn Hồ sơ cũ — phần sửa hồ sơ giờ ở /settings/profile.
  */
 export function SettingsPage() {
   const { logout } = useAuth()
   const profile = useProfile()
-  const patch = usePatchProfile()
-  const saveBodyMetric = useSaveBodyMetric()
   const program = useCurrentProgram()
+  const progress = useProgress(4)
+  const metrics = useBodyMetrics()
 
-  if (profile.isLoading) {
-    return <p className="text-sm text-[var(--color-text-muted)]">Đang tải…</p>
-  }
-  if (profile.isError) {
-    return <p className="text-sm text-[var(--color-danger)]">{profile.error.message}</p>
-  }
-
-  const data = profile.data!
-  const metric = data.latestBodyMetric
-  const noProgram =
-    program.isError && program.error instanceof ApiError && program.error.status === 404
+  const data = profile.data
+  const weight = data?.latestBodyMetric?.weightKg
+  const weighIns = metrics.data?.filter((m) => m.weightKg != null).length
 
   return (
     <div>
-      <div className="kicker num">
-        {data.disclaimerAt
-          ? `Tham gia ${formatDayMonth(data.disclaimerAt)}`
-          : "Chưa hoàn tất cam kết"}
-        {data.birthYear ? ` · sinh ${data.birthYear}` : ""}
+      <div className="kicker">Tài khoản</div>
+      <h1 className="mt-2 text-[28px] leading-tight font-extrabold tracking-[-0.02em]">Cài đặt</h1>
+
+      <div className="mt-4 flex items-center gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5">
+        <span
+          aria-hidden
+          className="grid size-[46px] flex-none place-items-center rounded-full bg-[var(--color-accent-tint)] text-lg font-extrabold text-[var(--color-accent)]"
+        >
+          {data?.fullName?.trim().charAt(0).toUpperCase() || "?"}
+        </span>
+        <div className="min-w-0">
+          <p className="truncate text-base font-bold">{data?.fullName || "Tài khoản của bạn"}</p>
+          <p className="num mt-0.5 truncate text-xs text-[var(--color-text-muted)]">
+            {data
+              ? [
+                  data.goal && labelOf(GOALS, data.goal),
+                  data.sessionsPerWeek != null && `${data.sessionsPerWeek} buổi/tuần`,
+                  weight != null && formatKg(weight),
+                ]
+                  .filter(Boolean)
+                  .join(" · ") || "Chưa khai hồ sơ"
+              : profile.isError
+                ? "Không tải được hồ sơ"
+                : "Đang tải…"}
+          </p>
+        </div>
       </div>
-      <h1 className="mt-3 text-[28px] font-extrabold tracking-[-0.02em]">Hồ sơ</h1>
 
-      <div className="mt-5 flex flex-col gap-2">
-        <EditableRow
-          label="Cân nặng"
-          value={formatKg(metric?.weightKg)}
-          actionLabel="Cập nhật"
-          accent
-        >
-          {(close) => (
-            <MetricEditor
-              unit="kg"
-              step="0.1"
-              initial={metric?.weightKg}
-              pending={saveBodyMetric.isPending}
-              onSave={(weightKg) =>
-                saveBodyMetric.mutate({ weightKg }, { onSuccess: close })
-              }
-            />
-          )}
-        </EditableRow>
-
-        <EditableRow
-          label="Chiều cao"
-          value={metric?.heightCm == null ? "—" : `${metric.heightCm} cm`}
-        >
-          {(close) => (
-            <MetricEditor
-              unit="cm"
-              step="0.5"
-              initial={metric?.heightCm}
-              pending={saveBodyMetric.isPending}
-              onSave={(heightCm) =>
-                saveBodyMetric.mutate({ heightCm }, { onSuccess: close })
-              }
-            />
-          )}
-        </EditableRow>
-
-        <EditableRow label="Mục tiêu" value={labelOf(GOALS, data.goal)}>
-          {(close) => (
-            <ChoiceEditor
-              options={GOALS}
-              value={data.goal}
-              onSave={(goal) => patch.mutate({ goal }, { onSuccess: close })}
-            />
-          )}
-        </EditableRow>
-
-        <EditableRow label="Kinh nghiệm" value={labelOf(EXPERIENCE_LEVELS, data.experience)}>
-          {(close) => (
-            <ChoiceEditor
-              options={EXPERIENCE_LEVELS}
-              value={data.experience}
-              onSave={(experience) => patch.mutate({ experience }, { onSuccess: close })}
-            />
-          )}
-        </EditableRow>
-
-        <EditableRow
-          label="Số buổi mỗi tuần"
-          value={data.sessionsPerWeek == null ? "—" : `${data.sessionsPerWeek} buổi`}
-        >
-          {(close) => (
-            <MetricEditor
-              unit="buổi"
-              step="1"
-              min={2}
-              max={6}
-              initial={data.sessionsPerWeek}
-              pending={patch.isPending}
-              onSave={(sessionsPerWeek) =>
-                patch.mutate({ sessionsPerWeek }, { onSuccess: close })
-              }
-            />
-          )}
-        </EditableRow>
-
-        <EditableRow
-          label="Thiết bị"
-          value={
-            data.equipment.length === 0
-              ? "Chưa khai"
-              : data.equipment.map((e) => labelOf(EQUIPMENT_OPTIONS, e)).join(", ")
+      <Group title="Tập luyện">
+        <Row to="/settings/profile" Icon={User} accent title="Hồ sơ" sub="Cân nặng, mục tiêu, thiết bị…" />
+        <Row
+          to={program.data ? "/my-program" : "/program"}
+          Icon={ListChecks}
+          title="Chương trình"
+          sub={
+            program.data
+              ? [program.data.templateName, restDaysLabel(program.data.restDays)].filter(Boolean).join(" · ")
+              : program.isLoading
+                ? "Đang tải…"
+                : "Chưa có chương trình"
           }
-        >
-          {() => (
-            <div className="flex flex-col gap-2.5">
-              {EQUIPMENT_OPTIONS.map((eq) => (
-                <label key={eq.value} className="flex items-center gap-2 text-sm">
-                  <Checkbox
-                    checked={data.equipment.includes(eq.value)}
-                    onChange={(e) =>
-                      patch.mutate({
-                        equipment: e.target.checked
-                          ? [...data.equipment, eq.value]
-                          : data.equipment.filter((v) => v !== eq.value),
-                      })
-                    }
-                  />
-                  {eq.label}
-                </label>
-              ))}
-            </div>
-          )}
-        </EditableRow>
-      </div>
+        />
+        <Row
+          to="/settings/progress"
+          Icon={TrendingUp}
+          title="Tiến bộ"
+          sub={progress.data ? `4 tuần qua: ${progress.data.sessionsStarted} buổi` : "Buổi tập, khối lượng, RPE"}
+        />
+        <Row
+          to="/settings/weight"
+          Icon={Scale}
+          title="Lịch sử cân nặng"
+          sub={weighIns == null ? "Các lần bạn cập nhật" : weighIns === 0 ? "Chưa có lần đo nào" : `${weighIns} lần cập nhật`}
+        />
+      </Group>
 
-      <div className="kicker mt-6">Chương trình</div>
-      <div className="mt-2.5 flex items-center justify-between gap-3 rounded-[var(--radius-md)] bg-[var(--color-surface)] p-3.5">
-        <div className="min-w-0">
-          {program.isLoading && <p className="text-sm text-[var(--color-text-muted)]">Đang tải…</p>}
-          {noProgram && <p className="text-[15px]">Chưa có chương trình nào</p>}
-          {program.data && (
-            <>
-              <p className="truncate text-[17px] font-bold">{program.data.templateName}</p>
-              <p className="num mt-0.5 text-[11px] text-[var(--color-text-muted)]">
-                bắt đầu {program.data.startDate} · nghỉ {formatRestDays(program.data.restDays)}
-              </p>
-            </>
-          )}
-        </div>
-      </div>
-      {program.data ? (
-        <Link
-          to="/my-program"
-          className={cn("mt-2 inline-block rounded-[var(--radius-sm)] text-[13px] font-semibold text-[var(--color-accent)]", SHEET_FOCUS)}
-        >
-          Xem và sửa chương trình ›
-        </Link>
-      ) : (
-        <p className="mt-2 text-[11px] text-[var(--color-text-muted)]">Chọn chương trình ở tab Lịch.</p>
-      )}
+      <Group title="Khác">
+        <Row to="/settings/privacy" Icon={ShieldCheck} title="Dữ liệu & quyền riêng tư" sub="Camera, clip, trợ lý" />
+        <Row to="/settings/about" Icon={Info} title="Giới thiệu & điều khoản" sub="Cam kết an toàn" />
+      </Group>
 
-      {patch.isError && (
-        <p className="mt-4 text-sm text-[var(--color-danger)]">Lưu thất bại: {patch.error.message}</p>
-      )}
-      {saveBodyMetric.isError && (
-        <p className="mt-4 text-sm text-[var(--color-danger)]">
-          Lưu thất bại: {saveBodyMetric.error.message}
-        </p>
-      )}
-
-      <div className="mt-8">
-        <button
-          onClick={logout}
-          className="text-sm text-[var(--color-danger)] underline-offset-2 hover:underline"
-        >
-          Đăng xuất
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={logout}
+        className={cn(
+          "mt-6 h-12 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] text-[15px] font-bold text-[var(--color-danger)] hover:bg-[var(--color-surface)]",
+          SHEET_FOCUS,
+        )}
+      >
+        Đăng xuất
+      </button>
+      <p className="mt-3 text-center text-[11px] text-[var(--color-text-muted)]">VFit · bản thử nghiệm</p>
     </div>
   )
 }
 
-/** Dòng chỉ đọc, bấm "Sửa" thì mở ô nhập ngay dưới — không nhảy sang màn khác. */
-function EditableRow({
-  label,
-  value,
-  actionLabel = "Sửa",
+const WEEKDAY_LABEL = ["", "T2", "T3", "T4", "T5", "T6", "T7", "CN"]
+
+/** "nghỉ T3, T5" như màn Hồ sơ cũ; không nghỉ ngày nào thì bỏ hẳn. */
+function restDaysLabel(restDays: number[]): string {
+  return restDays.length === 0 ? "" : `nghỉ ${restDays.map((d) => WEEKDAY_LABEL[d] ?? d).join(", ")}`
+}
+
+function Group({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="mt-6">
+      <h2 className="kicker">{title}</h2>
+      <div className="mt-2 divide-y divide-[var(--color-border)] overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)]">
+        {children}
+      </div>
+    </section>
+  )
+}
+
+function Row({
+  to,
+  Icon,
+  title,
+  sub,
   accent = false,
-  children,
 }: {
-  label: string
-  value: string
-  actionLabel?: string
+  to: string
+  Icon: ComponentType<{ className?: string }>
+  title: string
+  sub: string
   accent?: boolean
-  children: (close: () => void) => ReactNode
-}) {
-  const [open, setOpen] = useState(false)
-  return (
-    <div className="rounded-[var(--radius-md)] bg-[var(--color-surface)] p-3.5">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <div className="text-[11px] text-[var(--color-text-muted)]">{label}</div>
-          <div className="num mt-0.5 truncate text-[19px] font-bold">{value}</div>
-        </div>
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          className={cn(
-            "flex-none text-[13px]",
-            accent ? "text-[var(--color-accent)]" : "text-[var(--color-text-muted)]",
-          )}
-        >
-          {open ? "Đóng" : actionLabel}
-        </button>
-      </div>
-      {open && <div className="mt-3.5">{children(() => setOpen(false))}</div>}
-    </div>
-  )
-}
-
-function MetricEditor({
-  unit,
-  step,
-  min,
-  max,
-  initial,
-  pending,
-  onSave,
-}: {
-  unit: string
-  step: string
-  min?: number
-  max?: number
-  initial: number | null | undefined
-  pending: boolean
-  onSave: (value: number) => void
-}) {
-  const [value, setValue] = useState(initial?.toString() ?? "")
-  const parsed = Number(value)
-  const valid =
-    value !== "" &&
-    !Number.isNaN(parsed) &&
-    (min == null || parsed >= min) &&
-    (max == null || parsed <= max)
-
-  return (
-    <div className="flex items-center gap-2.5">
-      <Input
-        type="number"
-        step={step}
-        min={min}
-        max={max}
-        aria-label={unit}
-        className="num w-32"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-      />
-      <span className="text-sm text-[var(--color-text-muted)]">{unit}</span>
-      <Button size="sm" disabled={!valid || pending} onClick={() => onSave(parsed)}>
-        {pending ? "Đang lưu…" : "Lưu"}
-      </Button>
-    </div>
-  )
-}
-
-function ChoiceEditor({
-  options,
-  value,
-  onSave,
-}: {
-  options: readonly { value: string; label: string }[]
-  value: string | null
-  onSave: (value: string) => void
 }) {
   return (
-    <div className="flex flex-col gap-2">
-      {options.map((o) => (
-        <button
-          key={o.value}
-          type="button"
-          onClick={() => onSave(o.value)}
-          className={cn(
-            "rounded-[var(--radius-md)] border p-3 text-left text-sm",
-            o.value === value
-              ? "border-[var(--color-accent)] bg-[var(--color-surface-2)]"
-              : "border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]",
-          )}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
+    <Link
+      to={to}
+      className={cn(
+        "flex items-center gap-3 px-3.5 py-3 hover:bg-[var(--color-surface-2)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--color-accent)]",
+      )}
+    >
+      <span
+        aria-hidden
+        className={cn(
+          "grid size-[34px] flex-none place-items-center rounded-[10px]",
+          accent ? "bg-[var(--color-accent-tint)] text-[var(--color-accent)]" : "bg-[var(--color-surface-2)]",
+        )}
+      >
+        <Icon className="size-[18px]" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[15px] font-semibold">{title}</span>
+        <span className="num block truncate text-xs text-[var(--color-text-muted)]">{sub}</span>
+      </span>
+      <ChevronRight className="size-4 flex-none text-[var(--color-text-muted)]" aria-hidden />
+    </Link>
   )
-}
-
-function formatRestDays(restDays: number[]): string {
-  if (restDays.length === 0) return "không ngày nào"
-  return restDays.map((d) => WEEKDAY_LABEL[d] ?? d).join(", ")
 }

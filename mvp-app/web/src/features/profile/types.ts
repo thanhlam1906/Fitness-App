@@ -20,6 +20,11 @@ export const EQUIPMENT_OPTIONS = [
   { value: "BENCH", label: "Ghế" },
 ] as const
 
+// Cùng khoảng với cột chọn ở onboarding và ràng buộc BodyMetricRequest (backend): gõ nhầm "-72"
+// hay "0" từng kéo lệch cả đường cân nặng.
+export const HEIGHT_CM = { min: 120, max: 220 } as const
+export const WEIGHT_KG = { min: 30, max: 200.9 } as const
+
 // A3: giới tính là tuỳ chọn.
 export const GENDERS = [
   { value: "F", label: "Nữ" },
@@ -34,6 +39,7 @@ export type BodyMetric = {
 }
 
 export type Profile = {
+  fullName: string | null
   goal: string | null
   experience: string | null
   sessionsPerWeek: number | null
@@ -43,6 +49,16 @@ export type Profile = {
   disclaimerAt: string | null
   onboardingStep: string
   latestBodyMetric: BodyMetric | null
+}
+
+// Khớp ProgressService.Progress (backend). from là instant: web tự đổi sang ngày theo giờ máy.
+export type Progress = {
+  weeks: number
+  sessionsStarted: number
+  sessionsFinished: number
+  totalTonnageKg: number
+  avgSessionRpe: number | null
+  weekly: { from: string; tonnageKg: number }[]
 }
 
 export type ProfilePatch = Partial<{

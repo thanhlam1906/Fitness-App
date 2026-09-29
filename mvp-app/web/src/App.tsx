@@ -8,7 +8,12 @@ import { RegisterPage } from "@/auth/RegisterPage"
 import { AssistantPage } from "@/features/assistant/AssistantPage"
 import { OnboardingPage } from "@/features/onboarding/OnboardingPage"
 import { ProgramSelectionPage } from "@/features/program/ProgramSelectionPage"
+import { AboutPage } from "@/features/profile/AboutPage"
+import { PrivacyPage } from "@/features/profile/PrivacyPage"
+import { ProfilePage } from "@/features/profile/ProfilePage"
+import { ProgressPage } from "@/features/profile/ProgressPage"
 import { SettingsPage } from "@/features/profile/SettingsPage"
+import { WeightHistoryPage } from "@/features/profile/WeightHistoryPage"
 import { CorpusPage } from "@/features/admin/corpus/CorpusPage"
 import { ExerciseFormPage } from "@/features/admin/exercises/ExerciseFormPage"
 import { ExerciseListPage } from "@/features/admin/exercises/ExerciseListPage"
@@ -57,6 +62,11 @@ export function App() {
                   <Route path="/form-check/result/:reviewId" element={<ReviewResultPage />} />
                   <Route path="/form-check/:exerciseId" element={<FilmingGuidePage />} />
                   <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/settings/profile" element={<ProfilePage />} />
+                  <Route path="/settings/progress" element={<ProgressPage />} />
+                  <Route path="/settings/weight" element={<WeightHistoryPage />} />
+                  <Route path="/settings/privacy" element={<PrivacyPage />} />
+                  <Route path="/settings/about" element={<AboutPage />} />
                   <Route
                     path="/admin/users"
                     element={
