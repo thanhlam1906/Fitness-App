@@ -3,12 +3,12 @@ import { useMutation } from "@tanstack/react-query"
 import { api } from "@/api/client"
 import { Input } from "@/components/ui/input"
 
-type Source = { reviewResultId: string } | { loadDecisionId: string }
+type Source = { reviewResultId: string } | { loadDecisionId: string } | { assistantMessageId: string }
 
 /**
  * Đặc tả yêu cầu nút "góp ý này sai" ở MỌI góp ý do máy sinh ra — kết quả chấm
- * form (màn 9) lẫn quyết định tải (màn 4). Một component thì không sót chỗ nào
- * (§4.3 concept-frontend-v1.md).
+ * form (màn 9), quyết định tải (màn 4) lẫn câu trả lời trợ lý. Một component thì
+ * không sót chỗ nào (§4.3 concept-frontend-v1.md).
  *
  * Design để nó là chữ mờ cỡ nhỏ, cố tình không nổi: nó là lối thoát khi máy
  * sai, không phải hành động app muốn người dùng làm.

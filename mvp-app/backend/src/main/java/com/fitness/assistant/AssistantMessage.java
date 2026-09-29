@@ -72,6 +72,10 @@ public class AssistantMessage {
 		return id;
 	}
 
+	public UUID getUserId() {
+		return userId;
+	}
+
 	public UUID getThreadId() {
 		return threadId;
 	}

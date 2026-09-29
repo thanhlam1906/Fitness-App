@@ -4,6 +4,7 @@ import { MessageCircleWarning, SendHorizontal, SquarePen } from "lucide-react"
 import { useAuth } from "@/auth/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { WrongFeedbackButton } from "@/components/WrongFeedbackButton"
 import { cn } from "@/lib/cn"
 import { clearConversation, getConversation, subscribe } from "./conversation"
 import { ASK_KEY, useAssistant } from "./useAssistant"
@@ -131,6 +132,12 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           <p className="mt-2 text-xs text-[var(--color-text-muted)]">
             Nguồn: {message.sourceTitles.join(", ")}
           </p>
+        )}
+        {/* Bất biến 3: mọi góp ý do máy sinh ra có nút "cái này sai". */}
+        {!isUser && message.messageId && (
+          <div className="mt-2">
+            <WrongFeedbackButton source={{ assistantMessageId: message.messageId }} />
+          </div>
         )}
       </div>
     </div>

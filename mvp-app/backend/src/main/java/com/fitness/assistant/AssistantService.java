@@ -73,8 +73,10 @@ public class AssistantService {
 		this.currentUser = currentUser;
 	}
 
+	/** messageId: dòng ASSISTANT đã lưu — web gắn nút "cái này sai" vào đúng câu trả lời này. */
 	public record Answer(
-			String text, boolean blocked, List<String> sourceTitles, List<String> toolsCalled, String guardResult) {
+			UUID messageId, String text, boolean blocked, List<String> sourceTitles, List<String> toolsCalled,
+			String guardResult) {
 	}
 
 	public Answer ask(UUID threadId, String question) {
@@ -195,6 +197,6 @@ public class AssistantService {
 		AssistantMessage assistantMessage = new AssistantMessage(userId, threadId, "ASSISTANT", text);
 		assistantMessage.tagAssistantMetadata(intent, null, toolsCalled.toArray(String[]::new), guardResult);
 		messages.save(assistantMessage);
-		return new Answer(text, blocked, sourceTitles, toolsCalled, guardResult);
+		return new Answer(assistantMessage.getId(), text, blocked, sourceTitles, toolsCalled, guardResult);
 	}
 }

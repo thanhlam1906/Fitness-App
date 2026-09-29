@@ -98,13 +98,14 @@ describe("useAssistant", () => {
     const { result, unmount } = renderHook(() => useAssistant(), { wrapper })
     result.current.mutate({ userId: "u1", question: "RPE là gì?", threadId: null })
     unmount()
-    answer({ answer: "RPE là mức gắng sức.", blocked: false, threadId: "t9", sourceTitles: ["Bài 1"] })
+    answer({ messageId: "m9", answer: "RPE là mức gắng sức.", blocked: false, threadId: "t9", sourceTitles: ["Bài 1"] })
     await waitFor(() => expect(getConversation("u1").messages).toHaveLength(2))
     expect(getConversation("u1")).toMatchObject({
       threadId: "t9",
       messages: [
         { role: "USER", text: "RPE là gì?" },
-        { role: "ASSISTANT", text: "RPE là mức gắng sức.", sourceTitles: ["Bài 1"] },
+        // messageId lưu kèm để nút "cái này sai" còn dùng được sau khi tải lại trang.
+        { role: "ASSISTANT", text: "RPE là mức gắng sức.", sourceTitles: ["Bài 1"], messageId: "m9" },
       ],
     })
     expect(post).toHaveBeenCalledWith("/assistant/messages", { question: "RPE là gì?", threadId: null })

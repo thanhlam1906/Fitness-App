@@ -11,6 +11,9 @@ public interface LoadDecisionRepository extends JpaRepository<LoadDecision, UUID
 
 	List<LoadDecision> findByProgramId(UUID programId);
 
+	/** Nút "cái này sai" (FeedbackController): chỉ góp ý được vào quyết định tải của chính mình. */
+	boolean existsByIdAndUserId(UUID id, UUID userId);
+
 	/**
 	 * §5 Lớp 1: theo userId, không theo programId — assistant.tools.ExplainLoadChangeTool
 	 * hỏi "vì sao tải bài X đổi" không cần biết programId, và không được đọc

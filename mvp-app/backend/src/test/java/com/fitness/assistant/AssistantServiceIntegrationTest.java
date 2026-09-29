@@ -81,13 +81,15 @@ class AssistantServiceIntegrationTest extends PostgresIntegrationTest {
 		stubModelReply("Giữ lưng thẳng khi đứng lên, không cong người.");
 		UUID threadId = UUID.randomUUID();
 
-		assistantService.ask(threadId, "squat đúng kỹ thuật là thế nào");
+		AssistantService.Answer answer = assistantService.ask(threadId, "squat đúng kỹ thuật là thế nào");
 
 		List<AssistantMessage> log = messages.findByUserIdAndThreadIdOrderByCreatedAtAsc(userId, threadId);
 		assertThat(log).hasSize(2);
 		assertThat(log.get(0).getRole()).isEqualTo("USER");
 		assertThat(log.get(1).getRole()).isEqualTo("ASSISTANT");
 		assertThat(log.get(1).getGuardResult()).isEqualTo("OK");
+		// Nút "cái này sai" ở web trỏ tới đúng dòng câu trả lời đã lưu.
+		assertThat(answer.messageId()).isEqualTo(log.get(1).getId());
 	}
 
 	private void stubModelReply(String text) {

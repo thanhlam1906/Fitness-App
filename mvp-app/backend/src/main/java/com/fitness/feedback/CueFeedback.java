@@ -10,9 +10,9 @@ import java.util.UUID;
 
 /**
  * Bảng cue_feedback, V1__init.sql — nút "góp ý này sai". Dùng chung cho CẢ
- * kết quả chấm form (C6) LẪN quyết định tải: đặc tả yêu cầu nút này ở mọi góp
- * ý do máy sinh ra, nên một bảng thay vì hai. DB ép đúng một trong hai id
- * khác null (CHECK num_nonnulls = 1).
+ * kết quả chấm form (C6), quyết định tải LẪN câu trả lời trợ lý (V12): đặc tả yêu
+ * cầu nút này ở mọi góp ý do máy sinh ra, nên một bảng thay vì ba. DB ép đúng một
+ * trong ba id khác null (CHECK num_nonnulls = 1).
  */
 @Entity
 @Table(name = "cue_feedback")
@@ -31,6 +31,9 @@ public class CueFeedback {
 	@Column(name = "load_decision_id")
 	private UUID loadDecisionId;
 
+	@Column(name = "assistant_message_id")
+	private UUID assistantMessageId;
+
 	@Column(name = "is_wrong", nullable = false)
 	private boolean wrong;
 
@@ -43,10 +46,12 @@ public class CueFeedback {
 	protected CueFeedback() {
 	}
 
-	public CueFeedback(UUID userId, UUID reviewResultId, UUID loadDecisionId, boolean wrong, String note) {
+	public CueFeedback(
+			UUID userId, UUID reviewResultId, UUID loadDecisionId, UUID assistantMessageId, boolean wrong, String note) {
 		this.userId = userId;
 		this.reviewResultId = reviewResultId;
 		this.loadDecisionId = loadDecisionId;
+		this.assistantMessageId = assistantMessageId;
 		this.wrong = wrong;
 		this.note = note;
 	}

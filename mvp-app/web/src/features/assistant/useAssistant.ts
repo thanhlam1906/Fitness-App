@@ -44,6 +44,7 @@ export function useAssistant() {
               text: res.answer,
               blocked: res.blocked,
               sourceTitles: res.sourceTitles,
+              messageId: res.messageId,
             },
           ],
         }))

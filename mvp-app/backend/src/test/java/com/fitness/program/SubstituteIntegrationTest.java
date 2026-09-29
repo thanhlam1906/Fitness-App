@@ -115,11 +115,11 @@ class SubstituteIntegrationTest extends PostgresIntegrationTest {
 
 		var both = rest.exchange("/api/v1/feedback", HttpMethod.POST,
 				new HttpEntity<>(new FeedbackController.FeedbackRequest(
-						UUID.randomUUID(), UUID.randomUUID(), true, null), headers), String.class);
+						UUID.randomUUID(), UUID.randomUUID(), null, true, null), headers), String.class);
 		assertThat(both.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 
 		var neither = rest.exchange("/api/v1/feedback", HttpMethod.POST,
-				new HttpEntity<>(new FeedbackController.FeedbackRequest(null, null, true, null), headers), String.class);
+				new HttpEntity<>(new FeedbackController.FeedbackRequest(null, null, null, true, null), headers), String.class);
 		assertThat(neither.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 	}
 

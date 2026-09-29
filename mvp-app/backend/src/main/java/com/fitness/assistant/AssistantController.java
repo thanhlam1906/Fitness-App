@@ -24,8 +24,8 @@ public class AssistantController {
 	}
 
 	public record AskResponse(
-			String answer, boolean blocked, UUID threadId, List<String> sourceTitles, List<String> toolsCalled,
-			String guardResult) {
+			UUID messageId, String answer, boolean blocked, UUID threadId, List<String> sourceTitles,
+			List<String> toolsCalled, String guardResult) {
 	}
 
 	@PostMapping("/messages")
@@ -33,7 +33,7 @@ public class AssistantController {
 		UUID threadId = request.threadId() != null ? request.threadId() : UUID.randomUUID();
 		AssistantService.Answer answer = assistantService.ask(threadId, request.question());
 		return new AskResponse(
-				answer.text(), answer.blocked(), threadId, answer.sourceTitles(), answer.toolsCalled(),
+				answer.messageId(), answer.text(), answer.blocked(), threadId, answer.sourceTitles(), answer.toolsCalled(),
 				answer.guardResult());
 	}
 }
