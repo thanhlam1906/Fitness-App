@@ -42,7 +42,9 @@ class ProgramEditIntegrationTest extends PostgresIntegrationTest {
 	@Autowired
 	private WorkoutSessionRepository sessions;
 
-	private static final LocalDate TODAY = LocalDate.now();
+	// Không static: tính sau khi context đã chạy khối static đặt giờ VN của FitnessApplication, để
+	// "hôm nay" của test khớp "hôm nay" của backend kể cả từ 0h tới 7h sáng.
+	private final LocalDate TODAY = LocalDate.now();
 
 	@Test
 	void editDay_changesOpenWorkoutsOfThatLabelOnly() {

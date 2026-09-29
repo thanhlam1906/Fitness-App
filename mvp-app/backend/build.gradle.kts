@@ -62,4 +62,7 @@ dependencies {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+	// JVM test chạy UTC như container backend, không theo giờ máy dev (UTC+7): nhờ vậy test
+	// thấy được lỗi "hôm nay" lệch ngày nếu ai bỏ múi giờ đặt ở FitnessApplication.
+	systemProperty("user.timezone", "UTC")
 }
