@@ -1,80 +1,80 @@
-import { useEffect, useRef, useState } from "react"
-import { MessageCircleWarning, SendHorizontal } from "lucide-react"
-import { ApiError } from "@/api/client"
+import { useEffect, useRef, useState, useSyncExternalStore } from "react"
+import { useIsMutating } from "@tanstack/react-query"
+import { MessageCircleWarning, SendHorizontal, SquarePen } from "lucide-react"
+import { useAuth } from "@/auth/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/cn"
-import { useAssistant } from "./useAssistant"
+import { clearConversation, getConversation, subscribe } from "./conversation"
+import { ASK_KEY, useAssistant } from "./useAssistant"
 import type { ChatMessage } from "./types"
 
 /**
  * Màn trợ lý — concept-chatbot-v1.md §12. Là một tab ở thanh tab đáy từ M3
  * (doc/design-ui-m3-v1.md §4); Lịch vẫn là màn mở đầu.
  *
+ * Cuộc trò chuyện lưu trên máy (conversation.ts, quyết định 09-29): còn khi chuyển trang, tải lại
+ * trang. Nút "Cuộc trò chuyện mới" xoá để bắt đầu lại.
+ *
  * Không SSE (AssistantService.java giải thích lý do: NumberGuard cần câu trả
  * lời đầy đủ mới quyết được giữ hay bỏ) — nên có "đang trả lời…" thay vì chữ
  * chạy dần.
  */
 export function AssistantPage() {
-  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const { userId } = useAuth()
+  const conversation = useSyncExternalStore(subscribe, () => getConversation(userId!))
   const [input, setInput] = useState("")
-  const [threadId, setThreadId] = useState<string | null>(null)
   const ask = useAssistant()
+  // Không dùng ask.isPending: nó chỉ biết mutation của lần AssistantPage được dựng này, nên rời
+  // trang rồi quay lại lúc câu hỏi cũ chưa có trả lời sẽ đọc sai thành "rảnh" (code-reviewer 09-29
+  // #2). useIsMutating đọc theo mutationKey, đúng cho mọi lần dựng.
+  const pending = useIsMutating({ mutationKey: ASK_KEY }) > 0
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages, ask.isPending])
+  }, [conversation.messages, pending])
 
   function send() {
     const question = input.trim()
-    if (!question || ask.isPending) return
+    if (!question || pending || !userId) return
     setInput("")
-    setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: "USER", text: question }])
-
-    ask.mutate(
-      { question, threadId },
-      {
-        onSuccess: (res) => {
-          setThreadId(res.threadId)
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: crypto.randomUUID(),
-              role: "ASSISTANT",
-              text: res.answer,
-              blocked: res.blocked,
-              sourceTitles: res.sourceTitles,
-            },
-          ])
-        },
-        onError: (err) => {
-          const text = err instanceof ApiError ? err.message : "Có lỗi xảy ra, thử lại giúp mình."
-          setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: "ASSISTANT", text, blocked: true }])
-        },
-      },
-    )
+    ask.mutate({ userId, question, threadId: conversation.threadId })
   }
 
   return (
     // Cao đúng một màn trừ lề trên (pt-8) và phần chừa cho thanh tab (pb-28), để ô nhập
     // nằm ngay trên thanh tab thay vì bị đẩy xuống phải cuộn.
     <div className="flex min-h-[calc(100dvh-144px)] flex-col">
-      <h1 className="text-[30px] font-extrabold tracking-[-0.02em]">Trợ lý</h1>
-      <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-        Hỏi về nguyên lý tập luyện, lịch tuần, hay tiến bộ của bạn. Không thay được bác sĩ hay HLV.
-      </p>
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <h1 className="text-[30px] font-extrabold tracking-[-0.02em]">Trợ lý</h1>
+          <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+            Hỏi về nguyên lý tập luyện, lịch tuần, hay tiến bộ của bạn. Không thay được bác sĩ hay HLV.
+          </p>
+        </div>
+        <button
+          type="button"
+          aria-label="Cuộc trò chuyện mới"
+          disabled={conversation.messages.length === 0 || pending}
+          onClick={() => userId && clearConversation(userId)}
+          className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-2 text-xs font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)] disabled:pointer-events-none disabled:opacity-40"
+        >
+          <SquarePen className="size-3.5" aria-hidden />
+          Trò chuyện mới
+        </button>
+      </div>
 
       <div className="mt-4 flex-1 space-y-3 overflow-y-auto">
-        {messages.length === 0 && (
+        {conversation.messages.length === 0 && (
           <p className="py-8 text-center text-sm text-[var(--color-text-muted)]">
             Thử hỏi: "RPE là gì?" hoặc "tuần này tôi tập gì?"
           </p>
         )}
-        {messages.map((m) => (
+        {conversation.messages.map((m) => (
           <MessageBubble key={m.id} message={m} />
         ))}
-        {ask.isPending && (
+        {pending && (
           <div className="flex justify-start">
             <div className="rounded-[var(--radius-md)] bg-[var(--color-surface)] px-4 py-3 text-sm text-[var(--color-text-muted)]">
               Đang trả lời…
@@ -98,7 +98,7 @@ export function AssistantPage() {
           size="sm"
           className="min-h-12 shrink-0 px-3.5"
           onClick={send}
-          disabled={!input.trim() || ask.isPending}
+          disabled={!input.trim() || pending}
           aria-label="Gửi"
         >
           <SendHorizontal className="size-4" aria-hidden />

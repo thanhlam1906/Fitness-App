@@ -2,6 +2,8 @@ const ACCESS_KEY = "fitness.accessToken"
 const REFRESH_KEY = "fitness.refreshToken"
 const USER_ID_KEY = "fitness.userId"
 const ROLE_KEY = "fitness.role"
+// Cuộc trò chuyện trợ lý lưu trên máy — features/assistant/conversation.ts đọc/ghi qua khoá này.
+export const ASSISTANT_KEY = "fitness.assistant"
 
 export type StoredSession = { userId: string; role: string }
 
@@ -37,4 +39,5 @@ export function clearSession(): void {
   localStorage.removeItem(REFRESH_KEY)
   localStorage.removeItem(USER_ID_KEY)
   localStorage.removeItem(ROLE_KEY)
+  localStorage.removeItem(ASSISTANT_KEY)
 }
