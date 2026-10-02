@@ -3,10 +3,10 @@ import { Pressable, Text, View } from "react-native"
 import { useRouter } from "expo-router"
 import { ChevronDown, ChevronRight } from "lucide-react-native"
 import { cn } from "@/lib/cn"
-import { range } from "@/lib/wheel"
 import { EQUIPMENT_OPTIONS } from "@/features/profile/types"
 import { defaultTrainingDays, WEEKDAYS } from "@/features/program/schema"
 import { ApiError } from "~/api/client"
+import { isoDay, START_OFFSETS, startLabel } from "~/lib/dates"
 import { Kicker } from "~/components/Kicker"
 import { Screen } from "~/components/Screen"
 import { Button } from "~/components/ui/Button"
@@ -22,31 +22,6 @@ import { colors } from "~/theme"
 
 const ORDINALS = ["Đề xuất chính", "Phương án hai", "Phương án ba", "Phương án bốn"]
 const ALL_DAYS = WEEKDAYS.map((d) => d.value)
-// Ngày bắt đầu chọn trong 4 tuần tới — web dùng ô chọn ngày của trình duyệt, RN không có.
-const START_OFFSETS = range(0, 27)
-const WEEKDAY_SHORT = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"]
-
-function dayAt(offset: number): Date {
-  const d = new Date()
-  d.setDate(d.getDate() + offset)
-  return d
-}
-
-const pad = (n: number) => String(n).padStart(2, "0")
-
-/** "yyyy-mm-dd" theo giờ máy — không dùng toISOString (giờ UTC, 0–7h sáng ở VN lệch một ngày). */
-function isoDay(offset: number): string {
-  const d = dayAt(offset)
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-}
-
-function startLabel(offset: number): string {
-  if (offset === 0) return "Hôm nay"
-  if (offset === 1) return "Ngày mai"
-  const d = dayAt(offset)
-  return `${WEEKDAY_SHORT[d.getDay()]} ${pad(d.getDate())}/${pad(d.getMonth() + 1)}`
-}
-
 /**
  * Màn 3 concept-frontend-v1.md — bản mobile của ProgramSelectionPage web: đề xuất template, XEM
  * CẤU TRÚC TUẦN rồi xác nhận, chọn ngày tập (API nhận restDays, đảo lại khi gửi), ngày bắt đầu
