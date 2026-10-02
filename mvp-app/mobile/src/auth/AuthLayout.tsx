@@ -1,22 +1,19 @@
 import { useState, type ReactNode } from "react"
-import { Image, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
+import { KeyboardAvoidingView, Pressable, ScrollView, Text, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-import Svg, { Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg"
+import Svg, { Path } from "react-native-svg"
 import { Eye, EyeOff } from "lucide-react-native"
 import { Controller, type Control, type FieldValues, type Path as FieldPath } from "react-hook-form"
 import { cn } from "@/lib/cn"
+import { FadedImage } from "~/components/FadedImage"
 import { Logo } from "~/components/Logo"
 import { Input, type InputProps } from "~/components/ui/Input"
 import { Label } from "~/components/ui/Label"
-import { assetUrl } from "~/lib/config"
 import { colors } from "~/theme"
-
-const BG_HEIGHT = 620
 
 /**
  * Khung chung màn đăng nhập, đăng ký (hướng B, doc/design-ui-m1-v1.md §2). Ảnh chỉ phủ phần đầu
- * rồi chìm vào màu nền: form đăng ký dài cuộn trên nền phẳng, chữ luôn đọc được. RN không có
- * linear-gradient CSS nên lớp chìm vẽ bằng SVG, cùng ba mốc 25% · 70% · 100% của web.
+ * rồi chìm vào màu nền: form đăng ký dài cuộn trên nền phẳng, chữ luôn đọc được.
  */
 export function AuthLayout({
   title,
@@ -30,19 +27,7 @@ export function AuthLayout({
   const insets = useSafeAreaInsets()
   return (
     <KeyboardAvoidingView behavior="padding" className="flex-1 bg-bg">
-      <View className="absolute inset-x-0 top-0" style={{ height: BG_HEIGHT }} pointerEvents="none">
-        <Image source={{ uri: assetUrl("/auth/bg.jpg") }} className="absolute inset-0" resizeMode="cover" />
-        <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
-          <Defs>
-            <LinearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor={colors.bg} stopOpacity={0.25} />
-              <Stop offset="0.55" stopColor={colors.bg} stopOpacity={0.7} />
-              <Stop offset="1" stopColor={colors.bg} stopOpacity={1} />
-            </LinearGradient>
-          </Defs>
-          <Rect width="100%" height="100%" fill="url(#fade)" />
-        </Svg>
-      </View>
+      <FadedImage path="/auth/bg.jpg" height={620} top={0.25} mid={0.7} midAt={0.55} />
       <ScrollView
         contentContainerClassName="px-4 pb-10"
         contentContainerStyle={{ paddingTop: insets.top + 24 }}
