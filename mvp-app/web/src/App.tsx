@@ -116,6 +116,22 @@ export function App() {
                     }
                   />
                   <Route
+                    path="/admin/corpus/uploads/:uploadId"
+                    element={
+                      <RequireAdmin>
+                        <CorpusPage />
+                      </RequireAdmin>
+                    }
+                  />
+                  <Route
+                    path="/admin/corpus/documents/:documentId"
+                    element={
+                      <RequireAdmin>
+                        <CorpusPage />
+                      </RequireAdmin>
+                    }
+                  />
+                  <Route
                     path="/admin/templates/:id"
                     element={
                       <RequireAdmin>

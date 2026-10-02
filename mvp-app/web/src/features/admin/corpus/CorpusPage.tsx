@@ -1,50 +1,31 @@
-import { useMutation } from "@tanstack/react-query"
+import { useParams } from "react-router"
 import { AdminHeader } from "@/components/AdminShell"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { api } from "@/api/client"
-
-type ReloadResult = { documents: number; chunks: number }
+import { CorpusListPanel } from "./CorpusListPanel"
+import { DocumentDetail } from "./DocumentDetail"
+import { UploadDetail } from "./UploadDetail"
 
 /**
- * Kho kiến thức trợ lý — concept-chatbot-v1.md §7. Nút bấm gọi đúng
- * POST /admin/corpus/reload đã có sẵn ở backend (CorpusAdminController).
- *
- * Quy trình vẫn thủ công có chủ đích: PDF → Docling (terminal, người soát
- * chất lượng) → content/corpus/*.md → bấm nút này để nạp vào DB. Không tự
- * động hoá bước convert — cần mắt người kiểm trước khi vào kho (§7, và thực
- * tế: bài 3 từng vỡ dấu tiếng Việt lúc convert, phải soát mới thấy).
+ * Kho kiến thức trợ lý — doc/design-nap-tai-lieu-v1.md §7, mockup doc/mockup-corpus/demo.html.
+ * Thả PDF → máy trích (hybrid) → admin soát từng đoạn → đưa vào trợ lý. Bước soát là bắt buộc:
+ * bài 3 từng vỡ dấu tiếng Việt lúc convert, phải đọc mới thấy.
  */
 export function CorpusPage() {
-  const reload = useMutation({
-    mutationFn: () => api.post<ReloadResult>("/admin/corpus/reload", {}),
-  })
+  const { uploadId, documentId } = useParams()
 
   return (
     <>
       <AdminHeader group="Cấu hình" title="Kho kiến thức" />
-
-      <div className="overflow-auto px-7 py-5.5">
-        <Card className="max-w-xl space-y-3">
-          <p className="text-sm text-[var(--color-text-muted)]">
-            Nạp lại toàn bộ file <code className="num">content/corpus/*.md</code> vào cơ sở dữ
-            liệu. Chạy sau khi đã convert PDF bằng Docling và soát xong nội dung — xem hướng dẫn
-            convert trong tài liệu dự án.
-          </p>
-
-          <Button onClick={() => reload.mutate()} disabled={reload.isPending}>
-            {reload.isPending ? "Đang nạp…" : "Nạp lại"}
-          </Button>
-
-          {reload.isSuccess && (
-            <p className="text-sm text-[var(--color-success)]">
-              Đã nạp {reload.data.documents} tài liệu, {reload.data.chunks} đoạn.
-            </p>
+      <div className="flex min-h-0 flex-1">
+        <CorpusListPanel activeId={uploadId ?? documentId} />
+        <div className="min-w-0 flex-1 overflow-auto px-7 pt-6 pb-10">
+          {uploadId ? (
+            <UploadDetail key={uploadId} id={uploadId} />
+          ) : documentId ? (
+            <DocumentDetail key={documentId} id={documentId} />
+          ) : (
+            <p className="pt-24 text-center text-sm text-[var(--color-text-muted)]">Chọn một tài liệu ở cột trái.</p>
           )}
-          {reload.isError && (
-            <p className="text-sm text-[var(--color-danger)]">Nạp thất bại: {reload.error.message}</p>
-          )}
-        </Card>
+        </div>
       </div>
     </>
   )

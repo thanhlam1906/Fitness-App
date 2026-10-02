@@ -2,6 +2,7 @@ import type { ReactNode } from "react"
 import { NavLink } from "react-router"
 import { useAuth } from "@/auth/AuthContext"
 import { Logo } from "@/components/Logo"
+import { useDocuments } from "@/features/admin/corpus/useCorpus"
 import { useExercises } from "@/features/admin/exercises/useExercises"
 import { useTemplates } from "@/features/admin/templates/useTemplates"
 import { useAdminOverview, useAdminUsers } from "@/features/admin/users/useAdminUsers"
@@ -29,6 +30,7 @@ function useGroups(): { title: string; items: Item[] }[] {
   const exercises = useExercises()
   const templates = useTemplates()
   const overview = useAdminOverview()
+  const corpus = useDocuments()
 
   return [
     {
@@ -59,7 +61,7 @@ function useGroups(): { title: string; items: Item[] }[] {
       title: "Cấu hình",
       items: [
         { label: "Template chương trình", to: "/admin/templates", count: templates.data?.length },
-        { label: "Kho kiến thức", to: "/admin/corpus" },
+        { label: "Kho kiến thức", to: "/admin/corpus", count: corpus.data?.length },
       ],
     },
   ]
