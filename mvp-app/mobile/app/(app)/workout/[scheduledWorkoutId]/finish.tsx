@@ -55,7 +55,7 @@ export default function FinishSessionScreen() {
           <Text className="text-sm text-danger">
             {session.isError ? session.error.message : "Không tìm thấy buổi tập này trong lịch."}
           </Text>
-          <Button variant="secondary" onPress={() => router.replace("/schedule")}>
+          <Button variant="secondary" onPress={() => router.dismissTo("/schedule")}>
             Về lịch tuần
           </Button>
         </Card>
@@ -149,7 +149,7 @@ export default function FinishSessionScreen() {
         onPress={() =>
           finish.mutate(
             { painReports: bodyArea ? [{ bodyArea, severity, note: "" }] : [], sessionRpe },
-            { onSuccess: () => router.replace("/schedule") },
+            { onSuccess: () => router.dismissTo("/schedule") },
           )
         }
       >

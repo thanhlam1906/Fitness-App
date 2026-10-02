@@ -39,6 +39,13 @@ export function useSessionOfDay(scheduledWorkoutId: string | null) {
 export function useOpenFirstWorkout() {
   const queryClient = useQueryClient()
   const router = useRouter()
+  // Bỏ hết màn chồng trên đáy stack rồi mới thay: replace trần chồng thêm một bộ tab mới, còn
+  // dismissTo sót ca onboarding → Chọn chương trình → Tự thiết kế (không có bộ tab nào bên dưới, vuốt
+  // lùi về lại màn chọn chương trình) — code-reviewer 10-02 #2 vòng 1, vòng 2.
+  const go = (href: string) => {
+    if (router.canDismiss()) router.dismissAll()
+    router.replace(href)
+  }
   return async () => {
     try {
       const schedule = await queryClient.fetchQuery({
@@ -46,10 +53,10 @@ export function useOpenFirstWorkout() {
         queryFn: () => api.get<ScheduleResponse>("/schedule"),
       })
       const first = schedule.workouts.map((w) => w.scheduledOn).sort()[0]
-      router.replace(first ? `/schedule?ngay=${first}` : "/schedule")
+      go(first ? `/schedule?ngay=${first}` : "/schedule")
     } catch {
       // Chương trình đã tạo xong; chỉ lấy lịch lỗi thì vẫn vào Lịch, màn đó tự báo lỗi và cho thử lại.
-      router.replace("/schedule")
+      go("/schedule")
     }
   }
 }

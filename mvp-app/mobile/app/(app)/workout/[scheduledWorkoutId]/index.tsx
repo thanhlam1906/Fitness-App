@@ -31,15 +31,18 @@ export default function WorkoutScreen() {
       </Screen>
     )
   }
-  if (session.isError && session.error instanceof ApiError && session.error.status === 409) {
-    // Ngày đã tập xong: xem lại ở màn Lịch, không tạo buổi mới.
+  const finished =
+    (session.isError && session.error instanceof ApiError && session.error.status === 409) ||
+    session.data?.status === "DONE"
+  if (finished) {
+    // Ngày đã tập xong (409 khi mở lại, hoặc vừa kết buổi xong): xem lại ở màn Lịch, không tạo buổi mới.
     return (
       <Screen>
         <Card className="gap-3">
           <Text className="text-sm text-text-muted">Buổi này đã tập xong.</Text>
           <Button
             variant="secondary"
-            onPress={() => router.replace(workout ? `/schedule?ngay=${workout.scheduledOn}` : "/schedule")}
+            onPress={() => router.dismissTo(workout ? `/schedule?ngay=${workout.scheduledOn}` : "/schedule")}
           >
             Xem lại ở Lịch
           </Button>

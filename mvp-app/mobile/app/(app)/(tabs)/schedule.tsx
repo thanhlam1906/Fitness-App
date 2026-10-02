@@ -20,6 +20,7 @@ import { Screen } from "~/components/Screen"
 import { Button } from "~/components/ui/Button"
 import { Card } from "~/components/ui/Card"
 import { DayCard } from "~/features/schedule/DayCard"
+import { useNewDayOnResume, useRefreshOnFocus } from "~/lib/focus"
 import { useSchedule } from "~/features/schedule/useSchedule"
 import { colors } from "~/theme"
 
@@ -37,6 +38,8 @@ export default function ScheduleScreen() {
   const router = useRouter()
   const schedule = useSchedule()
   const params = useLocalSearchParams<{ ngay?: string }>()
+  useRefreshOnFocus(schedule.refetch)
+  useNewDayOnResume(() => router.setParams({ ngay: undefined }))
 
   if (schedule.isLoading) return <MonthSkeleton />
 

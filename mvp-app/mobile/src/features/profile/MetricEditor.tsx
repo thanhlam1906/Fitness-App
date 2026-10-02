@@ -2,6 +2,7 @@ import { useState } from "react"
 import { Text, View } from "react-native"
 import { Button } from "~/components/ui/Button"
 import { Input } from "~/components/ui/Input"
+import { cleanDecimal, parseDecimal } from "~/lib/number"
 
 /**
  * Ô nhập một số + nút Lưu — màn Hồ sơ và Lịch sử cân nặng (web để trong ProfilePage.tsx). Khoảng
@@ -25,10 +26,8 @@ export function MetricEditor({
   onSave: (value: number) => void
 }) {
   const [value, setValue] = useState(initial?.toString().replace(".", ",") ?? "")
-  // Bàn phím số iOS tiếng Việt gõ dấu phẩy thập phân: Number() cần dấu chấm.
-  const parsed = Number(value.replace(",", "."))
-  const valid =
-    value !== "" && !Number.isNaN(parsed) && (min == null || parsed >= min) && (max == null || parsed <= max)
+  const parsed = parseDecimal(value)
+  const valid = !Number.isNaN(parsed) && (min == null || parsed >= min) && (max == null || parsed <= max)
 
   return (
     <View className="flex-row items-center gap-2.5">
@@ -38,7 +37,7 @@ export function MetricEditor({
         className="w-32"
         style={{ fontVariant: ["tabular-nums"] }}
         value={value}
-        onChangeText={setValue}
+        onChangeText={(t) => setValue(decimal ? cleanDecimal(t) : t.replace(/\D/g, ""))}
       />
       <Text className="text-sm text-text-muted">{unit}</Text>
       <Button size="sm" disabled={!valid || pending} onPress={() => onSave(parsed)}>

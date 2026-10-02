@@ -142,7 +142,7 @@ export default function ReviewResultScreen() {
         </>
       )}
 
-      <Button className="mt-auto w-full" onPress={() => router.replace("/schedule")}>
+      <Button className="mt-auto w-full" onPress={() => router.dismissTo("/schedule")}>
         Về lịch
       </Button>
     </Screen>

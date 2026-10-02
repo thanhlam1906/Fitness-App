@@ -16,9 +16,17 @@ const sessionKey = (scheduledWorkoutId: string) => ["session", scheduledWorkoutI
  * đang mở", chỉ là backend cần tạo nếu chưa có. Gọi lại không sinh thêm gì.
  */
 export function useWorkoutSession(scheduledWorkoutId: string) {
+  const queryClient = useQueryClient()
   return useQuery({
     queryKey: sessionKey(scheduledWorkoutId),
-    queryFn: () => api.post<SessionResponse>("/sessions", { scheduledWorkoutId }),
+    queryFn: async () => {
+      const session = await api.post<SessionResponse>("/sessions", { scheduledWorkoutId })
+      // Tab Lịch vẫn dựng sẵn bên dưới và không tự tải lại (khác web): báo ngay buổi đang dở để thẻ
+      // hôm nay đổi thành "Tiếp tục" và ẩn "Sửa buổi này" (code-reviewer 10-02 #1).
+      queryClient.setQueryData(["session-of-day", scheduledWorkoutId], session)
+      void queryClient.invalidateQueries({ queryKey: ["schedule"] })
+      return session
+    },
     staleTime: Infinity, // cache đã được ghi lại sau mỗi log set, không cần refetch nền
     // 409 = ngày đã tập xong: thử lại vẫn 409, chỉ làm người dùng chờ thêm.
     retry: (count, error) => !(error instanceof ApiError && error.status === 409) && count < 3,
@@ -54,7 +62,10 @@ export function useFinishSession(sessionId: string | undefined) {
   return useMutation({
     mutationFn: (input: FinishSessionInput) =>
       api.post<SessionResponse>(`/sessions/${sessionId}/finish`, input),
-    onSuccess: () => {
+    onSuccess: (finished) => {
+      // Màn buổi tập đọc trạng thái từ cache này (staleTime Infinity): ghi DONE để không ghi set
+      // hay kết buổi lần nữa từ màn cũ (code-reviewer 10-02 #2).
+      if (finished.scheduledWorkoutId) queryClient.setQueryData(sessionKey(finished.scheduledWorkoutId), finished)
       queryClient.invalidateQueries({ queryKey: ["schedule"] })
       // Thẻ ngày ở màn Lịch đọc buổi qua ["session-of-day", id]; không làm mới thì vừa kết
       // buổi xong vẫn thấy bản cũ (chưa tập / đang dở) một nhịp.

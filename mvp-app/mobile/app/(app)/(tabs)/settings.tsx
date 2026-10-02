@@ -10,6 +10,7 @@ import { Kicker } from "~/components/Kicker"
 import { Screen } from "~/components/Screen"
 import { useCurrentProgram } from "~/features/program/useCurrentProgram"
 import { useBodyMetrics, useProfile, useProgress } from "~/features/profile/useProfile"
+import { useRefreshOnFocus } from "~/lib/focus"
 import { colors } from "~/theme"
 
 const NUM = { fontVariant: ["tabular-nums" as const] }
@@ -24,6 +25,13 @@ export default function SettingsScreen() {
   const program = useCurrentProgram()
   const progress = useProgress(4)
   const metrics = useBodyMetrics()
+  // Tóm tắt tiến bộ, cân nặng đổi sau buổi tập hay ở màn con: tab không dựng lại nên tự tải lại.
+  useRefreshOnFocus(() => {
+    profile.refetch()
+    program.refetch()
+    progress.refetch()
+    metrics.refetch()
+  })
 
   const data = profile.data
   const weight = data?.latestBodyMetric?.weightKg

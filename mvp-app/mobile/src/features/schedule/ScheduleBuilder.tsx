@@ -18,6 +18,7 @@ import { Input } from "~/components/ui/Input"
 import { Label } from "~/components/ui/Label"
 import { PickerField } from "~/components/ui/Picker"
 import { isoDay, START_OFFSETS, startLabel } from "~/lib/dates"
+import { cleanDecimal } from "~/lib/number"
 import { useCreateCustomProgram } from "~/features/schedule/useCustomProgram"
 import { useExercises } from "~/features/schedule/useExercises"
 import { colors } from "~/theme"
@@ -253,8 +254,8 @@ function NumberField({
         keyboardType={decimal ? "decimal-pad" : "number-pad"}
         style={{ fontVariant: ["tabular-nums"] }}
         value={value}
-        // Bàn phím số iOS tiếng Việt gõ dấu phẩy thập phân: Number() trong customProgram.ts cần dấu chấm.
-        onChangeText={(v) => onChange(v.replace(",", "."))}
+        // customProgram.ts (dùng chung với web) đọc bằng Number(): chỉ giữ chữ số và một dấu chấm thập phân.
+        onChangeText={(v) => onChange(decimal ? cleanDecimal(v).replace(",", ".") : v.replace(/\D/g, ""))}
       />
     </View>
   )

@@ -7,6 +7,7 @@ import { Screen } from "~/components/Screen"
 import { StatusBadge } from "~/components/StatusBadge"
 import { Card } from "~/components/ui/Card"
 import { useReviews } from "~/features/review/useReviews"
+import { useRefreshOnFocus } from "~/lib/focus"
 import { colors } from "~/theme"
 
 /**
@@ -17,6 +18,8 @@ import { colors } from "~/theme"
 export default function FormCheckScreen() {
   const router = useRouter()
   const reviews = useReviews()
+  // Lần chấm mới gửi từ bản web: quay lại tab là thấy.
+  useRefreshOnFocus(reviews.refetch)
 
   return (
     <Screen>

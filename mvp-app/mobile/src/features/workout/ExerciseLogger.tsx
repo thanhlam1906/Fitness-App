@@ -11,6 +11,7 @@ import { Kicker } from "~/components/Kicker"
 import { WrongFeedbackButton } from "~/components/WrongFeedbackButton"
 import { useLogSet, useSubstitute, useSubstitutes } from "~/features/workout/useWorkoutSession"
 import { assetUrl } from "~/lib/config"
+import { cleanDecimal, parseDecimal } from "~/lib/number"
 import { colors } from "~/theme"
 
 const NUM = { fontVariant: ["tabular-nums" as const] }
@@ -267,8 +268,11 @@ function NumberStepper({
   const [text, setText] = useState(showNumber(value))
   // Nút −/+ đổi số từ ngoài ô: viết lại chữ cho khớp. Gõ tay thì số đã khớp chữ, không viết lại.
   useEffect(() => {
-    setText((t) => (Number(t.replace(",", ".")) === value ? t : showNumber(value)))
-  }, [value])
+    setText((t) => {
+      const typed = parseDecimal(t)
+      return (Number.isNaN(typed) ? min : typed) === value ? t : showNumber(value)
+    })
+  }, [value, min])
 
   function bump(delta: number) {
     onChange(Math.max(min, Math.round((value + delta) * 100) / 100))
@@ -289,9 +293,11 @@ function NumberStepper({
           style={NUM}
           value={text}
           onChangeText={(t) => {
-            setText(t)
-            const n = Number(t.replace(",", "."))
-            if (t !== "" && !Number.isNaN(n)) onChange(Math.max(min, n))
+            const clean = decimal ? cleanDecimal(t) : t.replace(/\D/g, "")
+            setText(clean)
+            const n = parseDecimal(clean)
+            // Ô trống là 0 như ô number của web: bấm "Lưu set" lúc đó không được lưu số cũ đang ẩn.
+            onChange(Math.max(min, Number.isNaN(n) ? min : n))
           }}
           onBlur={() => setText(showNumber(value))}
         />

@@ -7,6 +7,7 @@ import { EQUIPMENT_OPTIONS } from "@/features/profile/types"
 import { defaultTrainingDays, WEEKDAYS } from "@/features/program/schema"
 import { ApiError } from "~/api/client"
 import { isoDay, START_OFFSETS, startLabel } from "~/lib/dates"
+import { cleanDecimal, parseDecimal } from "~/lib/number"
 import { Kicker } from "~/components/Kicker"
 import { Screen } from "~/components/Screen"
 import { Button } from "~/components/ui/Button"
@@ -105,9 +106,9 @@ export default function ProgramScreen() {
         startDate: isoDay(startOffset),
         startingLoadsBySlug: Object.fromEntries(
           Object.entries(loads)
-            .filter(([, value]) => value.trim() !== "")
-            // Bàn phím số iOS tiếng Việt gõ dấu phẩy thập phân ("62,5"): Number() cần dấu chấm.
-            .map(([slug, value]) => [slug, Number(value.replace(",", "."))]),
+            .map(([slug, value]) => [slug, parseDecimal(value)] as const)
+            // Ô trống (hay chỉ có dấu phẩy) là "chưa biết tải", không phải 0kg — như web bỏ ô rỗng.
+            .filter(([, kg]) => !Number.isNaN(kg)),
         ),
       },
       // Không còn màn "Xong": vào thẳng Lịch ở buổi đầu tiên.
@@ -214,7 +215,7 @@ export default function ProgramScreen() {
                       className="w-28"
                       style={{ fontVariant: ["tabular-nums"] }}
                       value={loads[exercise.slug] ?? ""}
-                      onChangeText={(text) => setLoads((prev) => ({ ...prev, [exercise.slug]: text }))}
+                      onChangeText={(text) => setLoads((prev) => ({ ...prev, [exercise.slug]: cleanDecimal(text) }))}
                     />
                   </View>
                 ))}
