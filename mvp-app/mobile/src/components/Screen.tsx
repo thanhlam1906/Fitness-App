@@ -31,6 +31,8 @@ export function Screen({
           contentContainerClassName={cn("px-5", className)}
           contentContainerStyle={[{ flexGrow: 1 }, padding]}
           keyboardShouldPersistTaps="handled"
+          // Kéo màn là ẩn bàn phím số (màn buổi tập, mức tạ): iOS không có nút ẩn trên bàn phím số.
+          keyboardDismissMode="on-drag"
         >
           {children}
         </ScrollView>
