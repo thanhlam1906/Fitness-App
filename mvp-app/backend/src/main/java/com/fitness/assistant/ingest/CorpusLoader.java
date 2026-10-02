@@ -14,28 +14,28 @@ import java.util.stream.Stream;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
- * Nạp content/corpus/*.md (Docling sinh, front-matter thêm tay) vào documents +
- * doc_chunks. Chạy bằng lệnh admin, không phải service — corpus đổi vài lần một
- * tháng (concept-chatbot-v1.md §7). Nạp lại theo source: xoá rồi chèn, idempotent.
+ * Đưa Markdown vào documents + doc_chunks cho trợ lý (doc/design-nap-tai-lieu-v1.md §5).
  *
- * Chunk = một mục "## ". Docling xuất slide nên heading con ("Mục tiêu:", "Đặc điểm:")
- * cũng thành "##" → mục quá ngắn gộp vào mục trước, nếu không FTS trả về chunk
- * chỉ có mỗi cái tiêu đề.
+ * Chunk = một mục mở bằng tiêu đề cấp 1–3. Mục quá ngắn gộp vào mục trước (mục đầu tiên thì gộp
+ * vào mục sau), nếu không FTS trả về chunk chỉ có mỗi cái tiêu đề. Mục quá dài cắt theo đoạn văn.
  */
 @Service
 public class CorpusLoader {
 
 	// ponytail: ngưỡng gộp/cắt cố định; tinh chỉnh khi eval (§11) cho thấy chunk quá nhỏ/quá to.
-	// MAX theo đích "500-800 token" của concept-chatbot-v1.md §5.1 (~4 ký tự/token
-	// tiếng Việt) — 3 tài liệu đầu (slide bài giảng, mục ngắn) chưa từng chạm
-	// ngưỡng này nên chưa lộ ra, nhưng một cuốn sách với mục dài cả chương thì có.
+	// MAX theo đích "500-800 token" của concept-chatbot-v1.md §5.1 (~4 ký tự/token tiếng Việt).
 	static final int MIN_CHUNK_CHARS = 200;
 	static final int MAX_CHUNK_CHARS = 3200;
+	// OpenDataLoader (--heading-hierarchy) trả #, ##, ### theo cấu trúc tài liệu; Docling chạy tay
+	// trước đây trả toàn "##". Cấp 4 trở xuống là ý nhỏ, để nằm trong mục cha.
+	private static final String HEADING = "(?m)^#{1,3} ";
 
 	private final JdbcTemplate jdbc;
 	private final EmbeddingModel embeddingModel;
@@ -48,6 +48,9 @@ public class CorpusLoader {
 	}
 
 	public record Result(int documents, int chunks) {
+	}
+
+	public record Published(UUID documentId, int chunkCount) {
 	}
 
 	@Transactional
@@ -71,19 +74,33 @@ public class CorpusLoader {
 		Map<String, String> meta = frontMatter(text);
 		String body = text.startsWith("---") ? text.substring(text.indexOf("\n---", 3) + 4) : text;
 		List<String[]> chunks = chunk(body);
+		String title = meta.getOrDefault("title", chunks.isEmpty() ? source : chunks.get(0)[0]);
+		return publish(source, title, body).chunkCount();
+	}
+
+	/**
+	 * Một tài liệu vào kho; cùng source đã có thì thay (xoá rồi chèn, cùng transaction). Embedding
+	 * gọi TRƯỚC mọi lệnh ghi: OpenAI lỗi thì DB chưa bị đụng, bản cũ còn nguyên cho trợ lý dùng.
+	 */
+	@Transactional
+	public Published publish(String source, String title, String markdown) {
+		List<String[]> chunks = chunk(markdown);
 		if (chunks.isEmpty()) {
-			throw new IllegalStateException(source + ": không có mục '## ' nào");
+			throw new IllegalStateException(source + ": không có mục tiêu đề nào");
+		}
+		EmbeddingResponse response;
+		try {
+			// Bậc 2 (§5.2): 1 lời gọi cho cả tài liệu (batch), không phải N lời gọi rời.
+			response = embeddingModel.embedForResponse(chunks.stream().map(c -> c[1]).toList());
+		} catch (RuntimeException e) {
+			throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+					"Chưa nạp được (lỗi tạo embedding). Thử lại sau.", e);
 		}
 
 		jdbc.update("DELETE FROM documents WHERE source = ?", source);
 		UUID docId = jdbc.queryForObject(
-				"INSERT INTO documents (title, source, topic, license) VALUES (?, ?, ?, ?) RETURNING id",
-				UUID.class,
-				meta.getOrDefault("title", chunks.get(0)[0]), source, meta.get("topic"),
-				meta.getOrDefault("license", "unknown"));
-
-		// Bậc 2 (§5.2): 1 lời gọi cho cả tài liệu (batch), không phải N lời gọi rời.
-		EmbeddingResponse response = embeddingModel.embedForResponse(chunks.stream().map(c -> c[1]).toList());
+				"INSERT INTO documents (title, source, license) VALUES (?, ?, 'unknown') RETURNING id",
+				UUID.class, title, source);
 		for (int i = 0; i < chunks.size(); i++) {
 			String vector = EmbeddingFormat.toVectorLiteral(response.getResults().get(i).getOutput());
 			jdbc.update("""
@@ -92,7 +109,7 @@ public class CorpusLoader {
 					""",
 					docId, i, chunks.get(i)[0], chunks.get(i)[1], vector);
 		}
-		return chunks.size();
+		return new Published(docId, chunks.size());
 	}
 
 	/** "key: value" giữa hai dòng "---" đầu file. Không có thì map rỗng. */
@@ -114,28 +131,38 @@ public class CorpusLoader {
 	/** Trả về [heading, content]; content gồm cả dòng heading để FTS khớp được tiêu đề. */
 	static List<String[]> chunk(String body) {
 		List<String[]> out = new ArrayList<>();
-		for (String section : body.split("(?m)^## ")) {
+		String pending = null;
+		for (String section : body.split(HEADING)) {
 			String s = unescape(section).strip();
 			if (s.isEmpty()) {
 				continue;
 			}
 			String heading = s.lines().findFirst().orElse("");
 			for (String part : splitIfTooLong(s, heading)) {
-				if (!out.isEmpty() && part.length() < MIN_CHUNK_CHARS) {
+				if (pending != null) {
+					part = pending + "\n\n" + part;
+					pending = null;
+				}
+				if (part.length() >= MIN_CHUNK_CHARS) {
+					out.add(new String[] {heading, part});
+				} else if (!out.isEmpty()) {
 					String[] prev = out.get(out.size() - 1);
 					prev[1] = prev[1] + "\n\n" + part;
 				} else {
-					out.add(new String[] {heading, part});
+					pending = part;
 				}
 			}
+		}
+		if (pending != null) {
+			out.add(new String[] {pending.lines().findFirst().orElse(""), pending});
 		}
 		return out;
 	}
 
 	/**
-	 * Mục dài hơn MAX_CHUNK_CHARS (chương sách, không phải slide) thì cắt theo
-	 * đoạn văn (dòng trống) — không cắt giữa câu. Mỗi mảnh nhắc lại heading để
-	 * vẫn tự đứng được khi FTS trả về riêng mảnh đó, không kèm mảnh đầu.
+	 * Mục dài hơn MAX_CHUNK_CHARS (chương sách, không phải slide) thì cắt theo đoạn văn (dòng
+	 * trống), không cắt giữa câu. Mỗi mảnh nhắc lại heading để vẫn tự đứng được khi FTS trả về
+	 * riêng mảnh đó.
 	 */
 	private static List<String> splitIfTooLong(String section, String heading) {
 		if (section.length() <= MAX_CHUNK_CHARS) {
