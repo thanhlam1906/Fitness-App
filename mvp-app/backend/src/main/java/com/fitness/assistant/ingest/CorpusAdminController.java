@@ -34,9 +34,11 @@ public class CorpusAdminController {
 	}
 
 	private final CorpusUploadService uploads;
+	private final CorpusDocuments documents;
 
-	public CorpusAdminController(CorpusUploadService uploads) {
+	public CorpusAdminController(CorpusUploadService uploads, CorpusDocuments documents) {
 		this.uploads = uploads;
+		this.documents = documents;
 	}
 
 	@PostMapping(path = "/uploads", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -64,5 +66,21 @@ public class CorpusAdminController {
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void discard(@PathVariable UUID id) {
 		uploads.discard(id);
+	}
+
+	@GetMapping("/documents")
+	public List<CorpusDocuments.DocumentRow> listDocuments() {
+		return documents.list();
+	}
+
+	@GetMapping("/documents/{id}")
+	public CorpusDocuments.DocumentDetail documentDetail(@PathVariable UUID id) {
+		return documents.detail(id);
+	}
+
+	@DeleteMapping("/documents/{id}")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void removeDocument(@PathVariable UUID id) {
+		documents.remove(id);
 	}
 }
