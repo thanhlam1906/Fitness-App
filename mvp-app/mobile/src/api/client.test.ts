@@ -17,7 +17,7 @@ function respond(...replies: Reply[]) {
       },
     }
   })
-  global.fetch = fetchMock as unknown as typeof fetch
+  globalThis.fetch = fetchMock as unknown as typeof fetch
   return fetchMock
 }
 
@@ -78,7 +78,7 @@ it("lỗi body rỗng hiện câu tiếng Việt", async () => {
 })
 
 it("mất mạng hiện câu tiếng Việt thay cho 'Network request failed'", async () => {
-  global.fetch = jest.fn(async () => {
+  globalThis.fetch = jest.fn(async () => {
     throw new TypeError("Network request failed")
   }) as unknown as typeof fetch
   await expect(api.get("/x")).rejects.toMatchObject({
