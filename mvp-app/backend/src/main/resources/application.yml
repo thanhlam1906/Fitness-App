@@ -83,10 +83,6 @@ app:
   # nên đổi không cần sửa code.
   review-weekly-limit: ${REVIEW_WEEKLY_LIMIT:10}
 
-  # Kho kiến thức trợ lý: *.md do Docling sinh (concept-chatbot-v1.md §7). Trong
-  # container backend mount ./backend:/app nên đường dẫn tương đối này vẫn đúng.
-  corpus-path: ${CORPUS_PATH:./content/corpus}
-
   # Máy trích PDF chế độ hybrid (doc/design-nap-tai-lieu-v1.md §6). Backend chạy ngoài Docker gọi
   # cổng 5002 mở ra host; trong compose đặt PDF_HYBRID_URL=http://pdf-hybrid:5002.
   pdf-hybrid-url: ${PDF_HYBRID_URL:http://localhost:5002}

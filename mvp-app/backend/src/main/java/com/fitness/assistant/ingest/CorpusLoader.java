@@ -1,19 +1,11 @@
 package com.fitness.assistant.ingest;
 
 import com.fitness.assistant.retrieval.EmbeddingFormat;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Stream;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingResponse;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -39,43 +31,13 @@ public class CorpusLoader {
 
 	private final JdbcTemplate jdbc;
 	private final EmbeddingModel embeddingModel;
-	private final Path corpusPath;
 
-	public CorpusLoader(JdbcTemplate jdbc, EmbeddingModel embeddingModel, @Value("${app.corpus-path}") String corpusPath) {
+	public CorpusLoader(JdbcTemplate jdbc, EmbeddingModel embeddingModel) {
 		this.jdbc = jdbc;
 		this.embeddingModel = embeddingModel;
-		this.corpusPath = Path.of(corpusPath);
-	}
-
-	public record Result(int documents, int chunks) {
 	}
 
 	public record Published(UUID documentId, int chunkCount) {
-	}
-
-	@Transactional
-	public Result reload() {
-		int documents = 0;
-		int chunks = 0;
-		try (Stream<Path> files = Files.list(corpusPath)) {
-			for (Path file : files.filter(f -> f.toString().endsWith(".md")).sorted().toList()) {
-				chunks += load(file);
-				documents++;
-			}
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-		return new Result(documents, chunks);
-	}
-
-	private int load(Path file) throws IOException {
-		String source = file.getFileName().toString();
-		String text = Files.readString(file);
-		Map<String, String> meta = frontMatter(text);
-		String body = text.startsWith("---") ? text.substring(text.indexOf("\n---", 3) + 4) : text;
-		List<String[]> chunks = chunk(body);
-		String title = meta.getOrDefault("title", chunks.isEmpty() ? source : chunks.get(0)[0]);
-		return publish(source, title, body).chunkCount();
 	}
 
 	/**
@@ -110,22 +72,6 @@ public class CorpusLoader {
 					docId, i, chunks.get(i)[0], chunks.get(i)[1], vector);
 		}
 		return new Published(docId, chunks.size());
-	}
-
-	/** "key: value" giữa hai dòng "---" đầu file. Không có thì map rỗng. */
-	static Map<String, String> frontMatter(String text) {
-		Map<String, String> meta = new HashMap<>();
-		if (!text.startsWith("---")) {
-			return meta;
-		}
-		int end = text.indexOf("\n---", 3);
-		for (String line : text.substring(3, end).split("\n")) {
-			int colon = line.indexOf(':');
-			if (colon > 0) {
-				meta.put(line.substring(0, colon).trim(), line.substring(colon + 1).trim());
-			}
-		}
-		return meta;
 	}
 
 	/** Trả về [heading, content]; content gồm cả dòng heading để FTS khớp được tiêu đề. */
