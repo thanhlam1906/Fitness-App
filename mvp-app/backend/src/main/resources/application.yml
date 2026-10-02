@@ -86,3 +86,10 @@ app:
   # Kho kiến thức trợ lý: *.md do Docling sinh (concept-chatbot-v1.md §7). Trong
   # container backend mount ./backend:/app nên đường dẫn tương đối này vẫn đúng.
   corpus-path: ${CORPUS_PATH:./content/corpus}
+
+  # Máy trích PDF chế độ hybrid (doc/design-nap-tai-lieu-v1.md §6). Backend chạy ngoài Docker gọi
+  # cổng 5002 mở ra host; trong compose đặt PDF_HYBRID_URL=http://pdf-hybrid:5002.
+  pdf-hybrid-url: ${PDF_HYBRID_URL:http://localhost:5002}
+  # Giới hạn mỗi lần gọi server hybrid (một lần tối đa 50 trang). Đo 10-02 trên CPU: trang khó
+  # 17–50 s, lô 50 trang của sách 288 trang mất ~27 phút → 60 phút còn dư.
+  pdf-hybrid-timeout: ${PDF_HYBRID_TIMEOUT:PT60M}

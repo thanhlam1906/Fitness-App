@@ -38,6 +38,8 @@ services:
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/fitness
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      # Máy trích PDF (profile corpus). Chưa bật thì thả PDF báo lỗi kèm lệnh bật.
+      PDF_HYBRID_URL: http://pdf-hybrid:5002
     depends_on:
       postgres:
         condition: service_healthy
