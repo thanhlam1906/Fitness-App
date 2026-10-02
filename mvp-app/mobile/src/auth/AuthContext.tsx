@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { api, onLoggedOut } from "~/api/client"
+import { clearAllConversations } from "~/features/assistant/conversation"
 import type { RegisterPayload } from "@/auth/registerSchema"
 import { clearSession, getRefreshToken, getStoredSession, setSession } from "./tokenStorage"
 
@@ -27,6 +28,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(
     () =>
       onLoggedOut(() => {
+        // Web xoá cuộc trò chuyện ngay trong clearSession (cùng localStorage); mobile lưu riêng nên xoá ở đây.
+        clearAllConversations()
         queryClient.clear()
         setSessionState(null)
       }),
@@ -49,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   function logout() {
     const refreshToken = getRefreshToken()
     clearSession()
+    clearAllConversations()
     queryClient.clear()
     setSessionState(null)
     // best-effort: thu hồi refresh token ở server, không chặn logout nếu request lỗi
