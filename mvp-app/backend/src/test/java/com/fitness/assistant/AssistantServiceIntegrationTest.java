@@ -18,6 +18,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -34,6 +35,8 @@ class AssistantServiceIntegrationTest extends PostgresIntegrationTest {
 	private AssistantService assistantService;
 	@Autowired
 	private AssistantMessageRepository messages;
+	@Autowired
+	private JdbcTemplate jdbc;
 	@MockitoBean
 	private ChatModel chatModel;
 	@MockitoBean
@@ -90,6 +93,31 @@ class AssistantServiceIntegrationTest extends PostgresIntegrationTest {
 		assertThat(log.get(1).getGuardResult()).isEqualTo("OK");
 		// Nút "cái này sai" ở web trỏ tới đúng dòng câu trả lời đã lưu.
 		assertThat(answer.messageId()).isEqualTo(log.get(1).getId());
+	}
+
+	@Test
+	void ask_answerCitingChunk_persistsThatChunkId() {
+		String content = "Ngủ trưa ngắn giúp hệ thần kinh hồi phục giữa hai buổi tập nặng trong ngày, "
+				+ "nhất là khi buổi sáng đã tập chân và buổi chiều còn tập lưng.";
+		UUID docId = jdbc.queryForObject(
+				"INSERT INTO documents (title, source, license) VALUES (?, ?, 'unknown') RETURNING id",
+				UUID.class, "Tài liệu kiểm thử chunk_ids", "test-" + UUID.randomUUID());
+		String vector = "[1" + ",0".repeat(511) + "]";
+		UUID chunkId = jdbc.queryForObject("""
+				INSERT INTO doc_chunks (document_id, ord, heading_path, content, embedding)
+				VALUES (?, 0, 'Ngủ trưa', ?, ?::vector) RETURNING id
+				""", UUID.class, docId, content, vector);
+		UUID userId = newAuthedUser(Role.USER).userId();
+		asUser(userId);
+		stubModelReply("Ngủ trưa ngắn giúp hệ thần kinh hồi phục giữa hai buổi tập nặng trong ngày.");
+		UUID threadId = UUID.randomUUID();
+
+		// Hỏi không dấu: bộ lọc "khớp >= 50% số từ" của FtsRetriever so từ câu hỏi nguyên dạng với
+		// nội dung đã bỏ dấu, nên câu có dấu bị loại hết. Test này kiểm chunk_ids, không kiểm retriever.
+		assistantService.ask(threadId, "ngu trua co giup hoi phuc khong");
+
+		AssistantMessage saved = messages.findByUserIdAndThreadIdOrderByCreatedAtAsc(userId, threadId).get(1);
+		assertThat(saved.getChunkIds()).contains(chunkId);
 	}
 
 	private void stubModelReply(String text) {

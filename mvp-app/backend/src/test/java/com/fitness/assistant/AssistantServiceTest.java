@@ -109,6 +109,19 @@ class AssistantServiceTest {
 	}
 
 	@Test
+	void citedChunks_areReturnedById_uncitedAreNot() {
+		FtsRetriever.Chunk other = chunk("Tài liệu khác",
+				"Ngủ đủ giấc giúp cơ phục hồi sau buổi tập nặng và giữ sức cho tuần sau.");
+		String answer = "Theo tài liệu, mối tương quan này giúp chúng ta hiểu được số reps một vận động viên "
+				+ "có thể làm được ở một mức intensity.";
+
+		AssistantService.Classification c =
+				AssistantService.classify(answer, List.of(), List.of(REAL_CHUNK, other));
+
+		assertThat(c.citedChunkIds()).containsExactly(REAL_CHUNK.id());
+	}
+
+	@Test
 	void noToolNoChunk_isUnknown_withoutSourceTitles() {
 		AssistantService.Classification c = AssistantService.classify("Không rõ.", List.of(), List.of());
 

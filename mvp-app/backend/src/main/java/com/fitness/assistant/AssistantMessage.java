@@ -96,6 +96,10 @@ public class AssistantMessage {
 		return guardResult;
 	}
 
+	public UUID[] getChunkIds() {
+		return chunkIds;
+	}
+
 	public Instant getCreatedAt() {
 		return createdAt;
 	}

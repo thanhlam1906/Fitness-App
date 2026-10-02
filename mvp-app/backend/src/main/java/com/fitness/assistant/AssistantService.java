@@ -88,7 +88,7 @@ public class AssistantService {
 
 		if (safetyGate.isBlocked(question)) {
 			return persistAndReturn(userId, threadId, SafetyGate.REFUSAL_MESSAGE, true, "D_BLOCKED", List.of(),
-					List.of(), "BLOCKED_D");
+					List.of(), List.of(), "BLOCKED_D");
 		}
 
 		toolCallLog.clear();
@@ -134,16 +134,16 @@ public class AssistantService {
 				// Câu dự phòng không dựa vào tài liệu nào (thay hẳn câu trả lời của model) — kèm
 				// "Nguồn" ở đây cũng là bịa nguồn, dù intent vẫn ghi log đúng là A.
 				return persistAndReturn(userId, threadId, FALLBACK_UNGROUNDED, false, classification.intent(),
-						List.of(), toolsCalled, "NUMBERS_UNGROUNDED");
+						List.of(), List.of(), toolsCalled, "NUMBERS_UNGROUNDED");
 			}
 			return persistAndReturn(userId, threadId, answer, false, classification.intent(),
-					classification.sourceTitles(), toolsCalled, "OK");
+					classification.sourceTitles(), classification.citedChunkIds(), toolsCalled, "OK");
 		} finally {
 			toolCallLog.clear();
 		}
 	}
 
-	record Classification(String intent, List<String> sourceTitles) {
+	record Classification(String intent, List<String> sourceTitles, List<UUID> citedChunkIds) {
 	}
 
 	private static final Pattern TOKEN = Pattern.compile("[\\p{L}\\p{N}]+");
@@ -194,12 +194,12 @@ public class AssistantService {
 	static Classification classify(String answer, List<String> toolsCalled, List<FtsRetriever.Chunk> chunks) {
 		String intent = !toolsCalled.isEmpty() ? "B" : !chunks.isEmpty() ? "A" : "UNKNOWN";
 		Set<String> answerShingles = shingles(answer);
-		List<String> sourceTitles = chunks.stream()
-				.filter(c -> isCited(answerShingles, c))
-				.map(FtsRetriever.Chunk::documentTitle)
-				.distinct()
-				.toList();
-		return new Classification(intent, sourceTitles);
+		List<FtsRetriever.Chunk> cited = chunks.stream().filter(c -> isCited(answerShingles, c)).toList();
+		// citedChunkIds cùng tập với sourceTitles: màn Kho kiến thức đếm "bị báo sai" theo đúng
+		// những đoạn đã làm nên câu trả lời, không theo mọi đoạn retriever tình cờ tìm ra.
+		return new Classification(intent,
+				cited.stream().map(FtsRetriever.Chunk::documentTitle).distinct().toList(),
+				cited.stream().map(FtsRetriever.Chunk::id).toList());
 	}
 
 	private static boolean isCited(Set<String> answerShingles, FtsRetriever.Chunk chunk) {
@@ -219,9 +219,10 @@ public class AssistantService {
 
 	private Answer persistAndReturn(
 			UUID userId, UUID threadId, String text, boolean blocked, String intent, List<String> sourceTitles,
-			List<String> toolsCalled, String guardResult) {
+			List<UUID> chunkIds, List<String> toolsCalled, String guardResult) {
 		AssistantMessage assistantMessage = new AssistantMessage(userId, threadId, "ASSISTANT", text);
-		assistantMessage.tagAssistantMetadata(intent, null, toolsCalled.toArray(String[]::new), guardResult);
+		assistantMessage.tagAssistantMetadata(intent, chunkIds.toArray(UUID[]::new),
+				toolsCalled.toArray(String[]::new), guardResult);
 		messages.save(assistantMessage);
 		return new Answer(assistantMessage.getId(), text, blocked, sourceTitles, toolsCalled, guardResult);
 	}
