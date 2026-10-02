@@ -27,7 +27,8 @@ public class NumberGuard {
 		Set<String> numbers = new java.util.HashSet<>();
 		Matcher m = NUMBER.matcher(text == null ? "" : text);
 		while (m.find()) {
-			numbers.add(m.group());
+			// "2026-10-05" tách ra "05", người đọc viết "5/10": cùng một số, so như nhau.
+			numbers.add(m.group().replaceFirst("^0+(?=\\d)", ""));
 		}
 		return numbers;
 	}

@@ -19,10 +19,7 @@ import com.fitness.workout.SetLogRepository;
 import com.fitness.workout.WorkoutSession;
 import com.fitness.workout.WorkoutSessionRepository;
 import java.math.BigDecimal;
-import java.time.DayOfWeek;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.temporal.TemporalAdjusters;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,27 +53,87 @@ class AssistantToolsIntegrationTest extends PostgresIntegrationTest {
 	private SetLogRepository setLogs;
 
 	@Test
-	void getThisWeekSchedule_returnsOnlyCurrentUsersWorkoutsThisWeek() {
+	void getSchedule_countsByStatusAndLabel_onlyCurrentUser_withinRange() {
 		UUID squatId = exercises.findBySlug("barbell-back-squat").orElseThrow().getId();
+		UUID pushUpId = exercises.findBySlug("push-up").orElseThrow().getId();
 		UUID me = newAuthedUser(Role.USER).userId();
 		UUID otherUser = newAuthedUser(Role.USER).userId();
+		LocalDate today = LocalDate.now();
 
-		Program myProgram = programs.save(new Program(me, null, "{}", new Short[0], LocalDate.now().minusWeeks(1)));
+		Program myProgram = programs.save(
+				new Program(me, null, "{}", new Short[] {6, 7}, today.minusDays(10)));
 		Program otherProgram = programs.save(
-				new Program(otherUser, null, "{}", new Short[0], LocalDate.now().minusWeeks(1)));
+				new Program(otherUser, null, "{}", new Short[0], today.minusDays(10)));
 
-		LocalDate monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-		saveWorkout(myProgram.getId(), monday, squatId, new BigDecimal("60.00"));
-		saveWorkout(otherProgram.getId(), monday, squatId, new BigDecimal("999.00")); // phải KHÔNG xuất hiện
-		saveWorkout(myProgram.getId(), monday.minusWeeks(2), squatId, new BigDecimal("40.00")); // tuần khác, phải bỏ qua
+		saveWorkout(myProgram.getId(), today.minusDays(7), "Dưới", squatId, new BigDecimal("60.00")); // quá hạn → bỏ lỡ
+		ScheduledWorkout done = saveWorkout(myProgram.getId(), today.minusDays(3), "Dưới", squatId,
+				new BigDecimal("60.00"));
+		done.updateStatus("DONE");
+		scheduledWorkouts.save(done);
+		saveWorkout(myProgram.getId(), today.plusDays(1), "Dưới", squatId, new BigDecimal("62.50"));
+		saveWorkout(myProgram.getId(), today.plusDays(8), "Trên", pushUpId, null);
+		saveWorkout(myProgram.getId(), today.minusDays(30), "Trên", pushUpId, null); // ngoài khoảng hỏi
+		saveWorkout(otherProgram.getId(), today.plusDays(1), "Trên", squatId, new BigDecimal("999.00")); // người khác
 
 		asUser(me);
-		AssistantTools.ThisWeekSchedule schedule = tools.getThisWeekSchedule();
+		AssistantTools.ScheduleRange r = tools.getSchedule(
+				today.minusDays(14).toString(), today.plusDays(20).toString(), null);
 
-		assertThat(schedule.hasActiveProgram()).isTrue();
-		assertThat(schedule.days()).hasSize(1);
-		assertThat(schedule.days().get(0).exercises()).extracting(AssistantTools.ExerciseTarget::loadKg)
-				.containsExactly(new BigDecimal("60.00"));
+		assertThat(r.hasActiveProgram()).isTrue();
+		assertThat(r.error()).isNull();
+		assertThat(r.total()).isEqualTo(4);
+		assertThat(r.byStatus()).containsEntry("PLANNED", 2).containsEntry("DONE", 1).containsEntry("MISSED", 1)
+				.containsEntry("SKIPPED", 0);
+		assertThat(r.byLabel()).containsEntry("Dưới", 3).containsEntry("Trên", 1);
+		assertThat(r.workouts()).extracting(AssistantTools.ScheduleDay::status)
+				.containsExactly("MISSED", "DONE", "PLANNED", "PLANNED");
+		assertThat(r.programEnd()).isEqualTo(today.plusDays(8));
+		assertThat(r.rangeBeyondProgram()).isTrue();
+		assertThat(r.restDays()).containsExactly("Thứ 7", "Chủ nhật");
+		assertThat(r.nextWorkout().date()).isEqualTo(today.plusDays(1));
+		assertThat(r.workouts()).flatExtracting(AssistantTools.ScheduleDay::exercises)
+				.extracting(AssistantTools.ExerciseTarget::loadKg).doesNotContain(new BigDecimal("999.00"));
+	}
+
+	@Test
+	void getSchedule_exerciseFilter_appliesToEveryCount() {
+		UUID squatId = exercises.findBySlug("barbell-back-squat").orElseThrow().getId();
+		UUID pushUpId = exercises.findBySlug("push-up").orElseThrow().getId();
+		UUID me = newAuthedUser(Role.USER).userId();
+		LocalDate today = LocalDate.now();
+		Program p = programs.save(new Program(me, null, "{}", new Short[0], today));
+		saveWorkout(p.getId(), today, "Trên", pushUpId, null);
+		saveWorkout(p.getId(), today.plusDays(1), "Dưới", squatId, new BigDecimal("60.00"));
+		saveWorkout(p.getId(), today.plusDays(2), "Trên", pushUpId, null);
+		saveWorkout(p.getId(), today.plusDays(3), "Dưới", squatId, new BigDecimal("62.50"));
+
+		asUser(me);
+		AssistantTools.ScheduleRange r = tools.getSchedule(
+				today.toString(), today.plusDays(6).toString(), "SQUAT gánh");
+
+		assertThat(r.total()).isEqualTo(2);
+		assertThat(r.byStatus()).containsEntry("PLANNED", 2);
+		assertThat(r.workouts()).extracting(AssistantTools.ScheduleDay::date)
+				.containsExactly(today.plusDays(1), today.plusDays(3));
+		assertThat(r.nextWorkout().date()).isEqualTo(today.plusDays(1)); // buổi squat gần nhất, không phải buổi hôm nay
+		assertThat(r.matchedExercises()).containsExactly("Squat gánh tạ");
+
+		assertThat(tools.getSchedule(today.toString(), today.plusDays(6).toString(), "deadlift").matchedExercises())
+				.isEmpty();
+	}
+
+	@Test
+	void getSchedule_noActiveProgram_and_invalidRange() {
+		UUID me = newAuthedUser(Role.USER).userId();
+		asUser(me);
+		LocalDate today = LocalDate.now();
+
+		assertThat(tools.getSchedule(today.toString(), today.toString(), null).hasActiveProgram()).isFalse();
+
+		programs.save(new Program(me, null, "{}", new Short[0], today));
+		assertThat(tools.getSchedule(today.toString(), today.minusDays(1).toString(), null).error()).isNotNull();
+		assertThat(tools.getSchedule(today.toString(), today.plusDays(200).toString(), null).error()).isNotNull();
+		assertThat(tools.getSchedule("thang-10", today.toString(), null).error()).isNotNull();
 	}
 
 	@Test
@@ -128,11 +185,13 @@ class AssistantToolsIntegrationTest extends PostgresIntegrationTest {
 		assertThat(summary.avgSessionRpe()).isEqualTo(8.0);
 	}
 
-	private void saveWorkout(UUID programId, LocalDate date, UUID exerciseId, BigDecimal loadKg) {
-		ScheduledWorkout workout = scheduledWorkouts.save(new ScheduledWorkout(programId, date, (short) 1, "Buổi A"));
+	private ScheduledWorkout saveWorkout(UUID programId, LocalDate date, String label, UUID exerciseId,
+			BigDecimal loadKg) {
+		ScheduledWorkout workout = scheduledWorkouts.save(new ScheduledWorkout(programId, date, (short) 1, label));
 		scheduledExercises.save(
 				new ScheduledExercise(workout.getId(), exerciseId, (short) 1, (short) 3, (short) 5, (short) 5,
 						loadKg, (short) 180));
+		return workout;
 	}
 
 	private WorkoutSession saveFinishedSession(UUID userId, short rpe) {

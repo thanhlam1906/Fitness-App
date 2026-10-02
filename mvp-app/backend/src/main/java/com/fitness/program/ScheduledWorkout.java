@@ -76,6 +76,15 @@ public class ScheduledWorkout {
 		this.weekIndex = weekIndex;
 	}
 
+	/**
+	 * Buổi quá hạn mà chưa tập = bỏ lỡ. Suy ra khi đọc, không cần job quét đổi status.
+	 * Màn Lịch và trợ lý cùng gọi hàm này để luôn ra cùng một con số.
+	 */
+	public String displayStatus(LocalDate today) {
+		boolean overdue = "PLANNED".equals(status) && scheduledOn.isBefore(today);
+		return overdue ? "MISSED" : status;
+	}
+
 	public void updateStatus(String status) {
 		this.status = status;
 	}

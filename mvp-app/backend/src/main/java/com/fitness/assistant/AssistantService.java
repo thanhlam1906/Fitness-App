@@ -5,6 +5,9 @@ import com.fitness.assistant.retrieval.HybridRetriever;
 import com.fitness.assistant.tools.AssistantTools;
 import com.fitness.assistant.tools.ToolCallLog;
 import com.fitness.common.CurrentUser;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -101,14 +104,15 @@ public class AssistantService {
 			// nhưng vi phạm §8: không trích được thì phải nói "không có", không
 			// suy diễn). Phải nói RÕ trong chính message này, không dựa vào system
 			// prompt chung chung — model nhỏ theo tín hiệu gần hơn tín hiệu xa.
-			String userPrompt = knowledgeContext.isBlank()
-					? question + "\n\n---\n(Đã tìm trong kho tài liệu nhưng KHÔNG có mục nào liên quan đến câu "
+			String todayLine = dateAnchors(LocalDate.now());
+			String userPrompt = question + "\n" + todayLine + (knowledgeContext.isBlank()
+					? "\n\n---\n(Đã tìm trong kho tài liệu nhưng KHÔNG có mục nào liên quan đến câu "
 							+ "hỏi này. Nếu đây là câu hỏi kiến thức chung — không phải hỏi lịch/tải/tiến bộ của "
 							+ "người dùng — bắt buộc trả lời đúng dạng \"Không có thông tin trong tài liệu về "
 							+ "[chủ đề]\", KHÔNG dùng kiến thức có sẵn của bạn để tự trả lời, kể cả khi bạn biết "
 							+ "đáp án.)"
-					: question + "\n\n---\nTài liệu tham khảo (chỉ dùng đúng nội dung này, trích nguồn nếu trả lời "
-							+ "dựa vào đây):\n" + knowledgeContext;
+					: "\n\n---\nTài liệu tham khảo (chỉ dùng đúng nội dung này, trích nguồn nếu trả lời "
+							+ "dựa vào đây):\n" + knowledgeContext);
 
 			String answer = chatClient.prompt().user(userPrompt).call().content();
 			if (answer == null) {
@@ -117,10 +121,13 @@ public class AssistantService {
 
 			// Số hợp lệ đến từ 3 nguồn: chunk RAG, kết quả tool (đã đúng vì đọc thẳng DB),
 			// và số chính người dùng gõ ra (vd "4 tuần" phản chiếu lại trong câu trả lời).
-			String groundingContext = knowledgeContext + "\n" + toolCallLog.contextText() + "\n" + question;
+			// Mốc ngày chỉ là nguồn số khi model đã đọc lịch — câu kiến thức bịa "30 giây" không được
+			// lọt chỉ vì tháng trước có ngày 30.
+			List<String> toolsCalled = toolCallLog.toolNames();
+			String groundingContext = knowledgeContext + "\n" + toolCallLog.contextText() + "\n" + question
+					+ (toolsCalled.contains("getSchedule") ? "\n" + todayLine : "");
 			boolean grounded = numberGuard.isGrounded(answer, groundingContext);
 
-			List<String> toolsCalled = toolCallLog.toolNames();
 			Classification classification = classify(answer, toolsCalled, chunks);
 
 			if (!grounded) {
@@ -152,6 +159,25 @@ public class AssistantService {
 	// tính ở mọi câu B/UNKNOWN/từ chối, không sót câu A nào trích thật. Tinh khi có eval lớn hơn.
 	private static final int SHINGLE = 4;
 	private static final int MIN_SHARED_SHINGLES = 2;
+
+	/**
+	 * Model không tự biết hôm nay là ngày nào, và tự cộng trừ ngày thì sai (10-02 thử thật: "tuần sau"
+	 * từ thứ 6 2/10 ra 9/10–15/10 thay vì 5/10–11/10). Code tính sẵn các mốc hay hỏi; model chỉ chép.
+	 * Tuần tính từ thứ 2 đến chủ nhật, như màn Lịch.
+	 */
+	static String dateAnchors(LocalDate today) {
+		LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+		LocalDate firstOfMonth = today.withDayOfMonth(1);
+		return ("(Mốc ngày, dùng đúng các mốc này làm from/to: hôm nay %s = %s; ngày mai %s; hôm qua %s; "
+				+ "tuần này %s → %s; tuần sau %s → %s; tuần trước %s → %s; "
+				+ "tháng này %s → %s; tháng sau %s → %s; tháng trước %s → %s.)").formatted(
+						AssistantTools.dayVi(today), today, today.plusDays(1), today.minusDays(1),
+						monday, monday.plusDays(6), monday.plusWeeks(1), monday.plusDays(13),
+						monday.minusWeeks(1), monday.minusDays(1),
+						firstOfMonth, firstOfMonth.plusMonths(1).minusDays(1),
+						firstOfMonth.plusMonths(1), firstOfMonth.plusMonths(2).minusDays(1),
+						firstOfMonth.minusMonths(1), firstOfMonth.minusDays(1));
+	}
 
 	/**
 	 * intent chỉ để ghi log (đã có gọi tool hay không, có chunk hay không). sourceTitles quyết theo

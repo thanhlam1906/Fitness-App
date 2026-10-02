@@ -3,6 +3,7 @@ package com.fitness.assistant;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fitness.assistant.retrieval.FtsRetriever;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -10,7 +11,7 @@ import org.junit.jupiter.api.Test;
 /**
  * Test thuần cho AssistantService.classify — không cần Postgres/Spring, để kiểm nhanh khi sửa
  * chỗ này. Nguồn: người dùng báo "chatbot bịa nguồn" — hỏi lịch tập (trả lời bằng tool
- * getThisWeekSchedule) vẫn hiện "Nguồn: ..." của chunk tìm được song song, dù model không đọc nó.
+ * getSchedule) vẫn hiện "Nguồn: ..." của chunk tìm được song song, dù model không đọc nó.
  * Sau đó phát hiện thêm hai ca ngược nhau: câu "không có trong tài liệu" vẫn hiện nguồn, và câu
  * hỏi nửa tool nửa kiến thức thì mất hẳn nguồn dù có trích thật.
  *
@@ -82,7 +83,7 @@ class AssistantServiceTest {
 				+ "mối quan hệ giữa intensity và RPE.";
 
 		AssistantService.Classification c =
-				AssistantService.classify(answer, List.of("getThisWeekSchedule"), List.of(REAL_CHUNK));
+				AssistantService.classify(answer, List.of("getSchedule"), List.of(REAL_CHUNK));
 
 		assertThat(c.intent()).isEqualTo("B");
 		assertThat(c.sourceTitles()).containsExactly("Bài 3: Theo dõi dữ liệu (data-driven) Volume và Intensity");
@@ -113,5 +114,21 @@ class AssistantServiceTest {
 
 		assertThat(c.intent()).isEqualTo("UNKNOWN");
 		assertThat(c.sourceTitles()).isEmpty();
+	}
+
+	@Test
+	void dateAnchors_weekStartsMonday_monthsRollOverYear() {
+		// Thứ 6 2/10/2026 — ca lỗi thật: model tự tính "tuần sau" ra 9/10–15/10.
+		String friday = AssistantService.dateAnchors(LocalDate.of(2026, 10, 2));
+		assertThat(friday).contains("hôm nay Thứ 6, 2/10/2026 = 2026-10-02")
+				.contains("tuần này 2026-09-28 → 2026-10-04")
+				.contains("tuần sau 2026-10-05 → 2026-10-11")
+				.contains("tuần trước 2026-09-21 → 2026-09-27")
+				.contains("tháng này 2026-10-01 → 2026-10-31");
+
+		String sunday = AssistantService.dateAnchors(LocalDate.of(2026, 12, 6));
+		assertThat(sunday).contains("Chủ nhật, 6/12/2026")
+				.contains("tuần này 2026-11-30 → 2026-12-06")
+				.contains("tháng sau 2027-01-01 → 2027-01-31");
 	}
 }

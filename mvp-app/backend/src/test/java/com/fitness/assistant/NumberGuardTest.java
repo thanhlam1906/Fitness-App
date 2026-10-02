@@ -33,4 +33,10 @@ class NumberGuardTest {
 	void grounded_whenAnswerHasNoNumbers() {
 		assertThat(guard.isGrounded("Giữ lưng thẳng khi đứng lên.", "")).isTrue();
 	}
+
+	@Test
+	void leadingZerosIgnored_isoDateGroundsDayWrittenWithoutZero() {
+		assertThat(guard.isGrounded("Chương trình kết thúc ngày 9/11/2026.", "programEnd=2026-11-09")).isTrue();
+		assertThat(guard.isGrounded("Nghỉ 0.5 phút.", "nghỉ 5 phút")).isFalse(); // 0.5 không thành 5
+	}
 }

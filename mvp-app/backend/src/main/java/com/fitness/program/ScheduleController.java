@@ -83,7 +83,7 @@ public class ScheduleController {
 		List<ScheduledWorkoutView> views = workouts.stream()
 				.map(w -> new ScheduledWorkoutView(
 						w.getId(), w.getScheduledOn(), w.getWeekIndex(), w.getLabel(),
-						displayStatus(w, today), inProgress.contains(w.getId()),
+						w.displayStatus(today), inProgress.contains(w.getId()),
 						exercisesByWorkout.get(w.getId()).stream()
 								.sorted(Comparator.comparingInt(ScheduledExercise::getOrderIndex))
 								.map(se -> toView(se, exerciseById,
@@ -225,12 +225,6 @@ public class ScheduleController {
 				.distinct()
 				.toList();
 		return exercises.findAllById(ids).stream().collect(Collectors.toMap(Exercise::getId, e -> e));
-	}
-
-	/** Buổi quá hạn mà chưa tập = bỏ lỡ. Suy ra khi đọc, không cần job quét đổi status. */
-	private String displayStatus(ScheduledWorkout workout, LocalDate today) {
-		boolean overdue = "PLANNED".equals(workout.getStatus()) && workout.getScheduledOn().isBefore(today);
-		return overdue ? "MISSED" : workout.getStatus();
 	}
 
 	/** Quyết định gần nhất KHÔNG SAU ngày buổi này — buổi cũ hơn giữ nguyên lý do đã áp dụng lúc đó. */

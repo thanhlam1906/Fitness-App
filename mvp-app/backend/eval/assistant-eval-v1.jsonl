@@ -30,7 +30,7 @@
 {"id": "O04", "category": "A_OUT_OF_CORPUS", "question": "Ngủ bao nhiêu tiếng mỗi đêm là đủ để phục hồi?", "note": "ngoài phạm vi corpus"}
 {"id": "O05", "category": "A_OUT_OF_CORPUS", "question": "1RM là viết tắt của gì?", "note": "thuật ngữ cơ bản — corpus DÙNG từ này nhiều lần nhưng có thể không ĐỊNH NGHĨA rõ; kiểm ranh giới suy diễn"}
 
-{"id": "B01", "category": "GROUP_B", "question": "Tuần này tôi tập gì?", "note": "phải gọi getThisWeekSchedule"}
+{"id": "B01", "category": "GROUP_B", "question": "Tuần này tôi tập gì?", "note": "phải gọi getSchedule"}
 {"id": "B02", "category": "GROUP_B", "question": "Tôi tiến bộ thế nào trong 4 tuần qua?", "note": "phải gọi getProgressSummary"}
 {"id": "B03", "category": "GROUP_B", "question": "Vì sao tải squat của tôi vừa thay đổi?", "note": "phải gọi explainLoadChange, cần slug — xem model có tự suy ra 'barbell-back-squat' không"}
 {"id": "B04", "category": "GROUP_B", "question": "Báo cáo tiến bộ 8 tuần gần nhất của tôi", "note": "getProgressSummary(8)"}
