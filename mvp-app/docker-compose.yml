@@ -80,8 +80,22 @@ services:
       - fitness-pose-models:/app/models
     restart: unless-stopped
 
+  # Máy trích PDF cho "Kho kiến thức" (doc/design-nap-tai-lieu-v1.md §6). Docling + OCR nặng nên
+  # chỉ bật khi nạp tài liệu:
+  #   docker compose -f mvp-app/docker-compose.yml --profile corpus up -d pdf-hybrid
+  pdf-hybrid:
+    profiles: ["corpus"]
+    build: ./pdf-hybrid
+    ports:
+      # Backend chạy ngoài Docker (preview_start) gọi localhost:5002. Cổng < 49152, xem ghi chú postgres.
+      - "5002:5002"
+    volumes:
+      - fitness-pdf-models:/models
+    restart: unless-stopped
+
 volumes:
   fitness-postgres-data:
   fitness-pose-models:
   fitness-gradle-cache:
   fitness-web-node-modules:
+  fitness-pdf-models:
