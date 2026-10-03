@@ -3,10 +3,8 @@ package com.fitness.assistant.controller;
 import com.fitness.assistant.dto.AskRequest;
 import com.fitness.assistant.dto.AskResponse;
 import com.fitness.assistant.service.AssistantService;
+import com.fitness.common.CurrentUser;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import java.util.List;
-import java.util.UUID;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,17 +16,15 @@ import org.springframework.web.bind.annotation.RestController;
 public class AssistantController {
 
 	private final AssistantService assistantService;
+	private final CurrentUser currentUser;
 
-	public AssistantController(AssistantService assistantService) {
+	public AssistantController(AssistantService assistantService, CurrentUser currentUser) {
 		this.assistantService = assistantService;
+		this.currentUser = currentUser;
 	}
 
 	@PostMapping("/messages")
 	public AskResponse ask(@Valid @RequestBody AskRequest request) {
-		UUID threadId = request.threadId() != null ? request.threadId() : UUID.randomUUID();
-		AssistantService.Answer answer = assistantService.ask(threadId, request.question());
-		return new AskResponse(
-				answer.messageId(), answer.text(), answer.blocked(), threadId, answer.sourceTitles(), answer.toolsCalled(),
-				answer.guardResult());
+		return assistantService.ask(currentUser.id(), request);
 	}
 }

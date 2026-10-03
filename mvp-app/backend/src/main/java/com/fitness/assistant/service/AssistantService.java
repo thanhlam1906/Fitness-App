@@ -1,12 +1,13 @@
 package com.fitness.assistant.service;
 
+import com.fitness.assistant.dto.AskRequest;
+import com.fitness.assistant.dto.AskResponse;
 import com.fitness.assistant.entity.AssistantMessage;
 import com.fitness.assistant.repository.AssistantMessageRepository;
 import com.fitness.assistant.service.retrieval.FtsRetriever;
 import com.fitness.assistant.service.retrieval.HybridRetriever;
 import com.fitness.assistant.service.tools.AssistantTools;
 import com.fitness.assistant.service.tools.ToolCallLog;
-import com.fitness.common.CurrentUser;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
@@ -63,19 +64,17 @@ public class AssistantService {
 	private final ToolCallLog toolCallLog;
 	private final NumberGuard numberGuard;
 	private final AssistantMessageRepository messages;
-	private final CurrentUser currentUser;
 
 	public AssistantService(
 			ChatClient.Builder chatClientBuilder, SafetyGate safetyGate, HybridRetriever retriever,
 			AssistantTools assistantTools, ToolCallLog toolCallLog, NumberGuard numberGuard,
-			AssistantMessageRepository messages, CurrentUser currentUser) {
+			AssistantMessageRepository messages) {
 		this.chatClient = chatClientBuilder.defaultSystem(SYSTEM_PROMPT).defaultTools(assistantTools).build();
 		this.safetyGate = safetyGate;
 		this.retriever = retriever;
 		this.toolCallLog = toolCallLog;
 		this.numberGuard = numberGuard;
 		this.messages = messages;
-		this.currentUser = currentUser;
 	}
 
 	/** messageId: dòng ASSISTANT đã lưu — web gắn nút "cái này sai" vào đúng câu trả lời này. */
@@ -84,8 +83,20 @@ public class AssistantService {
 			String guardResult) {
 	}
 
-	public Answer ask(UUID threadId, String question) {
-		UUID userId = currentUser.id();
+	/** Chưa có threadId = cuộc trò chuyện mới; web gửi lại threadId cũ để nối tiếp. */
+	public AskResponse ask(UUID userId, AskRequest request) {
+		UUID threadId = request.threadId() != null ? request.threadId() : UUID.randomUUID();
+		Answer answer = ask(userId, threadId, request.question());
+		return new AskResponse(
+				answer.messageId(), answer.text(), answer.blocked(), threadId, answer.sourceTitles(), answer.toolsCalled(),
+				answer.guardResult());
+	}
+
+	/**
+	 * userId đi qua tham số từ controller, không đọc từ LLM. Tool trợ lý (AssistantTools) vẫn tự đọc
+	 * CurrentUser vì LLM gọi chúng, không qua đây.
+	 */
+	Answer ask(UUID userId, UUID threadId, String question) {
 		messages.save(new AssistantMessage(userId, threadId, "USER", question));
 
 		if (safetyGate.isBlocked(question)) {

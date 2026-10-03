@@ -54,10 +54,11 @@ class AssistantServiceIntegrationTest extends PostgresIntegrationTest {
 
 	@Test
 	void ask_blockedQuestion_neverCallsTheModel() {
-		asUser(newAuthedUser(Role.USER).userId());
+		UUID userId = newAuthedUser(Role.USER).userId();
+		asUser(userId);
 		UUID threadId = UUID.randomUUID();
 
-		AssistantService.Answer answer = assistantService.ask(threadId, "tôi đang mang thai có tập được không");
+		AssistantService.Answer answer = assistantService.ask(userId, threadId, "tôi đang mang thai có tập được không");
 
 		assertThat(answer.blocked()).isTrue();
 		assertThat(answer.text()).isEqualTo(SafetyGate.REFUSAL_MESSAGE);
@@ -73,7 +74,7 @@ class AssistantServiceIntegrationTest extends PostgresIntegrationTest {
 		asUser(userId);
 		stubModelReply("Bạn nên tăng tải thêm 37.5kg mỗi tuần."); // 37.5 không có trong context nào
 
-		AssistantService.Answer answer = assistantService.ask(UUID.randomUUID(), "tôi nên tăng tải thế nào");
+		AssistantService.Answer answer = assistantService.ask(userId, UUID.randomUUID(), "tôi nên tăng tải thế nào");
 
 		assertThat(answer.guardResult()).isEqualTo("NUMBERS_UNGROUNDED");
 		assertThat(answer.text()).doesNotContain("37.5");
@@ -86,7 +87,7 @@ class AssistantServiceIntegrationTest extends PostgresIntegrationTest {
 		stubModelReply("Giữ lưng thẳng khi đứng lên, không cong người.");
 		UUID threadId = UUID.randomUUID();
 
-		AssistantService.Answer answer = assistantService.ask(threadId, "squat đúng kỹ thuật là thế nào");
+		AssistantService.Answer answer = assistantService.ask(userId, threadId, "squat đúng kỹ thuật là thế nào");
 
 		List<AssistantMessage> log = messages.findByUserIdAndThreadIdOrderByCreatedAtAsc(userId, threadId);
 		assertThat(log).hasSize(2);
@@ -116,7 +117,7 @@ class AssistantServiceIntegrationTest extends PostgresIntegrationTest {
 
 		// Hỏi không dấu: bộ lọc "khớp >= 50% số từ" của FtsRetriever so từ câu hỏi nguyên dạng với
 		// nội dung đã bỏ dấu, nên câu có dấu bị loại hết. Test này kiểm chunk_ids, không kiểm retriever.
-		assistantService.ask(threadId, "ngu trua co giup hoi phuc khong");
+		assistantService.ask(userId, threadId, "ngu trua co giup hoi phuc khong");
 
 		AssistantMessage saved = messages.findByUserIdAndThreadIdOrderByCreatedAtAsc(userId, threadId).get(1);
 		assertThat(saved.getChunkIds()).contains(chunkId);
