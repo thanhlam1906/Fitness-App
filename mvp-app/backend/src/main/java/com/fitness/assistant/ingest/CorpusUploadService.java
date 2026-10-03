@@ -1,5 +1,6 @@
 package com.fitness.assistant.ingest;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,8 +19,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -65,6 +64,7 @@ public class CorpusUploadService {
 	// Một luồng: processFile của OpenDataLoader không hứa an toàn khi chạy song song, pdf-hybrid cũng
 	// xử lý tuần tự. File thả sau xếp hàng chờ.
 	private final ExecutorService worker = Executors.newSingleThreadExecutor();
+	private volatile boolean stopping;
 
 	public CorpusUploadService(JdbcTemplate jdbc, PdfExtractor extractor, CorpusLoader loader) {
 		this.jdbc = jdbc;
@@ -78,13 +78,19 @@ public class CorpusUploadService {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu tên file.");
 		}
 		Path pdf = saveIfPdf(file, fileName);
-		UUID id = jdbc.queryForObject(
-				"INSERT INTO corpus_uploads (file_name, status) VALUES (?, 'PROCESSING') RETURNING id",
-				UUID.class, fileName);
-		// Đọc dòng TRƯỚC khi giao việc: luồng nền có thể xong trước khi request này trả về.
-		UploadRow created = row(id);
-		worker.submit(() -> process(id, pdf));
-		return created;
+		try {
+			UUID id = jdbc.queryForObject(
+					"INSERT INTO corpus_uploads (file_name, status) VALUES (?, 'PROCESSING') RETURNING id",
+					UUID.class, fileName);
+			// Đọc dòng TRƯỚC khi giao việc: luồng nền có thể xong trước khi request này trả về.
+			UploadRow created = row(id);
+			worker.submit(() -> process(id, pdf));
+			return created;
+		} catch (RuntimeException e) {
+			// Chưa giao được cho luồng nền thì không ai xoá file tạm nữa (spec §5: PDF chỉ nằm trên đĩa lúc trích).
+			deleteQuietly(pdf);
+			throw e;
+		}
 	}
 
 	void process(UUID id, Path pdf) {
@@ -99,7 +105,8 @@ public class CorpusUploadService {
 		} catch (PdfExtractor.ExtractionFailed e) {
 			log.warn("Trích PDF của file nạp {} lỗi", id, e);
 			fail(id, e.getMessage());
-		} catch (RuntimeException e) {
+		} catch (RuntimeException | Error e) {
+			// Error (hết bộ nhớ với PDF lớn) cũng phải về FAILED: submit nuốt mất nó, dòng sẽ treo "Đang trích…".
 			log.error("Xử lý file nạp {} lỗi", id, e);
 			fail(id, "Máy trích PDF lỗi: " + e.getMessage());
 		} finally {
@@ -107,7 +114,9 @@ public class CorpusUploadService {
 		}
 	}
 
-	@EventListener(ApplicationReadyEvent.class)
+	// @PostConstruct, không phải ApplicationReadyEvent: chạy trước khi web server nhận request, nên không
+	// đánh nhầm FAILED một file vừa thả trong lúc app đang khởi động.
+	@PostConstruct
 	public void failInterrupted() {
 		// Hàng đợi nằm trong bộ nhớ: khởi động lại là mất việc đang làm. Báo admin thả lại thay vì
 		// để dòng "Đang trích…" treo mãi.
@@ -157,8 +166,10 @@ public class CorpusUploadService {
 	}
 
 	private void fail(UUID id, String error) {
+		// Đang tắt app thì shutdownNow ngắt luồng nền: lỗi lúc này do bị ngắt (OkHttp báo như quá giờ), không
+		// phải do file. Ghi đúng lý do để admin chỉ cần thả lại, không đi tách PDF.
 		jdbc.update("UPDATE corpus_uploads SET status = 'FAILED', error = ? WHERE id = ? AND status = 'PROCESSING'",
-				error, id);
+				stopping ? INTERRUPTED : error, id);
 	}
 
 	private static Path saveIfPdf(MultipartFile file, String fileName) {
@@ -208,6 +219,7 @@ public class CorpusUploadService {
 
 	@PreDestroy
 	void stop() {
+		stopping = true;
 		worker.shutdownNow();
 	}
 }

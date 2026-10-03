@@ -57,6 +57,8 @@ class CorpusAdminControllerIntegrationTest extends PostgresIntegrationTest {
 	private JdbcTemplate jdbc;
 	@Autowired
 	private CorpusUploadService service;
+	@Autowired
+	private CorpusLoader loader;
 	@MockitoBean
 	private PdfExtractor extractor;
 	@MockitoBean
@@ -230,6 +232,35 @@ class CorpusAdminControllerIntegrationTest extends PostgresIntegrationTest {
 		assertThat(jdbc.queryForMap("SELECT status, error FROM corpus_uploads WHERE id = ?", id))
 				.containsEntry("status", "FAILED")
 				.containsEntry("error", CorpusUploadService.INTERRUPTED);
+	}
+
+	@Test
+	void appStopping_midExtraction_marksInterrupted_notTimeout() throws Exception {
+		// Tắt app: shutdownNow ngắt luồng nền, OkHttp ném InterruptedIOException mà PdfExtractor đọc
+		// thành "quá giờ". Admin không được bị bảo đi tách PDF.
+		when(extractor.extract(any())).thenThrow(
+				new PdfExtractor.ExtractionFailed("Trích quá 60 phút. Thử tách PDF nhỏ hơn.", null));
+		CorpusUploadService stopping = new CorpusUploadService(jdbc, extractor, loader);
+		UUID id = jdbc.queryForObject(
+				"INSERT INTO corpus_uploads (file_name, status) VALUES (?, 'PROCESSING') RETURNING id",
+				UUID.class, unique("dang-tat.pdf"));
+		Path pdf = Files.createTempFile("corpus-upload-", ".pdf");
+
+		stopping.stop();
+		stopping.process(id, pdf);
+
+		assertThat(jdbc.queryForObject("SELECT error FROM corpus_uploads WHERE id = ?", String.class, id))
+				.isEqualTo(CorpusUploadService.INTERRUPTED);
+		assertThat(Files.exists(pdf)).isFalse();
+	}
+
+	@Test
+	void errorInBackgroundThread_stillMarksFailed() throws Exception {
+		when(extractor.extract(any())).thenThrow(new OutOfMemoryError("Java heap space"));
+
+		UUID id = upload(admin(), unique("to-qua.pdf")).id();
+
+		assertThat(awaitDone(id)).isEqualTo("FAILED");
 	}
 
 	private HttpHeaders admin() {

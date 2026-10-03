@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -28,6 +27,8 @@ public class CorpusLoader {
 	// OpenDataLoader (--heading-hierarchy) trả #, ##, ### theo cấu trúc tài liệu; Docling chạy tay
 	// trước đây trả toàn "##". Cấp 4 trở xuống là ý nhỏ, để nằm trong mục cha.
 	private static final String HEADING = "(?m)^#{1,3} ";
+	// OpenAI giới hạn tổng token mỗi request: sách dày vài trăm đoạn gửi một lần thì lỗi mãi.
+	static final int EMBED_BATCH = 100;
 
 	private final JdbcTemplate jdbc;
 	private final EmbeddingModel embeddingModel;
@@ -50,10 +51,14 @@ public class CorpusLoader {
 		if (chunks.isEmpty()) {
 			throw new IllegalStateException(source + ": không có mục tiêu đề nào");
 		}
-		EmbeddingResponse response;
+		List<float[]> vectors = new ArrayList<>();
 		try {
-			// Bậc 2 (§5.2): 1 lời gọi cho cả tài liệu (batch), không phải N lời gọi rời.
-			response = embeddingModel.embedForResponse(chunks.stream().map(c -> c[1]).toList());
+			// Bậc 2 (§5.2): gọi theo lô, không phải N lời gọi rời cho từng đoạn.
+			for (int from = 0; from < chunks.size(); from += EMBED_BATCH) {
+				List<String> batch = chunks.subList(from, Math.min(chunks.size(), from + EMBED_BATCH)).stream()
+						.map(c -> c[1]).toList();
+				embeddingModel.embedForResponse(batch).getResults().forEach(r -> vectors.add(r.getOutput()));
+			}
 		} catch (RuntimeException e) {
 			throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
 					"Chưa nạp được (lỗi tạo embedding). Thử lại sau.", e);
@@ -64,7 +69,7 @@ public class CorpusLoader {
 				"INSERT INTO documents (title, source, license) VALUES (?, ?, 'unknown') RETURNING id",
 				UUID.class, title, source);
 		for (int i = 0; i < chunks.size(); i++) {
-			String vector = EmbeddingFormat.toVectorLiteral(response.getResults().get(i).getOutput());
+			String vector = EmbeddingFormat.toVectorLiteral(vectors.get(i));
 			jdbc.update("""
 					INSERT INTO doc_chunks (document_id, ord, heading_path, content, embedding)
 					VALUES (?, ?, ?, ?, ?::vector)
@@ -89,11 +94,15 @@ public class CorpusLoader {
 					part = pending + "\n\n" + part;
 					pending = null;
 				}
+				// Mục ngắn gộp vào đoạn trước, nhưng không cho đoạn đó vượt MAX: trăm mục chỉ có tiêu đề
+				// liền nhau (mục lục) gộp hết thì vượt giới hạn token của embedding.
+				String[] prev = out.isEmpty() ? null : out.get(out.size() - 1);
 				if (part.length() >= MIN_CHUNK_CHARS) {
 					out.add(new String[] {heading, part});
-				} else if (!out.isEmpty()) {
-					String[] prev = out.get(out.size() - 1);
+				} else if (prev != null && prev[1].length() + 2 + part.length() <= MAX_CHUNK_CHARS) {
 					prev[1] = prev[1] + "\n\n" + part;
+				} else if (prev != null) {
+					out.add(new String[] {heading, part});
 				} else {
 					pending = part;
 				}
@@ -117,14 +126,37 @@ public class CorpusLoader {
 		List<String> parts = new ArrayList<>();
 		StringBuilder current = new StringBuilder(heading);
 		for (String paragraph : section.split("\n\n+")) {
-			if (current.length() > heading.length() && current.length() + paragraph.length() > MAX_CHUNK_CHARS) {
-				parts.add(current.toString());
-				current = new StringBuilder(heading);
+			String sep = "\n\n";
+			for (String piece : fitToMax(paragraph)) {
+				if (current.length() > heading.length() && current.length() + sep.length() + piece.length() > MAX_CHUNK_CHARS) {
+					parts.add(current.toString());
+					current = new StringBuilder(heading);
+					sep = "\n\n";
+				}
+				current.append(sep).append(piece);
+				sep = "\n"; // các dòng của cùng một đoạn văn vẫn liền nhau
 			}
-			current.append("\n\n").append(paragraph);
 		}
 		parts.add(current.toString());
 		return parts;
+	}
+
+	/**
+	 * Đoạn văn không có dòng trống mà dài quá MAX (bảng Markdown nhiều trang) thì cắt theo dòng; dòng
+	 * vẫn quá dài thì cắt cứng. Nửa MAX để dòng heading nhắc lại ở đầu mảnh không đẩy mảnh vượt MAX.
+	 */
+	private static List<String> fitToMax(String paragraph) {
+		if (paragraph.length() <= MAX_CHUNK_CHARS) {
+			return List.of(paragraph);
+		}
+		int step = MAX_CHUNK_CHARS / 2;
+		List<String> pieces = new ArrayList<>();
+		for (String line : paragraph.split("\n")) {
+			for (int i = 0; i < line.length(); i += step) {
+				pieces.add(line.substring(i, Math.min(line.length(), i + step)));
+			}
+		}
+		return pieces;
 	}
 
 	private static String unescape(String s) {

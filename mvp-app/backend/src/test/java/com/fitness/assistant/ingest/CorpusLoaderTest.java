@@ -52,6 +52,34 @@ class CorpusLoaderTest {
 	}
 
 	@Test
+	void chunk_manyShortSectionsInARow_neverGrowPastMax() {
+		// Mục lục, trang chỉ có tiêu đề: trăm mục ngắn liền nhau. Gộp hết vào một đoạn thì vượt giới
+		// hạn token của embedding, nạp lỗi mãi.
+		StringBuilder body = new StringBuilder("## Mở đầu\n\n" + "m".repeat(250) + "\n\n");
+		for (int i = 0; i < 300; i++) {
+			body.append("### Mục ").append(i).append("\n\nngắn\n\n");
+		}
+
+		List<String[]> chunks = CorpusLoader.chunk(body.toString());
+
+		assertThat(chunks).allSatisfy(c -> assertThat(c[1].length()).isLessThanOrEqualTo(CorpusLoader.MAX_CHUNK_CHARS));
+		assertThat(String.join("", chunks.stream().map(c -> c[1]).toList())).contains("Mục 0").contains("Mục 299");
+	}
+
+	@Test
+	void chunk_longParagraphWithoutBlankLines_isCutByLine() {
+		// Bảng Markdown nhiều trang: không có dòng trống nào để cắt theo đoạn văn.
+		String table = String.join("\n", java.util.Collections.nCopies(200, "| hàng | " + "t".repeat(40) + " |"));
+
+		List<String[]> chunks = CorpusLoader.chunk("## Bảng tải\n\n" + table);
+
+		assertThat(chunks.size()).isGreaterThan(1);
+		assertThat(chunks).allSatisfy(c -> assertThat(c[1].length()).isLessThanOrEqualTo(CorpusLoader.MAX_CHUNK_CHARS));
+		long rows = chunks.stream().mapToLong(c -> c[1].lines().filter(l -> l.startsWith("| hàng")).count()).sum();
+		assertThat(rows).isEqualTo(200);
+	}
+
+	@Test
 	void chunk_wholeDocumentShort_stillOneChunk() {
 		List<String[]> chunks = CorpusLoader.chunk("# Ghi chú ngắn\n\nchỉ vài chữ");
 

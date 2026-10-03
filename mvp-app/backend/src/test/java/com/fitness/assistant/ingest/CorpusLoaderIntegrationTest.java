@@ -3,6 +3,8 @@ package com.fitness.assistant.ingest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fitness.support.FakeEmbeddings;
@@ -85,6 +87,27 @@ class CorpusLoaderIntegrationTest extends PostgresIntegrationTest {
 				.containsExactly("Bản mới");
 		assertThat(jdbc.queryForObject("SELECT count(*) FROM doc_chunks WHERE document_id = ?", Integer.class,
 				first.documentId())).isZero();
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void publish_thickBook_embedsInBatches_allChunksStored() {
+		// Sách dày cả trăm đoạn: một request gửi hết thì vượt giới hạn token mỗi request của OpenAI.
+		StringBuilder book = new StringBuilder();
+		for (int i = 0; i < 150; i++) {
+			book.append("## Chương ").append(i).append("\n\n").append("nội dung chương. ".repeat(20)).append("\n\n");
+		}
+		org.mockito.ArgumentCaptor<List<String>> batches = org.mockito.ArgumentCaptor.forClass(List.class);
+
+		CorpusLoader.Published published = loader.publish(UUID.randomUUID() + "-sach.pdf", "Sách dày", book.toString());
+
+		verify(embeddingModel, atLeastOnce()).embedForResponse(batches.capture());
+		assertThat(published.chunkCount()).isEqualTo(150);
+		assertThat(batches.getAllValues()).hasSizeGreaterThan(1)
+				.allSatisfy(b -> assertThat(b.size()).isLessThanOrEqualTo(CorpusLoader.EMBED_BATCH));
+		assertThat(jdbc.queryForObject(
+				"SELECT count(*) FROM doc_chunks WHERE document_id = ? AND embedding IS NOT NULL", Integer.class,
+				published.documentId())).isEqualTo(150);
 	}
 
 	@Test
