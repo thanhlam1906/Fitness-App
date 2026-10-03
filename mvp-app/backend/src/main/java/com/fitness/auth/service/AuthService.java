@@ -7,8 +7,7 @@ import com.fitness.auth.entity.Role;
 import com.fitness.auth.entity.User;
 import com.fitness.auth.repository.RefreshTokenRepository;
 import com.fitness.auth.repository.UserRepository;
-import com.fitness.profile.entity.Profile;
-import com.fitness.profile.repository.ProfileRepository;
+import com.fitness.profile.service.ProfileService;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -33,17 +32,17 @@ public class AuthService {
 	private static final Duration REFRESH_TOKEN_TTL = Duration.ofDays(30);
 
 	private final UserRepository users;
-	private final ProfileRepository profiles;
+	private final ProfileService profileService;
 	private final RefreshTokenRepository refreshTokens;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtIssuer jwtIssuer;
 	private final SecureRandom random = new SecureRandom();
 
 	public AuthService(
-			UserRepository users, ProfileRepository profiles, RefreshTokenRepository refreshTokens,
+			UserRepository users, ProfileService profileService, RefreshTokenRepository refreshTokens,
 			PasswordEncoder passwordEncoder, JwtIssuer jwtIssuer) {
 		this.users = users;
-		this.profiles = profiles;
+		this.profileService = profileService;
 		this.refreshTokens = refreshTokens;
 		this.passwordEncoder = passwordEncoder;
 		this.jwtIssuer = jwtIssuer;
@@ -64,9 +63,7 @@ public class AuthService {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "Email đã được đăng ký");
 		}
 		User user = users.save(new User(request.email(), passwordEncoder.encode(request.password()), Role.USER));
-		Profile profile = new Profile(user.getId());
-		profile.applyRegistration(fullName, request.phone());
-		profiles.save(profile);
+		profileService.createForNewUser(user.getId(), fullName, request.phone());
 		return issueTokens(user);
 	}
 
