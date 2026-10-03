@@ -12,6 +12,9 @@ import com.fitness.content.repository.ProgramTemplateRepository;
 import com.fitness.profile.entity.Profile;
 import com.fitness.profile.repository.ProfileRepository;
 import com.fitness.program.dto.CreateCustomProgramRequest;
+import com.fitness.program.dto.CreateProgramRequest;
+import com.fitness.program.dto.CreateProgramResponse;
+import com.fitness.program.dto.CurrentProgramResponse;
 import com.fitness.program.dto.TemplateCandidateResponse;
 import com.fitness.program.entity.Program;
 import com.fitness.program.entity.ScheduledExercise;
@@ -129,6 +132,27 @@ public class ProgramService {
 		boolean needsLoad = exercise == null || exercise.getEquipment().length > 0;
 		return new TemplateCandidateResponse.CycleExerciseResponse(
 				ex.exerciseSlug(), name, ex.sets(), ex.repsMin(), ex.repsMax(), ex.restSec(), needsLoad);
+	}
+
+	public CurrentProgramResponse current(UUID userId) {
+		Program program = programRepository.findByUserIdAndStatus(userId, "ACTIVE")
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Chưa có chương trình đang chạy"));
+		return program.getTemplateId() == null
+				? CurrentProgramResponse.ofCustom(program)
+				: CurrentProgramResponse.of(program, templateRepository.findById(program.getTemplateId()).orElseThrow());
+	}
+
+	/**
+	 * Điền mặc định cho phần người dùng bỏ trống rồi tạo chương trình. @Transactional ở đây vì gọi
+	 * createProgram trong cùng class không đi qua proxy, transaction của hàm đó không tự bật.
+	 */
+	@Transactional
+	public CreateProgramResponse create(UUID userId, CreateProgramRequest request) {
+		Map<String, Double> startingLoads = request.startingLoadsBySlug() == null ? Map.of() : request.startingLoadsBySlug();
+		Set<DayOfWeek> restDays = request.restDays() == null ? Set.of()
+				: request.restDays().stream().map(DayOfWeek::of).collect(Collectors.toSet());
+		LocalDate startDate = request.startDate() == null ? LocalDate.now() : request.startDate();
+		return new CreateProgramResponse(createProgram(userId, request.templateId(), startingLoads, restDays, startDate));
 	}
 
 	@Transactional
