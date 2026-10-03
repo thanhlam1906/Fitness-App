@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { type QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/api/client"
 import type {
   CorpusDocument,
@@ -13,6 +13,12 @@ const documentsKey = ["admin", "corpus", "documents"] as const
 
 // Còn file đang trích thì hỏi lại mỗi 3 s để thấy nó chuyển sang "Chờ duyệt"; hết thì thôi.
 const POLL_MS = 3000
+
+// Sau khi bỏ/đưa vào/gỡ chỉ làm mới DANH SÁCH (exact). Không exact thì key tiền tố trúng luôn query chi
+// tiết của chính thứ vừa đi khỏi: màn đó còn mở nên nó tải lại, nhận 404, thử lại 3 lần, và navigate
+// trong onSuccess phải chờ hết (~7 s đứng màn).
+const refreshList = (queryClient: QueryClient, queryKey: readonly string[]) =>
+  queryClient.invalidateQueries({ queryKey, exact: true })
 
 export function useUploads() {
   return useQuery({
@@ -52,7 +58,7 @@ export function useUploadPdf() {
       form.append("file", file)
       return api.postForm<CorpusUpload>("/admin/corpus/uploads", form)
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: uploadsKey }),
+    onSuccess: () => refreshList(queryClient, uploadsKey),
   })
 }
 
@@ -61,11 +67,7 @@ export function usePublishUpload() {
   return useMutation({
     mutationFn: ({ id, title }: { id: string; title: string }) =>
       api.post<Published>(`/admin/corpus/uploads/${id}/publish`, { title }),
-    onSuccess: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: uploadsKey }),
-        queryClient.invalidateQueries({ queryKey: documentsKey }),
-      ]),
+    onSuccess: () => Promise.all([refreshList(queryClient, uploadsKey), refreshList(queryClient, documentsKey)]),
   })
 }
 
@@ -73,7 +75,7 @@ export function useDiscardUpload() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => api.del<void>(`/admin/corpus/uploads/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: uploadsKey }),
+    onSuccess: () => refreshList(queryClient, uploadsKey),
   })
 }
 
@@ -81,6 +83,6 @@ export function useRemoveDocument() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => api.del<void>(`/admin/corpus/documents/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: documentsKey }),
+    onSuccess: () => refreshList(queryClient, documentsKey),
   })
 }
