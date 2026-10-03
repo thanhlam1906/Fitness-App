@@ -1,9 +1,9 @@
 package com.fitness.support;
 
-import com.fitness.auth.JwtIssuer;
-import com.fitness.auth.Role;
-import com.fitness.auth.User;
-import com.fitness.auth.UserRepository;
+import com.fitness.auth.entity.Role;
+import com.fitness.auth.entity.User;
+import com.fitness.auth.repository.UserRepository;
+import com.fitness.auth.service.JwtIssuer;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
