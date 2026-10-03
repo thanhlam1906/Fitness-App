@@ -19,8 +19,8 @@ import { Label } from "~/components/ui/Label"
 import { PickerField } from "~/components/ui/Picker"
 import { isoDay, START_OFFSETS, startLabel } from "~/lib/dates"
 import { cleanDecimal } from "~/lib/number"
-import { useCreateCustomProgram } from "~/features/schedule/useCustomProgram"
-import { useExercises } from "~/features/schedule/useExercises"
+import { useCreateCustomProgram } from "~/features/schedule/api/useCustomProgram"
+import { useExercises } from "~/features/exercise/api/useExercises"
 import { colors } from "~/theme"
 
 const WEEKS = range(1, 12)

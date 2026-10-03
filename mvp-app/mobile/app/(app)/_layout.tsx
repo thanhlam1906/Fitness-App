@@ -1,9 +1,9 @@
 import { Redirect, Stack, usePathname } from "expo-router"
 import { Text, View } from "react-native"
 import { shouldResumeOnboarding } from "@/features/auth/utils/onboardingGate"
-import { useAuth } from "~/auth/AuthContext"
+import { useAuth } from "~/features/auth/components/AuthContext"
 import { Button } from "~/components/ui/Button"
-import { useProfile } from "~/features/profile/useProfile"
+import { useProfile } from "~/features/profile/api/useProfile"
 import { colors } from "~/theme"
 
 /** Bọc mọi màn sau đăng nhập — RequireAuth + RequireOnboarding của web gộp lại. */

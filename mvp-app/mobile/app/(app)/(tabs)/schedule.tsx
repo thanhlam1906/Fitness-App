@@ -19,9 +19,9 @@ import { Kicker } from "~/components/Kicker"
 import { Screen } from "~/components/Screen"
 import { Button } from "~/components/ui/Button"
 import { Card } from "~/components/ui/Card"
-import { DayCard } from "~/features/schedule/DayCard"
+import { DayCard } from "~/features/schedule/components/DayCard"
 import { useNewDayOnResume, useRefreshOnFocus } from "~/lib/focus"
-import { useSchedule } from "~/features/schedule/useSchedule"
+import { useSchedule } from "~/features/schedule/api/useSchedule"
 import { colors } from "~/theme"
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/

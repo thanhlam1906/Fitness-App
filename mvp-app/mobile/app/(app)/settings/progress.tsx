@@ -3,8 +3,8 @@ import { Pressable, Text, View } from "react-native"
 import { barHeights } from "@/features/profile/utils/charts"
 import { cn } from "@/lib/cn"
 import { formatDayMonth, formatNumber } from "@/lib/format"
-import { LoadState, SettingsSubPage } from "~/features/profile/SettingsSubPage"
-import { useProgress } from "~/features/profile/useProfile"
+import { LoadState, SettingsSubLayout } from "~/features/profile/components/SettingsSubLayout"
+import { useProgress } from "~/features/profile/api/useProfile"
 
 const NUM = { fontVariant: ["tabular-nums" as const] }
 const RANGES = [4, 8, 12] as const
@@ -22,7 +22,7 @@ export default function ProgressScreen() {
   const heights = p ? barHeights(p.weekly.map((w) => w.tonnageKg), BAR_MAX_PX) : []
 
   return (
-    <SettingsSubPage title="Tiến bộ">
+    <SettingsSubLayout title="Tiến bộ">
       <View accessibilityRole="radiogroup" accessibilityLabel="Khoảng thời gian" className="mt-4 flex-row gap-1.5 rounded-md bg-surface p-1">
         {RANGES.map((r) => {
           const on = weeks === r
@@ -74,7 +74,7 @@ export default function ProgressScreen() {
           </Text>
         </>
       )}
-    </SettingsSubPage>
+    </SettingsSubLayout>
   )
 }
 

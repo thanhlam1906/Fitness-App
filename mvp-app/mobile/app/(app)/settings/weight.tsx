@@ -6,9 +6,9 @@ import { WEIGHT_KG } from "@/features/profile/types"
 import { cn } from "@/lib/cn"
 import { formatDate, formatDayMonth, formatKg } from "@/lib/format"
 import { Button } from "~/components/ui/Button"
-import { MetricEditor } from "~/features/profile/MetricEditor"
-import { LoadState, SettingsSubPage } from "~/features/profile/SettingsSubPage"
-import { useBodyMetrics, useSaveBodyMetric } from "~/features/profile/useProfile"
+import { MetricEditor } from "~/features/profile/components/MetricEditor"
+import { LoadState, SettingsSubLayout } from "~/features/profile/components/SettingsSubLayout"
+import { useBodyMetrics, useSaveBodyMetric } from "~/features/profile/api/useProfile"
 import { colors } from "~/theme"
 
 const NUM = { fontVariant: ["tabular-nums" as const] }
@@ -34,9 +34,9 @@ export default function WeightHistoryScreen() {
 
   if (!metrics.data) {
     return (
-      <SettingsSubPage title="Lịch sử cân nặng">
+      <SettingsSubLayout title="Lịch sử cân nặng">
         <LoadState error={metrics.error} />
-      </SettingsSubPage>
+      </SettingsSubLayout>
     )
   }
 
@@ -45,7 +45,7 @@ export default function WeightHistoryScreen() {
   const latest = weighIns[0]
 
   return (
-    <SettingsSubPage title="Lịch sử cân nặng">
+    <SettingsSubLayout title="Lịch sử cân nặng">
       {latest ? (
         <>
           <View className="mt-4 flex-row items-baseline gap-2.5">
@@ -135,6 +135,6 @@ export default function WeightHistoryScreen() {
         )}
         {save.isError && <Text className="mt-2 text-sm text-danger">Lưu thất bại: {save.error.message}</Text>}
       </View>
-    </SettingsSubPage>
+    </SettingsSubLayout>
   )
 }

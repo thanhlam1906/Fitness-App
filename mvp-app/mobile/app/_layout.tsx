@@ -4,9 +4,9 @@ import { AppState } from "react-native"
 import { Stack } from "expo-router"
 import { StatusBar } from "expo-status-bar"
 import { QueryClient, QueryClientProvider, focusManager } from "@tanstack/react-query"
-import { AuthProvider } from "~/auth/AuthContext"
-import { hydrate } from "~/auth/tokenStorage"
-import { hydrateConversations } from "~/features/assistant/conversation"
+import { AuthProvider } from "~/features/auth/components/AuthContext"
+import { hydrate } from "~/features/auth/utils/tokenStorage"
+import { hydrateConversations } from "~/features/assistant/utils/conversation"
 import { colors } from "~/theme"
 
 const queryClient = new QueryClient()

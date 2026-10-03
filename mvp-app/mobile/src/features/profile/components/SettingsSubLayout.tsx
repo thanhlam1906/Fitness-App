@@ -4,7 +4,7 @@ import { BackLink } from "~/components/BackLink"
 import { Screen } from "~/components/Screen"
 
 /** Khung chung của các màn con trong Cài đặt: nút "‹ Cài đặt" và tiêu đề — như web. */
-export function SettingsSubPage({ title, children }: { title: string; children: ReactNode }) {
+export function SettingsSubLayout({ title, children }: { title: string; children: ReactNode }) {
   return (
     <Screen>
       <BackLink label="Cài đặt" fallback="/settings" />

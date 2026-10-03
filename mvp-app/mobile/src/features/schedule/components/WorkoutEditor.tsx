@@ -12,8 +12,8 @@ import {
   useRemoveScheduledExercise,
   useUpdateScheduledExercise,
   type ExerciseTarget,
-} from "~/features/schedule/useEditSchedule"
-import { useExercises } from "~/features/schedule/useExercises"
+} from "~/features/schedule/api/useEditSchedule"
+import { useExercises } from "~/features/exercise/api/useExercises"
 import { colors } from "~/theme"
 
 type SaveFn = (changes: ReturnType<typeof diffDraft>, setRows: Dispatch<SetStateAction<DraftRow[]>>) => Promise<void>

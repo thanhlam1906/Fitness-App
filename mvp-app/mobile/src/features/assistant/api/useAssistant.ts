@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query"
 import { ApiError, api } from "~/api/client"
-import { getStoredSession } from "~/auth/tokenStorage"
-import { updateConversation, type Conversation } from "~/features/assistant/conversation"
+import { getStoredSession } from "~/features/auth/utils/tokenStorage"
+import { updateConversation, type Conversation } from "~/features/assistant/utils/conversation"
 import type { AskResponse } from "@/features/assistant/types"
 
 // Id tin chỉ dùng làm key trên máy; Hermes không có crypto.randomUUID như trình duyệt.

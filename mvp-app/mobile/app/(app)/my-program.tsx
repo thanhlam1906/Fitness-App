@@ -13,11 +13,11 @@ import { Kicker } from "~/components/Kicker"
 import { Screen } from "~/components/Screen"
 import { Button } from "~/components/ui/Button"
 import { Card } from "~/components/ui/Card"
-import { useCurrentProgram } from "~/features/program/useCurrentProgram"
-import { ExerciseGuideSheet } from "~/features/schedule/ExerciseGuideSheet"
-import { TrainingDaysSheet } from "~/features/schedule/TrainingDaysSheet"
-import { useSchedule } from "~/features/schedule/useSchedule"
-import { ProgramDayEditSheet } from "~/features/schedule/WorkoutEditor"
+import { useCurrentProgram } from "~/features/program/api/useCurrentProgram"
+import { ExerciseGuideSheet } from "~/features/schedule/components/ExerciseGuideSheet"
+import { TrainingDaysSheet } from "~/features/schedule/components/TrainingDaysSheet"
+import { useSchedule } from "~/features/schedule/api/useSchedule"
+import { ProgramDayEditSheet } from "~/features/schedule/components/WorkoutEditor"
 import { colors } from "~/theme"
 
 const NUM = { fontVariant: ["tabular-nums" as const] }
@@ -34,7 +34,7 @@ const dayMonth = (iso: string) => {
 
 /**
  * "Chương trình của tôi" (doc/design-chuong-trinh-v1.md, mockup doc/mockup-program/demo.html) — bản
- * mobile của ProgramPage web: cả chương trình một lượt theo loại buổi, sửa một loại buổi, đổi ngày tập.
+ * mobile của MyProgramPage web: cả chương trình một lượt theo loại buổi, sửa một loại buổi, đổi ngày tập.
  */
 export default function MyProgramScreen() {
   const router = useRouter()

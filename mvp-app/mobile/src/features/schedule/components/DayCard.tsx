@@ -10,9 +10,9 @@ import { cn } from "@/lib/cn"
 import { formatKg, formatNumber } from "@/lib/format"
 import { LoadDeltaBadge } from "~/components/LoadDeltaBadge"
 import { Button } from "~/components/ui/Button"
-import { WrongFeedbackButton } from "~/components/WrongFeedbackButton"
-import { useSessionOfDay } from "~/features/schedule/useSchedule"
-import { WorkoutEditSheet } from "~/features/schedule/WorkoutEditor"
+import { WrongFeedbackButton } from "~/features/feedback/components/WrongFeedbackButton"
+import { useSessionOfDay } from "~/features/schedule/api/useSchedule"
+import { WorkoutEditSheet } from "~/features/schedule/components/WorkoutEditor"
 import { colors } from "~/theme"
 
 const WEEKDAY_SHORT = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"]

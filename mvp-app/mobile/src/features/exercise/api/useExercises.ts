@@ -6,7 +6,7 @@ import { api } from "~/api/client"
 // trang quản trị). Cùng queryKey để hai nơi dùng chung cache nếu sau này có thêm.
 export function useExercises() {
   return useQuery({
-    queryKey: ["admin", "exercises"],
+    queryKey: ["exercises"],
     queryFn: () => api.get<Exercise[]>("/exercises"),
   })
 }

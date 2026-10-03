@@ -8,9 +8,9 @@ import { BackLink } from "~/components/BackLink"
 import { Screen } from "~/components/Screen"
 import { Button } from "~/components/ui/Button"
 import { Card } from "~/components/ui/Card"
-import { VerdictChip } from "~/components/VerdictChip"
-import { WrongFeedbackButton } from "~/components/WrongFeedbackButton"
-import { useReview } from "~/features/review/useReviews"
+import { VerdictChip } from "~/features/review/components/VerdictChip"
+import { WrongFeedbackButton } from "~/features/feedback/components/WrongFeedbackButton"
+import { useReview } from "~/features/review/api/useReviews"
 
 const NUM = { fontVariant: ["tabular-nums" as const] }
 

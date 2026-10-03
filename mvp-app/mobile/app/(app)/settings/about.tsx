@@ -4,8 +4,8 @@ import { formatDate } from "@/lib/format"
 import { DisclaimerText } from "~/components/DisclaimerText"
 import { Kicker } from "~/components/Kicker"
 import { Logo } from "~/components/Logo"
-import { SettingsSubPage } from "~/features/profile/SettingsSubPage"
-import { useProfile } from "~/features/profile/useProfile"
+import { SettingsSubLayout } from "~/features/profile/components/SettingsSubLayout"
+import { useProfile } from "~/features/profile/api/useProfile"
 import { colors } from "~/theme"
 
 /** Cài đặt › Giới thiệu & điều khoản. Nội dung cam kết là đúng bản người dùng đã đồng ý ở onboarding. */
@@ -14,7 +14,7 @@ export default function AboutScreen() {
   const acceptedAt = profile.data?.disclaimerAt
 
   return (
-    <SettingsSubPage title="Giới thiệu">
+    <SettingsSubLayout title="Giới thiệu">
       <View className="mt-5 flex-row items-center gap-3">
         <Logo />
         <Text className="text-xs text-text-muted">Bản thử nghiệm</Text>
@@ -33,6 +33,6 @@ export default function AboutScreen() {
       <View className="mt-2">
         <DisclaimerText />
       </View>
-    </SettingsSubPage>
+    </SettingsSubLayout>
   )
 }

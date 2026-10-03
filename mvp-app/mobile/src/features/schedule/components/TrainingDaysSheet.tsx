@@ -6,7 +6,7 @@ import { toIso, WEEKDAY_LABELS } from "@/features/schedule/utils/weeks"
 import { cn } from "@/lib/cn"
 import { Kicker } from "~/components/Kicker"
 import { Sheet, SheetHeader } from "~/components/ui/Sheet"
-import { useChangeTrainingDays } from "~/features/schedule/useEditSchedule"
+import { useChangeTrainingDays } from "~/features/schedule/api/useEditSchedule"
 
 type Props = {
   open: boolean

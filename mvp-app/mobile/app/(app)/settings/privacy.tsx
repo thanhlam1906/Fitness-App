@@ -3,10 +3,10 @@ import { Pressable, Text, View } from "react-native"
 import { useIsMutating } from "@tanstack/react-query"
 import { Camera, MessageCircle, Trash2 } from "lucide-react-native"
 import { cn } from "@/lib/cn"
-import { useAuth } from "~/auth/AuthContext"
-import { clearConversation, getConversation, subscribe } from "~/features/assistant/conversation"
-import { ASK_KEY } from "~/features/assistant/useAssistant"
-import { SettingsSubPage } from "~/features/profile/SettingsSubPage"
+import { useAuth } from "~/features/auth/components/AuthContext"
+import { clearConversation, getConversation, subscribe } from "~/features/assistant/utils/conversation"
+import { ASK_KEY } from "~/features/assistant/api/useAssistant"
+import { SettingsSubLayout } from "~/features/profile/components/SettingsSubLayout"
 import { colors } from "~/theme"
 
 /**
@@ -24,7 +24,7 @@ export default function PrivacyScreen() {
   const disabled = count === 0 || !userId || answering
 
   return (
-    <SettingsSubPage title="Dữ liệu & quyền riêng tư">
+    <SettingsSubLayout title="Dữ liệu & quyền riêng tư">
       <View className="mt-4 gap-2.5">
         <Card Icon={Camera} title="Camera chấm form">
           Chỉ gửi <Text className="font-semibold text-text">toạ độ các khớp</Text>, không gửi hình hay video của bạn.
@@ -58,7 +58,7 @@ export default function PrivacyScreen() {
           không bị mất. Máy chủ vẫn lưu câu hỏi và trả lời để cải thiện trợ lý.
         </Card>
       </View>
-    </SettingsSubPage>
+    </SettingsSubLayout>
   )
 }
 

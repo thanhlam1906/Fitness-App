@@ -1,23 +1,19 @@
 import { useState } from "react"
 import { Pressable, Text, View } from "react-native"
-import { useMutation } from "@tanstack/react-query"
-import { api } from "~/api/client"
+import type { FeedbackSource } from "@/features/feedback/types"
 import { Input } from "~/components/ui/Input"
-
-type Source = { reviewResultId: string } | { loadDecisionId: string } | { assistantMessageId: string }
+import { useReportWrong } from "~/features/feedback/api/useReportWrong"
 
 /**
  * Nút "góp ý này sai" ở MỌI góp ý do máy sinh ra (bất biến sản phẩm) — kết quả chấm form, quyết
  * định tải, câu trả lời trợ lý. Một component thì không sót chỗ nào. Chữ mờ cỡ nhỏ, cố tình không
  * nổi: nó là lối thoát khi máy sai, không phải hành động app muốn người dùng làm. Như bản web.
  */
-export function WrongFeedbackButton({ source, hint }: { source: Source; hint?: string }) {
+export function WrongFeedbackButton({ source, hint }: { source: FeedbackSource; hint?: string }) {
   const [note, setNote] = useState("")
   const [open, setOpen] = useState(false)
 
-  const send = useMutation({
-    mutationFn: () => api.post("/feedback", { ...source, isWrong: true, note: note || null }),
-  })
+  const send = useReportWrong(source)
 
   if (send.isSuccess) {
     return <Text className="text-xs text-text-muted">Đã ghi nhận. Cảm ơn bạn.</Text>
@@ -46,7 +42,7 @@ export function WrongFeedbackButton({ source, hint }: { source: Source; hint?: s
       <View className="flex-row items-center gap-3">
         <Pressable
           accessibilityRole="button"
-          onPress={() => send.mutate()}
+          onPress={() => send.mutate(note)}
           disabled={send.isPending}
           className={`h-9 justify-center rounded-sm border border-border px-3 ${send.isPending ? "opacity-50" : ""}`}
         >

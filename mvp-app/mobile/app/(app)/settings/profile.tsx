@@ -4,9 +4,9 @@ import { EQUIPMENT_OPTIONS, EXPERIENCE_LEVELS, GOALS, HEIGHT_CM, WEIGHT_KG, labe
 import { cn } from "@/lib/cn"
 import { formatKg } from "@/lib/format"
 import { Checkbox } from "~/components/ui/Checkbox"
-import { MetricEditor } from "~/features/profile/MetricEditor"
-import { LoadState, SettingsSubPage } from "~/features/profile/SettingsSubPage"
-import { usePatchProfile, useProfile, useSaveBodyMetric } from "~/features/profile/useProfile"
+import { MetricEditor } from "~/features/profile/components/MetricEditor"
+import { LoadState, SettingsSubLayout } from "~/features/profile/components/SettingsSubLayout"
+import { usePatchProfile, useProfile, useSaveBodyMetric } from "~/features/profile/api/useProfile"
 
 /**
  * Cài đặt › Hồ sơ — bản mobile của ProfilePage web. Danh sách dòng CHỈ ĐỌC, bấm "Sửa" mở ô nhập tại
@@ -19,9 +19,9 @@ export default function ProfileScreen() {
 
   if (!profile.data) {
     return (
-      <SettingsSubPage title="Hồ sơ">
+      <SettingsSubLayout title="Hồ sơ">
         <LoadState error={profile.error} />
-      </SettingsSubPage>
+      </SettingsSubLayout>
     )
   }
 
@@ -29,7 +29,7 @@ export default function ProfileScreen() {
   const metric = data.latestBodyMetric
 
   return (
-    <SettingsSubPage title="Hồ sơ">
+    <SettingsSubLayout title="Hồ sơ">
       <View className="mt-5 gap-2">
         <EditableRow label="Cân nặng" value={formatKg(metric?.weightKg)} actionLabel="Cập nhật" accent>
           {(close) => (
@@ -116,7 +116,7 @@ export default function ProfileScreen() {
 
       {patch.isError && <Text className="mt-4 text-sm text-danger">Lưu thất bại: {patch.error.message}</Text>}
       {saveBodyMetric.isError && <Text className="mt-4 text-sm text-danger">Lưu thất bại: {saveBodyMetric.error.message}</Text>}
-    </SettingsSubPage>
+    </SettingsSubLayout>
   )
 }
 

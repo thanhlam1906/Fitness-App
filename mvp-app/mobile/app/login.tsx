@@ -5,8 +5,8 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { ApiError } from "~/api/client"
-import { useAuth } from "~/auth/AuthContext"
-import { AuthField, AuthLayout, OrDivider, SocialButtons } from "~/auth/AuthLayout"
+import { useAuth } from "~/features/auth/components/AuthContext"
+import { AuthField, AuthLayout, OrDivider, SocialButtons } from "~/features/auth/components/AuthLayout"
 import { Button } from "~/components/ui/Button"
 
 // Chỉ kiểm bắt buộc: z.email() chặt hơn @Email của backend, tài khoản cũ có thể bị chặn oan.

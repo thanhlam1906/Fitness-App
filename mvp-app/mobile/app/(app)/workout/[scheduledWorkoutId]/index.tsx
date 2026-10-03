@@ -3,12 +3,12 @@ import { useLocalSearchParams, useRouter } from "expo-router"
 import { ApiError } from "~/api/client"
 import { Kicker } from "~/components/Kicker"
 import { Screen } from "~/components/Screen"
-import { SegmentBar, type Segment } from "~/components/SegmentBar"
+import { SegmentBar, type Segment } from "~/features/workout/components/SegmentBar"
 import { Button } from "~/components/ui/Button"
 import { Card } from "~/components/ui/Card"
-import { useSchedule } from "~/features/schedule/useSchedule"
-import { ExerciseLogger } from "~/features/workout/ExerciseLogger"
-import { useWorkoutSession } from "~/features/workout/useWorkoutSession"
+import { useSchedule } from "~/features/schedule/api/useSchedule"
+import { ExerciseLogger } from "~/features/workout/components/ExerciseLogger"
+import { useWorkoutSession } from "~/features/workout/api/useWorkoutSession"
 
 /**
  * Màn 5 concept-frontend-v1.md — buổi tập, log từng set. Bản mobile của WorkoutPage web. Xem MỘT

@@ -1,6 +1,6 @@
 import { View } from "react-native"
-import { Kicker } from "./Kicker"
-import { SegmentBar, type Segment } from "./SegmentBar"
+import { Kicker } from "~/components/Kicker"
+import { SegmentBar, type Segment } from "~/features/workout/components/SegmentBar"
 
 /** Luồng tuyến tính: bước trước `current` là done, sau là todo. */
 function linearSegments(total: number, current: number): Segment[] {

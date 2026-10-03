@@ -1,4 +1,4 @@
-import { clearSession, setSession } from "~/auth/tokenStorage"
+import { clearSession, setSession } from "~/features/auth/utils/tokenStorage"
 import { api, ApiError, onLoggedOut } from "./client"
 
 type Reply = { status: number; body?: unknown }

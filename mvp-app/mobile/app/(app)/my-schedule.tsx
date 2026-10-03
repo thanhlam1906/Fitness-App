@@ -1,10 +1,10 @@
 import { Text, View } from "react-native"
 import { BackLink } from "~/components/BackLink"
 import { Screen } from "~/components/Screen"
-import { ScheduleBuilder } from "~/features/schedule/ScheduleBuilder"
-import { useOpenFirstWorkout } from "~/features/schedule/useSchedule"
+import { ScheduleBuilder } from "~/features/schedule/components/ScheduleBuilder"
+import { useOpenFirstWorkout } from "~/features/schedule/api/useSchedule"
 
-/** "Tự thiết kế lịch" (doc/design-ui-m3-v1.md §3) — bản mobile của MyProgramPage web. */
+/** "Tự thiết kế lịch" (doc/design-ui-m3-v1.md §3) — bản mobile của MySchedulePage web. */
 export default function MyScheduleScreen() {
   const openFirstWorkout = useOpenFirstWorkout()
   return (

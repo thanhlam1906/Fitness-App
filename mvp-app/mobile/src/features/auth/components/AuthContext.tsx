@@ -1,11 +1,11 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 import { useQueryClient } from "@tanstack/react-query"
-import { api, onLoggedOut } from "~/api/client"
-import { clearAllConversations } from "~/features/assistant/conversation"
+import { onLoggedOut } from "~/api/client"
+import { clearAllConversations } from "~/features/assistant/utils/conversation"
+import type { AuthTokens } from "@/features/auth/types"
 import type { RegisterPayload } from "@/features/auth/types/registerSchema"
-import { clearSession, getRefreshToken, getStoredSession, setSession } from "./tokenStorage"
-
-type AuthTokens = { accessToken: string; refreshToken: string; userId: string; role: string }
+import { authApi } from "~/features/auth/api/authApi"
+import { clearSession, getRefreshToken, getStoredSession, setSession } from "~/features/auth/utils/tokenStorage"
 
 type AuthContextValue = {
   userId: string | null
@@ -42,11 +42,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function login(email: string, password: string) {
-    applyTokens(await api.post<AuthTokens>("/auth/login", { email, password }))
+    applyTokens(await authApi.login(email, password))
   }
 
   async function register(payload: RegisterPayload) {
-    applyTokens(await api.post<AuthTokens>("/auth/register", payload))
+    applyTokens(await authApi.register(payload))
   }
 
   function logout() {
@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSessionState(null)
     // best-effort: thu hồi refresh token ở server, không chặn logout nếu request lỗi
     if (refreshToken) {
-      api.post("/auth/logout", { refreshToken }).catch(() => {})
+      authApi.logout(refreshToken).catch(() => {})
     }
   }
 

@@ -4,13 +4,13 @@ import { useLocalSearchParams, useRouter } from "expo-router"
 import type { SetLogResponse } from "@/features/workout/types"
 import { cn } from "@/lib/cn"
 import { formatDayMonth, formatNumber } from "@/lib/format"
-import { BodyMap } from "~/components/BodyMap"
+import { BodyMap } from "~/features/workout/components/BodyMap"
 import { Kicker } from "~/components/Kicker"
 import { Screen } from "~/components/Screen"
 import { Button } from "~/components/ui/Button"
 import { Card } from "~/components/ui/Card"
-import { useSchedule } from "~/features/schedule/useSchedule"
-import { useFinishSession, useWorkoutSession } from "~/features/workout/useWorkoutSession"
+import { useSchedule } from "~/features/schedule/api/useSchedule"
+import { useFinishSession, useWorkoutSession } from "~/features/workout/api/useWorkoutSession"
 
 const NUM = { fontVariant: ["tabular-nums" as const] }
 const RPE_CHOICES = [4, 5, 6, 7, 8, 9, 10]
