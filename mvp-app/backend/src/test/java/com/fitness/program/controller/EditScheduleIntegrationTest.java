@@ -4,10 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fitness.auth.entity.Role;
 import com.fitness.content.repository.ExerciseRepository;
+import com.fitness.program.dto.AddExerciseRequest;
 import com.fitness.program.dto.CreateCustomProgramRequest;
 import com.fitness.program.dto.ScheduleResponse;
-import com.fitness.program.dto.ScheduledExerciseView;
-import com.fitness.program.dto.ScheduledWorkoutView;
+import com.fitness.program.dto.ScheduledExerciseResponse;
+import com.fitness.program.dto.ScheduledWorkoutResponse;
+import com.fitness.program.dto.UpdateExerciseRequest;
 import com.fitness.program.entity.ScheduledWorkout;
 import com.fitness.program.repository.ScheduledWorkoutRepository;
 import com.fitness.program.service.ProgramService;
@@ -43,13 +45,13 @@ class EditScheduleIntegrationTest extends PostgresIntegrationTest {
 		var user = newAuthedUser(Role.USER);
 		createTwoWeekProgram(user.userId());
 		ScheduleResponse before = getSchedule(user.headers());
-		ScheduledExerciseView target = before.workouts().get(0).exercises().get(0);
+		ScheduledExerciseResponse target = before.workouts().get(0).exercises().get(0);
 
 		var updated = rest.exchange(
 				"/api/v1/schedule/exercises/" + target.id(), HttpMethod.PUT,
-				new HttpEntity<>(new ScheduleController.UpdateExerciseRequest(
+				new HttpEntity<>(new UpdateExerciseRequest(
 						5, 6, 6, new BigDecimal("42.50"), 120), user.headers()),
-				ScheduledExerciseView.class);
+				ScheduledExerciseResponse.class);
 
 		assertThat(updated.getStatusCode()).isEqualTo(HttpStatus.OK);
 		assertThat(updated.getBody().targetSets()).isEqualTo(5);
@@ -67,15 +69,15 @@ class EditScheduleIntegrationTest extends PostgresIntegrationTest {
 	void addAndRemove_changeOnlyThatWorkoutsExerciseList() {
 		var user = newAuthedUser(Role.USER);
 		createTwoWeekProgram(user.userId());
-		ScheduledWorkoutView first = getSchedule(user.headers()).workouts().get(0);
+		ScheduledWorkoutResponse first = getSchedule(user.headers()).workouts().get(0);
 		int sizeBefore = first.exercises().size();
 		UUID rowId = exercises.findBySlug("bent-over-row").orElseThrow().getId();
 
 		var added = rest.exchange(
 				"/api/v1/schedule/workouts/" + first.id() + "/exercises", HttpMethod.POST,
-				new HttpEntity<>(new ScheduleController.AddExerciseRequest(
+				new HttpEntity<>(new AddExerciseRequest(
 						rowId, 3, 30, 30, null, 60), user.headers()),
-				ScheduledExerciseView.class);
+				ScheduledExerciseResponse.class);
 
 		assertThat(added.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 		assertThat(added.getBody().orderIndex()).isEqualTo(sizeBefore + 1);
@@ -93,14 +95,14 @@ class EditScheduleIntegrationTest extends PostgresIntegrationTest {
 	void update_onFinishedWorkout_returns409() {
 		var user = newAuthedUser(Role.USER);
 		createTwoWeekProgram(user.userId());
-		ScheduledWorkoutView first = getSchedule(user.headers()).workouts().get(0);
+		ScheduledWorkoutResponse first = getSchedule(user.headers()).workouts().get(0);
 		ScheduledWorkout workout = scheduledWorkouts.findById(first.id()).orElseThrow();
 		workout.updateStatus("DONE");
 		scheduledWorkouts.save(workout);
 
 		var resp = rest.exchange(
 				"/api/v1/schedule/exercises/" + first.exercises().get(0).id(), HttpMethod.PUT,
-				new HttpEntity<>(new ScheduleController.UpdateExerciseRequest(
+				new HttpEntity<>(new UpdateExerciseRequest(
 						5, 5, 5, null, null), user.headers()),
 				String.class);
 
@@ -118,7 +120,7 @@ class EditScheduleIntegrationTest extends PostgresIntegrationTest {
 
 		var resp = rest.exchange(
 				"/api/v1/schedule/exercises/" + targetId, HttpMethod.PUT,
-				new HttpEntity<>(new ScheduleController.UpdateExerciseRequest(
+				new HttpEntity<>(new UpdateExerciseRequest(
 						5, 5, 5, null, null), stranger.headers()),
 				String.class);
 
@@ -130,8 +132,8 @@ class EditScheduleIntegrationTest extends PostgresIntegrationTest {
 		UUID pushUpId = exercises.findBySlug("push-up").orElseThrow().getId();
 		LocalDate monday = LocalDate.of(2026, 1, 1).with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY));
 		programService.createCustomProgram(userId, new CreateCustomProgramRequest(monday, 2, List.of(
-				new CreateCustomProgramRequest.CustomDay(1, "Đẩy", List.of(
-						new CreateCustomProgramRequest.CustomExercise(pushUpId, 3, 8, 12, null, 90))))));
+				new CreateCustomProgramRequest.CustomDayRequest(1, "Đẩy", List.of(
+						new CreateCustomProgramRequest.CustomExerciseRequest(pushUpId, 3, 8, 12, null, 90))))));
 	}
 
 	private ScheduleResponse getSchedule(HttpHeaders headers) {

@@ -10,7 +10,7 @@ import com.fitness.content.entity.ProgramTemplate;
 import com.fitness.content.repository.ProgramTemplateRepository;
 import com.fitness.profile.entity.Profile;
 import com.fitness.profile.repository.ProfileRepository;
-import com.fitness.program.dto.TemplateCandidate;
+import com.fitness.program.dto.TemplateCandidateResponse;
 import com.fitness.program.entity.ScheduledExercise;
 import com.fitness.program.entity.ScheduledWorkout;
 import com.fitness.program.repository.ProgramRepository;
@@ -64,14 +64,14 @@ class ProgramServiceIntegrationTest extends PostgresIntegrationTest {
 	void candidatesMatchSessionsAndEquipment() {
 		saveProfile((short) 3, "BARBELL_RACK");
 
-		List<TemplateCandidate> candidates = programService.findCandidateTemplates(userId);
+		List<TemplateCandidateResponse> candidates = programService.findCandidateTemplates(userId);
 
 		// Template dùng thiết bị người dùng có đứng trước template tay không cùng số buổi.
 		assertThat(candidates.get(0).slug()).isEqualTo("full-body-3x");
 		assertThat(candidates.get(0).matchesSessions()).isTrue();
 		assertThat(candidates).allMatch(c -> Set.of("BARBELL_RACK").containsAll(c.requiredEquipment()));
 		// Đúng số buổi đứng trước, lệch số buổi xếp sau.
-		assertThat(candidates).extracting(TemplateCandidate::matchesSessions)
+		assertThat(candidates).extracting(TemplateCandidateResponse::matchesSessions)
 				.isSortedAccordingTo((a, b) -> Boolean.compare(b, a));
 		// §5.1: người dùng phải XEM ĐƯỢC cấu trúc trước khi xác nhận
 		assertThat(candidates.get(0).days()).isNotEmpty();
@@ -83,21 +83,21 @@ class ProgramServiceIntegrationTest extends PostgresIntegrationTest {
 		// Hồ sơ thật gây lỗi: 6 buổi/tuần, chỉ có giá gánh tạ — trước đây ra danh sách rỗng.
 		saveProfile((short) 6, "BARBELL_RACK");
 
-		List<TemplateCandidate> candidates = programService.findCandidateTemplates(userId);
+		List<TemplateCandidateResponse> candidates = programService.findCandidateTemplates(userId);
 
 		assertThat(candidates).filteredOn(c -> c.slug().equals("upper-lower-4x"))
-				.singleElement().extracting(TemplateCandidate::matchesSessions).isEqualTo(false);
+				.singleElement().extracting(TemplateCandidateResponse::matchesSessions).isEqualTo(false);
 	}
 
 	@Test
 	void candidatesNeverNeedEquipmentTheUserLacks() {
 		saveProfile((short) 3, "DUMBBELL");
 
-		List<TemplateCandidate> candidates = programService.findCandidateTemplates(userId);
+		List<TemplateCandidateResponse> candidates = programService.findCandidateTemplates(userId);
 
 		assertThat(candidates).isNotEmpty();
 		assertThat(candidates).allMatch(c -> Set.of("DUMBBELL").containsAll(c.requiredEquipment()));
-		assertThat(candidates).extracting(TemplateCandidate::slug).contains("dumbbell-full-body");
+		assertThat(candidates).extracting(TemplateCandidateResponse::slug).contains("dumbbell-full-body");
 	}
 
 	@Test
@@ -107,7 +107,7 @@ class ProgramServiceIntegrationTest extends PostgresIntegrationTest {
 				saveProfile(sessions, equipment);
 				assertThat(programService.findCandidateTemplates(userId))
 						.as("%s, %d buổi", equipment, sessions)
-						.anyMatch(TemplateCandidate::matchesSessions);
+						.anyMatch(TemplateCandidateResponse::matchesSessions);
 			}
 		}
 	}

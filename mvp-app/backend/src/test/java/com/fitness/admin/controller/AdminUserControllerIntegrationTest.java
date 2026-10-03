@@ -2,6 +2,8 @@ package com.fitness.admin.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fitness.admin.dto.AdminUserDetailResponse;
+import com.fitness.admin.dto.AdminUserRowResponse;
 import com.fitness.auth.entity.Role;
 import com.fitness.profile.entity.Profile;
 import com.fitness.profile.repository.ProfileRepository;
@@ -42,12 +44,12 @@ class AdminUserControllerIntegrationTest extends PostgresIntegrationTest {
 		HttpHeaders admin = newAuthedUser(Role.ADMIN).headers();
 
 		var list = rest.exchange("/api/v1/admin/users", HttpMethod.GET,
-				new HttpEntity<>(admin), AdminUserController.AdminUserRow[].class);
+				new HttpEntity<>(admin), AdminUserRowResponse[].class);
 		assertThat(list.getStatusCode()).isEqualTo(HttpStatus.OK);
-		assertThat(list.getBody()).extracting(AdminUserController.AdminUserRow::id).contains(target.userId());
+		assertThat(list.getBody()).extracting(AdminUserRowResponse::id).contains(target.userId());
 
 		var detail = rest.exchange("/api/v1/admin/users/" + target.userId(), HttpMethod.GET,
-				new HttpEntity<>(admin), AdminUserController.AdminUserDetail.class).getBody();
+				new HttpEntity<>(admin), AdminUserDetailResponse.class).getBody();
 		assertThat(detail.goal()).isEqualTo("FAT_LOSS");
 		assertThat(detail.equipment()).containsExactly("DUMBBELL");
 		assertThat(detail.disclaimerAt()).isNotNull();

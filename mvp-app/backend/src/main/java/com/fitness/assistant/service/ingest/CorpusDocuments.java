@@ -1,5 +1,9 @@
 package com.fitness.assistant.service.ingest;
 
+import com.fitness.assistant.dto.DocChunkResponse;
+import com.fitness.assistant.dto.DocumentDetailResponse;
+import com.fitness.assistant.dto.DocumentRowResponse;
+import com.fitness.assistant.dto.WrongAnswerResponse;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
@@ -14,21 +18,6 @@ import org.springframework.web.server.ResponseStatusException;
 /** Tài liệu trong kho kèm số câu trả lời bị báo sai; gỡ tài liệu (doc/design-nap-tai-lieu-v1.md §4–5). */
 @Service
 public class CorpusDocuments {
-
-	public record DocumentRow(UUID id, String title, String source, Instant ingestedAt, int chunkCount,
-			int wrongCount) {
-	}
-
-	public record DocChunk(UUID id, int ord, String heading, String content) {
-	}
-
-	public record WrongAnswer(UUID messageId, String question, String answer, String note, Instant createdAt,
-			List<Integer> chunkOrds) {
-	}
-
-	public record DocumentDetail(UUID id, String title, String source, Instant ingestedAt, int chunkCount,
-			int wrongCount, List<DocChunk> chunks, List<WrongAnswer> wrongAnswers) {
-	}
 
 	// Câu trả lời m "bị báo sai" với một tài liệu: có góp ý is_wrong VÀ đã trích ít nhất một đoạn
 	// của tài liệu đó. Đếm theo câu trả lời, không theo số lần bấm. %s = id tài liệu (cột hoặc ?).
@@ -49,21 +38,21 @@ public class CorpusDocuments {
 		this.jdbc = jdbc;
 	}
 
-	public List<DocumentRow> list() {
+	public List<DocumentRowResponse> list() {
 		return jdbc.query(SELECT_DOC + " ORDER BY d.ingested_at DESC", (rs, i) -> toRow(rs));
 	}
 
-	public DocumentDetail detail(UUID id) {
-		DocumentRow doc = jdbc.query(SELECT_DOC + " WHERE d.id = ?", (rs, i) -> toRow(rs), id).stream()
+	public DocumentDetailResponse detail(UUID id) {
+		DocumentRowResponse doc = jdbc.query(SELECT_DOC + " WHERE d.id = ?", (rs, i) -> toRow(rs), id).stream()
 				.findFirst().orElseThrow(CorpusDocuments::notFound);
-		List<DocChunk> chunks = jdbc.query(
+		List<DocChunkResponse> chunks = jdbc.query(
 				"SELECT id, ord, heading_path, content FROM doc_chunks WHERE document_id = ? ORDER BY ord",
-				(rs, i) -> new DocChunk(rs.getObject("id", UUID.class), rs.getInt("ord"),
+				(rs, i) -> new DocChunkResponse(rs.getObject("id", UUID.class), rs.getInt("ord"),
 						rs.getString("heading_path"), rs.getString("content")),
 				id);
 		// Câu hỏi = tin USER ngay trước trong cùng thread. Không trả user id: admin cần biết tài liệu
 		// sai ở đâu, không cần biết ai hỏi.
-		List<WrongAnswer> wrong = jdbc.query("""
+		List<WrongAnswerResponse> wrong = jdbc.query("""
 				SELECT m.id, m.content, m.created_at,
 				       (SELECT q.content FROM assistant_messages q
 				         WHERE q.thread_id = m.thread_id AND q.user_id = m.user_id AND q.role = 'USER'
@@ -77,11 +66,11 @@ public class CorpusDocuments {
 				WHERE %s
 				ORDER BY m.created_at DESC
 				""".formatted(WRONG_FOR_DOC.formatted("?")),
-				(rs, i) -> new WrongAnswer(rs.getObject("id", UUID.class), rs.getString("question"),
+				(rs, i) -> new WrongAnswerResponse(rs.getObject("id", UUID.class), rs.getString("question"),
 						rs.getString("content"), rs.getString("note"), rs.getTimestamp("created_at").toInstant(),
 						Arrays.asList((Integer[]) rs.getArray("ords").getArray())),
 				id, id);
-		return new DocumentDetail(doc.id(), doc.title(), doc.source(), doc.ingestedAt(), doc.chunkCount(),
+		return new DocumentDetailResponse(doc.id(), doc.title(), doc.source(), doc.ingestedAt(), doc.chunkCount(),
 				doc.wrongCount(), chunks, wrong);
 	}
 
@@ -93,8 +82,8 @@ public class CorpusDocuments {
 		}
 	}
 
-	private static DocumentRow toRow(ResultSet rs) throws SQLException {
-		return new DocumentRow(rs.getObject("id", UUID.class), rs.getString("title"), rs.getString("source"),
+	private static DocumentRowResponse toRow(ResultSet rs) throws SQLException {
+		return new DocumentRowResponse(rs.getObject("id", UUID.class), rs.getString("title"), rs.getString("source"),
 				rs.getTimestamp("ingested_at").toInstant(), rs.getInt("chunk_count"), rs.getInt("wrong_count"));
 	}
 

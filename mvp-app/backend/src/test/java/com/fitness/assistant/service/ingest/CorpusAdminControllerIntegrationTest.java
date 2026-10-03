@@ -6,6 +6,10 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
+import com.fitness.assistant.dto.ChunkPreviewResponse;
+import com.fitness.assistant.dto.PublishResponse;
+import com.fitness.assistant.dto.UploadDetailResponse;
+import com.fitness.assistant.dto.UploadRowResponse;
 import com.fitness.auth.entity.Role;
 import com.fitness.support.FakeEmbeddings;
 import com.fitness.support.PostgresIntegrationTest;
@@ -97,13 +101,13 @@ class CorpusAdminControllerIntegrationTest extends PostgresIntegrationTest {
 		});
 		HttpHeaders admin = admin();
 
-		CorpusUploadService.UploadRow created = upload(admin, unique("bai-4.pdf"));
+		UploadRowResponse created = upload(admin, unique("bai-4.pdf"));
 
 		assertThat(created.status()).isEqualTo("PROCESSING");
 		assertThat(awaitDone(created.id())).isEqualTo("READY");
 		var detail = rest.exchange(BASE + "/" + created.id(), HttpMethod.GET, new HttpEntity<>(admin),
-				CorpusUploadService.UploadDetail.class).getBody();
-		assertThat(detail.chunks()).extracting(CorpusUploadService.ChunkPreview::heading)
+				UploadDetailResponse.class).getBody();
+		assertThat(detail.chunks()).extracting(ChunkPreviewResponse::heading)
 				.containsExactly("Giấc ngủ", "Tuần giảm tải");
 		assertThat(detail.replaces()).isNull();
 		assertThat(Files.exists(seen.get())).isFalse();
@@ -117,7 +121,7 @@ class CorpusAdminControllerIntegrationTest extends PostgresIntegrationTest {
 			throw new PdfExtractor.ExtractionFailed(PdfExtractor.HYBRID_DOWN, null);
 		});
 
-		CorpusUploadService.UploadRow created = upload(admin(), unique("scan.pdf"));
+		UploadRowResponse created = upload(admin(), unique("scan.pdf"));
 
 		assertThat(awaitDone(created.id())).isEqualTo("FAILED");
 		assertThat(jdbc.queryForObject("SELECT error FROM corpus_uploads WHERE id = ?", String.class, created.id()))
@@ -129,7 +133,7 @@ class CorpusAdminControllerIntegrationTest extends PostgresIntegrationTest {
 	void extractedNothing_failsWithNoText() throws Exception {
 		when(extractor.extract(any())).thenReturn("  \n");
 
-		CorpusUploadService.UploadRow created = upload(admin(), unique("trang-trang.pdf"));
+		UploadRowResponse created = upload(admin(), unique("trang-trang.pdf"));
 
 		assertThat(awaitDone(created.id())).isEqualTo("FAILED");
 		assertThat(jdbc.queryForObject("SELECT error FROM corpus_uploads WHERE id = ?", String.class, created.id()))
@@ -144,7 +148,7 @@ class CorpusAdminControllerIntegrationTest extends PostgresIntegrationTest {
 		UUID id = upload(admin, name).id();
 		awaitDone(id);
 
-		var resp = publish(admin, id, "Bài 4: Phục hồi", CorpusLoader.Published.class);
+		var resp = publish(admin, id, "Bài 4: Phục hồi", PublishResponse.class);
 
 		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
 		assertThat(resp.getBody().chunkCount()).isEqualTo(2);
@@ -160,18 +164,18 @@ class CorpusAdminControllerIntegrationTest extends PostgresIntegrationTest {
 		String name = unique("dinh-duong.pdf");
 		UUID first = upload(admin, name).id();
 		awaitDone(first);
-		publish(admin, first, "Bản cũ", CorpusLoader.Published.class);
+		publish(admin, first, "Bản cũ", PublishResponse.class);
 
 		UUID second = upload(admin, name).id();
 		awaitDone(second);
 		var rows = rest.exchange(BASE, HttpMethod.GET, new HttpEntity<>(admin),
-				CorpusUploadService.UploadRow[].class).getBody();
-		CorpusUploadService.UploadRow row = Arrays.stream(rows).filter(r -> r.id().equals(second)).findFirst()
+				UploadRowResponse[].class).getBody();
+		UploadRowResponse row = Arrays.stream(rows).filter(r -> r.id().equals(second)).findFirst()
 				.orElseThrow();
 		assertThat(row.replaces().title()).isEqualTo("Bản cũ");
 		assertThat(row.replaces().chunkCount()).isEqualTo(2);
 
-		publish(admin, second, "Bản mới", CorpusLoader.Published.class);
+		publish(admin, second, "Bản mới", PublishResponse.class);
 
 		assertThat(jdbc.queryForList("SELECT title FROM documents WHERE source = ?", String.class, name))
 				.containsExactly("Bản mới");
@@ -275,9 +279,9 @@ class CorpusAdminControllerIntegrationTest extends PostgresIntegrationTest {
 		return rest.exchange(BASE, HttpMethod.POST, multipart(headers, fileName, bytes), String.class);
 	}
 
-	private CorpusUploadService.UploadRow upload(HttpHeaders headers, String fileName) {
+	private UploadRowResponse upload(HttpHeaders headers, String fileName) {
 		var resp = rest.exchange(BASE, HttpMethod.POST, multipart(headers, fileName, PDF_BYTES),
-				CorpusUploadService.UploadRow.class);
+				UploadRowResponse.class);
 		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.ACCEPTED);
 		return resp.getBody();
 	}

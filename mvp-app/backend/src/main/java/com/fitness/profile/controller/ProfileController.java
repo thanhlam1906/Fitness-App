@@ -2,6 +2,7 @@ package com.fitness.profile.controller;
 
 import com.fitness.common.CurrentUser;
 import com.fitness.profile.dto.BodyMetricRequest;
+import com.fitness.profile.dto.BodyMetricResponse;
 import com.fitness.profile.dto.ProfilePatchRequest;
 import com.fitness.profile.dto.ProfileResponse;
 import com.fitness.profile.entity.BodyMetric;
@@ -70,13 +71,13 @@ public class ProfileController {
 
 	/** Màn Cài đặt › Lịch sử cân nặng: mọi lần đo, mới nhất trước. */
 	@GetMapping("/body-metrics")
-	public List<ProfileResponse.BodyMetricView> bodyMetrics() {
+	public List<BodyMetricResponse> bodyMetrics() {
 		return bodyMetrics.findByUserIdOrderByMeasuredOnDesc(currentUser.id()).stream()
-				.map(ProfileResponse.BodyMetricView::of)
+				.map(BodyMetricResponse::of)
 				.toList();
 	}
 
-	private ProfileResponse.BodyMetricView latestBodyMetric(UUID userId) {
-		return ProfileResponse.BodyMetricView.latestOf(bodyMetrics.findByUserIdOrderByMeasuredOnDesc(userId));
+	private BodyMetricResponse latestBodyMetric(UUID userId) {
+		return BodyMetricResponse.latestOf(bodyMetrics.findByUserIdOrderByMeasuredOnDesc(userId));
 	}
 }

@@ -5,6 +5,7 @@ import com.fitness.content.entity.Exercise;
 import com.fitness.content.entity.FormCheck;
 import com.fitness.content.repository.ExerciseRepository;
 import com.fitness.content.repository.FormCheckRepository;
+import com.fitness.review.dto.ChangeExerciseRequest;
 import com.fitness.review.dto.ReviewResponse;
 import com.fitness.review.entity.ReviewResult;
 import com.fitness.review.entity.VideoClip;
@@ -53,13 +54,10 @@ public class ReviewController {
 	private static final int MAX_CLIPS = 3;
 	// Nặng trước nhẹ sau: người dùng đọc lỗi trước, mục đạt cuối cùng.
 	private static final List<String> SEVERITY = List.of("FAIL", "WARN", "LOW_CONFIDENCE", "NOT_APPLICABLE", "PASS");
-	private static final Comparator<ReviewResponse.CheckResult> CHECK_ORDER = Comparator
-			.comparing(ReviewResponse.CheckResult::isPrimary).reversed()
+	private static final Comparator<ReviewResponse.CheckResultResponse> CHECK_ORDER = Comparator
+			.comparing(ReviewResponse.CheckResultResponse::isPrimary).reversed()
 			.thenComparingInt(c -> SEVERITY.indexOf(c.verdict()))
 			.thenComparing(c -> String.valueOf(c.name() != null ? c.name() : c.code()));
-
-	public record ChangeExerciseRequest(@NotNull UUID exerciseId) {
-	}
 
 	private final VideoReviewRequestRepository requests;
 	private final VideoClipRepository clips;
@@ -183,8 +181,8 @@ public class ReviewController {
 				: formChecks.findByExerciseId(request.getExerciseId()).stream()
 						.collect(Collectors.toMap(FormCheck::getId, FormCheck::getCode));
 
-		List<ReviewResponse.CheckResult> checks = rows.stream()
-				.map(r -> new ReviewResponse.CheckResult(
+		List<ReviewResponse.CheckResultResponse> checks = rows.stream()
+				.map(r -> new ReviewResponse.CheckResultResponse(
 						r.getId(), r.getFormCheckId() == null ? null : codeByFormCheck.get(r.getFormCheckId()),
 						r.getNameVi(), r.getVerdict(), r.getConfidence(), r.getMeasured(), r.getCueTextVi(),
 						r.isPrimary()))

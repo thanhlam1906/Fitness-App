@@ -6,7 +6,9 @@ import com.fitness.program.dto.CreateCustomProgramRequest;
 import com.fitness.program.dto.CreateProgramRequest;
 import com.fitness.program.dto.CreateProgramResponse;
 import com.fitness.program.dto.CurrentProgramResponse;
-import com.fitness.program.dto.TemplateCandidate;
+import com.fitness.program.dto.TemplateCandidateResponse;
+import com.fitness.program.dto.TrainingDaysRequest;
+import com.fitness.program.dto.TrainingDaysResponse;
 import com.fitness.program.entity.Program;
 import com.fitness.program.repository.ProgramRepository;
 import com.fitness.program.service.ProgramEditService;
@@ -51,7 +53,7 @@ public class ProgramController {
 	}
 
 	@GetMapping("/candidates")
-	public List<TemplateCandidate> candidates() {
+	public List<TemplateCandidateResponse> candidates() {
 		return programService.findCandidateTemplates(currentUser.id());
 	}
 
@@ -89,9 +91,4 @@ public class ProgramController {
 		return new TrainingDaysResponse(programEdits.changeTrainingDays(currentUser.id(), request.days()));
 	}
 
-	public record TrainingDaysRequest(@NotNull List<Integer> days) {
-	}
-
-	public record TrainingDaysResponse(int movedWorkouts) {
-	}
 }

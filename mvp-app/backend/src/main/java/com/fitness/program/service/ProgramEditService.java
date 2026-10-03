@@ -60,13 +60,13 @@ public class ProgramEditService {
 				.filter(Objects::nonNull).anyMatch(list -> list.contains(null))) {
 			throw badRequest("Dữ liệu sửa buổi không hợp lệ");
 		}
-		List<EditDayRequest.ExerciseTarget> update = orEmpty(request.update());
-		List<EditDayRequest.ExerciseTarget> add = orEmpty(request.add());
+		List<EditDayRequest.ExerciseTargetRequest> update = orEmpty(request.update());
+		List<EditDayRequest.ExerciseTargetRequest> add = orEmpty(request.add());
 		Set<UUID> remove = Set.copyOf(orEmpty(request.remove()));
 		if (Stream.concat(update.stream(), add.stream()).anyMatch(t -> t.targetRepsMax() < t.targetReps())) {
 			throw badRequest("Rep đến phải lớn hơn hoặc bằng rep từ");
 		}
-		for (EditDayRequest.ExerciseTarget t : add) {
+		for (EditDayRequest.ExerciseTargetRequest t : add) {
 			if (!exercises.existsById(t.exerciseId())) {
 				throw badRequest("Bài tập không tồn tại");
 			}
@@ -81,8 +81,8 @@ public class ProgramEditService {
 					HttpStatus.CONFLICT, "Không còn buổi " + request.label() + " nào chưa tập");
 		}
 
-		Map<UUID, EditDayRequest.ExerciseTarget> updateByExercise = update.stream()
-				.collect(Collectors.toMap(EditDayRequest.ExerciseTarget::exerciseId, Function.identity(), (a, b) -> b));
+		Map<UUID, EditDayRequest.ExerciseTargetRequest> updateByExercise = update.stream()
+				.collect(Collectors.toMap(EditDayRequest.ExerciseTargetRequest::exerciseId, Function.identity(), (a, b) -> b));
 		for (ScheduledWorkout workout : open) {
 			List<ScheduledExercise> rows = scheduledExercises.findByScheduledWorkoutId(workout.getId());
 			Set<UUID> present = new HashSet<>();
@@ -92,7 +92,7 @@ public class ProgramEditService {
 					continue;
 				}
 				present.add(row.getExerciseId());
-				EditDayRequest.ExerciseTarget t = updateByExercise.get(row.getExerciseId());
+				EditDayRequest.ExerciseTargetRequest t = updateByExercise.get(row.getExerciseId());
 				if (t != null) {
 					row.updateTargets(t.targetSets(), t.targetReps(), t.targetRepsMax(), t.targetLoadKg(),
 							row.getRestSeconds() == null ? null : (int) row.getRestSeconds());
@@ -101,7 +101,7 @@ public class ProgramEditService {
 			}
 			// max+1 tính cả dòng vừa xoá: Hibernate chạy INSERT trước DELETE, không đụng order_index cũ.
 			int nextOrder = rows.stream().mapToInt(ScheduledExercise::getOrderIndex).max().orElse(0) + 1;
-			for (EditDayRequest.ExerciseTarget t : add) {
+			for (EditDayRequest.ExerciseTargetRequest t : add) {
 				// Buổi đã có bài này thì bỏ qua: set_logs khoá theo (buổi, bài, số set).
 				if (present.add(t.exerciseId())) {
 					scheduledExercises.save(new ScheduledExercise(workout.getId(), t.exerciseId(), (short) nextOrder++,

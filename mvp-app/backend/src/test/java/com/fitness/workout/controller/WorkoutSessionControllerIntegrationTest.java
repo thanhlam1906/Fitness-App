@@ -199,8 +199,8 @@ class WorkoutSessionControllerIntegrationTest extends PostgresIntegrationTest {
 		UUID pushUpId = exerciseRepository.findBySlug("push-up").orElseThrow().getId();
 		LocalDate monday = LocalDate.of(2026, 1, 1).with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY));
 		programService.createCustomProgram(user.userId(), new CreateCustomProgramRequest(monday, 2, List.of(
-				new CreateCustomProgramRequest.CustomDay(1, "Đẩy", List.of(
-						new CreateCustomProgramRequest.CustomExercise(pushUpId, 3, 8, 12, null, 90))))));
+				new CreateCustomProgramRequest.CustomDayRequest(1, "Đẩy", List.of(
+						new CreateCustomProgramRequest.CustomExerciseRequest(pushUpId, 3, 8, 12, null, 90))))));
 		return rest.exchange("/api/v1/schedule", HttpMethod.GET, new HttpEntity<>(user.headers()),
 				ScheduleResponse.class).getBody().workouts().get(0).id();
 	}

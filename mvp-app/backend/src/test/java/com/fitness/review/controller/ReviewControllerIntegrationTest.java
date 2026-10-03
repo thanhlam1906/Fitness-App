@@ -129,7 +129,7 @@ class ReviewControllerIntegrationTest extends PostgresIntegrationTest {
 		var review = rest.exchange("/api/v1/reviews/" + reviewId, HttpMethod.GET,
 				new HttpEntity<>(headers), ReviewResponse.class).getBody();
 
-		assertThat(review.checks()).extracting(ReviewResponse.CheckResult::name)
+		assertThat(review.checks()).extracting(ReviewResponse.CheckResultResponse::name)
 				.containsExactly("Độ sâu", "Thân thẳng");
 		assertThat(review.checks().get(0).code()).isNull();
 		assertThat(review.checks().get(0).isPrimary()).isTrue();

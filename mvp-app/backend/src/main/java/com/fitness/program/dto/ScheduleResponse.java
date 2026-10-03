@@ -13,5 +13,5 @@ public record ScheduleResponse(
 		UUID programId,
 		LocalDate startDate,
 		List<Short> restDays,
-		List<ScheduledWorkoutView> workouts) {
+		List<ScheduledWorkoutResponse> workouts) {
 }

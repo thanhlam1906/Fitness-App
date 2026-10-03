@@ -5,12 +5,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fitness.auth.entity.Role;
 import com.fitness.content.repository.ExerciseRepository;
 import com.fitness.content.repository.ProgramTemplateRepository;
+import com.fitness.program.dto.AddExerciseRequest;
 import com.fitness.program.dto.CreateCustomProgramRequest;
 import com.fitness.program.dto.CurrentProgramResponse;
 import com.fitness.program.dto.EditDayRequest;
+import com.fitness.program.dto.EditDayResponse;
 import com.fitness.program.dto.ScheduleResponse;
-import com.fitness.program.dto.ScheduledExerciseView;
-import com.fitness.program.dto.ScheduledWorkoutView;
+import com.fitness.program.dto.ScheduledExerciseResponse;
+import com.fitness.program.dto.ScheduledWorkoutResponse;
+import com.fitness.program.dto.TrainingDaysRequest;
+import com.fitness.program.dto.TrainingDaysResponse;
 import com.fitness.program.entity.ScheduledWorkout;
 import com.fitness.program.repository.ScheduledWorkoutRepository;
 import com.fitness.program.service.ProgramService;
@@ -60,19 +64,19 @@ class ProgramEditIntegrationTest extends PostgresIntegrationTest {
 		var user = newAuthedUser(Role.USER);
 		createDailyProgram(user.userId());
 		UUID ohp = slug("overhead-press");
-		ScheduledWorkoutView todayA = workoutOn(user.headers(), TODAY);
+		ScheduledWorkoutResponse todayA = workoutOn(user.headers(), TODAY);
 		markDone(todayA.id());
 
 		var resp = editDay(user.headers(), new EditDayRequest("A", List.of(),
-				List.of(new EditDayRequest.ExerciseTarget(ohp, 5, 6, 8, new BigDecimal("35"))), List.of()));
+				List.of(new EditDayRequest.ExerciseTargetRequest(ohp, 5, 6, 8, new BigDecimal("35"))), List.of()));
 
 		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
 		ScheduleResponse after = schedule(user.headers());
 		long openA = after.workouts().stream()
 				.filter(w -> "A".equals(w.label()) && w.scheduledOn().isAfter(TODAY)).count();
 		assertThat(resp.getBody().updatedWorkouts()).isEqualTo((int) openA);
-		for (ScheduledWorkoutView w : after.workouts()) {
-			ScheduledExerciseView row = w.exercises().stream()
+		for (ScheduledWorkoutResponse w : after.workouts()) {
+			ScheduledExerciseResponse row = w.exercises().stream()
 					.filter(e -> e.exerciseId().equals(ohp)).findFirst().orElse(null);
 			boolean open = "A".equals(w.label()) && w.scheduledOn().isAfter(TODAY);
 			if (open) {
@@ -91,11 +95,11 @@ class ProgramEditIntegrationTest extends PostgresIntegrationTest {
 		var user = newAuthedUser(Role.USER);
 		createDailyProgram(user.userId());
 		UUID ohp = slug("overhead-press");
-		ScheduledWorkoutView todayA = workoutOn(user.headers(), TODAY);
+		ScheduledWorkoutResponse todayA = workoutOn(user.headers(), TODAY);
 		sessions.save(new WorkoutSession(user.userId(), todayA.id()));
 
 		editDay(user.headers(), new EditDayRequest("A", List.of(),
-				List.of(new EditDayRequest.ExerciseTarget(ohp, 5, 5, 5, null)), List.of()));
+				List.of(new EditDayRequest.ExerciseTargetRequest(ohp, 5, 5, 5, null)), List.of()));
 
 		assertThat(targetSets(workoutOn(user.headers(), TODAY), ohp)).isEqualTo(3);
 		assertThat(targetSets(workoutOn(user.headers(), TODAY.plusDays(2)), ohp)).isEqualTo(5);
@@ -111,19 +115,19 @@ class ProgramEditIntegrationTest extends PostgresIntegrationTest {
 		UUID ohp = slug("overhead-press");
 		UUID pushUp = slug("push-up");
 		// Một buổi A đã được sửa riêng: có sẵn chống đẩy.
-		ScheduledWorkoutView someA = workoutOn(user.headers(), TODAY.plusDays(2));
+		ScheduledWorkoutResponse someA = workoutOn(user.headers(), TODAY.plusDays(2));
 		rest.exchange("/api/v1/schedule/workouts/" + someA.id() + "/exercises", HttpMethod.POST,
-				new HttpEntity<>(new ScheduleController.AddExerciseRequest(pushUp, 2, 10, 10, null, null),
-						user.headers()), ScheduledExerciseView.class);
+				new HttpEntity<>(new AddExerciseRequest(pushUp, 2, 10, 10, null, null),
+						user.headers()), ScheduledExerciseResponse.class);
 
 		editDay(user.headers(), new EditDayRequest("A", List.of(ohp), List.of(),
-				List.of(new EditDayRequest.ExerciseTarget(pushUp, 3, 8, 15, null))));
+				List.of(new EditDayRequest.ExerciseTargetRequest(pushUp, 3, 8, 15, null))));
 
-		for (ScheduledWorkoutView w : schedule(user.headers()).workouts()) {
+		for (ScheduledWorkoutResponse w : schedule(user.headers()).workouts()) {
 			if (!"A".equals(w.label()) || w.scheduledOn().isBefore(TODAY)) {
 				continue;
 			}
-			assertThat(w.exercises()).extracting(ScheduledExerciseView::exerciseId)
+			assertThat(w.exercises()).extracting(ScheduledExerciseResponse::exerciseId)
 					.as(w.scheduledOn().toString()).doesNotContain(ohp)
 					.filteredOn(id -> id.equals(pushUp)).hasSize(1);
 		}
@@ -151,11 +155,11 @@ class ProgramEditIntegrationTest extends PostgresIntegrationTest {
 
 		var unknown = rest.exchange("/api/v1/schedule/days", HttpMethod.PUT, new HttpEntity<>(
 				new EditDayRequest("A", List.of(), List.of(),
-						List.of(new EditDayRequest.ExerciseTarget(UUID.randomUUID(), 3, 8, 8, null))),
+						List.of(new EditDayRequest.ExerciseTargetRequest(UUID.randomUUID(), 3, 8, 8, null))),
 				user.headers()), String.class);
 		var inverted = rest.exchange("/api/v1/schedule/days", HttpMethod.PUT, new HttpEntity<>(
 				new EditDayRequest("A", List.of(),
-						List.of(new EditDayRequest.ExerciseTarget(ohp, 3, 10, 8, null)), List.of()),
+						List.of(new EditDayRequest.ExerciseTargetRequest(ohp, 3, 10, 8, null)), List.of()),
 				user.headers()), String.class);
 
 		var nullItem = rest.exchange("/api/v1/schedule/days", HttpMethod.PUT, new HttpEntity<>(
@@ -172,23 +176,23 @@ class ProgramEditIntegrationTest extends PostgresIntegrationTest {
 		var user = newAuthedUser(Role.USER);
 		createDailyProgram(user.userId());
 		markDone(workoutOn(user.headers(), TODAY).id());
-		List<ScheduledWorkoutView> before = schedule(user.headers()).workouts();
-		List<ScheduledWorkoutView> openBefore = before.stream().filter(w -> w.scheduledOn().isAfter(TODAY)).toList();
+		List<ScheduledWorkoutResponse> before = schedule(user.headers()).workouts();
+		List<ScheduledWorkoutResponse> openBefore = before.stream().filter(w -> w.scheduledOn().isAfter(TODAY)).toList();
 
 		var resp = rest.exchange("/api/v1/programs/current/training-days", HttpMethod.PUT,
-				new HttpEntity<>(new ProgramController.TrainingDaysRequest(List.of(1, 3, 5)), user.headers()),
-				ProgramController.TrainingDaysResponse.class);
+				new HttpEntity<>(new TrainingDaysRequest(List.of(1, 3, 5)), user.headers()),
+				TrainingDaysResponse.class);
 
 		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
 		assertThat(resp.getBody().movedWorkouts()).isEqualTo(openBefore.size());
-		Map<UUID, ScheduledWorkoutView> after = schedule(user.headers()).workouts().stream()
-				.collect(java.util.stream.Collectors.toMap(ScheduledWorkoutView::id, w -> w));
+		Map<UUID, ScheduledWorkoutResponse> after = schedule(user.headers()).workouts().stream()
+				.collect(java.util.stream.Collectors.toMap(ScheduledWorkoutResponse::id, w -> w));
 		// Buổi quá hạn và buổi đã tập hôm nay giữ nguyên ngày.
 		before.stream().filter(w -> !w.scheduledOn().isAfter(TODAY))
 				.forEach(w -> assertThat(after.get(w.id()).scheduledOn()).isEqualTo(w.scheduledOn()));
 		// Buổi mở: đúng thứ mới, không trước hôm nay, không trùng hôm nay (đã có buổi), giữ thứ tự.
 		LocalDate previous = TODAY;
-		for (ScheduledWorkoutView w : openBefore) {
+		for (ScheduledWorkoutResponse w : openBefore) {
 			LocalDate moved = after.get(w.id()).scheduledOn();
 			assertThat(moved.getDayOfWeek().getValue()).isIn(1, 3, 5);
 			assertThat(moved).isAfter(previous);
@@ -204,11 +208,11 @@ class ProgramEditIntegrationTest extends PostgresIntegrationTest {
 	void changeTrainingDays_customProgram_returns409() {
 		var user = newAuthedUser(Role.USER);
 		programService.createCustomProgram(user.userId(), new CreateCustomProgramRequest(TODAY, 1, List.of(
-				new CreateCustomProgramRequest.CustomDay(TODAY.getDayOfWeek().getValue(), "T", List.of(
-						new CreateCustomProgramRequest.CustomExercise(slug("push-up"), 3, 8, 12, null, 90))))));
+				new CreateCustomProgramRequest.CustomDayRequest(TODAY.getDayOfWeek().getValue(), "T", List.of(
+						new CreateCustomProgramRequest.CustomExerciseRequest(slug("push-up"), 3, 8, 12, null, 90))))));
 
 		var resp = rest.exchange("/api/v1/programs/current/training-days", HttpMethod.PUT,
-				new HttpEntity<>(new ProgramController.TrainingDaysRequest(List.of(1)), user.headers()), String.class);
+				new HttpEntity<>(new TrainingDaysRequest(List.of(1)), user.headers()), String.class);
 
 		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
 	}
@@ -220,7 +224,7 @@ class ProgramEditIntegrationTest extends PostgresIntegrationTest {
 
 		for (List<Integer> days : List.of(List.<Integer>of(), List.of(1, 1), List.of(0))) {
 			var resp = rest.exchange("/api/v1/programs/current/training-days", HttpMethod.PUT,
-					new HttpEntity<>(new ProgramController.TrainingDaysRequest(days), user.headers()), String.class);
+					new HttpEntity<>(new TrainingDaysRequest(days), user.headers()), String.class);
 			assertThat(resp.getStatusCode()).as(days.toString()).isEqualTo(HttpStatus.BAD_REQUEST);
 		}
 	}
@@ -254,10 +258,10 @@ class ProgramEditIntegrationTest extends PostgresIntegrationTest {
 		scheduledWorkouts.save(workout);
 	}
 
-	private org.springframework.http.ResponseEntity<ScheduleController.EditDayResponse> editDay(
+	private org.springframework.http.ResponseEntity<EditDayResponse> editDay(
 			HttpHeaders headers, EditDayRequest request) {
 		return rest.exchange("/api/v1/schedule/days", HttpMethod.PUT, new HttpEntity<>(request, headers),
-				ScheduleController.EditDayResponse.class);
+				EditDayResponse.class);
 	}
 
 	private ScheduleResponse schedule(HttpHeaders headers) {
@@ -265,11 +269,11 @@ class ProgramEditIntegrationTest extends PostgresIntegrationTest {
 				.getBody();
 	}
 
-	private ScheduledWorkoutView workoutOn(HttpHeaders headers, LocalDate date) {
+	private ScheduledWorkoutResponse workoutOn(HttpHeaders headers, LocalDate date) {
 		return schedule(headers).workouts().stream().filter(w -> w.scheduledOn().equals(date)).findFirst().orElseThrow();
 	}
 
-	private static int targetSets(ScheduledWorkoutView workout, UUID exerciseId) {
+	private static int targetSets(ScheduledWorkoutResponse workout, UUID exerciseId) {
 		return workout.exercises().stream().filter(e -> e.exerciseId().equals(exerciseId)).findFirst().orElseThrow()
 				.targetSets();
 	}

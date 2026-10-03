@@ -6,7 +6,7 @@ import com.fitness.auth.entity.Role;
 import com.fitness.content.entity.ProgramTemplate;
 import com.fitness.content.repository.ProgramTemplateRepository;
 import com.fitness.program.dto.ScheduleResponse;
-import com.fitness.program.dto.ScheduledExerciseView;
+import com.fitness.program.dto.ScheduledExerciseResponse;
 import com.fitness.program.service.ProgramService;
 import com.fitness.support.PostgresIntegrationTest;
 import java.time.DayOfWeek;
@@ -49,7 +49,7 @@ class ScheduleControllerIntegrationTest extends PostgresIntegrationTest {
 		assertThat(response.getBody().workouts()).hasSize(20);
 		var firstDay = response.getBody().workouts().get(0);
 		assertThat(firstDay.scheduledOn()).isEqualTo(A_MONDAY);
-		assertThat(firstDay.exercises()).extracting(ScheduledExerciseView::exerciseSlug)
+		assertThat(firstDay.exercises()).extracting(ScheduledExerciseResponse::exerciseSlug)
 				.contains("barbell-back-squat");
 		assertThat(firstDay.exercises().get(0).exerciseName()).isNotBlank();
 	}

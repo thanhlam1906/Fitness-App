@@ -2,6 +2,8 @@ package com.fitness.feedback.controller;
 
 import com.fitness.assistant.repository.AssistantMessageRepository;
 import com.fitness.common.CurrentUser;
+import com.fitness.feedback.dto.FeedbackRequest;
+import com.fitness.feedback.dto.FeedbackResponse;
 import com.fitness.feedback.entity.CueFeedback;
 import com.fitness.feedback.repository.CueFeedbackRepository;
 import com.fitness.program.repository.LoadDecisionRepository;
@@ -25,13 +27,6 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/api/v1/feedback")
 public class FeedbackController {
-
-	public record FeedbackRequest(
-			UUID reviewResultId, UUID loadDecisionId, UUID assistantMessageId, boolean isWrong, String note) {
-	}
-
-	public record FeedbackResponse(UUID id) {
-	}
 
 	private final CueFeedbackRepository repository;
 	private final ReviewResultRepository reviewResults;

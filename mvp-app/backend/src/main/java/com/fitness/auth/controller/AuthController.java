@@ -1,9 +1,9 @@
 package com.fitness.auth.controller;
 
-import com.fitness.auth.dto.AuthTokens;
 import com.fitness.auth.dto.LoginRequest;
 import com.fitness.auth.dto.RefreshRequest;
 import com.fitness.auth.dto.RegisterRequest;
+import com.fitness.auth.dto.TokenResponse;
 import com.fitness.auth.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -25,17 +25,17 @@ public class AuthController {
 
 	@PostMapping("/register")
 	@ResponseStatus(HttpStatus.CREATED)
-	public AuthTokens register(@Valid @RequestBody RegisterRequest request) {
+	public TokenResponse register(@Valid @RequestBody RegisterRequest request) {
 		return authService.register(request);
 	}
 
 	@PostMapping("/login")
-	public AuthTokens login(@Valid @RequestBody LoginRequest request) {
+	public TokenResponse login(@Valid @RequestBody LoginRequest request) {
 		return authService.login(request.email(), request.password());
 	}
 
 	@PostMapping("/refresh")
-	public AuthTokens refresh(@Valid @RequestBody RefreshRequest request) {
+	public TokenResponse refresh(@Valid @RequestBody RefreshRequest request) {
 		return authService.refresh(request.refreshToken());
 	}
 

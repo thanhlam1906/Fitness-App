@@ -11,6 +11,7 @@ import com.fitness.program.repository.LoadDecisionRepository;
 import com.fitness.program.repository.ProgramRepository;
 import com.fitness.program.repository.ScheduledExerciseRepository;
 import com.fitness.program.repository.ScheduledWorkoutRepository;
+import com.fitness.workout.dto.ProgressResponse;
 import com.fitness.workout.service.ProgressService;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
@@ -264,7 +265,7 @@ public class AssistantTools {
 	public ProgressSummary getProgressSummary(
 			@ToolParam(description = "số tuần muốn xem lại, ví dụ 4") int weeks) {
 		// Cùng phép tính với màn Cài đặt › Tiến bộ — trợ lý và màn đó luôn ra cùng số.
-		ProgressService.Progress p = progressService.summary(currentUser.id(), weeks);
+		ProgressResponse p = progressService.summary(currentUser.id(), weeks);
 		ProgressSummary result = new ProgressSummary(
 				p.weeks(), p.sessionsStarted(), p.sessionsFinished(), p.totalTonnageKg(), p.avgSessionRpe());
 		toolCallLog.record("getProgressSummary", result);

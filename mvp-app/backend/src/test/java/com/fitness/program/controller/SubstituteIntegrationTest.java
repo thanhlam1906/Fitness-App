@@ -6,11 +6,12 @@ import com.fitness.auth.entity.Role;
 import com.fitness.content.dto.ExerciseResponse;
 import com.fitness.content.repository.ExerciseRepository;
 import com.fitness.content.repository.ProgramTemplateRepository;
-import com.fitness.feedback.controller.FeedbackController;
+import com.fitness.feedback.dto.FeedbackRequest;
 import com.fitness.profile.entity.Profile;
 import com.fitness.profile.repository.ProfileRepository;
 import com.fitness.program.dto.ScheduleResponse;
-import com.fitness.program.dto.ScheduledExerciseView;
+import com.fitness.program.dto.ScheduledExerciseResponse;
+import com.fitness.program.dto.SubstituteRequest;
 import com.fitness.program.service.ProgramService;
 import com.fitness.support.PostgresIntegrationTest;
 import java.time.LocalDate;
@@ -68,14 +69,14 @@ class SubstituteIntegrationTest extends PostgresIntegrationTest {
 				Map.of("barbell-back-squat", 60.0), Set.of(), LocalDate.now());
 
 		ScheduleResponse schedule = getSchedule(user.headers());
-		ScheduledExerciseView squat = schedule.workouts().get(0).exercises().stream()
+		ScheduledExerciseResponse squat = schedule.workouts().get(0).exercises().stream()
 				.filter(e -> e.exerciseSlug().equals("barbell-back-squat")).findFirst().orElseThrow();
 		UUID replacement = exercises.findBySlug("romanian-deadlift").orElseThrow().getId();
 
 		var swapped = rest.exchange(
 				"/api/v1/schedule/exercises/" + squat.id() + "/substitute", HttpMethod.POST,
-				new HttpEntity<>(new ScheduleController.SubstituteRequest(replacement), user.headers()),
-				ScheduledExerciseView.class);
+				new HttpEntity<>(new SubstituteRequest(replacement), user.headers()),
+				ScheduledExerciseResponse.class);
 
 		assertThat(swapped.getStatusCode()).isEqualTo(HttpStatus.OK);
 		assertThat(swapped.getBody().exerciseId()).isEqualTo(replacement);
@@ -105,7 +106,7 @@ class SubstituteIntegrationTest extends PostgresIntegrationTest {
 
 		var resp = rest.exchange(
 				"/api/v1/schedule/exercises/" + scheduledExerciseId + "/substitute", HttpMethod.POST,
-				new HttpEntity<>(new ScheduleController.SubstituteRequest(
+				new HttpEntity<>(new SubstituteRequest(
 						exercises.findBySlug("push-up").orElseThrow().getId()), stranger.headers()),
 				String.class);
 
@@ -117,12 +118,12 @@ class SubstituteIntegrationTest extends PostgresIntegrationTest {
 		HttpHeaders headers = newAuthedUser(Role.USER).headers();
 
 		var both = rest.exchange("/api/v1/feedback", HttpMethod.POST,
-				new HttpEntity<>(new FeedbackController.FeedbackRequest(
+				new HttpEntity<>(new FeedbackRequest(
 						UUID.randomUUID(), UUID.randomUUID(), null, true, null), headers), String.class);
 		assertThat(both.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 
 		var neither = rest.exchange("/api/v1/feedback", HttpMethod.POST,
-				new HttpEntity<>(new FeedbackController.FeedbackRequest(null, null, null, true, null), headers), String.class);
+				new HttpEntity<>(new FeedbackRequest(null, null, null, true, null), headers), String.class);
 		assertThat(neither.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 	}
 

@@ -20,10 +20,10 @@ public record ReviewResponse(
 		Instant createdAt,
 		Instant finishedAt,
 		List<String> viewpoints,
-		List<CheckResult> checks) {
+		List<CheckResultResponse> checks) {
 
 	/** code: kết quả rule cũ (qua form_checks). name: mục do LLM chấm (từ V11). */
-	public record CheckResult(
+	public record CheckResultResponse(
 			UUID id,
 			String code,
 			String name,

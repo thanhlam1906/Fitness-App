@@ -12,7 +12,7 @@ import com.fitness.content.repository.ProgramTemplateRepository;
 import com.fitness.profile.entity.Profile;
 import com.fitness.profile.repository.ProfileRepository;
 import com.fitness.program.dto.CreateCustomProgramRequest;
-import com.fitness.program.dto.TemplateCandidate;
+import com.fitness.program.dto.TemplateCandidateResponse;
 import com.fitness.program.entity.Program;
 import com.fitness.program.entity.ScheduledExercise;
 import com.fitness.program.entity.ScheduledWorkout;
@@ -74,7 +74,7 @@ public class ProgramService {
 		this.objectMapper = objectMapper;
 	}
 
-	public List<TemplateCandidate> findCandidateTemplates(UUID userId) {
+	public List<TemplateCandidateResponse> findCandidateTemplates(UUID userId) {
 		Profile profile = profileRepository.findById(userId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Chưa có hồ sơ onboarding"));
 		if (profile.getSessionsPerWeek() == null) {
@@ -102,32 +102,32 @@ public class ProgramService {
 		return Math.max(0, sessions - template.getSessionsMax());
 	}
 
-	private TemplateCandidate toCandidate(ProgramTemplate template, boolean matchesSessions) {
+	private TemplateCandidateResponse toCandidate(ProgramTemplate template, boolean matchesSessions) {
 		List<CycleDay> weekStructure = parseWeekStructure(template.getWeekStructure());
 		Map<String, Exercise> bySlug = exerciseRepository.findBySlugIn(
 				weekStructure.stream().flatMap(d -> d.exercises().stream())
 						.map(CycleExercise::exerciseSlug).distinct().toList())
 				.stream().collect(Collectors.toMap(Exercise::getSlug, e -> e));
 
-		List<TemplateCandidate.CycleDayView> days = weekStructure.stream()
-				.map(d -> new TemplateCandidate.CycleDayView(d.order(), d.label(), d.exercises().stream()
+		List<TemplateCandidateResponse.CycleDayResponse> days = weekStructure.stream()
+				.map(d -> new TemplateCandidateResponse.CycleDayResponse(d.order(), d.label(), d.exercises().stream()
 						.map(ex -> toExerciseView(ex, bySlug.get(ex.exerciseSlug())))
 						.toList()))
 				.toList();
 
-		return new TemplateCandidate(
+		return new TemplateCandidateResponse(
 				template.getId(), template.getSlug(), template.getName(), template.getMethodology(),
 				template.getSessionsMin(), template.getSessionsMax(),
 				List.of(template.getRequiredEquipment()), matchesSessions, days);
 	}
 
-	private TemplateCandidate.CycleExerciseView toExerciseView(CycleExercise ex, Exercise exercise) {
+	private TemplateCandidateResponse.CycleExerciseResponse toExerciseView(CycleExercise ex, Exercise exercise) {
 		// Bài trong template mà chưa có trong bảng exercises: hiển thị slug và
 		// coi như cần tạ. createProgram sẽ báo lỗi rõ ràng khi người dùng xác nhận.
 		String name = exercise == null ? ex.exerciseSlug()
 				: (exercise.getNameVi() != null ? exercise.getNameVi() : exercise.getNameEn());
 		boolean needsLoad = exercise == null || exercise.getEquipment().length > 0;
-		return new TemplateCandidate.CycleExerciseView(
+		return new TemplateCandidateResponse.CycleExerciseResponse(
 				ex.exerciseSlug(), name, ex.sets(), ex.repsMin(), ex.repsMax(), ex.restSec(), needsLoad);
 	}
 
@@ -189,8 +189,8 @@ public class ProgramService {
 		LocalDate startDate = request.startDate() == null ? LocalDate.now() : request.startDate();
 		int weeks = request.weeksToGenerate() == null ? WEEKS_TO_GENERATE : request.weeksToGenerate();
 
-		Map<DayOfWeek, CreateCustomProgramRequest.CustomDay> dayByWeekday = new HashMap<>();
-		for (CreateCustomProgramRequest.CustomDay day : request.days()) {
+		Map<DayOfWeek, CreateCustomProgramRequest.CustomDayRequest> dayByWeekday = new HashMap<>();
+		for (CreateCustomProgramRequest.CustomDayRequest day : request.days()) {
 			if (dayByWeekday.put(DayOfWeek.of(day.dayOfWeek()), day) != null) {
 				throw new ResponseStatusException(
 						HttpStatus.BAD_REQUEST, "Mỗi thứ trong tuần chỉ cấu hình được một lần");
@@ -214,14 +214,14 @@ public class ProgramService {
 		programRepository.save(program);
 
 		for (LocalDate date : scheduleGenerator.customDates(dayByWeekday.keySet(), startDate, weeks)) {
-			CreateCustomProgramRequest.CustomDay day = dayByWeekday.get(date.getDayOfWeek());
+			CreateCustomProgramRequest.CustomDayRequest day = dayByWeekday.get(date.getDayOfWeek());
 			int weekIndex = (int) (ChronoUnit.DAYS.between(startDate, date) / 7) + 1;
 			ScheduledWorkout workout = new ScheduledWorkout(
 					program.getId(), date, (short) weekIndex, day.label());
 			scheduledWorkoutRepository.save(workout);
 
 			short orderIndex = 1;
-			for (CreateCustomProgramRequest.CustomExercise ex : day.exercises()) {
+			for (CreateCustomProgramRequest.CustomExerciseRequest ex : day.exercises()) {
 				scheduledExerciseRepository.save(new ScheduledExercise(
 						workout.getId(), ex.exerciseId(), orderIndex++,
 						ex.sets().shortValue(), ex.repsMin().shortValue(), ex.repsMax().shortValue(),
@@ -236,7 +236,7 @@ public class ProgramService {
 	private void requireKnownExercises(CreateCustomProgramRequest request) {
 		List<UUID> ids = request.days().stream()
 				.flatMap(d -> d.exercises().stream())
-				.map(CreateCustomProgramRequest.CustomExercise::exerciseId)
+				.map(CreateCustomProgramRequest.CustomExerciseRequest::exerciseId)
 				.distinct()
 				.toList();
 		Map<UUID, Exercise> byId = exerciseRepository.findAllById(ids).stream()

@@ -7,8 +7,8 @@ import com.fitness.content.dto.ExerciseResponse;
 import com.fitness.content.entity.ProgramTemplate;
 import com.fitness.content.repository.ProgramTemplateRepository;
 import com.fitness.program.dto.ScheduleResponse;
-import com.fitness.program.dto.ScheduledExerciseView;
-import com.fitness.program.dto.ScheduledWorkoutView;
+import com.fitness.program.dto.ScheduledExerciseResponse;
+import com.fitness.program.dto.ScheduledWorkoutResponse;
 import com.fitness.support.PostgresIntegrationTest;
 import com.fitness.workout.dto.FinishSessionRequest;
 import com.fitness.workout.dto.SessionResponse;
@@ -58,8 +58,8 @@ class ProgressionApplicationServiceIntegrationTest extends PostgresIntegrationTe
 				Set.of(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY), A_MONDAY);
 
 		ScheduleResponse before = getSchedule(user.headers());
-		ScheduledWorkoutView dayA = before.workouts().get(0); // Monday, label "A", squat 3x5 @ 60kg
-		ScheduledExerciseView squatBefore = findSquat(dayA);
+		ScheduledWorkoutResponse dayA = before.workouts().get(0); // Monday, label "A", squat 3x5 @ 60kg
+		ScheduledExerciseResponse squatBefore = findSquat(dayA);
 		assertThat(squatBefore.targetLoadKg()).isEqualByComparingTo(new BigDecimal("60.00"));
 
 		SessionResponse session = rest.exchange("/api/v1/sessions", HttpMethod.POST,
@@ -73,7 +73,7 @@ class ProgressionApplicationServiceIntegrationTest extends PostgresIntegrationTe
 
 		ScheduleResponse after = getSchedule(user.headers());
 		// Day B (thứ 3, ngày kế) và mọi lần squat xuất hiện sau đó phải lên 62.5kg
-		ScheduledExerciseView squatDayB = findSquat(after.workouts().get(1));
+		ScheduledExerciseResponse squatDayB = findSquat(after.workouts().get(1));
 		assertThat(squatDayB.targetLoadKg()).isEqualByComparingTo(new BigDecimal("62.50"));
 		assertThat(squatDayB.loadDecision().messageVi()).contains("tăng tải");
 	}
@@ -89,8 +89,8 @@ class ProgressionApplicationServiceIntegrationTest extends PostgresIntegrationTe
 
 		ScheduleResponse before = getSchedule(user.headers());
 		// order: Trên A (T2), Dưới A (T3, squat 4x6-8), Trên B (T4), Dưới B (T5, squat 3x8-10)
-		ScheduledWorkoutView duoiA = before.workouts().get(1);
-		ScheduledExerciseView squat = findSquat(duoiA);
+		ScheduledWorkoutResponse duoiA = before.workouts().get(1);
+		ScheduledExerciseResponse squat = findSquat(duoiA);
 		assertThat(squat.targetLoadKg()).isEqualByComparingTo(new BigDecimal("80.00"));
 
 		SessionResponse session = rest.exchange("/api/v1/sessions", HttpMethod.POST,
@@ -105,10 +105,10 @@ class ProgressionApplicationServiceIntegrationTest extends PostgresIntegrationTe
 				new HttpEntity<>(new FinishSessionRequest(List.of(), null), user.headers()), SessionResponse.class);
 
 		ScheduleResponse after = getSchedule(user.headers());
-		ScheduledWorkoutView duoiBAfter = after.workouts().stream()
+		ScheduledWorkoutResponse duoiBAfter = after.workouts().stream()
 				.filter(w -> findSquatOrNull(w) != null && w.scheduledOn().isAfter(duoiA.scheduledOn()))
 				.findFirst().orElseThrow();
-		ScheduledExerciseView squatAfter = findSquat(duoiBAfter);
+		ScheduledExerciseResponse squatAfter = findSquat(duoiBAfter);
 		// HOLD, không phải DOWN — 1 buổi trượt sàn chưa đủ để deload (cần lặp 2 buổi liên tiếp)
 		assertThat(squatAfter.targetLoadKg()).isEqualByComparingTo(new BigDecimal("80.00"));
 	}
@@ -118,7 +118,7 @@ class ProgressionApplicationServiceIntegrationTest extends PostgresIntegrationTe
 				.getBody();
 	}
 
-	private void logSet(HttpHeaders headers, UUID sessionId, ScheduledExerciseView squat, int setIndex, int reps) {
+	private void logSet(HttpHeaders headers, UUID sessionId, ScheduledExerciseResponse squat, int setIndex, int reps) {
 		var req = new SetLogRequest(
 				exerciseIdFor(headers, squat), (short) setIndex, (short) squat.targetReps(), (short) reps,
 				squat.targetLoadKg(), null, false, null);
@@ -126,8 +126,8 @@ class ProgressionApplicationServiceIntegrationTest extends PostgresIntegrationTe
 				new HttpEntity<>(req, headers), SetLogResponse.class);
 	}
 
-	// ScheduledExerciseView không mang exercise_id thô (chỉ slug/tên) — tra lại qua GET /exercises theo slug.
-	private UUID exerciseIdFor(HttpHeaders headers, ScheduledExerciseView squat) {
+	// ScheduledExerciseResponse không mang exercise_id thô (chỉ slug/tên) — tra lại qua GET /exercises theo slug.
+	private UUID exerciseIdFor(HttpHeaders headers, ScheduledExerciseResponse squat) {
 		var exercises = rest.exchange("/api/v1/exercises", HttpMethod.GET,
 				new HttpEntity<>(headers), com.fitness.content.dto.ExerciseResponse[].class).getBody();
 		return java.util.Arrays.stream(exercises)
@@ -136,13 +136,13 @@ class ProgressionApplicationServiceIntegrationTest extends PostgresIntegrationTe
 				.id();
 	}
 
-	private ScheduledExerciseView findSquat(ScheduledWorkoutView workout) {
+	private ScheduledExerciseResponse findSquat(ScheduledWorkoutResponse workout) {
 		return workout.exercises().stream()
 				.filter(e -> e.exerciseSlug().equals("barbell-back-squat"))
 				.findFirst().orElseThrow();
 	}
 
-	private ScheduledExerciseView findSquatOrNull(ScheduledWorkoutView workout) {
+	private ScheduledExerciseResponse findSquatOrNull(ScheduledWorkoutResponse workout) {
 		return workout.exercises().stream()
 				.filter(e -> e.exerciseSlug().equals("barbell-back-squat"))
 				.findFirst().orElse(null);

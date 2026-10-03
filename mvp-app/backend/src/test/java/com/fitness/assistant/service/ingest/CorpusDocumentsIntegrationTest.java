@@ -4,6 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.when;
 
+import com.fitness.assistant.dto.DocChunkResponse;
+import com.fitness.assistant.dto.DocumentDetailResponse;
+import com.fitness.assistant.dto.DocumentRowResponse;
+import com.fitness.assistant.dto.PublishResponse;
 import com.fitness.auth.entity.Role;
 import com.fitness.support.FakeEmbeddings;
 import com.fitness.support.PostgresIntegrationTest;
@@ -55,7 +59,7 @@ class CorpusDocumentsIntegrationTest extends PostgresIntegrationTest {
 	@Test
 	void wrongFeedback_onAnswerCitingDocument_isCountedOnce_andDetailed() {
 		String source = UUID.randomUUID() + "-bai-5.pdf";
-		CorpusLoader.Published doc = loader.publish(source, "Bài 5", MARKDOWN);
+		PublishResponse doc = loader.publish(source, "Bài 5", MARKDOWN);
 		List<UUID> chunkIds = jdbc.queryForList("SELECT id FROM doc_chunks WHERE document_id = ? ORDER BY ord",
 				UUID.class, doc.documentId());
 		UUID user = newAuthedUser(Role.USER).userId();
@@ -72,16 +76,16 @@ class CorpusDocumentsIntegrationTest extends PostgresIntegrationTest {
 		feedback(user, otherDoc, true, null, "2026-10-01T10:06:00Z");
 		HttpHeaders admin = newAuthedUser(Role.ADMIN).headers();
 
-		var rows = rest.exchange(BASE, HttpMethod.GET, new HttpEntity<>(admin), CorpusDocuments.DocumentRow[].class)
+		var rows = rest.exchange(BASE, HttpMethod.GET, new HttpEntity<>(admin), DocumentRowResponse[].class)
 				.getBody();
-		CorpusDocuments.DocumentRow row = Arrays.stream(rows).filter(r -> r.source().equals(source)).findFirst()
+		DocumentRowResponse row = Arrays.stream(rows).filter(r -> r.source().equals(source)).findFirst()
 				.orElseThrow();
 		assertThat(row.chunkCount()).isEqualTo(2);
 		assertThat(row.wrongCount()).isEqualTo(1);
 
 		var detail = rest.exchange(BASE + "/" + doc.documentId(), HttpMethod.GET, new HttpEntity<>(admin),
-				CorpusDocuments.DocumentDetail.class).getBody();
-		assertThat(detail.chunks()).extracting(CorpusDocuments.DocChunk::ord).containsExactly(0, 1);
+				DocumentDetailResponse.class).getBody();
+		assertThat(detail.chunks()).extracting(DocChunkResponse::ord).containsExactly(0, 1);
 		assertThat(detail.wrongAnswers()).singleElement().satisfies(w -> {
 			assertThat(w.messageId()).isEqualTo(wrong);
 			assertThat(w.question()).isEqualTo("Ngủ bao lâu là đủ?");
@@ -92,7 +96,7 @@ class CorpusDocumentsIntegrationTest extends PostgresIntegrationTest {
 
 	@Test
 	void remove_deletesDocumentAndChunks_regularUserForbidden() {
-		CorpusLoader.Published doc = loader.publish(UUID.randomUUID() + "-go.pdf", "Sẽ gỡ", MARKDOWN);
+		PublishResponse doc = loader.publish(UUID.randomUUID() + "-go.pdf", "Sẽ gỡ", MARKDOWN);
 		String url = BASE + "/" + doc.documentId();
 
 		var forbidden = rest.exchange(url, HttpMethod.DELETE, new HttpEntity<>(newAuthedUser(Role.USER).headers()),

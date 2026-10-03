@@ -1,7 +1,12 @@
 package com.fitness.assistant.controller;
 
+import com.fitness.assistant.dto.DocumentDetailResponse;
+import com.fitness.assistant.dto.DocumentRowResponse;
+import com.fitness.assistant.dto.PublishRequest;
+import com.fitness.assistant.dto.PublishResponse;
+import com.fitness.assistant.dto.UploadDetailResponse;
+import com.fitness.assistant.dto.UploadRowResponse;
 import com.fitness.assistant.service.ingest.CorpusDocuments;
-import com.fitness.assistant.service.ingest.CorpusLoader;
 import com.fitness.assistant.service.ingest.CorpusUploadService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -31,11 +36,6 @@ import org.springframework.web.multipart.MultipartFile;
 @PreAuthorize("hasRole('ADMIN')")
 public class CorpusAdminController {
 
-	public record PublishRequest(
-			@NotBlank(message = "Tên hiển thị không được trống.")
-			@Size(max = 200, message = "Tên hiển thị tối đa 200 ký tự.") String title) {
-	}
-
 	private final CorpusUploadService uploads;
 	private final CorpusDocuments documents;
 
@@ -46,22 +46,22 @@ public class CorpusAdminController {
 
 	@PostMapping(path = "/uploads", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@ResponseStatus(HttpStatus.ACCEPTED)
-	public CorpusUploadService.UploadRow upload(@RequestParam("file") MultipartFile file) {
+	public UploadRowResponse upload(@RequestParam("file") MultipartFile file) {
 		return uploads.accept(file);
 	}
 
 	@GetMapping("/uploads")
-	public List<CorpusUploadService.UploadRow> listUploads() {
+	public List<UploadRowResponse> listUploads() {
 		return uploads.list();
 	}
 
 	@GetMapping("/uploads/{id}")
-	public CorpusUploadService.UploadDetail uploadDetail(@PathVariable UUID id) {
+	public UploadDetailResponse uploadDetail(@PathVariable UUID id) {
 		return uploads.detail(id);
 	}
 
 	@PostMapping("/uploads/{id}/publish")
-	public CorpusLoader.Published publish(@PathVariable UUID id, @Valid @RequestBody PublishRequest body) {
+	public PublishResponse publish(@PathVariable UUID id, @Valid @RequestBody PublishRequest body) {
 		return uploads.publish(id, body.title());
 	}
 
@@ -72,12 +72,12 @@ public class CorpusAdminController {
 	}
 
 	@GetMapping("/documents")
-	public List<CorpusDocuments.DocumentRow> listDocuments() {
+	public List<DocumentRowResponse> listDocuments() {
 		return documents.list();
 	}
 
 	@GetMapping("/documents/{id}")
-	public CorpusDocuments.DocumentDetail documentDetail(@PathVariable UUID id) {
+	public DocumentDetailResponse documentDetail(@PathVariable UUID id) {
 		return documents.detail(id);
 	}
 

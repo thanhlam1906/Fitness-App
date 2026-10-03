@@ -13,10 +13,10 @@ import java.util.UUID;
 public record EditDayRequest(
 		@NotBlank String label,
 		List<UUID> remove,
-		List<@Valid ExerciseTarget> update,
-		List<@Valid ExerciseTarget> add) {
+		List<@Valid ExerciseTargetRequest> update,
+		List<@Valid ExerciseTargetRequest> add) {
 
-	public record ExerciseTarget(
+	public record ExerciseTargetRequest(
 			@NotNull UUID exerciseId,
 			@NotNull @Min(1) @Max(20) Integer targetSets,
 			@NotNull @Min(1) @Max(100) Integer targetReps,

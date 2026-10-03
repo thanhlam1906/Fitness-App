@@ -1,5 +1,7 @@
 package com.fitness.workout.service;
 
+import com.fitness.workout.dto.ProgressResponse;
+import com.fitness.workout.dto.ProgressResponse.WeekResponse;
 import com.fitness.workout.entity.WorkoutSession;
 import com.fitness.workout.repository.SetLogRepository;
 import com.fitness.workout.repository.WorkoutSessionRepository;
@@ -19,15 +21,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class ProgressService {
 
-	/** from là Instant, không LocalDate: web tự đổi sang ngày theo giờ máy người dùng. */
-	public record Week(Instant from, BigDecimal tonnageKg) {
-	}
-
-	public record Progress(
-			int weeks, long sessionsStarted, long sessionsFinished, BigDecimal totalTonnageKg, Double avgSessionRpe,
-			List<Week> weekly) {
-	}
-
 	private final WorkoutSessionRepository sessions;
 	private final SetLogRepository setLogs;
 
@@ -36,7 +29,7 @@ public class ProgressService {
 		this.setLogs = setLogs;
 	}
 
-	public Progress summary(UUID userId, int weeks) {
+	public ProgressResponse summary(UUID userId, int weeks) {
 		int w = Math.max(1, Math.min(weeks, 52));
 		Instant now = Instant.now();
 		Instant since = now.minus(Duration.ofDays(w * 7L));
@@ -52,16 +45,16 @@ public class ProgressService {
 		// Tuần cuộn 7 ngày tính ngược từ bây giờ, tuần cuối kết thúc đúng `now` — tổng lấy bằng
 		// cộng các cột để cột và tổng không bao giờ lệch nhau.
 		// ponytail: một query mỗi tuần (tối đa 52), gộp thành một GROUP BY nếu thấy chậm.
-		List<Week> weekly = IntStream.range(0, w)
+		List<WeekResponse> weekly = IntStream.range(0, w)
 				.mapToObj(i -> {
 					Instant from = since.plus(Duration.ofDays(7L * i));
 					Instant to = i == w - 1 ? now : from.plus(Duration.ofDays(7));
-					return new Week(from, setLogs.tonnageBetween(userId, from, to));
+					return new WeekResponse(from, setLogs.tonnageBetween(userId, from, to));
 				})
 				.toList();
-		BigDecimal total = weekly.stream().map(Week::tonnageKg).reduce(BigDecimal.ZERO, BigDecimal::add);
+		BigDecimal total = weekly.stream().map(WeekResponse::tonnageKg).reduce(BigDecimal.ZERO, BigDecimal::add);
 
-		return new Progress(w, started.size(), finished, total, avgRpe.isPresent() ? avgRpe.getAsDouble() : null,
+		return new ProgressResponse(w, started.size(), finished, total, avgRpe.isPresent() ? avgRpe.getAsDouble() : null,
 				weekly);
 	}
 }

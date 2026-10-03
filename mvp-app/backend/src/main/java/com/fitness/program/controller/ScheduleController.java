@@ -3,10 +3,14 @@ package com.fitness.program.controller;
 import com.fitness.common.CurrentUser;
 import com.fitness.content.entity.Exercise;
 import com.fitness.content.repository.ExerciseRepository;
+import com.fitness.program.dto.AddExerciseRequest;
 import com.fitness.program.dto.EditDayRequest;
+import com.fitness.program.dto.EditDayResponse;
 import com.fitness.program.dto.ScheduleResponse;
-import com.fitness.program.dto.ScheduledExerciseView;
-import com.fitness.program.dto.ScheduledWorkoutView;
+import com.fitness.program.dto.ScheduledExerciseResponse;
+import com.fitness.program.dto.ScheduledWorkoutResponse;
+import com.fitness.program.dto.SubstituteRequest;
+import com.fitness.program.dto.UpdateExerciseRequest;
 import com.fitness.program.entity.LoadDecision;
 import com.fitness.program.entity.Program;
 import com.fitness.program.entity.ScheduledExercise;
@@ -93,8 +97,8 @@ public class ScheduleController {
 		Set<UUID> inProgress = sessions.findByUserIdAndStatus(currentUser.id(), "IN_PROGRESS").stream()
 				.map(WorkoutSession::getScheduledWorkoutId)
 				.collect(Collectors.toSet());
-		List<ScheduledWorkoutView> views = workouts.stream()
-				.map(w -> new ScheduledWorkoutView(
+		List<ScheduledWorkoutResponse> views = workouts.stream()
+				.map(w -> new ScheduledWorkoutResponse(
 						w.getId(), w.getScheduledOn(), w.getWeekIndex(), w.getLabel(),
 						w.displayStatus(today), inProgress.contains(w.getId()),
 						exercisesByWorkout.get(w.getId()).stream()
@@ -113,7 +117,7 @@ public class ScheduleController {
 	 * thiếu thiết bị hôm nay không có nghĩa là thiếu cả 4 tuần tới.
 	 */
 	@PostMapping("/exercises/{scheduledExerciseId}/substitute")
-	public ScheduledExerciseView substitute(
+	public ScheduledExerciseResponse substitute(
 			@PathVariable UUID scheduledExerciseId, @RequestBody SubstituteRequest request) {
 		Program program = activeProgramOrThrow();
 		ScheduledExercise target = scheduledExercises.findById(scheduledExerciseId)
@@ -133,12 +137,9 @@ public class ScheduleController {
 		return toView(target, exerciseCatalog(Map.of(workout.getId(), List.of(target))), null);
 	}
 
-	public record SubstituteRequest(@NotNull UUID exerciseId) {
-	}
-
 	/** Sửa set/rep/tạ của một bài trong ĐÚNG buổi đang mở — buổi khác giữ nguyên. */
 	@PutMapping("/exercises/{scheduledExerciseId}")
-	public ScheduledExerciseView updateExercise(
+	public ScheduledExerciseResponse updateExercise(
 			@PathVariable UUID scheduledExerciseId, @Valid @RequestBody UpdateExerciseRequest request) {
 		ScheduledExercise target = editableExerciseOrThrow(scheduledExerciseId);
 		target.updateTargets(request.targetSets(), request.targetReps(), request.targetRepsMax(),
@@ -150,7 +151,7 @@ public class ScheduleController {
 
 	@PostMapping("/workouts/{scheduledWorkoutId}/exercises")
 	@ResponseStatus(HttpStatus.CREATED)
-	public ScheduledExerciseView addExercise(
+	public ScheduledExerciseResponse addExercise(
 			@PathVariable UUID scheduledWorkoutId, @Valid @RequestBody AddExerciseRequest request) {
 		ScheduledWorkout workout = scheduledWorkouts.findById(scheduledWorkoutId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy buổi tập"));
@@ -180,26 +181,6 @@ public class ScheduleController {
 	@PutMapping("/days")
 	public EditDayResponse editDay(@Valid @RequestBody EditDayRequest request) {
 		return new EditDayResponse(programEdits.editDay(currentUser.id(), request));
-	}
-
-	public record EditDayResponse(int updatedWorkouts) {
-	}
-
-	public record UpdateExerciseRequest(
-			@NotNull @Min(1) @Max(20) Integer targetSets,
-			@NotNull @Min(1) @Max(100) Integer targetReps,
-			@NotNull @Min(1) @Max(100) Integer targetRepsMax,
-			BigDecimal targetLoadKg,
-			Integer restSeconds) {
-	}
-
-	public record AddExerciseRequest(
-			@NotNull UUID exerciseId,
-			@NotNull @Min(1) @Max(20) Integer targetSets,
-			@NotNull @Min(1) @Max(100) Integer targetReps,
-			@NotNull @Min(1) @Max(100) Integer targetRepsMax,
-			BigDecimal targetLoadKg,
-			Integer restSeconds) {
 	}
 
 	private ScheduledExercise editableExerciseOrThrow(UUID scheduledExerciseId) {
@@ -249,18 +230,18 @@ public class ScheduleController {
 				.orElse(null);
 	}
 
-	private ScheduledExerciseView toView(
+	private ScheduledExerciseResponse toView(
 			ScheduledExercise se, Map<UUID, Exercise> exerciseById, LoadDecision decision) {
 		Exercise exercise = exerciseById.get(se.getExerciseId());
 		Exercise original = se.getSubstitutedFrom() == null ? null : exerciseById.get(se.getSubstitutedFrom());
-		return new ScheduledExerciseView(
+		return new ScheduledExerciseResponse(
 				se.getId(), se.getExerciseId(), exercise.getSlug(), displayName(exercise), exercise.getDescription(),
 				List.of(exercise.getMuscleGroups()), List.of(exercise.getStepsVi()), List.of(exercise.getMistakesVi()),
 				exercise.isAnalyzable(),
 				se.getOrderIndex(), se.getTargetSets(), se.getTargetReps(), se.getTargetRepsMax(),
 				se.getTargetLoadKg(), se.getRestSeconds() == null ? null : (int) se.getRestSeconds(),
 				original == null ? null : displayName(original),
-				decision == null ? null : ScheduledExerciseView.LoadDecisionView.from(decision));
+				decision == null ? null : ScheduledExerciseResponse.LoadDecisionResponse.from(decision));
 	}
 
 	private String displayName(Exercise exercise) {

@@ -1,6 +1,7 @@
 package com.fitness.workout.controller;
 
 import com.fitness.common.CurrentUser;
+import com.fitness.workout.dto.ProgressResponse;
 import com.fitness.workout.service.ProgressService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,7 +22,7 @@ public class ProgressController {
 	}
 
 	@GetMapping("/progress")
-	public ProgressService.Progress progress(@RequestParam(defaultValue = "4") int weeks) {
+	public ProgressResponse progress(@RequestParam(defaultValue = "4") int weeks) {
 		return progress.summary(currentUser.id(), weeks);
 	}
 }

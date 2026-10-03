@@ -1,7 +1,7 @@
 package com.fitness.auth.service;
 
-import com.fitness.auth.dto.AuthTokens;
 import com.fitness.auth.dto.RegisterRequest;
+import com.fitness.auth.dto.TokenResponse;
 import com.fitness.auth.entity.RefreshToken;
 import com.fitness.auth.entity.Role;
 import com.fitness.auth.entity.User;
@@ -54,7 +54,7 @@ public class AuthService {
 	 * tài khoản thiếu thông tin đăng ký.
 	 */
 	@Transactional
-	public AuthTokens register(RegisterRequest request) {
+	public TokenResponse register(RegisterRequest request) {
 		// @Size kiểm trước khi bỏ khoảng trắng, nên " a" lọt qua annotation — kiểm lại sau strip.
 		String fullName = request.fullName().strip();
 		if (fullName.length() < 2) {
@@ -70,7 +70,7 @@ public class AuthService {
 		return issueTokens(user);
 	}
 
-	public AuthTokens login(String email, String password) {
+	public TokenResponse login(String email, String password) {
 		User user = users.findByEmail(email)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sai email hoặc mật khẩu"));
 		if (!passwordEncoder.matches(password, user.getPasswordHash())) {
@@ -80,7 +80,7 @@ public class AuthService {
 	}
 
 	/** Rotation: token cũ bị revoke ngay khi dùng — dùng lại token đã revoke nghĩa là nó đã bị lộ. */
-	public AuthTokens refresh(String refreshToken) {
+	public TokenResponse refresh(String refreshToken) {
 		RefreshToken stored = refreshTokens.findByTokenHash(hash(refreshToken))
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token không hợp lệ"));
 		if (!stored.isUsable()) {
@@ -101,11 +101,11 @@ public class AuthService {
 		});
 	}
 
-	private AuthTokens issueTokens(User user) {
+	private TokenResponse issueTokens(User user) {
 		String accessToken = jwtIssuer.issueAccessToken(user.getId(), user.getRole());
 		String refreshTokenRaw = generateOpaqueToken();
 		refreshTokens.save(new RefreshToken(user.getId(), hash(refreshTokenRaw), Instant.now().plus(REFRESH_TOKEN_TTL)));
-		return new AuthTokens(accessToken, refreshTokenRaw, user.getId(), user.getRole());
+		return new TokenResponse(accessToken, refreshTokenRaw, user.getId(), user.getRole());
 	}
 
 	private String generateOpaqueToken() {

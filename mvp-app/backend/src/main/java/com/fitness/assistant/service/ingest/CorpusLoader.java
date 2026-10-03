@@ -1,5 +1,6 @@
 package com.fitness.assistant.service.ingest;
 
+import com.fitness.assistant.dto.PublishResponse;
 import com.fitness.assistant.service.retrieval.EmbeddingFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,15 +39,12 @@ public class CorpusLoader {
 		this.embeddingModel = embeddingModel;
 	}
 
-	public record Published(UUID documentId, int chunkCount) {
-	}
-
 	/**
 	 * Một tài liệu vào kho; cùng source đã có thì thay (xoá rồi chèn, cùng transaction). Embedding
 	 * gọi TRƯỚC mọi lệnh ghi: OpenAI lỗi thì DB chưa bị đụng, bản cũ còn nguyên cho trợ lý dùng.
 	 */
 	@Transactional
-	public Published publish(String source, String title, String markdown) {
+	public PublishResponse publish(String source, String title, String markdown) {
 		List<String[]> chunks = chunk(markdown);
 		if (chunks.isEmpty()) {
 			throw new IllegalStateException(source + ": không có mục tiêu đề nào");
@@ -76,7 +74,7 @@ public class CorpusLoader {
 					""",
 					docId, i, chunks.get(i)[0], chunks.get(i)[1], vector);
 		}
-		return new Published(docId, chunks.size());
+		return new PublishResponse(docId, chunks.size());
 	}
 
 	/** Trả về [heading, content]; content gồm cả dòng heading để FTS khớp được tiêu đề. */

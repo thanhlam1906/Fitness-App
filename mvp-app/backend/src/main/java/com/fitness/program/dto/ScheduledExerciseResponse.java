@@ -11,7 +11,7 @@ import java.util.UUID;
  * §5.2 ke-hoach-chi-tiet-chuc-nang-v1.md; mang theo id để nút "góp ý này sai"
  * gắn được vào đúng quyết định.
  */
-public record ScheduledExerciseView(
+public record ScheduledExerciseResponse(
 		UUID id,
 		UUID exerciseId,
 		String exerciseSlug,
@@ -29,12 +29,12 @@ public record ScheduledExerciseView(
 		BigDecimal targetLoadKg,
 		Integer restSeconds,
 		String substitutedFromName,
-		LoadDecisionView loadDecision) {
+		LoadDecisionResponse loadDecision) {
 
-	public record LoadDecisionView(UUID id, String direction, BigDecimal deltaKg, String messageVi) {
+	public record LoadDecisionResponse(UUID id, String direction, BigDecimal deltaKg, String messageVi) {
 
-		public static LoadDecisionView from(LoadDecision d) {
-			return new LoadDecisionView(d.getId(), d.getDirection(), d.getDeltaKg(), d.getMessageVi());
+		public static LoadDecisionResponse from(LoadDecision d) {
+			return new LoadDecisionResponse(d.getId(), d.getDirection(), d.getDeltaKg(), d.getMessageVi());
 		}
 	}
 }

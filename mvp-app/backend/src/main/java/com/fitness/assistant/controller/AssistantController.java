@@ -1,5 +1,7 @@
 package com.fitness.assistant.controller;
 
+import com.fitness.assistant.dto.AskRequest;
+import com.fitness.assistant.dto.AskResponse;
 import com.fitness.assistant.service.AssistantService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -19,14 +21,6 @@ public class AssistantController {
 
 	public AssistantController(AssistantService assistantService) {
 		this.assistantService = assistantService;
-	}
-
-	public record AskRequest(@NotBlank String question, UUID threadId) {
-	}
-
-	public record AskResponse(
-			UUID messageId, String answer, boolean blocked, UUID threadId, List<String> sourceTitles,
-			List<String> toolsCalled, String guardResult) {
 	}
 
 	@PostMapping("/messages")

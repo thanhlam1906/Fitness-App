@@ -1,5 +1,10 @@
 package com.fitness.assistant.service.ingest;
 
+import com.fitness.assistant.dto.ChunkPreviewResponse;
+import com.fitness.assistant.dto.PublishResponse;
+import com.fitness.assistant.dto.ReplacesResponse;
+import com.fitness.assistant.dto.UploadDetailResponse;
+import com.fitness.assistant.dto.UploadRowResponse;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.io.IOException;
@@ -44,20 +49,6 @@ public class CorpusUploadService {
 			FROM corpus_uploads u LEFT JOIN documents d ON d.source = u.file_name
 			""";
 
-	public record Replaces(String title, Instant ingestedAt, int chunkCount) {
-	}
-
-	public record UploadRow(UUID id, String fileName, String status, String error, Instant createdAt,
-			Replaces replaces) {
-	}
-
-	public record ChunkPreview(String heading, String content) {
-	}
-
-	public record UploadDetail(UUID id, String fileName, String status, String error, Instant createdAt,
-			Replaces replaces, List<ChunkPreview> chunks) {
-	}
-
 	private final JdbcTemplate jdbc;
 	private final PdfExtractor extractor;
 	private final CorpusLoader loader;
@@ -72,7 +63,7 @@ public class CorpusUploadService {
 		this.loader = loader;
 	}
 
-	public UploadRow accept(MultipartFile file) {
+	public UploadRowResponse accept(MultipartFile file) {
 		String fileName = file.getOriginalFilename() == null ? "" : file.getOriginalFilename().strip();
 		if (fileName.isEmpty()) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu tên file.");
@@ -83,7 +74,7 @@ public class CorpusUploadService {
 					"INSERT INTO corpus_uploads (file_name, status) VALUES (?, 'PROCESSING') RETURNING id",
 					UUID.class, fileName);
 			// Đọc dòng TRƯỚC khi giao việc: luồng nền có thể xong trước khi request này trả về.
-			UploadRow created = row(id);
+			UploadRowResponse created = row(id);
 			worker.submit(() -> process(id, pdf));
 			return created;
 		} catch (RuntimeException e) {
@@ -123,23 +114,23 @@ public class CorpusUploadService {
 		jdbc.update("UPDATE corpus_uploads SET status = 'FAILED', error = ? WHERE status = 'PROCESSING'", INTERRUPTED);
 	}
 
-	public List<UploadRow> list() {
+	public List<UploadRowResponse> list() {
 		return jdbc.query(SELECT_ROW + " ORDER BY u.created_at DESC", (rs, i) -> toRow(rs));
 	}
 
-	public UploadDetail detail(UUID id) {
+	public UploadDetailResponse detail(UUID id) {
 		return jdbc.query(SELECT_ROW + " WHERE u.id = ?", (rs, i) -> {
-			UploadRow r = toRow(rs);
+			UploadRowResponse r = toRow(rs);
 			String markdown = rs.getString("markdown");
-			List<ChunkPreview> chunks = "READY".equals(r.status()) && markdown != null
-					? CorpusLoader.chunk(markdown).stream().map(c -> new ChunkPreview(c[0], c[1])).toList()
+			List<ChunkPreviewResponse> chunks = "READY".equals(r.status()) && markdown != null
+					? CorpusLoader.chunk(markdown).stream().map(c -> new ChunkPreviewResponse(c[0], c[1])).toList()
 					: List.of();
-			return new UploadDetail(r.id(), r.fileName(), r.status(), r.error(), r.createdAt(), r.replaces(), chunks);
+			return new UploadDetailResponse(r.id(), r.fileName(), r.status(), r.error(), r.createdAt(), r.replaces(), chunks);
 		}, id).stream().findFirst().orElseThrow(CorpusUploadService::notFound);
 	}
 
 	@Transactional
-	public CorpusLoader.Published publish(UUID id, String title) {
+	public PublishResponse publish(UUID id, String title) {
 		// FOR UPDATE: bấm "Đưa vào trợ lý" hai lần liền thì lần sau chờ lần trước xong rồi thấy dòng
 		// đã bị xoá → 404, không nạp trùng.
 		Map<String, Object> upload = jdbc.queryForList(
@@ -148,7 +139,7 @@ public class CorpusUploadService {
 		if (!"READY".equals(upload.get("status"))) {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "File chưa trích xong hoặc đã lỗi, chưa đưa vào được.");
 		}
-		CorpusLoader.Published published = loader.publish(
+		PublishResponse published = loader.publish(
 				(String) upload.get("file_name"), title.strip(), (String) upload.get("markdown"));
 		jdbc.update("DELETE FROM corpus_uploads WHERE id = ?", id);
 		return published;
@@ -161,7 +152,7 @@ public class CorpusUploadService {
 		}
 	}
 
-	private UploadRow row(UUID id) {
+	private UploadRowResponse row(UUID id) {
 		return jdbc.query(SELECT_ROW + " WHERE u.id = ?", (rs, i) -> toRow(rs), id).get(0);
 	}
 
@@ -205,11 +196,11 @@ public class CorpusUploadService {
 		}
 	}
 
-	private static UploadRow toRow(ResultSet rs) throws SQLException {
+	private static UploadRowResponse toRow(ResultSet rs) throws SQLException {
 		String docTitle = rs.getString("doc_title");
-		Replaces replaces = docTitle == null ? null
-				: new Replaces(docTitle, rs.getTimestamp("doc_ingested_at").toInstant(), rs.getInt("doc_chunks"));
-		return new UploadRow(rs.getObject("id", UUID.class), rs.getString("file_name"), rs.getString("status"),
+		ReplacesResponse replaces = docTitle == null ? null
+				: new ReplacesResponse(docTitle, rs.getTimestamp("doc_ingested_at").toInstant(), rs.getInt("doc_chunks"));
+		return new UploadRowResponse(rs.getObject("id", UUID.class), rs.getString("file_name"), rs.getString("status"),
 				rs.getString("error"), rs.getTimestamp("created_at").toInstant(), replaces);
 	}
 

@@ -1,11 +1,14 @@
 package com.fitness.admin.controller;
 
+import com.fitness.admin.dto.AdminOverviewResponse;
+import com.fitness.admin.dto.AdminUserDetailResponse;
+import com.fitness.admin.dto.AdminUserRowResponse;
 import com.fitness.auth.entity.User;
 import com.fitness.auth.repository.UserRepository;
 import com.fitness.content.entity.ProgramTemplate;
 import com.fitness.content.repository.ProgramTemplateRepository;
 import com.fitness.feedback.repository.CueFeedbackRepository;
-import com.fitness.profile.dto.ProfileResponse;
+import com.fitness.profile.dto.BodyMetricResponse;
 import com.fitness.profile.entity.Profile;
 import com.fitness.profile.repository.BodyMetricRepository;
 import com.fitness.profile.repository.ProfileRepository;
@@ -48,34 +51,6 @@ public class AdminUserController {
 
 	private static final List<String> IN_QUEUE = List.of("PENDING", "PROCESSING");
 
-	public record AdminUserRow(
-			UUID id, String email, String role, boolean active, Instant createdAt, Instant lastActivityAt,
-			String programName, Short weekIndex, Short totalWeeks,
-			long sessionCount, long clipCount, Integer adherencePct) {
-	}
-
-	public record AdminUserDetail(
-			AdminUserRow user,
-			String goal,
-			String experience,
-			Short sessionsPerWeek,
-			List<String> equipment,
-			Short birthYear,
-			String gender,
-			Instant disclaimerAt,
-			String onboardingStep,
-			BigDecimal heightCm,
-			BigDecimal weightKg,
-			LocalDate measuredOn,
-			String activeProgramName) {
-	}
-
-	/** Bốn ô thống kê đầu màn 11 và các badge số trên sidebar admin. */
-	public record AdminOverview(
-			long userCount, long activeLast7Days, long sessionsThisWeek,
-			long reviewsInQueue, long wrongFeedbackCount) {
-	}
-
 	/** Số liệu lịch của một user: tổng buổi, đã xong, tổng tuần, tuần đang tới. */
 	private record ScheduleStats(long total, long done, Short totalWeeks, Short currentWeek) {
 
@@ -111,12 +86,12 @@ public class AdminUserController {
 	}
 
 	@GetMapping("/overview")
-	public AdminOverview overview() {
+	public AdminOverviewResponse overview() {
 		Instant sevenDaysAgo = Instant.now().minus(7, ChronoUnit.DAYS);
 		long activeLast7Days = sessions.lastActivityPerUser().stream()
 				.filter(row -> ((Instant) row[1]).isAfter(sevenDaysAgo))
 				.count();
-		return new AdminOverview(
+		return new AdminOverviewResponse(
 				users.count(),
 				activeLast7Days,
 				sessions.countByStartedAtAfter(sevenDaysAgo),
@@ -125,7 +100,7 @@ public class AdminUserController {
 	}
 
 	@GetMapping("/users")
-	public List<AdminUserRow> list() {
+	public List<AdminUserRowResponse> list() {
 		Map<UUID, Instant> lastActivity = toInstantMap(sessions.lastActivityPerUser());
 		Map<UUID, Long> sessionCounts = toCountMap(sessions.sessionCountPerUser());
 		Map<UUID, Long> clipCounts = toCountMap(reviewRequests.requestCountPerUser());
@@ -143,12 +118,12 @@ public class AdminUserController {
 	}
 
 	@GetMapping("/users/{id}")
-	public AdminUserDetail get(@PathVariable UUID id) {
+	public AdminUserDetailResponse get(@PathVariable UUID id) {
 		User user = users.findById(id)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng"));
 		Profile profile = profiles.findById(id).orElseGet(() -> new Profile(id));
-		ProfileResponse.BodyMetricView latest =
-				ProfileResponse.BodyMetricView.latestOf(bodyMetrics.findByUserIdOrderByMeasuredOnDesc(id));
+		BodyMetricResponse latest =
+				BodyMetricResponse.latestOf(bodyMetrics.findByUserIdOrderByMeasuredOnDesc(id));
 		String programName = programs.findByUserIdAndStatus(id, "ACTIVE")
 				.map(Program::getTemplateId)
 				.flatMap(templates::findById)
@@ -158,7 +133,7 @@ public class AdminUserController {
 		Instant lastActivityAt = sessions.lastActivityForUser(id).orElse(null);
 		ScheduleStats stats = toScheduleStats(scheduledWorkouts.scheduleStatsPerUser()).get(id);
 
-		return new AdminUserDetail(
+		return new AdminUserDetailResponse(
 				toRow(user, lastActivityAt, programName, stats,
 						sessions.countByUserId(id), reviewRequests.countByUserId(id)),
 				profile.getGoal(), profile.getExperience(), profile.getSessionsPerWeek(),
@@ -186,10 +161,10 @@ public class AdminUserController {
 		return byUser;
 	}
 
-	private AdminUserRow toRow(
+	private AdminUserRowResponse toRow(
 			User user, Instant lastActivityAt, String programName, ScheduleStats stats,
 			long sessionCount, long clipCount) {
-		return new AdminUserRow(
+		return new AdminUserRowResponse(
 				user.getId(), user.getEmail(), user.getRole().name(), user.isActive(),
 				user.getCreatedAt(), lastActivityAt, programName,
 				stats == null ? null : stats.currentWeek(),

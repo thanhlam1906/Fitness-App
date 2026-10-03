@@ -4,7 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-public record ScheduledWorkoutView(
+public record ScheduledWorkoutResponse(
 		UUID id,
 		LocalDate scheduledOn,
 		int weekIndex,
@@ -12,5 +12,5 @@ public record ScheduledWorkoutView(
 		String status,
 		/** Có workout_session IN_PROGRESS: màn Chương trình không sửa, không dời buổi này. */
 		boolean inProgress,
-		List<ScheduledExerciseView> exercises) {
+		List<ScheduledExerciseResponse> exercises) {
 }

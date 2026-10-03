@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fitness.auth.entity.Role;
 import com.fitness.profile.dto.BodyMetricRequest;
+import com.fitness.profile.dto.BodyMetricResponse;
 import com.fitness.profile.dto.ProfilePatchRequest;
 import com.fitness.profile.dto.ProfileResponse;
 import com.fitness.profile.entity.Profile;
@@ -98,10 +99,10 @@ class ProfileControllerIntegrationTest extends PostgresIntegrationTest {
 		post(newAuthedUser(Role.USER).headers(), new BodyMetricRequest(null, new BigDecimal("99.00"), null));
 
 		var resp = rest.exchange("/api/v1/me/body-metrics", HttpMethod.GET, new HttpEntity<>(me),
-				ProfileResponse.BodyMetricView[].class);
+				BodyMetricResponse[].class);
 
 		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
-		assertThat(resp.getBody()).extracting(ProfileResponse.BodyMetricView::measuredOn)
+		assertThat(resp.getBody()).extracting(BodyMetricResponse::measuredOn)
 				.containsExactly(LocalDate.of(2026, 9, 25), LocalDate.of(2026, 8, 4));
 	}
 

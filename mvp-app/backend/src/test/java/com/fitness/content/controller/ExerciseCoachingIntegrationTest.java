@@ -7,7 +7,7 @@ import com.fitness.content.entity.Exercise;
 import com.fitness.content.repository.ExerciseRepository;
 import com.fitness.content.repository.ProgramTemplateRepository;
 import com.fitness.program.dto.ScheduleResponse;
-import com.fitness.program.dto.ScheduledExerciseView;
+import com.fitness.program.dto.ScheduledExerciseResponse;
 import com.fitness.program.service.ProgramService;
 import com.fitness.support.PostgresIntegrationTest;
 import java.time.LocalDate;
@@ -56,7 +56,7 @@ class ExerciseCoachingIntegrationTest extends PostgresIntegrationTest {
 
 		ScheduleResponse schedule = rest.exchange("/api/v1/schedule", HttpMethod.GET,
 				new HttpEntity<>(user.headers()), ScheduleResponse.class).getBody();
-		ScheduledExerciseView squat = schedule.workouts().get(0).exercises().stream()
+		ScheduledExerciseResponse squat = schedule.workouts().get(0).exercises().stream()
 				.filter(e -> e.exerciseSlug().equals("barbell-back-squat")).findFirst().orElseThrow();
 
 		assertThat(squat.muscleGroups()).startsWith("QUADS");

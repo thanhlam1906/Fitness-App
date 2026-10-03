@@ -9,7 +9,7 @@ import java.util.UUID;
  * chương trình cũng lấy danh sách bài cần mức tạ khởi điểm từ đây, thay vì
  * bắt người dùng gõ tay slug.
  */
-public record TemplateCandidate(
+public record TemplateCandidateResponse(
 		UUID id,
 		String slug,
 		String name,
@@ -18,13 +18,13 @@ public record TemplateCandidate(
 		short sessionsMax,
 		List<String> requiredEquipment,
 		boolean matchesSessions,
-		List<CycleDayView> days) {
+		List<CycleDayResponse> days) {
 
-	public record CycleDayView(int order, String label, List<CycleExerciseView> exercises) {
+	public record CycleDayResponse(int order, String label, List<CycleExerciseResponse> exercises) {
 	}
 
 	/** needsLoad = bài dùng thiết bị (bodyweight có equipment rỗng → tăng tiến bằng rep, không nhập tạ). */
-	public record CycleExerciseView(
+	public record CycleExerciseResponse(
 			String slug, String name, int sets, int repsMin, int repsMax, int restSec, boolean needsLoad) {
 	}
 }

@@ -53,10 +53,10 @@ class CustomProgramIntegrationTest extends PostgresIntegrationTest {
 		LocalDate monday = LocalDate.of(2026, 1, 1).with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY));
 
 		var request = new CreateCustomProgramRequest(monday, 2, List.of(
-				new CreateCustomProgramRequest.CustomDay(1, "Đẩy", List.of(
-						new CreateCustomProgramRequest.CustomExercise(pushUpId, 4, 8, 12, null, 90))),
-				new CreateCustomProgramRequest.CustomDay(5, "Kéo", List.of(
-						new CreateCustomProgramRequest.CustomExercise(pushUpId, 3, 10, 10, 20.0, null)))));
+				new CreateCustomProgramRequest.CustomDayRequest(1, "Đẩy", List.of(
+						new CreateCustomProgramRequest.CustomExerciseRequest(pushUpId, 4, 8, 12, null, 90))),
+				new CreateCustomProgramRequest.CustomDayRequest(5, "Kéo", List.of(
+						new CreateCustomProgramRequest.CustomExerciseRequest(pushUpId, 3, 10, 10, 20.0, null)))));
 
 		var created = rest.exchange("/api/v1/programs/custom", HttpMethod.POST,
 				new HttpEntity<>(request, user.headers()), CreateProgramResponse.class);
@@ -87,8 +87,8 @@ class CustomProgramIntegrationTest extends PostgresIntegrationTest {
 	void createCustom_unknownExercise_returns400() {
 		var user = newAuthedUser(Role.USER);
 		var request = new CreateCustomProgramRequest(LocalDate.now(), 1, List.of(
-				new CreateCustomProgramRequest.CustomDay(1, "Đẩy", List.of(
-						new CreateCustomProgramRequest.CustomExercise(
+				new CreateCustomProgramRequest.CustomDayRequest(1, "Đẩy", List.of(
+						new CreateCustomProgramRequest.CustomExerciseRequest(
 								UUID.randomUUID(), 3, 8, 8, null, null)))));
 
 		var resp = rest.exchange("/api/v1/programs/custom", HttpMethod.POST,

@@ -7,6 +7,7 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fitness.assistant.dto.PublishResponse;
 import com.fitness.support.FakeEmbeddings;
 import com.fitness.support.PostgresIntegrationTest;
 import java.util.List;
@@ -59,7 +60,7 @@ class CorpusLoaderIntegrationTest extends PostgresIntegrationTest {
 	void publish_mergesShortSections_andFtsFindsUnaccented() {
 		String source = UUID.randomUUID() + "-bai-test.pdf";
 
-		CorpusLoader.Published published = loader.publish(source, "Bài kiểm thử", MARKDOWN);
+		PublishResponse published = loader.publish(source, "Bài kiểm thử", MARKDOWN);
 
 		// "# Bài kiểm thử" gộp vào mục sau, "### Đặc điểm:" gộp vào mục trước → 2 chunk.
 		assertThat(published.chunkCount()).isEqualTo(2);
@@ -79,8 +80,8 @@ class CorpusLoaderIntegrationTest extends PostgresIntegrationTest {
 	void publish_sameSourceTwice_replacesOldDocument() {
 		String source = UUID.randomUUID() + "-bai-test.pdf";
 
-		CorpusLoader.Published first = loader.publish(source, "Bản cũ", MARKDOWN);
-		CorpusLoader.Published second = loader.publish(source, "Bản mới", MARKDOWN);
+		PublishResponse first = loader.publish(source, "Bản cũ", MARKDOWN);
+		PublishResponse second = loader.publish(source, "Bản mới", MARKDOWN);
 
 		assertThat(second.documentId()).isNotEqualTo(first.documentId());
 		assertThat(jdbc.queryForList("SELECT title FROM documents WHERE source = ?", String.class, source))
@@ -99,7 +100,7 @@ class CorpusLoaderIntegrationTest extends PostgresIntegrationTest {
 		}
 		org.mockito.ArgumentCaptor<List<String>> batches = org.mockito.ArgumentCaptor.forClass(List.class);
 
-		CorpusLoader.Published published = loader.publish(UUID.randomUUID() + "-sach.pdf", "Sách dày", book.toString());
+		PublishResponse published = loader.publish(UUID.randomUUID() + "-sach.pdf", "Sách dày", book.toString());
 
 		verify(embeddingModel, atLeastOnce()).embedForResponse(batches.capture());
 		assertThat(published.chunkCount()).isEqualTo(150);

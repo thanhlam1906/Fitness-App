@@ -5,11 +5,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fitness.auth.entity.Role;
 import com.fitness.content.repository.ExerciseRepository;
 import com.fitness.support.PostgresIntegrationTest;
+import com.fitness.workout.dto.ProgressResponse;
 import com.fitness.workout.entity.SetLog;
 import com.fitness.workout.entity.WorkoutSession;
 import com.fitness.workout.repository.SetLogRepository;
 import com.fitness.workout.repository.WorkoutSessionRepository;
-import com.fitness.workout.service.ProgressService;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Duration;
@@ -46,7 +46,7 @@ class ProgressControllerIntegrationTest extends PostgresIntegrationTest {
 		saveSession(me.userId(), 10, (short) 6, squat, 50, 4);  // tuần thứ 2 tính từ bây giờ: 200 kg
 		saveSession(newAuthedUser(Role.USER).userId(), 1, (short) 3, squat, 999, 9); // người khác
 
-		ProgressService.Progress p = get(me.headers(), 4);
+		ProgressResponse p = get(me.headers(), 4);
 
 		assertThat(p.weeks()).isEqualTo(4);
 		assertThat(p.sessionsStarted()).isEqualTo(2);
@@ -54,7 +54,7 @@ class ProgressControllerIntegrationTest extends PostgresIntegrationTest {
 		assertThat(p.avgSessionRpe()).isEqualTo(7.0);
 		assertThat(p.totalTonnageKg()).isEqualByComparingTo("500");
 		assertThat(p.weekly()).hasSize(4);
-		assertThat(p.weekly()).extracting(ProgressService.Week::tonnageKg)
+		assertThat(p.weekly()).extracting(ProgressResponse.WeekResponse::tonnageKg)
 				.usingElementComparator(BigDecimal::compareTo)
 				.containsExactly(BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("200"), new BigDecimal("300"));
 		assertThat(p.weekly().get(0).from()).isBefore(p.weekly().get(3).from());
@@ -67,9 +67,9 @@ class ProgressControllerIntegrationTest extends PostgresIntegrationTest {
 		assertThat(get(me.headers(), 500).weekly()).hasSize(52);
 	}
 
-	private ProgressService.Progress get(HttpHeaders headers, int weeks) {
+	private ProgressResponse get(HttpHeaders headers, int weeks) {
 		var resp = rest.exchange("/api/v1/me/progress?weeks=" + weeks, HttpMethod.GET,
-				new HttpEntity<>(headers), ProgressService.Progress.class);
+				new HttpEntity<>(headers), ProgressResponse.class);
 		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
 		return resp.getBody();
 	}

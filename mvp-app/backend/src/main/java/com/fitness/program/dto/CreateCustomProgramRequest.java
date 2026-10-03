@@ -13,15 +13,15 @@ import java.util.UUID;
 public record CreateCustomProgramRequest(
 		LocalDate startDate,
 		@Min(1) @Max(12) Integer weeksToGenerate,
-		@NotEmpty @Valid List<CustomDay> days) {
+		@NotEmpty @Valid List<CustomDayRequest> days) {
 
-	public record CustomDay(
+	public record CustomDayRequest(
 			@NotNull @Min(1) @Max(7) Integer dayOfWeek,
 			String label,
-			@NotEmpty @Valid List<CustomExercise> exercises) {
+			@NotEmpty @Valid List<CustomExerciseRequest> exercises) {
 	}
 
-	public record CustomExercise(
+	public record CustomExerciseRequest(
 			@NotNull UUID exerciseId,
 			@NotNull @Min(1) @Max(20) Integer sets,
 			@NotNull @Min(1) @Max(100) Integer repsMin,
