@@ -1,13 +1,17 @@
 package com.fitness.workout.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 
 import com.fitness.auth.entity.Role;
 import com.fitness.content.entity.Exercise;
 import com.fitness.content.repository.ExerciseRepository;
 import com.fitness.program.dto.CreateCustomProgramRequest;
 import com.fitness.program.dto.ScheduleResponse;
+import com.fitness.program.repository.ScheduledWorkoutRepository;
 import com.fitness.program.service.ProgramService;
+import com.fitness.program.service.ProgressionApplicationService;
 import com.fitness.support.PostgresIntegrationTest;
 import com.fitness.workout.dto.FinishSessionRequest;
 import com.fitness.workout.dto.SessionResponse;
@@ -15,6 +19,7 @@ import com.fitness.workout.dto.SetLogRequest;
 import com.fitness.workout.dto.SetLogResponse;
 import com.fitness.workout.dto.StartSessionRequest;
 import com.fitness.workout.entity.WorkoutSession;
+import com.fitness.workout.repository.PainReportRepository;
 import com.fitness.workout.repository.WorkoutSessionRepository;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
@@ -29,6 +34,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 class WorkoutSessionControllerIntegrationTest extends PostgresIntegrationTest {
 
@@ -40,6 +46,13 @@ class WorkoutSessionControllerIntegrationTest extends PostgresIntegrationTest {
 	private ProgramService programService;
 	@Autowired
 	private WorkoutSessionRepository sessionRepository;
+	@Autowired
+	private ScheduledWorkoutRepository scheduledWorkoutRepository;
+	@Autowired
+	private PainReportRepository painReportRepository;
+	// Spy: các ca khác vẫn chạy tăng tải thật, chỉ ca lỗi giữa chừng mới ép ném lỗi.
+	@MockitoSpyBean
+	private ProgressionApplicationService progression;
 
 	@Test
 	void startLogFinish_fullFlow() {
@@ -188,6 +201,28 @@ class WorkoutSessionControllerIntegrationTest extends PostgresIntegrationTest {
 		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
 		assertThat(rest.exchange("/api/v1/schedule", HttpMethod.GET, new HttpEntity<>(owner.headers()),
 				ScheduleResponse.class).getBody().workouts().get(0).status()).isNotEqualTo("DONE");
+	}
+
+	/**
+	 * Spec chuẩn cấu trúc §5.4: tăng tải lỗi giữa chừng thì không lưu nửa vời — buổi chưa xong, lịch
+	 * chưa đổi, không có báo đau. Trước đây từng bước lưu riêng: buổi đã DONE mà tải chưa tăng.
+	 */
+	@Test
+	void finish_progressionFails_savesNothing() {
+		var user = newAuthedUser(Role.USER);
+		UUID workoutId = firstWorkoutOfNewProgram(user);
+		UUID sessionId = start(workoutId, user.headers()).getBody().id();
+		doThrow(new IllegalStateException("tăng tải lỗi")).when(progression).applyForFinishedSession(any());
+
+		var resp = rest.exchange("/api/v1/sessions/" + sessionId + "/finish", HttpMethod.POST,
+				new HttpEntity<>(new FinishSessionRequest(
+						List.of(new FinishSessionRequest.PainReportRequest("KNEE_L", (short) 2, null)), (short) 7),
+						user.headers()), String.class);
+
+		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+		assertThat(sessionRepository.findById(sessionId).orElseThrow().getStatus()).isEqualTo("IN_PROGRESS");
+		assertThat(scheduledWorkoutRepository.findById(workoutId).orElseThrow().getStatus()).isEqualTo("PLANNED");
+		assertThat(painReportRepository.findBySessionId(sessionId)).isEmpty();
 	}
 
 	private org.springframework.http.ResponseEntity<SessionResponse> start(UUID workoutId, HttpHeaders headers) {
