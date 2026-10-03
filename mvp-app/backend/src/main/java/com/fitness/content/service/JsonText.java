@@ -9,21 +9,20 @@ import org.springframework.web.server.ResponseStatusException;
  * gửi lên dạng JSON thô (F4 concept-frontend-v1.md — textarea, chưa dựng
  * form riêng). Validate cú pháp trước khi ghi DB, tránh giá trị jsonb hỏng.
  */
-// Tạm public: controller còn gọi tới khi logic chưa vào service (kế hoạch chuẩn cấu trúc Task 4).
-public final class JsonText {
+final class JsonText {
 
 	private JsonText() {
 	}
 
 	/** Cột jsonb nullable (filming_guide): bỏ trống là hợp lệ, có giá trị thì phải đúng cú pháp. */
-	public static void requireValidOrNull(ObjectMapper objectMapper, String fieldName, String json) {
+	static void requireValidOrNull(ObjectMapper objectMapper, String fieldName, String json) {
 		if (json == null || json.isBlank()) {
 			return;
 		}
 		requireValid(objectMapper, fieldName, json);
 	}
 
-	public static void requireValid(ObjectMapper objectMapper, String fieldName, String json) {
+	static void requireValid(ObjectMapper objectMapper, String fieldName, String json) {
 		try {
 			objectMapper.readTree(json);
 		} catch (Exception e) {
