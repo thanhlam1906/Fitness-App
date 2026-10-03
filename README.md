@@ -17,6 +17,7 @@ mvp-app/web/         React 19 + Vite       — người dùng và admin, một a
 mvp-app/backend/     Java 21 + Spring Boot — API, engine tăng tải, hàng đợi chấm video
 mvp-app/analyzer/    Python worker         — pose + rule engine, đọc hàng đợi Postgres, KHÔNG nhận HTTP
 mvp-app/mobile/      Expo (React Native)   — bản iPhone cho người dùng, gọi cùng API với web
+mvp-app/pdf-hybrid/  Python (Docling)      — máy trích PDF cho kho kiến thức trợ lý, chỉ bật khi nạp tài liệu
 ```
 
 Analyzer và backend nói chuyện qua Postgres và một thư mục clip dùng chung. Analyzer không gọi
@@ -38,6 +39,9 @@ cd mvp-app/web     && npm install && npm run dev # http://localhost:5173
 
 # TN2 (chấm video) — chỉ cần khi thử luồng gửi clip
 cd mvp-app && docker compose --profile tn2 up -d analyzer
+
+# Kho kiến thức trợ lý — chỉ cần khi thả PDF ở màn admin "Kho kiến thức"
+docker compose -f mvp-app/docker-compose.yml --profile corpus up -d pdf-hybrid
 ```
 
 Flyway tự chạy migration và seed nội dung mẫu (5 bài, 2 template, 3 check form cho squat).
@@ -87,6 +91,8 @@ python mvp-app/analyzer/tests/test_scoring.py
 | `JWT_SECRET` | backend | dev-only | **Bắt buộc đặt ở môi trường thật**, ≥32 byte |
 | `CLIP_STORAGE_PATH` | backend, analyzer | `mvp-app/backend/var` | Hai bên phải trỏ CÙNG một thư mục |
 | `REVIEW_WEEKLY_LIMIT` | backend | `10` | Lượt gửi clip mỗi 7 ngày |
+| `PDF_HYBRID_URL` | backend | `http://localhost:5002` | Máy trích PDF `pdf-hybrid`; trong compose là `http://pdf-hybrid:5002` |
+| `PDF_HYBRID_TIMEOUT` | backend | `PT60M` | Giới hạn mỗi lần gọi máy trích (tối đa 50 trang) |
 | `POSE_MODEL` | analyzer | `full` | `lite` khi máy yếu |
 | `DEEPSEEK_API_KEY` | analyzer | — | Thiếu thì lớp diễn giải LLM tắt, chạy bằng text của rule |
 
