@@ -1,15 +1,15 @@
 import { useState } from "react"
 import { Pressable, Text, View } from "react-native"
 import { ChevronDown } from "lucide-react-native"
-import { WEEKDAYS } from "@/features/program/schema"
+import { WEEKDAYS } from "@/features/program/types/schema"
 import {
   draftError,
   emptyExercise,
   toCustomProgramRequest,
   type Draft,
   type DraftExercise,
-} from "@/features/schedule/customProgram"
-import type { Exercise } from "@/features/admin/exercises/types"
+} from "@/features/schedule/utils/customProgram"
+import type { Exercise } from "@/features/exercise/types"
 import { cn } from "@/lib/cn"
 import { range } from "@/lib/wheel"
 import { Kicker } from "~/components/Kicker"

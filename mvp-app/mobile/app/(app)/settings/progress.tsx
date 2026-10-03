@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Pressable, Text, View } from "react-native"
-import { barHeights } from "@/features/profile/charts"
+import { barHeights } from "@/features/profile/utils/charts"
 import { cn } from "@/lib/cn"
 import { formatDayMonth, formatNumber } from "@/lib/format"
 import { LoadState, SettingsSubPage } from "~/features/profile/SettingsSubPage"

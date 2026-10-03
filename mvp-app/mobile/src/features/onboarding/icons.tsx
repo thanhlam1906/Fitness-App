@@ -2,7 +2,7 @@ import type { ReactNode } from "react"
 import Svg, { Circle, Path, Rect } from "react-native-svg"
 
 // Ba thiết bị lucide không có icon. Vẽ tay cùng nét với lucide (24×24, stroke 2, bo tròn) để
-// đứng cạnh icon Dumbbell của lucide không lệch — chép từ web/src/features/onboarding/icons.tsx.
+// đứng cạnh icon Dumbbell của lucide không lệch — chép từ web/src/features/onboarding/components/icons.tsx.
 export type IconProps = { color: string; size?: number }
 
 function Base({ color, size = 22, children }: IconProps & { children: ReactNode }) {

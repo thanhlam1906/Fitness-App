@@ -1,6 +1,6 @@
 import { Redirect, Stack, usePathname } from "expo-router"
 import { Text, View } from "react-native"
-import { shouldResumeOnboarding } from "@/auth/onboardingGate"
+import { shouldResumeOnboarding } from "@/features/auth/utils/onboardingGate"
 import { useAuth } from "~/auth/AuthContext"
 import { Button } from "~/components/ui/Button"
 import { useProfile } from "~/features/profile/useProfile"

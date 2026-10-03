@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "~/api/client"
-import type { CustomProgramRequest } from "@/features/schedule/customProgram"
+import type { CustomProgramRequest } from "@/features/schedule/utils/customProgram"
 
 export function useCreateCustomProgram() {
   const queryClient = useQueryClient()

@@ -16,7 +16,7 @@ const MIN_HIT = 38
 type Spot = { cx: number; cy: number; rx: number; ry: number; labelled?: boolean }
 
 /**
- * Toạ độ trong khung 200×330 — chép từ web/src/components/BodyMap.tsx. TRÁI/PHẢI TÍNH THEO NGƯỜI
+ * Toạ độ trong khung 200×330 — chép từ web/src/features/workout/components/BodyMap.tsx. TRÁI/PHẢI TÍNH THEO NGƯỜI
  * TRONG HÌNH (quy ước y tế), nên "Vai trái" nằm ở nửa BÊN PHẢI màn hình. Làm ngược là báo đau sai
  * bên, mà báo đau là tín hiệu ưu tiên cao nhất của engine điều chỉnh tải.
  */

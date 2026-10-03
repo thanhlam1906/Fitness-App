@@ -1,5 +1,5 @@
 import { Text, View } from "react-native"
-import type { Verdict } from "@/components/VerdictChip"
+import type { Verdict } from "@/features/review/components/VerdictChip"
 import { cn } from "@/lib/cn"
 
 /**

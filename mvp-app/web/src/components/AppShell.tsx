@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 import { useLocation } from "react-router"
-import { AdminShell } from "./AdminShell"
+import { AdminShell } from "@/features/admin/components/AdminShell"
 import { UserShell } from "./UserShell"
 
 /**

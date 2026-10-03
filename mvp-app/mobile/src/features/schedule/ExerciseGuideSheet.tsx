@@ -1,5 +1,5 @@
 import { ScrollView, Text, View } from "react-native"
-import { formatTarget, type ProgramDay } from "@/features/schedule/programDays"
+import { formatTarget, type ProgramDay } from "@/features/schedule/utils/programDays"
 import type { ScheduledExerciseView } from "@/features/schedule/types"
 import { cn } from "@/lib/cn"
 import { ExerciseImage } from "~/components/ExerciseImage"

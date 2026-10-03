@@ -12,7 +12,7 @@ import {
   WEEKDAY_LABELS,
   weekProgress,
   type MonthCell,
-} from "@/features/schedule/weeks"
+} from "@/features/schedule/utils/weeks"
 import { cn } from "@/lib/cn"
 import { ApiError } from "~/api/client"
 import { Kicker } from "~/components/Kicker"

@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { useQueryClient } from "@tanstack/react-query"
 import { api, onLoggedOut } from "~/api/client"
 import { clearAllConversations } from "~/features/assistant/conversation"
-import type { RegisterPayload } from "@/auth/registerSchema"
+import type { RegisterPayload } from "@/features/auth/types/registerSchema"
 import { clearSession, getRefreshToken, getStoredSession, setSession } from "./tokenStorage"
 
 type AuthTokens = { accessToken: string; refreshToken: string; userId: string; role: string }

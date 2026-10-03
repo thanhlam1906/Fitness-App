@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Text, View } from "react-native"
 import Svg, { Circle, G, Path, Text as SvgText } from "react-native-svg"
-import { weightSeries } from "@/features/profile/charts"
+import { weightSeries } from "@/features/profile/utils/charts"
 import { WEIGHT_KG } from "@/features/profile/types"
 import { cn } from "@/lib/cn"
 import { formatDate, formatDayMonth, formatKg } from "@/lib/format"

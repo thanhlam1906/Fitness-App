@@ -1,6 +1,6 @@
 import { Text, View } from "react-native"
 import { useLocalSearchParams, useRouter } from "expo-router"
-import { checkLabel, evidenceLine, evidenceOf, isOverallOk } from "@/features/review/reviewView"
+import { checkLabel, evidenceLine, evidenceOf, isOverallOk } from "@/features/review/utils/reviewView"
 import type { Review } from "@/features/review/types"
 import { cn } from "@/lib/cn"
 import { formatDayMonth } from "@/lib/format"
