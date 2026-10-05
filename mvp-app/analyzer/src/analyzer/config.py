@@ -21,9 +21,6 @@ class Config:
     poll_interval_sec: float
     min_visibility: float
     max_frames: int
-    llm_api_key: str | None
-    llm_base_url: str
-    llm_model: str
 
 
 def load() -> Config:
@@ -40,9 +37,4 @@ def load() -> Config:
         # A2 concept-analyzer-v1.md §11 — số khởi điểm, phải đo lại trên bộ clip.
         min_visibility=float(os.environ.get("MIN_VISIBILITY", "0.5")),
         max_frames=int(os.environ.get("MAX_FRAMES", "900")),
-        # Chấm form cần LLM (doc/design-cham-form-llm-v1.md §4.8): thiếu key thì mọi job FAILED
-        # với lời nói rõ lý do, không âm thầm chấm bằng cách khác.
-        llm_api_key=os.environ.get("OPENAI_API_KEY") or None,
-        llm_base_url=os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1"),
-        llm_model=os.environ.get("OPENAI_CHAT_MODEL", "gpt-4o-mini"),
     )

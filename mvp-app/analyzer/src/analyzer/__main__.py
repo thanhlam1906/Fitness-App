@@ -8,7 +8,7 @@ ponytail: không có health endpoint. Sống hay chết xem bằng `docker ps`, 
 và cột started_at của job đang PROCESSING. Thêm endpoint khi thật sự có hệ
 thống giám sát cần tới — 100 tester thì chưa.
 
-Chạy:  DB_URL=... CLIP_STORAGE_PATH=... OPENAI_API_KEY=... python -m analyzer
+Chạy:  DB_URL=... CLIP_STORAGE_PATH=... python -m analyzer
 """
 from __future__ import annotations
 
@@ -19,7 +19,6 @@ import time
 
 from . import config as config_mod
 from .db import Db
-from .llm import LlmClient
 from .pipeline.pose import PoseReader
 from .storage import ClipStorage
 from .worker import delete_clips, process
@@ -44,9 +43,7 @@ def main() -> int:
     db = Db(cfg.db_url)
     storage = ClipStorage(cfg.clip_storage_path)
     reader = PoseReader(cfg.pose_model)
-    llm = LlmClient(cfg.llm_api_key, cfg.llm_base_url, cfg.llm_model)
-    log.info("Analyzer sẵn sàng (model pose=%s, LLM=%s)", cfg.pose_model,
-             cfg.llm_model if llm.enabled else "CHƯA CẤU HÌNH, mọi job sẽ FAILED")
+    log.info("Analyzer sẵn sàng (model pose=%s)", cfg.pose_model)
 
     try:
         while _running:
@@ -55,7 +52,7 @@ def main() -> int:
                 time.sleep(cfg.poll_interval_sec)
                 continue
             try:
-                process(job, db, storage, reader, llm, cfg)
+                process(job, db, storage, reader, cfg)
             except Exception:
                 # Chưa hết lượt thử thì trả về hàng đợi; hết thì FAILED và xoá clip ngay
                 # (N2 kể cả khi chấm lỗi), không đợi ClipCleanupJob.

@@ -18,7 +18,7 @@ from psycopg.types.json import Json
 class Job:
     id: str
     user_id: str
-    exercise_id: str | None      # None = màn camera, chưa nhận diện bài
+    exercise_id: str | None      # None = yêu cầu cũ gửi từ màn camera khi LLM còn đoán bài
     attempts: int
     features: dict | None        # đã có = chấm lại sau khi sửa bài, hoặc chạy lại sau lỗi LLM
 
@@ -35,6 +35,8 @@ class FormCheck:
     cue_warn_vi: str | None
     cue_fail_vi: str
     priority: int
+    name_vi: str | None
+    moment: str | None           # START | PEAK; null ở dòng ngưỡng kiểu cũ (đã tắt)
 
 
 @dataclass(frozen=True)
@@ -76,7 +78,7 @@ class Db:
             cur.execute(
                 """
                 SELECT id, code, metric, valid_viewpoints, thresholds, confidence_min,
-                       cue_pass_vi, cue_warn_vi, cue_fail_vi, priority
+                       cue_pass_vi, cue_warn_vi, cue_fail_vi, priority, name_vi, moment
                   FROM form_checks
                  WHERE exercise_id = %s AND is_active
                  ORDER BY priority
@@ -96,6 +98,8 @@ class Db:
                 cue_warn_vi=r["cue_warn_vi"],
                 cue_fail_vi=r["cue_fail_vi"],
                 priority=int(r["priority"]),
+                name_vi=r["name_vi"],
+                moment=r["moment"],
             )
             for r in rows
         ]
@@ -110,32 +114,10 @@ class Db:
             rows = cur.fetchall()
         return [Clip(str(r["id"]), r["storage_key"], r["viewpoint"]) for r in rows]
 
-    def load_candidates(self) -> list[dict[str, Any]]:
-        """Bài LLM được chọn khi nhận diện: đang bật và admin cho chấm."""
-        with self._conn.cursor() as cur:
-            cur.execute(
-                "SELECT id, slug, name_vi, name_en, description, muscle_groups, equipment "
-                "FROM exercises WHERE analyzable AND is_active ORDER BY slug")
-            rows = cur.fetchall()
-        return [{**r, "id": str(r["id"])} for r in rows]
-
-    def load_exercise(self, exercise_id: str) -> dict[str, Any]:
-        """Nội dung bài do người viết, đưa LLM khi chấm: mô tả, cách tập, lỗi hay gặp (V10)."""
-        with self._conn.cursor() as cur:
-            cur.execute(
-                "SELECT name_vi, name_en, description, steps_vi, mistakes_vi "
-                "FROM exercises WHERE id = %s", (exercise_id,))
-            return dict(cur.fetchone())
-
     def save_features(self, request_id: str, features: dict[str, Any]) -> None:
         with self._conn.cursor() as cur:
             cur.execute("UPDATE video_review_requests SET features = %s WHERE id = %s",
                         (Json(features), request_id))
-
-    def set_exercise(self, request_id: str, exercise_id: str) -> None:
-        with self._conn.cursor() as cur:
-            cur.execute("UPDATE video_review_requests SET exercise_id = %s WHERE id = %s",
-                        (exercise_id, request_id))
 
     def save_results(self, request_id: str, results: Iterable[dict[str, Any]]) -> None:
         """Ghi lại từ đầu mỗi lần chấm — lần thử thứ 2 không để lại kết quả cũ nửa vời."""

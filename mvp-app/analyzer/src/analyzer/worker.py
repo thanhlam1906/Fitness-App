@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Một job chấm form — doc/design-cham-form-llm-v1.md §4.
+"""Một job chấm form — doc/design-cham-form-nguong-v1.md §6.
 
-clip (.json từ màn camera, hoặc video) → tách rep chung → bộ số → LLM nhận diện bài → LLM chấm
-→ judge.py kiểm → lưu. Tách khỏi __main__.py để test bằng Db/LLM giả: file này không import
-psycopg hay httpx.
+clip (.json từ màn camera, hoặc video) → tách rep chung → bộ số → so với ngưỡng admin nhập
+(form_checks) → lưu. Tách khỏi __main__.py để test bằng Db giả: file này không import psycopg.
 
-Ném exception = lỗi tạm (mạng, LLM trả rác): vòng poll requeue, tối đa 3 lần.
+Ném exception = lỗi tạm (mạng, DB): vòng poll requeue, tối đa 3 lần.
 """
 from __future__ import annotations
 
@@ -15,23 +14,19 @@ from pathlib import Path
 
 import numpy as np
 
-from .judge import judgment_messages, parse_recognition, recognition_messages, validate_judgment
 from .pipeline.features import view_features
 from .pipeline.geometry import frame_metrics
 from .pipeline.pose import Frame, PoseError
 from .pipeline.reps import segment_generic
 from .pipeline.viewpoint import classify
+from .scoring import grade_check, pick_primary
+from .viewpoints import DIAGONAL, FRONTAL, SAGITTAL
 
 log = logging.getLogger("analyzer")
-_CANDIDATE_FIELDS = ("slug", "name_vi", "name_en", "description", "muscle_groups", "equipment")
+_VIEWS = {SAGITTAL, FRONTAL, DIAGONAL}
 
 
-def process(job, db, storage, reader, llm, cfg) -> None:
-    if not llm.enabled:
-        db.mark_failed(job.id, "Chấm form chưa được cấu hình (thiếu OPENAI_API_KEY).")
-        delete_clips(db, storage, job.id)
-        return
-
+def process(job, db, storage, reader, cfg) -> None:
     features = job.features
     if features is None:
         try:
@@ -42,19 +37,16 @@ def process(job, db, storage, reader, llm, cfg) -> None:
             delete_clips(db, storage, job.id)
             return
         db.save_features(job.id, features)
-    # Có bộ số rồi thì clip hết việc: xoá ngay, không đợi LLM (N2).
+    # Có bộ số rồi thì clip hết việc: xoá ngay (N2).
     delete_clips(db, storage, job.id)
 
-    exercise_id = job.exercise_id
-    if exercise_id is None:
-        exercise_id = _recognize(llm, features, db.load_candidates())
-        if exercise_id is None:
-            db.mark_rejected(job.id, "UNKNOWN_EXERCISE", "Chưa nhận ra bài bạn tập.")
-            return
-        db.set_exercise(job.id, exercise_id)
-
-    exercise = db.load_exercise(exercise_id)
-    rows = validate_judgment(llm.ask_json(judgment_messages(exercise, features)), features, exercise)
+    # Không có bài: yêu cầu gửi từ màn camera cũ, hồi LLM còn đoán bài (trước 10-05).
+    checks = db.load_form_checks(job.exercise_id) if job.exercise_id else []
+    if not checks:
+        db.mark_failed(job.id, "Bài này chưa có tiêu chí chấm.")
+        return
+    rows = [grade_check(c, features) for c in checks]
+    pick_primary(rows, {c.id: c for c in checks})
     db.save_results(job.id, rows)
     db.mark_done(job.id)
     log.info("Chấm xong %s: %s", job.id, ", ".join(f"{r['name_vi']}={r['verdict']}" for r in rows))
@@ -70,14 +62,6 @@ def delete_clips(db, storage, request_id: str) -> None:
         db.mark_clip_deleted(clip.id)
 
 
-def _recognize(llm, features: dict, candidates: list[dict]) -> str | None:
-    """exercise_id của bài LLM chọn, hoặc None khi LLM không nhận ra."""
-    ids = {c["slug"]: c["id"] for c in candidates}
-    public = [{k: c[k] for k in _CANDIDATE_FIELDS} for c in candidates]
-    slug = parse_recognition(llm.ask_json(recognition_messages(features, public)), set(ids))
-    return ids.get(slug) if slug else None
-
-
 def _features(clips, storage, reader, cfg) -> dict:
     views = []
     for n, clip in enumerate(clips, start=1):
@@ -85,9 +69,12 @@ def _features(clips, storage, reader, cfg) -> dict:
         frames = read_landmarks(path) if path.suffix == ".json" else reader.read(path, cfg.max_frames)[0]
         metrics = [frame_metrics(f) for f in frames]
         seg = segment_generic(frames, metrics, cfg.min_visibility)
-        view = classify(frames, cfg.min_visibility)
-        # Góc đã quay mà không tách được rep vẫn ghi lại: LLM cần phân biệt "chưa quay"
-        # (NOT_APPLICABLE) với "quay rồi nhưng không dùng được" (LOW_CONFIDENCE).
+        # Góc màn camera đã xác nhận lúc đếm rep đáng tin hơn phân loại lại trên cả clip: lúc
+        # ngồi xuống tỉ lệ vai/thân trên ảnh đổi và có thể ra "chéo". Clip gửi tay không ghi góc
+        # thì mới phân loại.
+        view = clip.viewpoint if clip.viewpoint in _VIEWS else classify(frames, cfg.min_visibility)
+        # Góc đã quay mà không tách được rep vẫn ghi lại: chấm ra LOW_CONFIDENCE ("quay lại rõ
+        # hơn") thay vì NOT_APPLICABLE ("chưa quay góc này").
         views.append(view_features(n, view, frames, metrics, seg) if seg.reps else
                      {"clip": n, "view": view, "dominant": seg.joint,
                       "reps_total": 0, "reps_used": 0, "reps": []})

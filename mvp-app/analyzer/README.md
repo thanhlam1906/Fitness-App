@@ -2,11 +2,11 @@
 
 Worker Python. **Không nhận HTTP.** Nó chỉ nói chuyện với Postgres và với thư
 mục clip: poll bảng `video_review_requests`, đọc clip (video, hoặc file `.json`
-toạ độ khớp từ màn camera), tách rep và tính bộ số dùng chung cho mọi bài, nhờ
-LLM nhận diện bài và chấm (code kiểm từng dẫn chứng), ghi `review_results`, rồi
+toạ độ khớp từ màn camera), tách rep và tính bộ số dùng chung cho mọi bài, so
+từng số với ngưỡng admin nhập ở `form_checks`, ghi `review_results`, rồi
 **xoá clip ngay**.
 
-Thiết kế ở `concept-analyzer-v1.md` và `doc/design-cham-form-llm-v1.md`. File này
+Thiết kế ở `concept-analyzer-v1.md` và `doc/design-cham-form-nguong-v1.md`. File này
 chỉ nói cách chạy.
 
 ## Chạy
@@ -34,54 +34,31 @@ File này không commit vào git.
 | `POLL_INTERVAL_SEC` | | `5` | Compose đặt 1: màn camera chờ kết quả trên màn hình |
 | `MIN_VISIBILITY` | | `0.5` | A2 — đo lại trên bộ clip, đừng đoán |
 | `MAX_FRAMES` | | `900` | 30 giây ở 30 fps |
-| `OPENAI_API_KEY` | | — | LLM nhận diện bài và chấm. Thiếu thì mọi job chấm form FAILED |
-| `OPENAI_CHAT_MODEL` | | `gpt-4o-mini` | Model OpenAI |
-| `OPENAI_BASE_URL` | | `https://api.openai.com/v1` | Đổi khi dùng endpoint tương thích OpenAI |
-
-## Chấm một clip bằng tay
-
-Chấm bằng rule theo ngưỡng trong DB, để đối chứng; worker chấm bằng LLM.
-
-```bash
-PYTHONPATH=src python -m analyzer.cli --exercise barbell-back-squat clip1.mp4 clip2.mp4
-```
 
 ## Test
 
 ```bash
-python tests/test_scoring.py     # luật chấm rule, không cần mediapipe
-python tests/test_judge.py       # kiểm câu trả lời LLM, không cần mediapipe
+python tests/test_scoring.py     # luật chấm, không cần mediapipe
 python tests/test_pipeline.py    # pipeline đa bài trên landmark giả lập, cần mediapipe/numpy
-python tests/test_worker.py      # một job với Db, kho clip, LLM giả, cần mediapipe/numpy
+python tests/test_worker.py      # một job với Db, kho clip giả, cần mediapipe/numpy
 ```
 
 `test_pipeline.py` chốt cứng kết quả tách rep squat trước khi đa bài hoá
-(`concept-recognition-v1.md` §6) — đổi số đó là đổi hành vi worker.
+(`concept-recognition-v1.md` §6) — đổi số đó là đổi hành vi analyzer-demo.
 
-Chạy được trên máy **chưa cài mediapipe/opencv**: `scoring.py` cố ý không import
-tầng hình học. Bộ clip regression (`concept-analyzer-v1.md` §8) là việc khác —
-nó kiểm *số đo*, cái này kiểm *luật chấm*.
+## Ranh giới
 
-## Ranh giới P7
+- **Code** (`pipeline/`, `scoring.py`): cách đo và luật gộp rep. Đổi phải deploy.
+- **Bảng `form_checks`**: góc quay, khớp, lúc đo, khoảng độ, câu nhắc. Admin sửa
+  trên web, có hiệu lực ngay.
 
-Chỉ áp cho đường chấm bằng rule (`cli.py`, analyzer-demo). Từ 09-27 worker chấm
-bằng LLM, không đọc `form_checks`.
-
-`src/analyzer/pipeline/metrics.py` là ranh giới, và nó chỉ có một chỗ:
-
-- **bên trái** — công thức đo, trong code, đổi phải deploy;
-- **bên phải** — ngưỡng, góc hợp lệ, text góp ý, trong bảng `form_checks`,
-  HLV sửa qua web admin, có hiệu lực ngay, không deploy.
-
-`metric` trong DB không có trong bảng `METRICS` → job `FAILED` kèm lỗi rõ ràng.
-Gõ nhầm tên metric là lỗi cấu hình, phải nhìn thấy ngay, không âm thầm bỏ qua.
+Khoá số đo (`knee`, `valgus`…) trùng ở ba nơi: `feature_keys.py`, backend
+`FormMeasures.java`, web `src/lib/formMeasures.ts`. Thêm khoá thì thêm cả ba.
 
 ## Giới hạn đã biết
 
-- Ngưỡng trong `R__seed_content.sql` là **số suy ra, chưa hiệu chỉnh trên clip
-  thật** (A1). Cần bộ clip regression trước khi tin kết quả.
-- LLM chấm zero-shot, chưa kiểm chứng trên dataset (việc 2 của
-  `doc/design-cham-form-llm-v1.md`). Màn kết quả ghi rõ "AI đánh giá".
+- Ngưỡng nạp sẵn trong `R__seed_content.sql` là **số tạm, chưa kiểm trên người
+  thật**. Admin chỉnh bằng cách tự tập trước camera rồi xem số từng rep.
 - Xử lý **một clip một lúc**: `landmarker.detect()` không an toàn khi gọi song
   song. Hàng đợi ùn thì chạy thêm một process analyzer nữa; `SKIP LOCKED` đã lo
   phần tranh chấp, không phải sửa code.

@@ -70,9 +70,6 @@ services:
       DB_URL: postgresql://fitness:fitness_dev_only@postgres:5432/fitness
       CLIP_STORAGE_PATH: /data
       POSE_MODEL: ${POSE_MODEL:-full}
-      # LLM nhận diện bài và chấm (doc/design-cham-form-llm-v1.md). Cùng key với backend.
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL:-gpt-4o-mini}
       # Màn camera chờ kết quả ngay trên màn hình: poll 1 s thay vì 5 s mặc định.
       POLL_INTERVAL_SEC: "1"
     volumes:
