@@ -123,20 +123,24 @@ def test_features_side_squat():
     frames = clip(squat_frame, view="side")
     metrics = [frame_metrics(f) for f in frames]
     v = view_features(1, SAGITTAL, frames, metrics, segment_generic(frames, metrics, 0.5))
-    assert (v["clip"], v["view"], v["reps_total"], v["reps_used"]) == (1, SAGITTAL, 5, 5)
+    assert (v["clip"], v["view"], v["near"], v["reps_total"], v["reps_used"]) == (1, SAGITTAL, "l", 5, 5)
     first = v["reps"][0]
     assert first["rep"] == 1
-    assert first["hip_l_S"] > 170 and first["hip_l_P"] < 80     # đứng thẳng → ngồi sâu
-    assert first["depth_ratio_P"] < 1.0                           # hông xuống dưới gối
-    assert first["knee_asym"] == 0 and first["knee_in"] == 0.0    # squat giả lập đối xứng
-    assert isinstance(first["knee_l_P"], int) and isinstance(first["depth_ratio_P"], float)
+    assert first["hip_l_S"] > 170 and first["hip_l_P"] < 80        # đứng thẳng → ngồi sâu
+    assert first["knee_l_S"] > 170 and first["knee_l_P"] < 120
+    assert first["ankle_l_S"] == 90 and first["ankle_l_P"] < 70     # cẳng chân đổ ra trước
+    assert first["line_S"] == 180
+    assert first["asym_knee_P"] == 0 and first["valgus_l_P"] == 0   # squat giả lập đối xứng
+    assert {"torso_S", "torso_P", "asym_hip_P", "asym_shoulder_S"} <= set(first)
+    assert all(isinstance(x, int) for x in first.values())
 
 
-def test_features_frontal_valgus_shows_knee_in():
+def test_features_frontal_valgus_in_degrees():
     frames = clip(squat_frame, view="frontal", valgus=0.12)
     metrics = [frame_metrics(f) for f in frames]
     v = view_features(2, FRONTAL, frames, metrics, segment_generic(frames, metrics, 0.5))
-    assert all(r["knee_in"] > 0.13 for r in v["reps"]), v["reps"]
+    assert all(r["valgus_l_P"] > 20 and r["valgus_r_P"] > 20 for r in v["reps"]), v["reps"]
+    assert all(r["valgus_l_S"] == 0 for r in v["reps"])   # đứng thẳng thì gối chưa chụm
 
 
 def test_features_drop_low_confidence_reps():
@@ -147,6 +151,18 @@ def test_features_drop_low_confidence_reps():
     v = view_features(1, SAGITTAL, frames, metrics, segment_generic(frames, metrics, 0.5))
     assert v["reps_total"] == 5 and v["reps_used"] == 4
     assert [r["rep"] for r in v["reps"]] == [2, 3, 4, 5]    # giữ số thứ tự gốc
+
+
+def test_near_side_is_the_more_visible_side():
+    frames = clip(squat_frame, view="side")
+    # Đặt bên trái (vai, hông, gối, cổ chân) thấp hơn → bên phải gần camera hơn
+    from analyzer.pipeline.pose import LM
+    for f in frames:
+        f.vis[[LM["l_sho"], LM["l_hip"], LM["l_knee"], LM["l_ankle"]]] = 0.8
+    metrics = [frame_metrics(f) for f in frames]
+    v = view_features(1, SAGITTAL, frames, metrics, segment_generic(frames, metrics, 0.5))
+    assert v["near"] == "r"  # bên phải hiện rõ hơn
+    assert v["reps_total"] == 5 and v["reps_used"] == 5  # reps vẫn sinh ra được
 
 
 if __name__ == "__main__":

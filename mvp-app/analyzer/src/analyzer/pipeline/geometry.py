@@ -29,6 +29,8 @@ class FrameMetrics:
     hip_side_deg: list[float]        # [trái, phải] góc vai–hông–gối từng bên
     shoulder_angle_deg: list[float]  # [trái, phải] góc hông–vai–khuỷu; 0 = tay sát thân
     shoulder_mean_deg: float         # tín hiệu rep chung cho bài tay: nâng tạ ngang vai, đẩy vai
+    ankle_angle_deg: list[float]     # [trái, phải] góc gối–cổ chân–mũi chân; 90 = cẳng chân dựng đứng
+    valgus_deg: list[float]          # [trái, phải] gối chụm vào trong, độ; lệch ra ngoài = 0
 
 
 def angle_deg(a: np.ndarray, b: np.ndarray) -> float:
@@ -37,6 +39,27 @@ def angle_deg(a: np.ndarray, b: np.ndarray) -> float:
         return 0.0
     cos = float(np.dot(a, b)) / (na * nb)
     return math.degrees(math.acos(max(-1.0, min(1.0, cos))))
+
+
+def _valgus(w: np.ndarray, hip: np.ndarray, lateral_n: np.ndarray) -> list[float]:
+    """Gối chụm vào trong, độ, từng chân. Chiếu hông–gối–cổ chân lên mặt phẳng trán của CHÍNH
+    người tập (trục ngang = hông trái→phải, trục đứng = cổ chân→hông bỏ phần theo trục ngang) rồi
+    đo gối gập khỏi đường thẳng hông–cổ chân bao nhiêu độ. Dùng trục cơ thể, không dùng trục
+    camera, nên nghiêng máy không đổi số. Gối lệch ra ngoài tính 0: spec chỉ kiểm chụm vào."""
+    ankle = (w[LM["l_ankle"]] + w[LM["r_ankle"]]) / 2.0
+    up = hip - ankle
+    up = up - float(np.dot(up, lateral_n)) * lateral_n
+    up = up / (np.linalg.norm(up) + 1e-9)
+    out = []
+    # Chụm vào trong: gối trái đi về phía hông phải (+trục ngang), gối phải ngược lại.
+    for s, inward in (("l", 1.0), ("r", -1.0)):
+        h, k, a = (np.array([float(np.dot(w[LM[f"{s}_{j}"]], lateral_n)),
+                             float(np.dot(w[LM[f"{s}_{j}"]], up))]) for j in ("hip", "knee", "ankle"))
+        bend = 180.0 - angle_deg(h - k, a - k)
+        span = h[1] - a[1]
+        on_line = a[0] + (k[1] - a[1]) / span * (h[0] - a[0]) if abs(span) > 1e-9 else a[0]
+        out.append(bend if inward * (k[0] - on_line) > 0 else 0.0)
+    return out
 
 
 def frame_metrics(frame: Frame) -> FrameMetrics:
@@ -84,6 +107,10 @@ def frame_metrics(frame: Frame) -> FrameMetrics:
         angle_deg(w[LM[f"{s}_hip"]] - w[LM[f"{s}_sho"]], w[LM[f"{s}_elbow"]] - w[LM[f"{s}_sho"]])
         for s in ("l", "r")]
 
+    ankle_angle = [
+        angle_deg(w[LM[f"{s}_knee"]] - w[LM[f"{s}_ankle"]], w[LM[f"{s}_foot"]] - w[LM[f"{s}_ankle"]])
+        for s in ("l", "r")]
+
     return FrameMetrics(
         hip_angle_deg=angle_deg(shoulder - hip, knee - hip),
         depth_ratio=ratio,
@@ -97,6 +124,8 @@ def frame_metrics(frame: Frame) -> FrameMetrics:
         hip_side_deg=hip_side,
         shoulder_angle_deg=shoulder_angle,
         shoulder_mean_deg=(shoulder_angle[0] + shoulder_angle[1]) / 2.0,
+        ankle_angle_deg=ankle_angle,
+        valgus_deg=_valgus(w, hip, lateral_n),
     )
 
 

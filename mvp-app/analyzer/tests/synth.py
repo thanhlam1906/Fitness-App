@@ -18,7 +18,7 @@ from analyzer.pipeline.pose import Frame  # noqa: E402
 
 # Cùng chỉ số với analyzer.pipeline.pose.LM — khai lại để synth chạy được trước khi LM có khuỷu.
 J = dict(nose=0, l_sho=11, r_sho=12, l_elbow=13, r_elbow=14, l_wrist=15, r_wrist=16,
-         l_hip=23, r_hip=24, l_knee=25, r_knee=26, l_ankle=27, r_ankle=28)
+         l_hip=23, r_hip=24, l_knee=25, r_knee=26, l_ankle=27, r_ankle=28, l_foot=31, r_foot=32)
 SIDE_Z = {"l": -0.15, "r": +0.15}
 
 
@@ -55,7 +55,7 @@ def squat_frame(i, d, view="frontal", valgus=0.0):
     hip = (-0.25 * d, 0.9 - 0.45 * d)
     knee = (0.2 * d, 0.45 - 0.05 * d, -valgus * d)   # z âm cả 2 bên = chụm vào trong
     sho = (hip[0] + 0.5 * math.sin(lean), hip[1] + 0.5 * math.cos(lean))
-    return _frame(i, dict(sho=sho, hip=hip, knee=knee, ankle=(0, 0),
+    return _frame(i, dict(sho=sho, hip=hip, knee=knee, ankle=(0, 0), foot=(0.15, 0.0),
                           elbow=(sho[0], sho[1] - 0.3), wrist=(sho[0], sho[1] - 0.55)), view)
 
 

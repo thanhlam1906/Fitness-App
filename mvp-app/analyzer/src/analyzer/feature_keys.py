@@ -78,3 +78,14 @@ def glossary() -> dict[str, str]:
     out.update({k: f"{label} ({note}); tin ở góc {views}"
                 for k, (label, note, views) in REP_KEYS.items()})
     return out
+
+
+# ── Chấm theo ngưỡng admin nhập — doc/design-cham-form-nguong-v1.md §3 ──
+# Khoá trùng backend FormMeasures.java và web src/lib/formMeasures.ts.
+SIDED = ("ankle", "knee", "hip", "shoulder", "elbow", "valgus")   # có bên trái, bên phải
+MOMENT_SUFFIX = {"START": "S", "PEAK": "P"}                      # knee_l_P, torso_S
+
+
+def degrees(value: float) -> int:
+    """Mọi số đo là độ nguyên: admin nhập độ nguyên, màn kết quả hiện độ nguyên."""
+    return int(round(float(value)))
