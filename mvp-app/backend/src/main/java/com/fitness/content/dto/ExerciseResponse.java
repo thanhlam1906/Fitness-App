@@ -8,6 +8,7 @@ import java.util.UUID;
 /**
  * `formCheckCount` cho màn 7 ("3 mục kiểm") và cột trái màn 12; `updatedAt`
  * cho dòng "sửa lúc ..." — cả hai đã nằm sẵn trong DB, chỉ chưa trả ra.
+ * `checkViews`: các góc có khớp đang bật, theo thứ tự camera hướng dẫn.
  */
 public record ExerciseResponse(
 		UUID id,
@@ -21,13 +22,14 @@ public record ExerciseResponse(
 		boolean analyzable,
 		boolean active,
 		long formCheckCount,
+		List<String> checkViews,
 		Instant updatedAt) {
 
-	public static ExerciseResponse from(Exercise e, long formCheckCount) {
+	public static ExerciseResponse from(Exercise e, long formCheckCount, List<String> checkViews) {
 		return new ExerciseResponse(
 				e.getId(), e.getSlug(), e.getNameEn(), e.getNameVi(),
 				List.of(e.getMuscleGroups()), List.of(e.getEquipment()),
 				e.getDescription(), e.getFilmingGuide(), e.isAnalyzable(), e.isActive(),
-				formCheckCount, e.getUpdatedAt());
+				formCheckCount, checkViews, e.getUpdatedAt());
 	}
 }

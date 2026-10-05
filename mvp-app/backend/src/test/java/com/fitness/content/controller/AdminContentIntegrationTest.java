@@ -10,7 +10,6 @@ import com.fitness.content.dto.FormCheckResponse;
 import com.fitness.content.dto.ProgramTemplateAdminResponse;
 import com.fitness.content.dto.ProgramTemplateRequest;
 import com.fitness.support.PostgresIntegrationTest;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -23,6 +22,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 /** Màn 12 concept-frontend-v1.md: CRUD bài tập + form_checks + template cho admin. */
 class AdminContentIntegrationTest extends PostgresIntegrationTest {
@@ -33,7 +33,7 @@ class AdminContentIntegrationTest extends PostgresIntegrationTest {
 	private static ExerciseRequest exerciseRequest(String slug, boolean active) {
 		return new ExerciseRequest(
 				slug, "Test Exercise", "Bài test", List.of("QUADS"), List.of("BARBELL_RACK"),
-				"mô tả", null, true, active);
+				"mô tả", null, active);
 	}
 
 	@Test
@@ -80,7 +80,7 @@ class AdminContentIntegrationTest extends PostgresIntegrationTest {
 
 		var updateReq = new ExerciseRequest(
 				"ignored-on-update", "Updated Name", "Tên mới", List.of("GLUTES"), List.of("DUMBBELL"),
-				"mô tả mới", null, false, true);
+				"mô tả mới", null, true);
 		rest.exchange("/api/v1/exercises/" + created.id(), HttpMethod.PUT,
 				new HttpEntity<>(updateReq, admin), ExerciseResponse.class);
 
@@ -117,58 +117,112 @@ class AdminContentIntegrationTest extends PostgresIntegrationTest {
 		assertThat(all).extracting(ExerciseResponse::id).contains(created.id());
 	}
 
-	@Test
-	void createFormCheck_forExercise_persists() {
-		HttpHeaders admin = adminHeaders();
-		UUID exerciseId = rest.exchange("/api/v1/exercises", HttpMethod.POST,
+	private static FormCheckRequest check(String view, String measure, Integer from, Integer to) {
+		return new FormCheckRequest(view, measure, "PEAK", from, to, 15, "Ngồi đủ sâu", "Hạ hông thấp hơn.");
+	}
+
+	private UUID newExercise(HttpHeaders admin) {
+		return rest.exchange("/api/v1/exercises", HttpMethod.POST,
 				new HttpEntity<>(exerciseRequest("fc-ex-" + UUID.randomUUID(), true), admin), ExerciseResponse.class)
 				.getBody().id();
+	}
 
-		var req = new FormCheckRequest(
-				"depth", "hip_depth_ratio", List.of("SAGITTAL"), "{\"pass_below\":1.1}",
-				new BigDecimal("0.70"), "Đạt", "Sát ngưỡng", "Chưa đạt", (short) 1, true);
-
-		var response = rest.exchange("/api/v1/exercises/" + exerciseId + "/form-checks", HttpMethod.POST,
+	private ResponseEntity<FormCheckResponse> postCheck(HttpHeaders admin, UUID exerciseId, FormCheckRequest req) {
+		return rest.exchange("/api/v1/exercises/" + exerciseId + "/form-checks", HttpMethod.POST,
 				new HttpEntity<>(req, admin), FormCheckResponse.class);
+	}
+
+	private ExerciseResponse exercise(HttpHeaders admin, UUID id) {
+		return rest.exchange("/api/v1/exercises/" + id, HttpMethod.GET, new HttpEntity<>(admin), ExerciseResponse.class)
+				.getBody();
+	}
+
+	private FormCheckResponse[] checks(HttpHeaders admin, UUID exerciseId) {
+		return rest.exchange("/api/v1/exercises/" + exerciseId + "/form-checks", HttpMethod.GET,
+				new HttpEntity<>(admin), FormCheckResponse[].class).getBody();
+	}
+
+	@Test
+	void createFormCheck_persistsAndMakesExerciseAnalyzable() {
+		HttpHeaders admin = adminHeaders();
+		UUID exerciseId = newExercise(admin);
+		assertThat(exercise(admin, exerciseId).analyzable()).isFalse();
+
+		var response = postCheck(admin, exerciseId, check("SAGITTAL", "knee", null, 100));
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-		assertThat(response.getBody().exerciseId()).isEqualTo(exerciseId);
-		assertThat(response.getBody().thresholds()).isEqualTo("{\"pass_below\":1.1}");
+		assertThat(response.getBody().from()).isNull();
+		assertThat(response.getBody().to()).isEqualTo(100);
+		assertThat(response.getBody().warn()).isEqualTo(15);
+		assertThat(response.getBody().priority()).isEqualTo((short) 1);
+		ExerciseResponse after = exercise(admin, exerciseId);
+		assertThat(after.analyzable()).isTrue();
+		assertThat(after.checkViews()).containsExactly("SAGITTAL");
 	}
 
 	@Test
-	void createFormCheck_invalidThresholdsJson_returns400() {
+	void createFormCheck_invalid_returns400() {
 		HttpHeaders admin = adminHeaders();
-		UUID exerciseId = rest.exchange("/api/v1/exercises", HttpMethod.POST,
-				new HttpEntity<>(exerciseRequest("fc-bad-" + UUID.randomUUID(), true), admin), ExerciseResponse.class)
-				.getBody().id();
-
-		var req = new FormCheckRequest(
-				"depth", "hip_depth_ratio", List.of("SAGITTAL"), "{not valid json",
-				new BigDecimal("0.70"), null, null, "Chưa đạt", (short) 1, true);
-
-		var response = rest.exchange("/api/v1/exercises/" + exerciseId + "/form-checks", HttpMethod.POST,
-				new HttpEntity<>(req, admin), Map.class);
-
-		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		UUID exerciseId = newExercise(admin);
+		for (FormCheckRequest bad : List.of(
+				check("FRONTAL", "knee", null, 100),    // gối không đo đúng khi quay chính diện
+				check("SAGITTAL", "nose", null, 100),   // không có số đo này
+				check("SAGITTAL", "knee", null, null),  // không có ngưỡng nào
+				check("SAGITTAL", "knee", null, 200),   // ngoài thang 0–180
+				check("SAGITTAL", "knee", 110, 80))) {  // từ ≥ đến
+			assertThat(rest.exchange("/api/v1/exercises/" + exerciseId + "/form-checks", HttpMethod.POST,
+					new HttpEntity<>(bad, admin), Map.class).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		}
 	}
 
 	@Test
-	void createFormCheck_duplicateCodeForSameExercise_returns409() {
+	void createFormCheck_sameJointTwice_returns409() {
 		HttpHeaders admin = adminHeaders();
-		UUID exerciseId = rest.exchange("/api/v1/exercises", HttpMethod.POST,
-				new HttpEntity<>(exerciseRequest("fc-dup-" + UUID.randomUUID(), true), admin), ExerciseResponse.class)
-				.getBody().id();
-		var req = new FormCheckRequest(
-				"depth", "hip_depth_ratio", List.of("SAGITTAL"), "{\"pass_below\":1.1}",
-				new BigDecimal("0.70"), null, null, "Chưa đạt", (short) 1, true);
-		rest.exchange("/api/v1/exercises/" + exerciseId + "/form-checks", HttpMethod.POST,
-				new HttpEntity<>(req, admin), FormCheckResponse.class);
+		UUID exerciseId = newExercise(admin);
+		postCheck(admin, exerciseId, check("SAGITTAL", "knee", null, 100));
 
-		var second = rest.exchange("/api/v1/exercises/" + exerciseId + "/form-checks", HttpMethod.POST,
-				new HttpEntity<>(req, admin), FormCheckResponse.class);
+		assertThat(postCheck(admin, exerciseId, check("SAGITTAL", "knee", 80, 110)).getStatusCode())
+				.isEqualTo(HttpStatus.CONFLICT);
+	}
 
-		assertThat(second.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+	@Test
+	void deactivateLastCheck_exerciseNotAnalyzable_thenSameJointCanBeAddedAgain() {
+		HttpHeaders admin = adminHeaders();
+		UUID exerciseId = newExercise(admin);
+		UUID checkId = postCheck(admin, exerciseId, check("SAGITTAL", "knee", null, 100)).getBody().id();
+
+		rest.exchange("/api/v1/exercises/" + exerciseId + "/form-checks/" + checkId, HttpMethod.DELETE,
+				new HttpEntity<>(admin), FormCheckResponse.class);
+		assertThat(exercise(admin, exerciseId).analyzable()).isFalse();
+		assertThat(checks(admin, exerciseId)).isEmpty();
+
+		var again = postCheck(admin, exerciseId, check("SAGITTAL", "knee", null, 95));
+		assertThat(again.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+		assertThat(again.getBody().id()).isEqualTo(checkId);   // bật lại dòng cũ, UNIQUE (exercise_id, code)
+		assertThat(exercise(admin, exerciseId).analyzable()).isTrue();
+	}
+
+	@Test
+	void updateFormCheck_changingJoint_replacesOldOne() {
+		HttpHeaders admin = adminHeaders();
+		UUID exerciseId = newExercise(admin);
+		UUID checkId = postCheck(admin, exerciseId, check("SAGITTAL", "knee", null, 100)).getBody().id();
+
+		var updated = rest.exchange("/api/v1/exercises/" + exerciseId + "/form-checks/" + checkId, HttpMethod.PUT,
+				new HttpEntity<>(check("SAGITTAL", "hip", null, 90), admin), FormCheckResponse.class);
+
+		assertThat(updated.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(checks(admin, exerciseId)).extracting(FormCheckResponse::measure).containsExactly("hip");
+	}
+
+	@Test
+	void checkViews_followCameraOrder() {
+		HttpHeaders admin = adminHeaders();
+		UUID exerciseId = newExercise(admin);
+		postCheck(admin, exerciseId, check("FRONTAL", "valgus", null, 10));
+		postCheck(admin, exerciseId, check("SAGITTAL", "knee", null, 100));
+
+		assertThat(exercise(admin, exerciseId).checkViews()).containsExactly("SAGITTAL", "FRONTAL");
 	}
 
 	@Test

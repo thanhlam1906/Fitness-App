@@ -28,8 +28,8 @@ INSERT INTO exercises (slug, name_en, name_vi, muscle_groups, equipment, descrip
    '{LATS,UPPER_BACK,BICEPS}', '{BARBELL_RACK,DUMBBELL}',
    'Gập hông khoảng 45 độ, lưng thẳng, kéo tạ về phía bụng dưới.', true),
 
-  -- Bài cho các template tay không, tạ đơn, tạ ấm, phòng gym (09-26). Mọi bài analyzable:
-  -- LLM nhận diện và chấm, không cần cấu hình theo bài (doc/design-cham-form-llm-v1.md).
+  -- Bài cho các template tay không, tạ đơn, tạ ấm, phòng gym (09-26). Cột analyzable ở đây bị ghi
+  -- đè ở cuối khối KHỚP CẦN KIỂM: bài chấm được khi có khớp đang bật.
   -- ponytail: equipment chỉ ghi thiết bị chính. Goblet squat, kéo một tay làm được bằng
   -- tạ ấm nhưng ghi DUMBBELL, nên SubstituteController (containsAll) không gợi ý chúng
   -- cho người chỉ có tạ ấm. Cần kiểu "một trong các thiết bị" thì thêm cột riêng.
@@ -173,47 +173,50 @@ UPDATE exercises SET filming_guide = '{"angles": [{"code": "SAGITTAL", "label": 
 UPDATE exercises SET filming_guide = '{"angles": [{"code": "SAGITTAL", "label": "Ngang", "why": "Ngang (bên hông) — kiểm tra thân thẳng và độ hạ ngực."}, {"code": "FRONTAL", "label": "Chính diện", "why": "Chính diện — kiểm tra góc khuỷu."}], "distance": "Đặt điện thoại cách 2–3 m, ngang tầm hông, để toàn bộ cơ thể trong khung từ đầu đến bàn chân.", "lighting": "Ánh sáng từ phía trước hoặc bên. Tránh ngược sáng và tránh quần áo sát màu nền.", "duration": "Mỗi clip 3–5 rep liên tục, khoảng 10–20 giây. Tối đa 30 giây.", "figure": null}'::jsonb WHERE slug = 'push-up';
 UPDATE exercises SET filming_guide = '{"angles": [{"code": "SAGITTAL", "label": "Ngang", "why": "Ngang (bên hông) — kiểm tra lưng dưới và đường đi của tạ."}], "distance": "Đặt điện thoại cách 2–3 m, ngang tầm hông, để toàn bộ cơ thể trong khung từ đầu đến bàn chân.", "lighting": "Ánh sáng từ phía trước hoặc bên. Tránh ngược sáng và tránh quần áo sát màu nền.", "duration": "Mỗi clip 3–5 rep liên tục, khoảng 10–20 giây. Tối đa 30 giây.", "figure": null}'::jsonb WHERE slug = 'overhead-press';
 UPDATE exercises SET filming_guide = '{"angles": [{"code": "SAGITTAL", "label": "Ngang", "why": "Ngang (bên hông) — kiểm tra hip hinge, lưng thẳng, tạ sát chân."}], "distance": "Đặt điện thoại cách 2–3 m, ngang tầm hông, để toàn bộ cơ thể trong khung từ đầu đến bàn chân.", "lighting": "Ánh sáng từ phía trước hoặc bên. Tránh ngược sáng và tránh quần áo sát màu nền.", "duration": "Mỗi clip 3–5 rep liên tục, khoảng 10–20 giây. Tối đa 30 giây.", "figure": null}'::jsonb WHERE slug = 'romanian-deadlift';
--- ═══════════════════ FORM_CHECKS — chỉ squat (TN2 Đợt 4) ═══════════════════
--- knee_track: ĐÃ chuẩn hoá theo rộng vai (không đơn vị) — lỗi A0 của
--- concept-analyzer-v1.md §11 đã sửa ở analyzer/pipeline/metrics.py. Ngưỡng cũ
--- 0.02/0.05 m quy đổi theo rộng vai ~0.38 m → 0.053/0.13. Vẫn là số suy ra,
--- CHƯA hiệu chỉnh trên clip.
--- depth: 1.10/1.30 suy ra bằng hình học (song song = đùi ngang), content-seed-v1.md §3.1.1.
--- torso_lean: số gốc của demo, chưa đối chiếu.
+-- ═══════════ KHỚP CẦN KIỂM — số tạm, CHƯA kiểm trên người thật ═══════════
+-- doc/design-cham-form-nguong-v1.md §8. Admin chỉnh lại bằng camera ở trang Bài tập.
+-- code = góc-số đo-lúc, đúng cách FormCheckService tự sinh. Số chống đẩy, lunge từ
+-- analyzer/exercises.py của demo. Không đặt is_active khi trùng: giữ khớp admin đã xoá.
 INSERT INTO form_checks
-  (exercise_id, code, metric, valid_viewpoints, thresholds, confidence_min,
-   cue_pass_vi, cue_warn_vi, cue_fail_vi, priority)
-SELECT e.id, v.code, v.metric, v.viewpoints, v.thresholds::jsonb, 0.70,
-       v.cue_pass, v.cue_warn, v.cue_fail, v.priority
-FROM exercises e, (VALUES
-  ('knee_track', 'knee_inward_travel', ARRAY['FRONTAL'],
-   '{"pass_below": 0.053, "warn_below": 0.13}',
-   'Gối di chuyển ổn định, thẳng theo hướng mũi chân.',
-   'Gối hơi chụm vào trong khi hạ — chủ động đẩy gối ra ngoài theo hướng mũi chân.',
-   'Gối chụm vào trong khi hạ xuống. Đẩy gối ra ngoài theo hướng mũi chân, giữ đầu gối thẳng hàng với ngón chân giữa.',
-   1),
-
-  ('depth', 'hip_depth_ratio', ARRAY['SAGITTAL'],
-   '{"pass_below": 1.10, "warn_below": 1.30}',
-   'Độ sâu tốt: đùi đã xuống ngang sàn (song song) hoặc sâu hơn.',
-   'Sát ngưỡng — hạ hông thêm một chút nữa là chạm mức song song.',
-   'Chưa xuống đủ sâu. Hạ hông cho tới khi mặt trên đùi song song sàn.',
-   2),
-
-  ('torso_lean', 'torso_lean_deg', ARRAY['SAGITTAL'],
-   '{"pass_between": [10, 55], "warn_between": [5, 65]}',
-   'Độ nghiêng thân hợp lý, lưng giữ được đường thẳng.',
-   'Thân nghiêng hơi nhiều — giữ ngực mở, đẩy hông ra sau.',
-   'Thân nghiêng quá nhiều khi hạ xuống. Siết bụng, giữ ngực nâng, đẩy hông ra sau.',
-   3)
-) AS v(code, metric, viewpoints, thresholds, cue_pass, cue_warn, cue_fail, priority)
-WHERE e.slug = 'barbell-back-squat'
+  (exercise_id, code, metric, valid_viewpoints, moment, thresholds, name_vi, cue_fail_vi, priority)
+SELECT e.id, v.view || '-' || v.measure || '-' || v.moment, v.measure, ARRAY[v.view], v.moment,
+       v.thresholds::jsonb, v.name_vi, v.cue, v.priority
+FROM exercises e JOIN (VALUES
+  ('bodyweight-squat', 'SAGITTAL', 'knee', 'PEAK', '{"from": null, "to": 100, "warn": 15}',
+   'Ngồi đủ sâu', 'Hạ hông tới khi đùi song song sàn.', 1),
+  ('bodyweight-squat', 'SAGITTAL', 'torso', 'PEAK', '{"from": null, "to": 50, "warn": 10}',
+   'Thân không đổ về trước', 'Giữ ngực nâng, đẩy hông ra sau.', 2),
+  ('bodyweight-squat', 'FRONTAL', 'valgus', 'PEAK', '{"from": null, "to": 10, "warn": 5}',
+   'Gối không chụm', 'Đẩy gối ra theo hướng mũi chân.', 3),
+  ('bodyweight-squat', 'FRONTAL', 'asym_knee', 'PEAK', '{"from": null, "to": 10, "warn": 5}',
+   'Hai chân xuống đều', 'Dồn đều trọng lượng lên hai chân.', 4),
+  ('barbell-back-squat', 'SAGITTAL', 'knee', 'PEAK', '{"from": null, "to": 100, "warn": 15}',
+   'Ngồi đủ sâu', 'Hạ hông tới khi đùi song song sàn.', 1),
+  ('barbell-back-squat', 'SAGITTAL', 'torso', 'PEAK', '{"from": null, "to": 55, "warn": 10}',
+   'Thân không đổ về trước', 'Giữ ngực nâng, đẩy hông ra sau.', 2),
+  ('barbell-back-squat', 'FRONTAL', 'valgus', 'PEAK', '{"from": null, "to": 10, "warn": 5}',
+   'Gối không chụm', 'Đẩy gối ra theo hướng mũi chân.', 3),
+  ('barbell-back-squat', 'FRONTAL', 'asym_knee', 'PEAK', '{"from": null, "to": 10, "warn": 5}',
+   'Hai chân xuống đều', 'Dồn đều trọng lượng lên hai chân.', 4),
+  ('push-up', 'SAGITTAL', 'elbow', 'PEAK', '{"from": null, "to": 95, "warn": 15}',
+   'Hạ ngực đủ sâu', 'Chưa hạ đủ sâu. Hạ ngực xuống cho tới khi khuỷu gập khoảng 90°.', 1),
+  ('push-up', 'SAGITTAL', 'line', 'PEAK', '{"from": 165, "to": null, "warn": 10}',
+   'Thân thẳng một đường', 'Hông võng xuống hoặc đẩy lên quá cao. Siết bụng và mông để thân thẳng từ vai tới gót.', 2),
+  ('reverse-lunge', 'SAGITTAL', 'knee', 'PEAK', '{"from": 80, "to": 110, "warn": 10}',
+   'Gối gập khoảng 90°', 'Gối trước gập quá ít hoặc quá nhiều. Bước dài vừa để đùi trước song song sàn.', 1),
+  ('reverse-lunge', 'SAGITTAL', 'torso', 'PEAK', '{"from": null, "to": 30, "warn": 15}',
+   'Thân giữ thẳng', 'Thân đổ về trước quá nhiều. Giữ ngực nâng, mắt nhìn thẳng.', 2),
+  ('reverse-lunge', 'FRONTAL', 'valgus', 'PEAK', '{"from": null, "to": 10, "warn": 5}',
+   'Gối trước không chụm', 'Gối trước chụm vào trong khi hạ. Đẩy gối ra theo hướng mũi chân.', 3)
+) AS v(slug, view, measure, moment, thresholds, name_vi, cue, priority) ON v.slug = e.slug
 ON CONFLICT (exercise_id, code) DO UPDATE SET
-  metric = EXCLUDED.metric, valid_viewpoints = EXCLUDED.valid_viewpoints,
-  thresholds = EXCLUDED.thresholds, confidence_min = EXCLUDED.confidence_min,
-  cue_pass_vi = EXCLUDED.cue_pass_vi, cue_warn_vi = EXCLUDED.cue_warn_vi,
-  cue_fail_vi = EXCLUDED.cue_fail_vi, priority = EXCLUDED.priority,
-  updated_at = now();
+  metric = EXCLUDED.metric, valid_viewpoints = EXCLUDED.valid_viewpoints, moment = EXCLUDED.moment,
+  thresholds = EXCLUDED.thresholds, name_vi = EXCLUDED.name_vi, cue_fail_vi = EXCLUDED.cue_fail_vi,
+  priority = EXCLUDED.priority, updated_at = now();
+
+-- Bài chấm được = có ít nhất một khớp đang bật. FormCheckService giữ cột này khi admin sửa.
+UPDATE exercises e SET analyzable = EXISTS (
+  SELECT 1 FROM form_checks c WHERE c.exercise_id = e.id AND c.is_active);
 
 -- ═══════════════════════ TEMPLATE ═══════════════════════
 -- Hai template khác nhau ở hai trục cố ý: số buổi/tuần (TemplateMatcher có gì để

@@ -4,17 +4,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fitness.content.dto.ExerciseRequest;
 import com.fitness.content.dto.ExerciseResponse;
 import com.fitness.content.entity.Exercise;
+import com.fitness.content.entity.FormCheck;
 import com.fitness.content.repository.ExerciseRepository;
 import com.fitness.content.repository.FormCheckRepository;
 import com.fitness.profile.entity.Profile;
 import com.fitness.profile.repository.ProfileRepository;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -41,9 +42,9 @@ public class ExerciseService {
 	}
 
 	public List<ExerciseResponse> list() {
-		Map<UUID, Long> counts = activeCheckCounts();
+		Map<UUID, List<FormCheck>> checks = activeChecks();
 		return exercises.findAll().stream()
-				.map(e -> ExerciseResponse.from(e, counts.getOrDefault(e.getId(), 0L)))
+				.map(e -> toResponse(e, checks.getOrDefault(e.getId(), List.of())))
 				.toList();
 	}
 
@@ -62,7 +63,7 @@ public class ExerciseService {
 		Exercise exercise = new Exercise(
 				request.slug(), request.nameEn(), request.nameVi(),
 				toArray(request.muscleGroups()), toArray(request.equipment()),
-				request.description(), blankToNull(request.filmingGuide()), request.analyzable());
+				request.description(), blankToNull(request.filmingGuide()), false);
 		exercises.save(exercise);
 		return withCount(exercise);
 	}
@@ -73,7 +74,7 @@ public class ExerciseService {
 		exercise.update(
 				request.nameEn(), request.nameVi(), toArray(request.muscleGroups()),
 				toArray(request.equipment()), request.description(), blankToNull(request.filmingGuide()),
-				request.analyzable(), request.active());
+				request.active());
 		exercises.save(exercise);
 		return withCount(exercise);
 	}
@@ -82,8 +83,7 @@ public class ExerciseService {
 		Exercise exercise = findOrThrow(id);
 		exercise.update(
 				exercise.getNameEn(), exercise.getNameVi(), exercise.getMuscleGroups(),
-				exercise.getEquipment(), exercise.getDescription(), exercise.getFilmingGuide(),
-				exercise.isAnalyzable(), false);
+				exercise.getEquipment(), exercise.getDescription(), exercise.getFilmingGuide(), false);
 		exercises.save(exercise);
 		return withCount(exercise);
 	}
@@ -110,7 +110,7 @@ public class ExerciseService {
 		// thay cho squat. Sắp theo số nhóm cơ trùng, giống nhất lên đầu.
 		String primaryMuscle = targetMuscles[0];
 		Set<String> allMuscles = Set.of(targetMuscles);
-		Map<UUID, Long> checkCounts = activeCheckCounts();
+		Map<UUID, List<FormCheck>> checks = activeChecks();
 
 		return exercises.findAll().stream()
 				.filter(Exercise::isActive)
@@ -118,20 +118,24 @@ public class ExerciseService {
 				.filter(e -> List.of(e.getMuscleGroups()).contains(primaryMuscle))
 				.filter(e -> userEquipment.containsAll(List.of(e.getEquipment())))
 				.sorted(Comparator.comparingLong((Exercise e) -> overlap(e, allMuscles)).reversed())
-				.map(e -> ExerciseResponse.from(e, checkCounts.getOrDefault(e.getId(), 0L)))
+				.map(e -> toResponse(e, checks.getOrDefault(e.getId(), List.of())))
 				.toList();
 	}
 
-	private Map<UUID, Long> activeCheckCounts() {
-		Map<UUID, Long> counts = new HashMap<>();
-		for (Object[] row : formChecks.countActivePerExercise()) {
-			counts.put((UUID) row[0], (Long) row[1]);
-		}
-		return counts;
+	private Map<UUID, List<FormCheck>> activeChecks() {
+		return formChecks.findByActiveTrue().stream().collect(Collectors.groupingBy(FormCheck::getExerciseId));
 	}
 
 	private ExerciseResponse withCount(Exercise exercise) {
-		return ExerciseResponse.from(exercise, formChecks.countByExerciseIdAndActiveTrue(exercise.getId()));
+		return toResponse(exercise, formChecks.findByExerciseIdAndActiveTrueOrderByPriority(exercise.getId()));
+	}
+
+	/** checkViews theo thứ tự camera hướng dẫn: Ngang → Chính diện → Chéo. */
+	private static ExerciseResponse toResponse(Exercise exercise, List<FormCheck> checks) {
+		List<String> views = FormMeasures.VIEW_ORDER.stream()
+				.filter(v -> checks.stream().anyMatch(c -> v.equals(c.getView())))
+				.toList();
+		return ExerciseResponse.from(exercise, checks.size(), views);
 	}
 
 	private Exercise findOrThrow(UUID id) {

@@ -86,15 +86,20 @@ public class Exercise {
 
 	public void update(
 			String nameEn, String nameVi, String[] muscleGroups, String[] equipment,
-			String description, String filmingGuide, boolean analyzable, boolean active) {
+			String description, String filmingGuide, boolean active) {
 		this.nameEn = nameEn;
 		this.nameVi = nameVi;
 		this.muscleGroups = muscleGroups;
 		this.equipment = equipment;
 		this.description = description;
 		this.filmingGuide = filmingGuide;
-		this.analyzable = analyzable;
 		this.active = active;
+		this.updatedAt = Instant.now();
+	}
+
+	/** FormCheckService gọi mỗi khi khớp cần kiểm đổi: bài chấm được khi còn khớp đang bật. */
+	public void markAnalyzable(boolean analyzable) {
+		this.analyzable = analyzable;
 		this.updatedAt = Instant.now();
 	}
 

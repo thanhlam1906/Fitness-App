@@ -1,20 +1,20 @@
 package com.fitness.content.dto;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import java.math.BigDecimal;
-import java.util.List;
 
-/** code chỉ dùng khi tạo mới (POST) — bỏ qua khi sửa (PUT). thresholds là JSON thô, xem F4. */
+/**
+ * Một khớp cần kiểm admin khai báo (doc/design-cham-form-nguong-v1.md §2). `from`/`to` là độ,
+ * null = không giới hạn phía đó. Mã mục máy tự sinh từ view, measure, moment.
+ */
 public record FormCheckRequest(
-		String code,
-		@NotBlank String metric,
-		List<String> validViewpoints,
-		@NotBlank String thresholds,
-		@NotNull BigDecimal confidenceMin,
-		String cuePassVi,
-		String cueWarnVi,
-		@NotBlank String cueFailVi,
-		short priority,
-		boolean active) {
+		@NotBlank String view,
+		@NotBlank String measure,
+		@NotBlank String moment,
+		Integer from,
+		Integer to,
+		@NotNull @Min(0) Integer warn,
+		@NotBlank String nameVi,
+		@NotBlank String cueFailVi) {
 }
