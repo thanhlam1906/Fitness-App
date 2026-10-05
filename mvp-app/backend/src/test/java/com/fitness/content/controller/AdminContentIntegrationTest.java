@@ -10,6 +10,7 @@ import com.fitness.content.dto.FormCheckResponse;
 import com.fitness.content.dto.ProgramTemplateAdminResponse;
 import com.fitness.content.dto.ProgramTemplateRequest;
 import com.fitness.support.PostgresIntegrationTest;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -213,6 +214,63 @@ class AdminContentIntegrationTest extends PostgresIntegrationTest {
 
 		assertThat(updated.getStatusCode()).isEqualTo(HttpStatus.OK);
 		assertThat(checks(admin, exerciseId)).extracting(FormCheckResponse::measure).containsExactly("hip");
+	}
+
+	@Test
+	void listFormChecks_readsThresholdsBackFromDb() {
+		HttpHeaders admin = adminHeaders();
+		UUID exerciseId = newExercise(admin);
+		postCheck(admin, exerciseId, check("SAGITTAL", "knee", null, 100));
+
+		FormCheckResponse[] listed = checks(admin, exerciseId);
+
+		assertThat(listed).hasSize(1);
+		assertThat(listed[0].from()).isNull();
+		assertThat(listed[0].to()).isEqualTo(100);
+		assertThat(listed[0].warn()).isEqualTo(15);
+		assertThat(listed[0].view()).isEqualTo("SAGITTAL");
+		assertThat(listed[0].moment()).isEqualTo("PEAK");
+		assertThat(listed[0].nameVi()).isEqualTo("Ngồi đủ sâu");
+
+		postCheck(admin, exerciseId, check("SAGITTAL", "line", 165, null));
+
+		FormCheckResponse line = Arrays.stream(checks(admin, exerciseId))
+				.filter(c -> c.measure().equals("line")).findFirst().orElseThrow();
+		assertThat(line.from()).isEqualTo(165);
+		assertThat(line.to()).isNull();
+	}
+
+	@Test
+	void updateFormCheck_intoActiveJoint_returns409_andKeepsBoth() {
+		HttpHeaders admin = adminHeaders();
+		UUID exerciseId = newExercise(admin);
+		UUID kneeId = postCheck(admin, exerciseId, check("SAGITTAL", "knee", null, 100)).getBody().id();
+		postCheck(admin, exerciseId, check("SAGITTAL", "hip", null, 90));
+
+		var response = rest.exchange("/api/v1/exercises/" + exerciseId + "/form-checks/" + kneeId, HttpMethod.PUT,
+				new HttpEntity<>(check("SAGITTAL", "hip", null, 90), admin), Map.class);
+
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+		// Cả hai còn bật: giao dịch hoàn tác việc tắt dòng knee trước khi gặp lỗi trùng.
+		assertThat(checks(admin, exerciseId)).extracting(FormCheckResponse::measure)
+				.containsExactlyInAnyOrder("knee", "hip");
+	}
+
+	@Test
+	void updateFormCheck_sameJoint_overwritesValuesKeepsId() {
+		HttpHeaders admin = adminHeaders();
+		UUID exerciseId = newExercise(admin);
+		UUID checkId = postCheck(admin, exerciseId, check("SAGITTAL", "knee", null, 100)).getBody().id();
+
+		var updated = rest.exchange("/api/v1/exercises/" + exerciseId + "/form-checks/" + checkId, HttpMethod.PUT,
+				new HttpEntity<>(check("SAGITTAL", "knee", 80, 110), admin), FormCheckResponse.class);
+
+		assertThat(updated.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(updated.getBody().id()).isEqualTo(checkId);
+		FormCheckResponse[] listed = checks(admin, exerciseId);
+		assertThat(listed).hasSize(1);
+		assertThat(listed[0].from()).isEqualTo(80);
+		assertThat(listed[0].to()).isEqualTo(110);
 	}
 
 	@Test

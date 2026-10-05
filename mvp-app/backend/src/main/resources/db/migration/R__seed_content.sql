@@ -176,7 +176,7 @@ UPDATE exercises SET filming_guide = '{"angles": [{"code": "SAGITTAL", "label": 
 -- ═══════════ KHỚP CẦN KIỂM — số tạm, CHƯA kiểm trên người thật ═══════════
 -- doc/design-cham-form-nguong-v1.md §8. Admin chỉnh lại bằng camera ở trang Bài tập.
 -- code = góc-số đo-lúc, đúng cách FormCheckService tự sinh. Số chống đẩy, lunge từ
--- analyzer/exercises.py của demo. Không đặt is_active khi trùng: giữ khớp admin đã xoá.
+-- analyzer/exercises.py của demo. Trùng mã thì bỏ qua: không ghi đè ngưỡng admin đã hiệu chỉnh, không bật lại khớp admin đã xoá.
 INSERT INTO form_checks
   (exercise_id, code, metric, valid_viewpoints, moment, thresholds, name_vi, cue_fail_vi, priority)
 SELECT e.id, v.view || '-' || v.measure || '-' || v.moment, v.measure, ARRAY[v.view], v.moment,
@@ -209,10 +209,7 @@ FROM exercises e JOIN (VALUES
   ('reverse-lunge', 'FRONTAL', 'valgus', 'PEAK', '{"from": null, "to": 10, "warn": 5}',
    'Gối trước không chụm', 'Gối trước chụm vào trong khi hạ. Đẩy gối ra theo hướng mũi chân.', 3)
 ) AS v(slug, view, measure, moment, thresholds, name_vi, cue, priority) ON v.slug = e.slug
-ON CONFLICT (exercise_id, code) DO UPDATE SET
-  metric = EXCLUDED.metric, valid_viewpoints = EXCLUDED.valid_viewpoints, moment = EXCLUDED.moment,
-  thresholds = EXCLUDED.thresholds, name_vi = EXCLUDED.name_vi, cue_fail_vi = EXCLUDED.cue_fail_vi,
-  priority = EXCLUDED.priority, updated_at = now();
+ON CONFLICT (exercise_id, code) DO NOTHING;
 
 -- Bài chấm được = có ít nhất một khớp đang bật. FormCheckService giữ cột này khi admin sửa.
 UPDATE exercises e SET analyzable = EXISTS (
