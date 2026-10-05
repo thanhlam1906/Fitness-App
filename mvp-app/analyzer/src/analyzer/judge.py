@@ -13,7 +13,7 @@ import json
 import re
 from typing import Any
 
-from .feature_keys import glossary, label_vi, unit
+from .feature_keys import glossary, label_vi, trusted_in, unit
 from .scoring import FAIL, LOW_CONFIDENCE, NOT_APPLICABLE, PASS, WARN
 from .viewpoints import LABEL_VI
 
@@ -39,8 +39,12 @@ _JUDGE_SYSTEM = (
     "3. Mỗi số chỉ tin ở góc quay ghi trong `glossary`. Mục cần một góc đã quay nhưng góc đó không "
     "có rep dùng được (reps_used = 0) thì verdict LOW_CONFIDENCE; góc đó chưa quay (không có trong "
     "`views_recorded`) thì NOT_APPLICABLE. Hai verdict này không cần evidence.\n"
-    "4. Tối đa 5 mục, mỗi mục một khía cạnh kỹ thuật quan trọng của bài (xem `mistakes_vi`).\n"
-    "5. `cue_vi`: tiếng Việt, tối đa 2 câu, nêu một hành động cụ thể.\n"
+    "4. Tối đa 5 mục, mỗi mục một khía cạnh kỹ thuật quan trọng của bài (gợi ý ở `mistakes_vi`) "
+    "mà một khoá trong `glossary` đo trực tiếp. Khía cạnh không khoá nào đo (vd gót chân, cổ tay) "
+    "thì bỏ hẳn, không mượn số của khoá khác.\n"
+    "5. `name_vi` ngắn, không dấu chấm, nói điều số đo cho thấy: mục lỗi ghi lỗi (vd \"Gối chụm "
+    "vào trong\"), mục đạt ghi điều làm đúng (vd \"Thân giữ thẳng\"). `cue_vi`: tiếng Việt, tối đa "
+    "2 câu, nêu một hành động cụ thể.\n"
     "6. `primary` là name_vi của lỗi quan trọng nhất trong các mục FAIL hoặc WARN; không có thì null.\n"
     'Chỉ trả JSON: {"items": [{"name_vi": "...", "verdict": "PASS|WARN|FAIL|LOW_CONFIDENCE|'
     'NOT_APPLICABLE", "evidence": [{"clip": 1, "rep": 1, "feature": "...", "value": 0}], '
@@ -79,6 +83,7 @@ def parse_recognition(raw: str, slugs: set[str]) -> str | None:
 
 
 def judgment_messages(exercise: dict[str, Any], features: dict[str, Any]) -> list[dict[str, str]]:
+    features = _trusted(features)
     user = json.dumps({"exercise": exercise,
                        "views_recorded": [v["view"] for v in features["views"]],
                        "glossary": glossary(), "features": features}, ensure_ascii=False)
@@ -93,6 +98,7 @@ def validate_judgment(raw: str, features: dict[str, Any],
         items = data["items"]
     except (ValueError, KeyError, TypeError) as e:
         raise LlmError(f"JSON chấm không hợp lệ: {raw[:200]}") from e
+    features = _trusted(features)   # đúng bộ số LLM đã nhận ở judgment_messages
     # Số được phép xuất hiện trong lời góp ý: số đo và nội dung bài do người viết. Không gồm
     # glossary, để LLM không mượn các mốc như "180" làm số mục tiêu.
     context = json.dumps({"exercise": exercise, "features": features}, ensure_ascii=False)
@@ -110,6 +116,16 @@ def validate_judgment(raw: str, features: dict[str, Any],
         raise LlmError(f"LLM không trả mục chấm nào có dẫn chứng hợp lệ: {raw[:200]}")
     _mark_primary(rows, data.get("primary"))
     return rows
+
+
+def _trusted(features: dict[str, Any]) -> dict[str, Any]:
+    """Bản sao chỉ còn các số tin được ở góc quay của từng clip. Dặn trong prompt không đủ: smoke
+    09-28 với OpenAI thật, LLM lấy knee_in = 0 của góc ngang để cho "gối chụm" PASS, trong khi góc
+    chính diện đo 0.4 ở mọi rep. Nhận diện bài vẫn nhận đủ bộ số."""
+    return {**features, "views": [
+        {**view, "reps": [{k: v for k, v in rep.items() if trusted_in(k, view["view"])}
+                          for rep in view["reps"]]}
+        for view in features["views"]]}
 
 
 def _cells(features: dict[str, Any]) -> dict[tuple[int, int, str], tuple[str, float]]:

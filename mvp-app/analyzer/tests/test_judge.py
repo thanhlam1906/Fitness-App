@@ -126,6 +126,25 @@ def test_messages_carry_features_and_ask_for_json():
     assert "JSON" in msgs[0]["content"]
 
 
+def test_judge_sees_and_cites_only_numbers_trusted_in_the_clip_view():
+    # Smoke 09-28 với OpenAI thật: LLM lấy knee_in = 0 của góc ngang (nhìn ngang hai gối chồng lên
+    # nhau) để cho "gối chụm" PASS, trong khi góc chính diện đo 0.4 ở mọi rep. Góc chéo giữ mọi số.
+    def clip(n, view, knee_in):
+        return {"clip": n, "view": view, "dominant": "hip", "reps_total": 1, "reps_used": 1,
+                "reps": [{"rep": 1, "knee_in": knee_in, "depth_ratio_P": 0.51, "shoulder_l_P": 35}]}
+    features = {"views": [clip(1, "SAGITTAL", 0.0), clip(2, "FRONTAL", 0.4), clip(3, "DIAGONAL", 0.3)]}
+    sent = json.loads(judgment_messages(EXERCISE, features)[1]["content"])["features"]["views"]
+    assert [sorted(v["reps"][0]) for v in sent] == [["depth_ratio_P", "rep", "shoulder_l_P"],
+                                                    ["knee_in", "rep", "shoulder_l_P"],
+                                                    ["depth_ratio_P", "knee_in", "rep", "shoulder_l_P"]]
+    knee = lambda name, n, value: item(name, PASS, [{"clip": n, "rep": 1, "feature": "knee_in", "value": value}])
+    rows = validate_judgment(answer(knee("Ngang", 1, 0.0), knee("Chính diện", 2, 0.4), knee("Chéo", 3, 0.3)),
+                             features, EXERCISE)
+    assert [r["name_vi"] for r in rows] == ["Chính diện", "Chéo"]
+    # Nhận diện bài vẫn nhận đủ bộ số, và bộ số gốc không bị sửa tại chỗ.
+    assert json.loads(recognition_messages(features, [])[1]["content"])["features"] == features
+
+
 def test_feature_keys():
     assert label_vi("knee_l_P") == "góc gối trái ở điểm xa nhất"
     assert label_vi("knee_in") == "gối chụm vào trong"

@@ -63,6 +63,14 @@ def unit(feature: str) -> str:
     return "" if base in RATIO_KEYS else "°"
 
 
+def trusted_in(feature: str, view: str) -> bool:
+    """Số này có nghĩa ở góc quay `view` không, theo cột góc tin được của bảng trên. Góc chéo thấy
+    một phần cả hai mặt phẳng nên giữ mọi số; khoá lạ (kể cả "rep") cũng giữ."""
+    base = feature if feature in REP_KEYS else feature.rpartition("_")[0]
+    spec = REP_KEYS.get(base) or FRAME_KEYS.get(base)
+    return spec is None or view not in (SAGITTAL, FRONTAL) or spec[2] in (view, _BOTH)
+
+
 def glossary() -> dict[str, str]:
     """Bảng giải thích cho prompt: khoá → nghĩa, đơn vị, góc quay tin được."""
     out = {f"{k}_S, {k}_P": f"{label} ({note}); tin ở góc {views}"
