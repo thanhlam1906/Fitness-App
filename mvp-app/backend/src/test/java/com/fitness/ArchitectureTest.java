@@ -20,7 +20,8 @@ class ArchitectureTest {
 
 	private static final Path ROOT = Path.of("src/main/java/com/fitness");
 	private static final Set<String> LAYERS = Set.of("controller", "service", "repository", "entity", "dto");
-	private static final String WRITE = "\\.(save|saveAll|saveAndFlush|delete\\w*)\\(";
+	// save\w*: gồm cả saveAll, saveAndFlush, saveAllAndFlush.
+	private static final String WRITE = "\\.(save\\w*|delete\\w*)\\(";
 
 	@Test
 	void codeTheoChuanCauTruc() throws IOException {
@@ -36,7 +37,8 @@ class ArchitectureTest {
 
 	private static void check(String path, String code, Set<String> out) {
 		String[] parts = path.split("/");
-		if (parts.length == 1 || parts[0].equals("config") || parts[0].equals("common")) {
+		// Chỉ FitnessApplication được nằm ở gốc; lớp khác ở gốc rơi xuống luật "ngoài 5 thư mục tầng".
+		if (path.equals("FitnessApplication.java") || parts[0].equals("config") || parts[0].equals("common")) {
 			return;
 		}
 		String feature = parts[0];

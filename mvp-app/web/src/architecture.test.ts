@@ -6,7 +6,8 @@ import { describe, expect, it } from "vitest"
 // Chuẩn cấu trúc doc/design-chuan-cau-truc-v1.md §7.1 — đọc file nguồn, không thêm thư viện.
 const SRC = path.dirname(fileURLToPath(import.meta.url))
 const FOLDERS = new Set(["pages", "components", "api", "utils", "types"])
-const API_CALL = /\bapi\.(get|post|put|patch|delete)\b/
+// Đúng tên hàm của src/api/client.ts: del, postForm (không có delete).
+const API_CALL = /\bapi\.(get|post|postForm|put|patch|del)\b/
 
 function walk(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
