@@ -14,6 +14,4 @@ public interface ReviewResultRepository extends JpaRepository<ReviewResult, UUID
 	@Query("select count(r) > 0 from ReviewResult r join VideoReviewRequest q on q.id = r.requestId "
 			+ "where r.id = :id and q.userId = :userId")
 	boolean existsOwnedBy(UUID id, UUID userId);
-
-	void deleteByRequestId(UUID requestId);
 }
