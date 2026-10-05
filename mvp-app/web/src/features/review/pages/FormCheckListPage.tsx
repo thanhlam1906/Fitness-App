@@ -1,12 +1,10 @@
 import { Link } from "react-router"
-import { useQuery } from "@tanstack/react-query"
-import { api } from "@/api/client"
 import { ExerciseImage } from "@/components/ExerciseImage"
 import { StatusBadge } from "@/features/review/components/StatusBadge"
 import { Stepper } from "@/components/Stepper"
 import { Card } from "@/components/ui/card"
 import { formatDayMonth } from "@/lib/format"
-import type { Exercise } from "@/features/review/types"
+import { useExercises } from "@/features/exercise/api/useExercises"
 import { useReviews } from "@/features/review/api/useReviews"
 
 /**
@@ -18,10 +16,7 @@ import { useReviews } from "@/features/review/api/useReviews"
  * mất bài đó.
  */
 export function FormCheckListPage() {
-  const exercises = useQuery({
-    queryKey: ["exercises"],
-    queryFn: () => api.get<Exercise[]>("/exercises"),
-  })
+  const exercises = useExercises()
   const reviews = useReviews()
 
   const active = (exercises.data ?? []).filter((e) => e.active)

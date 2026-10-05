@@ -1,9 +1,7 @@
 import { useState } from "react"
-import { useMutation } from "@tanstack/react-query"
-import { api } from "@/api/client"
 import { Input } from "@/components/ui/input"
-
-type Source = { reviewResultId: string } | { loadDecisionId: string } | { assistantMessageId: string }
+import { useReportWrong } from "@/features/feedback/api/useReportWrong"
+import type { FeedbackSource } from "@/features/feedback/types"
 
 /**
  * Đặc tả yêu cầu nút "góp ý này sai" ở MỌI góp ý do máy sinh ra — kết quả chấm
@@ -13,13 +11,11 @@ type Source = { reviewResultId: string } | { loadDecisionId: string } | { assist
  * Design để nó là chữ mờ cỡ nhỏ, cố tình không nổi: nó là lối thoát khi máy
  * sai, không phải hành động app muốn người dùng làm.
  */
-export function WrongFeedbackButton({ source, hint }: { source: Source; hint?: string }) {
+export function WrongFeedbackButton({ source, hint }: { source: FeedbackSource; hint?: string }) {
   const [note, setNote] = useState("")
   const [open, setOpen] = useState(false)
 
-  const send = useMutation({
-    mutationFn: () => api.post("/feedback", { ...source, isWrong: true, note: note || null }),
-  })
+  const send = useReportWrong(source)
 
   if (send.isSuccess) {
     return <span className="text-xs text-[var(--color-text-muted)]">Đã ghi nhận. Cảm ơn bạn.</span>
@@ -51,7 +47,7 @@ export function WrongFeedbackButton({ source, hint }: { source: Source; hint?: s
       />
       <button
         type="button"
-        onClick={() => send.mutate()}
+        onClick={() => send.mutate(note)}
         disabled={send.isPending}
         className="h-9 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-xs hover:border-[var(--color-text-muted)] disabled:opacity-50"
       >

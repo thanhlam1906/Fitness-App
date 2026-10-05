@@ -23,7 +23,7 @@ export type ProgramTemplateInput = {
   active: boolean
 }
 
-/** Khớp record của CorpusUploadService và CorpusDocuments ở backend. */
+/** Khớp các DTO kho kiến thức ở backend (assistant/dto: UploadRowResponse, DocumentDetailResponse…). */
 export type UploadStatus = "PROCESSING" | "READY" | "FAILED"
 
 export type Replaces = { title: string; ingestedAt: string; chunkCount: number }
@@ -65,3 +65,44 @@ export type WrongAnswer = {
 export type CorpusDocumentDetail = CorpusDocument & { chunks: DocumentChunk[]; wrongAnswers: WrongAnswer[] }
 
 export type Published = { documentId: string; chunkCount: number }
+
+export type AdminUserRow = {
+  id: string
+  email: string
+  role: string
+  active: boolean
+  createdAt: string
+  lastActivityAt: string | null
+  programName: string | null
+  /** Tuần đang tới của chương trình; null khi chưa có chương trình chạy. */
+  weekIndex: number | null
+  totalWeeks: number | null
+  sessionCount: number
+  clipCount: number
+  /** Buổi đã xong / tổng buổi đã xếp lịch, tính sẵn ở backend. */
+  adherencePct: number | null
+}
+
+export type AdminOverview = {
+  userCount: number
+  activeLast7Days: number
+  sessionsThisWeek: number
+  reviewsInQueue: number
+  wrongFeedbackCount: number
+}
+
+export type AdminUserDetail = {
+  user: AdminUserRow
+  goal: string | null
+  experience: string | null
+  sessionsPerWeek: number | null
+  equipment: string[]
+  birthYear: number | null
+  gender: string | null
+  disclaimerAt: string | null
+  onboardingStep: string
+  heightCm: number | null
+  weightKg: number | null
+  measuredOn: string | null
+  activeProgramName: string | null
+}

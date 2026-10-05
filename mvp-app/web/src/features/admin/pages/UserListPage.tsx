@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/cn"
 import { formatDate } from "@/lib/format"
-import { useAdminOverview, useAdminUsers, type AdminUserRow } from "@/features/admin/api/useAdminUsers"
+import { useAdminOverview, useAdminUsers } from "@/features/admin/api/useAdminUsers"
+import type { AdminUserRow } from "@/features/admin/types"
 
 /** Đợt thử nghiệm MVP giới hạn 100 người — con số này nằm ở đặc tả, không phải API. */
 const TRIAL_SEATS = 100

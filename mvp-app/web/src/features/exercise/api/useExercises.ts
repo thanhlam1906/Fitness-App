@@ -2,8 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/api/client"
 import type { Exercise, ExerciseInput, FormCheck, FormCheckInput } from "@/features/exercise/types"
 
-const exercisesKey = ["admin", "exercises"] as const
-const formChecksKey = (exerciseId: string) => ["admin", "exercises", exerciseId, "form-checks"] as const
+const exercisesKey = ["exercises"] as const
+const formChecksKey = (exerciseId: string) => ["exercises", exerciseId, "form-checks"] as const
 
 export function useExercises() {
   return useQuery({

@@ -1,9 +1,7 @@
-import { useQuery } from "@tanstack/react-query"
-import { api } from "@/api/client"
 import { ExerciseImage } from "@/components/ExerciseImage"
 import { Sheet, SHEET_FOCUS, SheetHeader } from "@/components/ui/sheet"
+import { useExercises } from "@/features/exercise/api/useExercises"
 import { cn } from "@/lib/cn"
-import type { Exercise } from "@/features/review/types"
 
 /** "Sai bài?" và "Chưa nhận ra bài" — chọn bài đúng rồi chấm lại từ số đo đã lưu (spec §3.3). */
 export function ExercisePickerSheet({
@@ -19,7 +17,7 @@ export function ExercisePickerSheet({
   pending: boolean
   onPick: (exerciseId: string) => void
 }) {
-  const exercises = useQuery({ queryKey: ["exercises"], queryFn: () => api.get<Exercise[]>("/exercises") })
+  const exercises = useExercises()
   const list = (exercises.data ?? []).filter((e) => e.active && e.analyzable && e.id !== currentId)
 
   return (

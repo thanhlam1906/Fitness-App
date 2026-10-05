@@ -1,35 +1,14 @@
 import { Link, useParams } from "react-router"
-import { useQuery } from "@tanstack/react-query"
-import { api } from "@/api/client"
+import { useAdminUser } from "@/features/admin/api/useAdminUsers"
 import { AdminHeader } from "@/features/admin/components/AdminShell"
 import { Card } from "@/components/ui/card"
 import { EQUIPMENT_OPTIONS, EXPERIENCE_LEVELS, GOALS, labelOf } from "@/features/profile/types"
 import { formatDate } from "@/lib/format"
-import type { AdminUserRow } from "@/features/admin/api/useAdminUsers"
-
-type AdminUserDetail = {
-  user: AdminUserRow
-  goal: string | null
-  experience: string | null
-  sessionsPerWeek: number | null
-  equipment: string[]
-  birthYear: number | null
-  gender: string | null
-  disclaimerAt: string | null
-  onboardingStep: string
-  heightCm: number | null
-  weightKg: number | null
-  measuredOn: string | null
-  activeProgramName: string | null
-}
 
 /** Màn 11 — hồ sơ một người dùng. Chỉ đọc: admin không sửa hồ sơ hộ người dùng. */
 export function UserDetailPage() {
   const { userId } = useParams<{ userId: string }>()
-  const detail = useQuery({
-    queryKey: ["admin-user", userId],
-    queryFn: () => api.get<AdminUserDetail>(`/admin/users/${userId}`),
-  })
+  const detail = useAdminUser(userId)
 
   if (detail.isLoading) {
     return <p className="p-7 text-sm text-[var(--color-text-muted)]">Đang tải…</p>
