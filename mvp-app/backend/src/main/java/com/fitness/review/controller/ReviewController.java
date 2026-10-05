@@ -1,10 +1,8 @@
 package com.fitness.review.controller;
 
 import com.fitness.common.CurrentUser;
-import com.fitness.review.dto.ChangeExerciseRequest;
 import com.fitness.review.dto.ReviewResponse;
 import com.fitness.review.service.ReviewService;
-import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -12,8 +10,6 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -55,11 +51,5 @@ public class ReviewController {
 	@GetMapping("/{id}")
 	public ReviewResponse get(@PathVariable UUID id) {
 		return reviewService.get(currentUser.id(), id);
-	}
-
-	@PutMapping("/{id}/exercise")
-	@ResponseStatus(HttpStatus.ACCEPTED)
-	public ReviewResponse changeExercise(@PathVariable UUID id, @Valid @RequestBody ChangeExerciseRequest body) {
-		return reviewService.changeExercise(currentUser.id(), id, body);
 	}
 }

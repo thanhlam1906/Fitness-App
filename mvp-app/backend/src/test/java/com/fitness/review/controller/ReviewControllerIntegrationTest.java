@@ -6,12 +6,10 @@ import com.fitness.auth.entity.Role;
 import com.fitness.content.entity.Exercise;
 import com.fitness.content.repository.ExerciseRepository;
 import com.fitness.review.dto.ReviewResponse;
-import com.fitness.review.entity.VideoClip;
 import com.fitness.review.repository.VideoClipRepository;
 import com.fitness.support.PostgresIntegrationTest;
 import java.nio.file.Files;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
@@ -92,18 +90,13 @@ class ReviewControllerIntegrationTest extends PostgresIntegrationTest {
 	}
 
 	@Test
-	void submit_withoutExercise_queuesRequestForRecognition() {
+	void submit_withoutExercise_returns400() {
 		HttpHeaders headers = newAuthedUser(Role.USER).headers();
 
-		var response = rest.exchange("/api/v1/reviews?optIn=true&viewpoints=SAGITTAL&viewpoints=FRONTAL",
-				HttpMethod.POST, multipart(headers, List.of("sagittal.json", "frontal.json")), ReviewResponse.class);
+		var response = rest.exchange("/api/v1/reviews?optIn=true&viewpoints=SAGITTAL",
+				HttpMethod.POST, multipart(headers, List.of("sagittal.json")), String.class);
 
-		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.ACCEPTED);
-		assertThat(response.getBody().exerciseId()).isNull();
-		assertThat(response.getBody().exerciseName()).isNull();
-		assertThat(clips.findByRequestId(response.getBody().id()))
-				.extracting(VideoClip::getStorageKey)
-				.allMatch(key -> key.endsWith(".json"));
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 	}
 
 	@Test
@@ -136,70 +129,6 @@ class ReviewControllerIntegrationTest extends PostgresIntegrationTest {
 	}
 
 	@Test
-	void changeExercise_rejudgesFromStoredFeatures() {
-		HttpHeaders headers = newAuthedUser(Role.USER).headers();
-		UUID squatId = exercises.findBySlug("barbell-back-squat").orElseThrow().getId();
-		UUID pushupId = exercises.findBySlug("push-up").orElseThrow().getId();
-		UUID reviewId = submit(headers, squatId, true, 1).getBody().id();
-		finishWithLlmResult(reviewId);
-
-		var response = rest.exchange("/api/v1/reviews/" + reviewId + "/exercise", HttpMethod.PUT,
-				new HttpEntity<>(Map.of("exerciseId", pushupId), headers), ReviewResponse.class);
-
-		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.ACCEPTED);
-		assertThat(response.getBody().status()).isEqualTo("PENDING");
-		assertThat(response.getBody().exerciseId()).isEqualTo(pushupId);
-		assertThat(response.getBody().checks()).isEmpty();
-		// Bộ số giữ lại: worker chấm lại từ đây, không cần clip.
-		assertThat(jdbc.queryForObject(
-				"SELECT features IS NOT NULL FROM video_review_requests WHERE id = ?", Boolean.class, reviewId))
-				.isTrue();
-	}
-
-	@Test
-	void changeExercise_otherUsersReview_returns404() {
-		HttpHeaders owner = newAuthedUser(Role.USER).headers();
-		UUID squatId = exercises.findBySlug("barbell-back-squat").orElseThrow().getId();
-		UUID pushupId = exercises.findBySlug("push-up").orElseThrow().getId();
-		UUID reviewId = submit(owner, squatId, true, 1).getBody().id();
-		finishWithLlmResult(reviewId);
-
-		HttpHeaders stranger = newAuthedUser(Role.USER).headers();
-		assertThat(changeExercise(stranger, reviewId, pushupId).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-	}
-
-	@Test
-	void changeExercise_nonAnalyzableExercise_returns400() {
-		HttpHeaders headers = newAuthedUser(Role.USER).headers();
-		UUID squatId = exercises.findBySlug("barbell-back-squat").orElseThrow().getId();
-		UUID reviewId = submit(headers, squatId, true, 1).getBody().id();
-		finishWithLlmResult(reviewId);
-
-		assertThat(changeExercise(headers, reviewId, nonAnalyzableExercise().getId()).getStatusCode())
-				.isEqualTo(HttpStatus.BAD_REQUEST);
-	}
-
-	@Test
-	void changeExercise_pendingWithoutFeatures_returns409() {
-		HttpHeaders headers = newAuthedUser(Role.USER).headers();
-		UUID squatId = exercises.findBySlug("barbell-back-squat").orElseThrow().getId();
-		UUID pushupId = exercises.findBySlug("push-up").orElseThrow().getId();
-		UUID reviewId = submit(headers, squatId, true, 1).getBody().id();
-
-		assertThat(changeExercise(headers, reviewId, pushupId).getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
-	}
-
-	@Test
-	void changeExercise_sameExercise_returns409() {
-		HttpHeaders headers = newAuthedUser(Role.USER).headers();
-		UUID squatId = exercises.findBySlug("barbell-back-squat").orElseThrow().getId();
-		UUID reviewId = submit(headers, squatId, true, 1).getBody().id();
-		finishWithLlmResult(reviewId);
-
-		assertThat(changeExercise(headers, reviewId, squatId).getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
-	}
-
-	@Test
 	void list_returnsOnlyOwnRequests() {
 		HttpHeaders owner = newAuthedUser(Role.USER).headers();
 		UUID squatId = exercises.findBySlug("barbell-back-squat").orElseThrow().getId();
@@ -222,15 +151,10 @@ class ReviewControllerIntegrationTest extends PostgresIntegrationTest {
 				reviewId, reviewId);
 	}
 
-	/** Seed bật analyzable cho mọi bài, nên test tự tạo một bài tắt chấm. */
+	/** Bài mới chưa có khớp cần kiểm nên chưa chấm được. */
 	private Exercise nonAnalyzableExercise() {
 		return exercises.save(new Exercise("test-" + UUID.randomUUID(), "Test", null,
 				new String[0], new String[0], null, null, false));
-	}
-
-	private ResponseEntity<String> changeExercise(HttpHeaders headers, UUID reviewId, UUID exerciseId) {
-		return rest.exchange("/api/v1/reviews/" + reviewId + "/exercise", HttpMethod.PUT,
-				new HttpEntity<>(Map.of("exerciseId", exerciseId), headers), String.class);
 	}
 
 	private ResponseEntity<ReviewResponse> submit(HttpHeaders headers, UUID exerciseId, boolean optIn, int clipCount) {
