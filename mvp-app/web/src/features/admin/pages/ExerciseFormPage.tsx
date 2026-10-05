@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/cn"
 import { ExerciseListPanel } from "@/features/admin/components/ExerciseListPanel"
 import { FormCheckEditor } from "@/features/admin/components/FormCheckEditor"
+import { HelpButton, HelpText, useHelp } from "@/features/admin/components/HelpButton"
 import type { ExerciseInput } from "@/features/exercise/types"
 import { useExercise, useSaveExercise } from "@/features/exercise/api/useExercises"
 
@@ -19,7 +20,7 @@ type Tab = "checks" | "info"
  * khi tạo, không sửa được ở form edit.
  *
  * Design chia màn làm hai cột (danh sách bài | trình sửa) và trình sửa có tab.
- * Tab mặc định là "Ngưỡng chấm" vì vòng lặp chỉnh ngưỡng mới là việc HLV làm
+ * Tab mặc định là "Cách chấm form" vì vòng lặp chỉnh ngưỡng mới là việc HLV làm
  * hằng ngày; thông tin bài sửa một lần rồi thôi.
  *
  * Hai tab "Lịch sử sửa" và "Clip mẫu", cùng cột "Đối chiếu clip mẫu" bên phải
@@ -33,6 +34,7 @@ export function ExerciseFormPage() {
   const navigate = useNavigate()
   const existing = useExercise(isNew ? "" : id!)
   const save = useSaveExercise(isNew ? undefined : id)
+  const help = useHelp()
 
   const tab: Tab = isNew ? "info" : searchParams.get("tab") === "info" ? "info" : "checks"
 
@@ -50,7 +52,6 @@ export function ExerciseFormPage() {
           equipment: existing.data.equipment,
           description: existing.data.description ?? "",
           filmingGuide: existing.data.filmingGuide ?? "",
-          analyzable: existing.data.analyzable,
           active: existing.data.active,
         }
       : undefined,
@@ -83,7 +84,7 @@ export function ExerciseFormPage() {
       <ExerciseListPanel activeId={isNew ? undefined : id} />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <AdminHeader group="Bài tập và ngưỡng · form_checks" title={title}>
+        <AdminHeader group="Bài tập và ngưỡng" title={title}>
           {save.isSuccess && (
             <span className="text-xs whitespace-nowrap text-[var(--color-text-muted)]">
               Đã lưu — không cần tải lại
@@ -97,7 +98,7 @@ export function ExerciseFormPage() {
               active={tab === "checks"}
               onClick={() => setSearchParams({ tab: "checks" })}
             >
-              Ngưỡng chấm
+              Cách chấm form
             </TabButton>
             <TabButton active={tab === "info"} onClick={() => setSearchParams({ tab: "info" })}>
               Thông tin bài
@@ -126,8 +127,12 @@ export function ExerciseFormPage() {
                   <Input id="nameEn" {...register("nameEn")} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="nameVi">Tên (VI)</Label>
+                  <div className="flex items-center">
+                    <Label htmlFor="nameVi">Tên (VI)</Label>
+                    <HelpButton open={help.isOpen("name")} onClick={() => help.toggle("name")} />
+                  </div>
                   <Input id="nameVi" {...register("nameVi")} />
+                  {help.isOpen("name") && <HelpText id="name" />}
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="muscleGroupsText">Nhóm cơ (phẩy)</Label>
@@ -162,9 +167,6 @@ export function ExerciseFormPage() {
                 />
               </div>
               <div className="flex gap-4">
-                <label className="flex items-center gap-2 text-sm">
-                  <Checkbox {...register("analyzable")} /> Chấm form được (TN2)
-                </label>
                 <label className="flex items-center gap-2 text-sm">
                   <Checkbox {...register("active")} /> Đang hoạt động
                 </label>

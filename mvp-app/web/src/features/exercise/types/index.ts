@@ -1,3 +1,5 @@
+import type { MeasureKey, Moment, ViewCode } from "@/lib/formMeasures"
+
 export type Exercise = {
   id: string
   slug: string
@@ -7,9 +9,10 @@ export type Exercise = {
   equipment: string[]
   description: string | null
   filmingGuide: string | null // JSON thô — hướng dẫn quay hiện ở màn 8
-  analyzable: boolean
+  analyzable: boolean // máy tự tính: có ít nhất một khớp cần kiểm đang bật
   active: boolean
   formCheckCount: number
+  checkViews: ViewCode[] // các góc có khớp đang bật, thứ tự camera hướng dẫn
   updatedAt: string
 }
 
@@ -21,34 +24,22 @@ export type ExerciseInput = {
   equipment: string[]
   description: string
   filmingGuide: string
-  analyzable: boolean
   active: boolean
 }
 
+/** Một khớp cần kiểm (doc/design-cham-form-nguong-v1.md §2). from/to là độ, null = không giới hạn. */
 export type FormCheck = {
   id: string
   exerciseId: string
-  code: string
-  metric: string
-  validViewpoints: string[]
-  thresholds: string // JSON thô — xem F4 concept-frontend-v1.md
-  confidenceMin: number
-  cuePassVi: string | null
-  cueWarnVi: string | null
+  view: ViewCode
+  measure: MeasureKey
+  moment: Moment
+  from: number | null
+  to: number | null
+  warn: number
+  nameVi: string
   cueFailVi: string
   priority: number
-  active: boolean
 }
 
-export type FormCheckInput = {
-  code?: string // bắt buộc khi tạo, bỏ qua khi sửa
-  metric: string
-  validViewpoints: string[]
-  thresholds: string
-  confidenceMin: number
-  cuePassVi: string
-  cueWarnVi: string
-  cueFailVi: string
-  priority: number
-  active: boolean
-}
+export type FormCheckInput = Omit<FormCheck, "id" | "exerciseId" | "priority">

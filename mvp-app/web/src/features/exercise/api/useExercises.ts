@@ -52,7 +52,8 @@ export function useSaveFormCheck(exerciseId: string, id?: string) {
       id
         ? api.put<FormCheck>(`/exercises/${exerciseId}/form-checks/${id}`, input)
         : api.post<FormCheck>(`/exercises/${exerciseId}/form-checks`, input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: formChecksKey(exerciseId) }),
+    // Cả danh sách bài: analyzable, số khớp, checkViews đổi theo.
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: exercisesKey }),
   })
 }
 
@@ -60,6 +61,7 @@ export function useDeactivateFormCheck(exerciseId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => api.del<FormCheck>(`/exercises/${exerciseId}/form-checks/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: formChecksKey(exerciseId) }),
+    // Cả danh sách bài: analyzable, số khớp, checkViews đổi theo.
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: exercisesKey }),
   })
 }
