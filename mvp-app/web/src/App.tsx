@@ -58,7 +58,7 @@ export function App() {
                     element={<FinishSessionPage />}
                   />
                   <Route path="/form-check" element={<FormCheckListPage />} />
-                  <Route path="/form-check/live" element={<LiveCheckPage />} />
+                  <Route path="/form-check/:exerciseId/live" element={<LiveCheckPage />} />
                   <Route path="/form-check/result/:reviewId" element={<ReviewResultPage />} />
                   <Route path="/form-check/:exerciseId" element={<FilmingGuidePage />} />
                   <Route path="/settings" element={<SettingsPage />} />

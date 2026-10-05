@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { Link, useNavigate } from "react-router"
+import { Link, useNavigate, useParams } from "react-router"
 import type { PoseLandmarker } from "@mediapipe/tasks-vision"
 import { ApiError } from "@/api/client"
 import { Button } from "@/components/ui/button"
@@ -13,12 +13,13 @@ import {
   packFrame,
   readPose,
   REPS_PER_VIEW,
+  VIEW_GUIDE,
   viewOf,
-  VIEWS,
   type PoseRead,
   type Session,
 } from "@/features/review/utils/livePose"
-import { useSubmitLive } from "@/features/review/api/useReviews"
+import { VIEW_NAME } from "@/lib/formMeasures"
+import { useExercise, useSubmitLive } from "@/features/review/api/useReviews"
 
 const WASM_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
 // Cùng file model analyzer tải (analyzer/pipeline/pose.py, MODEL_URLS["full"]). Không commit vào repo.
@@ -31,11 +32,15 @@ type Screen = "consent" | "loading" | "live" | "sending" | "failed"
 /**
  * Màn camera trực tiếp — doc/design-cham-form-llm-v1.md §3.2, lấy từ /live của analyzer-demo.
  * Pose chạy trong trình duyệt; chỉ toạ độ khớp được gửi lên, hình không rời máy. Hướng dẫn vẽ
- * trên canvas, không giọng nói.
+ * trên canvas, không giọng nói. Chỉ hướng dẫn các góc có khớp cần kiểm của bài (exercise.checkViews),
+ * doc/design-cham-form-nguong-v1.md §5.
  */
 export function LiveCheckPage() {
   const navigate = useNavigate()
-  const submit = useSubmitLive()
+  const { exerciseId } = useParams<{ exerciseId: string }>()
+  const exercise = useExercise(exerciseId!)
+  const views = exercise.data?.checkViews ?? []
+  const submit = useSubmitLive(exerciseId!)
   const video = useRef<HTMLVideoElement>(null)
   const canvas = useRef<HTMLCanvasElement>(null)
   const landmarker = useRef<PoseLandmarker | null>(null)
@@ -74,7 +79,7 @@ export function LiveCheckPage() {
       const v = video.current!
       v.srcObject = stream.current
       await v.play()
-      session.current = newSession()
+      session.current = newSession(views)
       setScreen("live")
       const theme = readTheme()
       const loop = () => {
@@ -142,11 +147,16 @@ export function LiveCheckPage() {
 
   return (
     <FlowScreen>
-      <h1 className="text-[26px] font-extrabold tracking-[-0.02em]">Tập và chấm bằng camera</h1>
+      <h1 className="text-[26px] font-extrabold tracking-[-0.02em]">
+        {exercise.data ? `Chấm form: ${exercise.data.nameVi ?? exercise.data.nameEn}` : "Chấm form"}
+      </h1>
       <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--color-text-muted)]">
-        Đặt máy cách 2–3 m, cả người trong khung. Làm {REPS_PER_VIEW} rep góc ngang rồi {REPS_PER_VIEW} rep chính
-        diện. AI nhận diện bài và chấm kỹ thuật.
+        Đặt máy cách 2–3 m, cả người trong khung. Làm {REPS_PER_VIEW} rep mỗi góc:{" "}
+        {views.map((v) => VIEW_NAME[v]).join(" → ")}.
       </p>
+      {exercise.data && views.length === 0 && (
+        <p className="mt-3 text-sm text-[var(--color-danger)]">Bài này chưa chấm form được.</p>
+      )}
 
       <div className="relative mt-4 overflow-hidden rounded-xl bg-[var(--color-surface)]">
         {/* Video chỉ là nguồn hình cho canvas; ẩn bằng opacity để trình duyệt vẫn giải mã frame. */}
@@ -170,8 +180,7 @@ export function LiveCheckPage() {
           <span className="text-[13px] leading-relaxed">
             Tôi đồng ý gửi toạ độ khớp để chấm.{" "}
             <span className="text-[var(--color-text-muted)]">
-              Hình ảnh không rời máy bạn. Máy chủ chỉ nhận các con số vị trí khớp, và giữ số đo góc khớp để chấm lại
-              khi bạn sửa bài.
+              Hình ảnh không rời máy bạn. Máy chủ chỉ nhận các con số vị trí khớp.
             </span>
           </span>
         </label>
@@ -187,7 +196,7 @@ export function LiveCheckPage() {
       <div className="flex-1" />
       <div className="mt-6 flex gap-2.5">
         {screen === "consent" && (
-          <Button className="w-full" disabled={!optIn} onClick={() => void start()}>
+          <Button className="w-full" disabled={!optIn || views.length === 0} onClick={() => void start()}>
             Bật camera
           </Button>
         )}
@@ -200,7 +209,7 @@ export function LiveCheckPage() {
               variant="secondary"
               className="flex-1"
               onClick={() => {
-                session.current = newSession()
+                session.current = newSession(views)
               }}
             >
               Làm lại
@@ -221,7 +230,7 @@ export function LiveCheckPage() {
         )}
       </div>
       <Link
-        to="/form-check"
+        to={`/form-check/${exerciseId}`}
         className="mt-3 self-center rounded-[var(--radius-sm)] text-xs text-[var(--color-text-muted)] underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
       >
         Đã quay sẵn? Gửi clip thay vì bật camera
@@ -236,7 +245,8 @@ function drawHud(ctx: CanvasRenderingContext2D, t: HudTheme, s: Session, pose: P
   const size = Math.round(w * 0.03)
   const top = size * 1.4
   const bottom = h - size * 1.6
-  const view = VIEWS[Math.min(s.step, VIEWS.length - 1)]
+  const code = s.views[Math.min(s.step, s.views.length - 1)]
+  const view = VIEW_GUIDE[code]
   const holding = (since: number | null) =>
     `Giữ nguyên… ${Math.round(Math.min(1, since === null ? 0 : (now - since) / HOLD_MS) * 100)}%`
   const flash = s.flash && now - s.flash.at < FLASH_MS ? s.flash.text : null
@@ -245,8 +255,8 @@ function drawHud(ctx: CanvasRenderingContext2D, t: HudTheme, s: Session, pose: P
     pill(ctx, t, "Vào khung hình", w / 2, top, size, t.text)
     pill(ctx, t, pose.why ?? holding(s.okSince), w / 2, bottom, size, pose.inFrame ? t.accent : t.warn)
   } else if (s.stage === "pose") {
-    const ok = pose.inFrame && viewOf(s.ratio) === view.code
-    pill(ctx, t, `Góc ${view.label} (${s.step + 1}/${VIEWS.length})`, w / 2, top, size, t.text)
+    const ok = pose.inFrame && viewOf(s.ratio) === code
+    pill(ctx, t, `Góc ${view.label} (${s.step + 1}/${s.views.length})`, w / 2, top, size, t.text)
     pill(ctx, t, pose.why ?? (ok ? holding(s.okSince) : view.hint), w / 2, bottom, size, ok ? t.accent : t.warn)
     if (flash) pill(ctx, t, flash, w / 2, bottom - size * 2.2, size * 0.85, t.accent)
   } else if (s.stage === "countdown") {

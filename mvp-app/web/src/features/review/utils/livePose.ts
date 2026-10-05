@@ -13,11 +13,13 @@ export type PoseRead = { inFrame: boolean; why: string | null; ratio: number | n
 export type ViewCode = "FRONTAL" | "SAGITTAL" | "DIAGONAL"
 export type FrameJson = { norm: number[][]; vis: number[]; world: number[][] } | null
 
-export const VIEWS = [
-  { code: "SAGITTAL", label: "NGANG", hint: "Xoay ngang: vai vuông góc với camera" },
-  { code: "FRONTAL", label: "CHÍNH DIỆN", hint: "Quay mặt về phía camera" },
-] as const
-export type CaptureView = (typeof VIEWS)[number]["code"]
+/** Chữ hướng dẫn từng góc trên hình camera. Góc nào được quay do bài quyết định (checkViews). */
+export const VIEW_GUIDE: Record<ViewCode, { label: string; hint: string }> = {
+  SAGITTAL: { label: "NGANG", hint: "Xoay ngang: vai vuông góc với camera" },
+  FRONTAL: { label: "CHÍNH DIỆN", hint: "Quay mặt về phía camera" },
+  DIAGONAL: { label: "CHÉO 45°", hint: "Xoay chéo, nửa chừng giữa ngang và chính diện" },
+}
+export type CaptureView = ViewCode
 
 export const REPS_PER_VIEW = 5
 export const HOLD_MS = 1500
@@ -156,6 +158,7 @@ export function packFrame(lm: Landmark[] | null, wl: Landmark[] | null): FrameJs
 
 export type Stage = "frame" | "pose" | "countdown" | "reps" | "done"
 export type Session = {
+  views: ViewCode[]
   stage: Stage
   step: number
   okSince: number | null
@@ -167,8 +170,9 @@ export type Session = {
   flash: { text: string; at: number } | null
 }
 
-export function newSession(): Session {
+export function newSession(views: ViewCode[] = ["SAGITTAL", "FRONTAL"]): Session {
   return {
+    views,
     stage: "frame",
     step: 0,
     okSince: null,
@@ -191,8 +195,8 @@ function pushFrame(s: Session, frame: FrameJson) {
 export function advance(s: Session, pose: PoseRead, frame: FrameJson, now: number): void {
   // Làm mượt như demo: một frame lệch không làm nhảy góc nhìn.
   if (pose.ratio !== null) s.ratio = s.ratio * 0.85 + pose.ratio * 0.15
-  const view = VIEWS[s.step]
-  const posed = pose.inFrame && view !== undefined && viewOf(s.ratio) === view.code
+  const code = s.views[s.step]
+  const posed = pose.inFrame && code !== undefined && viewOf(s.ratio) === code
   switch (s.stage) {
     case "frame":
     case "pose": {
@@ -225,15 +229,15 @@ export function advance(s: Session, pose: PoseRead, frame: FrameJson, now: numbe
       }
       break
     case "reps":
-      if (view === undefined) break
+      if (code === undefined) break
       pushFrame(s, frame)
       if (pose.angles && s.counter.push(pose.angles)) s.flash = { text: `Rep ${s.counter.count} ✓`, at: now }
       if (s.counter.count >= REPS_PER_VIEW) {
-        s.clips.push({ view: view.code, frames: s.buffer })
+        s.clips.push({ view: code, frames: s.buffer })
         s.buffer = []
-        s.flash = { text: `Xong ${REPS_PER_VIEW} rep góc ${view.label.toLowerCase()}`, at: now }
+        s.flash = { text: `Xong ${REPS_PER_VIEW} rep góc ${VIEW_GUIDE[code].label.toLowerCase()}`, at: now }
         s.step++
-        s.stage = s.step < VIEWS.length ? "pose" : "done"
+        s.stage = s.step < s.views.length ? "pose" : "done"
       }
       break
   }

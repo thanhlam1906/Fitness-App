@@ -58,29 +58,16 @@ export function useSubmitReview() {
   })
 }
 
-/** "Sai bài?" (design-cham-form-llm-v1.md §3.3): đổi bài, server chấm lại từ số đo đã lưu. */
-export function useChangeExercise(reviewId: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (exerciseId: string) => api.put<Review>(`/reviews/${reviewId}/exercise`, { exerciseId }),
-    onSuccess: (review) => {
-      // Đặt thẳng vào cache: trạng thái PENDING làm useReview tự poll lại tới khi chấm xong.
-      queryClient.setQueryData(["review", reviewId], review)
-      void queryClient.invalidateQueries({ queryKey: ["reviews"] })
-    },
-  })
-}
-
 /**
- * Màn camera (design-cham-form-llm-v1.md §3.2): mỗi góc một file .json toạ độ khớp, gửi như clip
- * thường. Không kèm exerciseId: analyzer tự nhận diện bài. optIn đã tick ở màn camera.
+ * Màn camera: mỗi góc một file .json toạ độ khớp, gửi như clip thường, kèm bài người tập đã chọn
+ * (doc/design-cham-form-nguong-v1.md §5). optIn đã tick ở màn camera.
  */
-export function useSubmitLive() {
+export function useSubmitLive(exerciseId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (clips: { view: CaptureView; frames: FrameJson[] }[]) => {
       const form = new FormData()
-      const query = new URLSearchParams({ optIn: "true" })
+      const query = new URLSearchParams({ exerciseId, optIn: "true" })
       for (const clip of clips) {
         const body = new Blob([JSON.stringify({ frames: clip.frames })], { type: "application/json" })
         form.append("clips", body, `${clip.view.toLowerCase()}.json`)

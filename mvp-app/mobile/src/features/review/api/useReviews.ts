@@ -2,8 +2,8 @@ import { useQuery } from "@tanstack/react-query"
 import type { Review } from "@/features/review/types"
 import { api } from "~/api/client"
 
-// Chỉ phần đọc của web/src/features/review/api/useReviews.ts: mobile v1 chỉ xem kết quả, chấm mới và
-// "Sai bài?" vẫn ở bản web (doc/design-mobile-v1.md §8).
+// Chỉ phần đọc của web/src/features/review/api/useReviews.ts: mobile v1 chỉ xem kết quả, chấm mới vẫn
+// ở bản web (doc/design-mobile-v1.md §8).
 const IN_FLIGHT: Review["status"][] = ["PENDING", "PROCESSING"]
 
 export function useReviews() {

@@ -1,3 +1,5 @@
+import type { ViewCode } from "@/lib/formMeasures"
+
 export type ReviewStatus = "PENDING" | "PROCESSING" | "DONE" | "FAILED" | "REJECTED"
 
 export type CheckResult = {
@@ -25,7 +27,7 @@ export type Evidence = {
 
 export type Review = {
   id: string
-  exerciseId: string | null // null khi màn camera gửi lên mà analyzer chưa nhận diện xong
+  exerciseId: string | null // null ở yêu cầu cũ gửi khi LLM còn đoán bài
   exerciseName: string | null
   status: ReviewStatus
   rejectReason: string | null
@@ -59,6 +61,7 @@ export type Exercise = {
   active: boolean
   /** Số mục kiểm đang bật — màn 7 hiện "3 mục kiểm". */
   formCheckCount: number
+  checkViews: ViewCode[] // góc camera hướng dẫn, theo khớp cần kiểm admin đặt
   updatedAt: string
 }
 

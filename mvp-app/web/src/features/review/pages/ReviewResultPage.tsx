@@ -1,6 +1,4 @@
-import { useState } from "react"
 import { Link, useParams } from "react-router"
-import { ApiError } from "@/api/client"
 import { Stepper } from "@/components/Stepper"
 import { VerdictChip } from "@/features/review/components/VerdictChip"
 import { WrongFeedbackButton } from "@/features/feedback/components/WrongFeedbackButton"
@@ -9,15 +7,13 @@ import { Card } from "@/components/ui/card"
 import { FlowScreen } from "@/components/UserShell"
 import { cn } from "@/lib/cn"
 import { formatDayMonth } from "@/lib/format"
-import { ExercisePickerSheet } from "@/features/review/components/ExercisePickerSheet"
-import { checkLabel, evidenceLine, evidenceOf, isOverallOk } from "@/features/review/utils/reviewView"
+import { checkDetails, checkLabel, isOverallOk } from "@/features/review/utils/reviewView"
 import type { Review } from "@/features/review/types"
-import { useChangeExercise, useReview } from "@/features/review/api/useReviews"
+import { useReview } from "@/features/review/api/useReviews"
 
 /**
- * Màn 9 concept-frontend-v1.md, làm lại theo kiểu analyzer-demo (design-cham-form-llm-v1.md §3.3):
- * bài AI nhận diện + "Sai bài?", kết luận chung, MỘT lỗi quan trọng nhất, từng mục kèm số dẫn
- * chứng, và nút "góp ý này sai" ở mọi kết quả.
+ * Màn 9 concept-frontend-v1.md (doc/design-cham-form-nguong-v1.md §5): kết luận chung, MỘT lỗi
+ * quan trọng nhất, từng mục kèm số đo và khoảng admin đặt, nút "góp ý này sai" ở mọi kết quả.
  *
  * §5.3: đang phân tích thì hiện `warn` + nút quay lại, KHÔNG chặn màn — người dùng đi làm việc
  * khác được, kết quả tự hiện khi xong.
@@ -25,8 +21,6 @@ import { useChangeExercise, useReview } from "@/features/review/api/useReviews"
 export function ReviewResultPage() {
   const { reviewId } = useParams<{ reviewId: string }>()
   const review = useReview(reviewId!)
-  const change = useChangeExercise(reviewId!)
-  const [picking, setPicking] = useState(false)
 
   if (review.isLoading) {
     return <p className="text-sm text-[var(--color-text-muted)]">Đang tải…</p>
@@ -37,8 +31,10 @@ export function ReviewResultPage() {
 
   const data = review.data!
   const primary = data.checks.find((c) => c.isPrimary)
+  // Yêu cầu cũ gửi khi LLM còn đoán bài và nó không nhận ra.
   const unknownExercise = data.status === "REJECTED" && data.rejectReason === "UNKNOWN_EXERCISE"
   const ok = isOverallOk(data.checks)
+  const again = data.exerciseId ? `/form-check/${data.exerciseId}/live` : "/form-check"
 
   return (
     <FlowScreen>
@@ -47,27 +43,9 @@ export function ReviewResultPage() {
       <p className="num mt-1 text-xs text-[var(--color-text-muted)]">{subtitle(data)}</p>
 
       {data.exerciseName && (
-        <div className="mt-4 flex items-center justify-between gap-3 rounded-[var(--radius-md)] bg-[var(--color-surface)] px-3.5 py-3">
-          <span className="text-sm">
-            Bạn đã tập: <b>{data.exerciseName}</b>
-          </span>
-          {data.status === "DONE" && (
-            <button
-              type="button"
-              onClick={() => setPicking(true)}
-              className="rounded-[var(--radius-sm)] text-xs font-semibold text-[var(--color-accent)] underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
-            >
-              Sai bài?
-            </button>
-          )}
+        <div className="mt-4 rounded-[var(--radius-md)] bg-[var(--color-surface)] px-3.5 py-3 text-sm">
+          Bạn đã tập: <b>{data.exerciseName}</b>
         </div>
-      )}
-      {change.isError && (
-        <p className="mt-2 text-sm text-[var(--color-danger)]">
-          {change.error instanceof ApiError && change.error.status === 409
-            ? "Lần chấm này không chấm lại được."
-            : change.error.message}
-        </p>
       )}
 
       {(data.status === "PENDING" || data.status === "PROCESSING") && (
@@ -84,16 +62,18 @@ export function ReviewResultPage() {
 
       {unknownExercise && (
         <Card className="mt-5 space-y-3">
-          <p className="text-sm">Chưa nhận ra bài bạn tập. Chọn bài để chấm, không cần tập lại.</p>
-          <Button onClick={() => setPicking(true)}>Chọn bài</Button>
+          <p className="text-sm">Lần chấm này chưa có bài. Chọn bài rồi tập lại.</p>
+          <Link to="/form-check">
+            <Button>Chọn bài</Button>
+          </Link>
         </Card>
       )}
-      {data.status === "REJECTED" && !unknownExercise && <RejectedCard review={data} />}
+      {data.status === "REJECTED" && !unknownExercise && <RejectedCard review={data} again={again} />}
 
       {data.status === "FAILED" && (
         <Card className="mt-5 space-y-3">
           <p className="text-sm text-[var(--color-danger)]">Chấm không thành công. {data.error}</p>
-          <Link to="/form-check">
+          <Link to={again}>
             <Button>Thử lại</Button>
           </Link>
         </Card>
@@ -115,13 +95,13 @@ export function ReviewResultPage() {
           {primary ? (
             <div className="mt-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4">
               <div className="text-[11px] font-bold tracking-[0.1em] text-[var(--color-danger)] uppercase">
-                Lỗi quan trọng nhất · AI đánh giá
+                Lỗi quan trọng nhất
               </div>
               <div className="mt-2 text-[19px] leading-tight font-bold">{checkLabel(primary)}</div>
               <p className="mt-2.5 text-sm leading-relaxed">{primary.cueTextVi}</p>
-              {evidenceOf(primary).map((e, i) => (
-                <p key={i} className="num mt-1 text-xs text-[var(--color-text-muted)]">
-                  {evidenceLine(e)}
+              {checkDetails(primary).map((line) => (
+                <p key={line} className="num mt-1 text-xs text-[var(--color-text-muted)]">
+                  {line}
                 </p>
               ))}
               <div className="mt-3.5">
@@ -148,9 +128,9 @@ export function ReviewResultPage() {
                   {check.cueTextVi && (
                     <p className="mt-1 text-xs leading-snug text-[var(--color-text-muted)]">{check.cueTextVi}</p>
                   )}
-                  {evidenceOf(check).map((e, i) => (
-                    <p key={i} className="num mt-1 text-xs text-[var(--color-text-muted)]">
-                      {evidenceLine(e)}
+                  {checkDetails(check).map((line) => (
+                    <p key={line} className="num mt-1 text-xs text-[var(--color-text-muted)]">
+                      {line}
                     </p>
                   ))}
                   <div className="mt-2">
@@ -161,13 +141,13 @@ export function ReviewResultPage() {
           </div>
 
           <p className="mt-4 text-[11px] leading-relaxed text-[var(--color-text-muted)]">
-            AI đánh giá dựa trên số đo góc khớp, chưa kiểm chứng, có thể sai. Không phải đánh giá y tế. Clip đã bị xoá
-            khỏi máy chủ; chỉ giữ số đo góc khớp để chấm lại khi bạn sửa bài.
+            Chấm theo ngưỡng huấn luyện viên đặt, dựa trên số đo góc khớp từ camera, có thể sai. Không phải đánh giá y
+            tế. Clip đã bị xoá khỏi máy chủ, chỉ giữ số đo.
           </p>
 
           <div className="flex-1" />
           <div className="mt-6 flex gap-2.5">
-            <Link to="/form-check/live" className="flex-1">
+            <Link to={again} className="flex-1">
               <Button variant="secondary" className="w-full">
                 Tập lại
               </Button>
@@ -178,15 +158,6 @@ export function ReviewResultPage() {
           </div>
         </>
       )}
-
-      <ExercisePickerSheet
-        open={picking}
-        onClose={() => setPicking(false)}
-        currentId={data.exerciseId}
-        pending={change.isPending}
-        // Đóng cả khi lỗi: câu báo lỗi nằm trên màn, khung trượt mở sẽ che mất.
-        onPick={(exerciseId) => change.mutate(exerciseId, { onSettled: () => setPicking(false) })}
-      />
     </FlowScreen>
   )
 }
@@ -203,7 +174,7 @@ function subtitle(review: Review): string {
 }
 
 /** §5.3 — bị từ chối phải nêu LÝ DO CỤ THỂ + đường thử lại, không phải "có lỗi xảy ra". */
-function RejectedCard({ review }: { review: Review }) {
+function RejectedCard({ review, again }: { review: Review; again: string }) {
   const REASONS: Record<string, string> = {
     BAD_VIEWPOINT: "Góc quay chưa dùng được cho bài này.",
     LOW_VISIBILITY: "Không nhìn rõ người trong khung hình.",
@@ -216,8 +187,7 @@ function RejectedCard({ review }: { review: Review }) {
         {REASONS[review.rejectReason ?? ""] ?? "Dữ liệu gửi lên chưa dùng được."}
       </p>
       {review.error && <p className="text-sm text-[var(--color-text-muted)]">{review.error}</p>}
-      {/* Về màn vào chứ không theo exerciseId: yêu cầu từ camera có thể chưa có bài. */}
-      <Link to="/form-check">
+      <Link to={again}>
         <Button>Xem lại hướng dẫn và thử lại</Button>
       </Link>
     </Card>

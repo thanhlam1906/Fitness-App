@@ -13,6 +13,7 @@ import {
   type Angles,
   type Landmark,
   type PoseRead,
+  type ViewCode,
 } from "./livePose"
 
 /** 33 khớp, người đứng thẳng giữa khung, thấy rõ. Chỉ các khớp readPose/anglesOf đọc có vị trí thật. */
@@ -104,8 +105,8 @@ describe("advance", () => {
   const HOLD = Math.ceil(HOLD_MS / 33) + 1
   const COUNT = Math.ceil(COUNTDOWN_MS / 33) + 1
 
-  function run() {
-    const s = newSession()
+  function run(views?: ViewCode[]) {
+    const s = newSession(views)
     let t = 0
     const feed = (p: PoseRead, frames = 1) => {
       for (let i = 0; i < frames; i++) advance(s, p, FRAME, (t += 33))
@@ -131,6 +132,16 @@ describe("advance", () => {
     expect(s.stage).toBe("done")
     expect(s.clips.map((c) => c.view)).toEqual(["SAGITTAL", "FRONTAL"])
     expect(s.clips[0].frames.length).toBeGreaterThan(0)
+  })
+
+  it("bài chỉ có góc ngang thì xong một góc là xong", () => {
+    const { s, feed } = run(["SAGITTAL"])
+    feed(pose(0.2), HOLD)
+    feed(pose(0.2), HOLD)
+    feed(pose(0.2), COUNT)
+    reps(REPS_PER_VIEW, "hip", 175, 70).forEach((a) => feed(pose(0.2, a)))
+    expect(s.stage).toBe("done")
+    expect(s.clips.map((c) => c.view)).toEqual(["SAGITTAL"])
   })
 
   it("bộ đệm đầy thì giữ phần đầu: server cần tư thế đầu lúc đếm ngược", () => {

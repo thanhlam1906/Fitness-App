@@ -1,6 +1,6 @@
 import { Text, View } from "react-native"
 import { useLocalSearchParams, useRouter } from "expo-router"
-import { checkLabel, evidenceLine, evidenceOf, isOverallOk } from "@/features/review/utils/reviewView"
+import { checkDetails, checkLabel, isOverallOk } from "@/features/review/utils/reviewView"
 import type { Review } from "@/features/review/types"
 import { cn } from "@/lib/cn"
 import { formatDayMonth } from "@/lib/format"
@@ -17,7 +17,7 @@ const NUM = { fontVariant: ["tabular-nums" as const] }
 /**
  * Màn 9 — kết quả chấm form, bản mobile CHỈ XEM của ReviewResultPage web: kết luận chung, MỘT lỗi
  * quan trọng nhất, từng mục kèm số dẫn chứng, và nút "góp ý này sai" ở mọi kết quả (bất biến).
- * "Sai bài?" và chấm lại vẫn ở bản web (doc/design-mobile-v1.md §8). Đang phân tích thì tự tải lại.
+ * Đang phân tích thì tự tải lại.
  */
 export default function ReviewResultScreen() {
   const router = useRouter()
@@ -71,8 +71,7 @@ export default function ReviewResultScreen() {
 
       {unknownExercise && (
         <Card className="mt-5">
-          {/* Chọn bài để chấm lại từ số đo đã lưu là việc của bản web ở v1. */}
-          <Text className="text-sm text-text">Chưa nhận ra bài bạn tập. Mở bản web để chọn bài, không cần tập lại.</Text>
+          <Text className="text-sm text-text">Lần chấm này chưa có bài. Chọn bài rồi tập lại trên bản web.</Text>
         </Card>
       )}
       {data.status === "REJECTED" && !unknownExercise && <RejectedCard review={data} />}
@@ -94,13 +93,13 @@ export default function ReviewResultScreen() {
           {primary ? (
             <View className="mt-4 rounded-xl border border-border bg-surface-2 p-4">
               <Text className="text-[11px] font-bold uppercase tracking-[1.1px] text-danger">
-                Lỗi quan trọng nhất · AI đánh giá
+                Lỗi quan trọng nhất
               </Text>
               <Text className="mt-2 text-[19px] font-bold leading-6 text-text">{checkLabel(primary)}</Text>
               <Text className="mt-2.5 text-sm leading-[22px] text-text">{primary.cueTextVi}</Text>
-              {evidenceOf(primary).map((e, i) => (
-                <Text key={i} className="mt-1 text-xs text-text-muted" style={NUM}>
-                  {evidenceLine(e)}
+              {checkDetails(primary).map((line) => (
+                <Text key={line} className="mt-1 text-xs text-text-muted" style={NUM}>
+                  {line}
                 </Text>
               ))}
               <View className="mt-3.5">
@@ -123,9 +122,9 @@ export default function ReviewResultScreen() {
                     <VerdictChip verdict={check.verdict} />
                   </View>
                   {check.cueTextVi && <Text className="mt-1 text-xs leading-4 text-text-muted">{check.cueTextVi}</Text>}
-                  {evidenceOf(check).map((e, i) => (
-                    <Text key={i} className="mt-1 text-xs text-text-muted" style={NUM}>
-                      {evidenceLine(e)}
+                  {checkDetails(check).map((line) => (
+                    <Text key={line} className="mt-1 text-xs text-text-muted" style={NUM}>
+                      {line}
                     </Text>
                   ))}
                   <View className="mt-2">
@@ -136,8 +135,8 @@ export default function ReviewResultScreen() {
           </View>
 
           <Text className="mt-4 text-[11px] leading-4 text-text-muted">
-            AI đánh giá dựa trên số đo góc khớp, chưa kiểm chứng, có thể sai. Không phải đánh giá y tế. Clip đã bị xoá
-            khỏi máy chủ; chỉ giữ số đo góc khớp để chấm lại khi bạn sửa bài.
+            Chấm theo ngưỡng huấn luyện viên đặt, dựa trên số đo góc khớp từ camera, có thể sai. Không phải đánh giá y
+            tế. Clip đã bị xoá khỏi máy chủ, chỉ giữ số đo.
           </Text>
         </>
       )}
