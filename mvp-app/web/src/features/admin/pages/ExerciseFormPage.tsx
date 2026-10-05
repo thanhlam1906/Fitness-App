@@ -111,7 +111,8 @@ export function ExerciseFormPage() {
             <p className="text-sm text-[var(--color-text-muted)]">Đang tải…</p>
           )}
 
-          {tab === "checks" && !isNew && id && <FormCheckEditor exerciseId={id} />}
+          {/* key={id}: đổi bài thì dựng lại trình sửa để bản nháp của bài trước không lưu nhầm sang bài này. */}
+          {tab === "checks" && !isNew && id && <FormCheckEditor key={id} exerciseId={id} />}
 
           {tab === "info" && (
             <form onSubmit={handleSubmit(onSubmit)} className="max-w-3xl space-y-4">
