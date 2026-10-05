@@ -12,14 +12,15 @@ hoặc
 from __future__ import annotations
 
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from analyzer.scoring import (  # noqa: E402
     FAIL, LOW_CONFIDENCE, NOT_APPLICABLE, PASS, WARN,
-    RepMeasurement, ThresholdShapeError, pick_primary, score_check, verdict_for_value,
+    RepMeasurement, ThresholdShapeError, grade_check, overall, pick_primary, range_verdict,
+    score_check, verdict_for_value,
 )
 
 
@@ -147,6 +148,99 @@ def test_fail_outranks_warn_even_at_lower_priority():
     ]
     pick_primary(results, {knee.id: knee, depth.id: depth})
     assert [r["code"] for r in results if r["is_primary"]] == ["depth"]
+
+
+# ── Chấm theo ngưỡng admin nhập (doc/design-cham-form-nguong-v1.md §6) ──
+
+@dataclass
+class Threshold:
+    id: str = "c1"
+    code: str = "SAGITTAL-knee-PEAK"
+    name_vi: str = "Ngồi đủ sâu"
+    metric: str = "knee"
+    moment: str = "PEAK"
+    valid_viewpoints: list = field(default_factory=lambda: ["SAGITTAL"])
+    thresholds: dict = field(default_factory=lambda: {"from": None, "to": 100, "warn": 15})
+    cue_fail_vi: str = "Hạ hông tới khi đùi song song sàn."
+    priority: int = 1
+
+
+def side(left, right=None, near="l"):
+    """Một clip góc ngang; mỗi rep một cặp góc gối trái, phải ở điểm xa nhất."""
+    right = right or left
+    return {"views": [{"clip": 1, "view": "SAGITTAL", "near": near,
+                       "reps": [{"rep": i + 1, "knee_l_P": a, "knee_r_P": b}
+                                for i, (a, b) in enumerate(zip(left, right))]}]}
+
+
+def test_range_verdict_three_shapes():
+    assert range_verdict(100, None, 100, 15) == PASS
+    assert range_verdict(115, None, 100, 15) == WARN
+    assert range_verdict(116, None, 100, 15) == FAIL
+    assert range_verdict(158, 165, None, 10) == WARN
+    assert range_verdict(150, 165, None, 10) == FAIL
+    assert range_verdict(75, 80, 110, 10) == WARN
+    assert range_verdict(121, 80, 110, 10) == FAIL
+    assert range_verdict(101, None, 100, 0) == FAIL
+
+
+def test_overall_needs_two_bad_reps():
+    assert overall([PASS, PASS, FAIL]) == PASS
+    assert overall([PASS, WARN, FAIL]) == WARN
+    assert overall([WARN, WARN]) == WARN
+    assert overall([FAIL, PASS, FAIL]) == FAIL
+
+
+def test_grade_one_bad_rep_is_not_a_fault():
+    row = grade_check(Threshold(), side([88, 93, 85, 95, 105]))
+    assert row["verdict"] == PASS and row["cue_text_vi"] is None
+    m = row["measured"]
+    assert m["worst"] == {"rep": 5, "value": 105} and len(m["values"]) == 5
+    assert (m["view"], m["measure"], m["moment"], m["from"], m["to"], m["warn"]) == (
+        "SAGITTAL", "knee", "PEAK", None, 100, 15)
+
+
+def test_grade_two_failing_reps_fail_with_cue():
+    row = grade_check(Threshold(), side([88, 120, 85, 95, 125]))
+    assert row["verdict"] == FAIL and row["cue_text_vi"] == "Hạ hông tới khi đùi song song sàn."
+    assert row["measured"]["worst"] == {"rep": 5, "value": 125}
+    assert (row["name_vi"], row["form_check_id"], row["is_primary"]) == ("Ngồi đủ sâu", "c1", False)
+
+
+def test_grade_view_not_recorded():
+    row = grade_check(Threshold(valid_viewpoints=["FRONTAL"], metric="valgus"), side([90, 90]))
+    assert row["verdict"] == NOT_APPLICABLE and "chính diện" in row["cue_text_vi"]
+
+
+def test_grade_too_few_reps():
+    row = grade_check(Threshold(), side([120]))
+    assert row["verdict"] == LOW_CONFIDENCE and row["measured"]["reps"] == 1
+
+
+def test_side_view_reads_near_side_only():
+    # Bên xa (trái) bị thân che nên số sai; bên gần (phải) mới là số thật.
+    row = grade_check(Threshold(), side([140, 140, 140], [90, 92, 95], near="r"))
+    assert row["verdict"] == PASS
+
+
+def test_front_view_takes_worse_side():
+    check = Threshold(valid_viewpoints=["FRONTAL"], metric="valgus",
+                      thresholds={"from": None, "to": 10, "warn": 5})
+    features = {"views": [{"clip": 1, "view": "FRONTAL", "near": "l",
+                           "reps": [{"rep": i, "valgus_l_P": 3, "valgus_r_P": 20} for i in (1, 2, 3)]}]}
+    assert grade_check(check, features)["verdict"] == FAIL
+
+
+def test_primary_follows_priority_among_graded():
+    depth = Threshold(id="a", priority=2)
+    valgus = Threshold(id="b", priority=1, metric="valgus", valid_viewpoints=["FRONTAL"],
+                       thresholds={"from": None, "to": 10, "warn": 5})
+    features = side([130, 130, 130])
+    features["views"].append({"clip": 2, "view": "FRONTAL", "near": "l",
+                              "reps": [{"rep": i, "valgus_l_P": 25, "valgus_r_P": 25} for i in (1, 2, 3)]})
+    rows = [grade_check(c, features) for c in (depth, valgus)]
+    pick_primary(rows, {"a": depth, "b": valgus})
+    assert [r["is_primary"] for r in rows] == [False, True]
 
 
 if __name__ == "__main__":

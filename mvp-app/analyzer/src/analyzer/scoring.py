@@ -17,7 +17,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Sequence
 
-from .viewpoints import LABEL_VI
+from .feature_keys import MOMENT_SUFFIX, SIDED
+from .viewpoints import LABEL_VI, SAGITTAL
 
 PASS = "PASS"
 WARN = "WARN"
@@ -149,3 +150,77 @@ def _result(check, verdict: str, confidence: float | None,
         "cue_text_vi": cue,
         "is_primary": False,
     }
+
+
+# ── Chấm theo ngưỡng admin nhập — doc/design-cham-form-nguong-v1.md §6 ──
+# Code ở trên (verdict_for_value, score_check) giữ cho analyzer-demo.
+
+MIN_REPS = 2   # dưới mức này không kết luận: một rep lệch có thể là camera đọc sai
+
+
+def gap(value: float, low: float | None, high: float | None) -> float:
+    """Ra ngoài khoảng đạt bao nhiêu độ; 0 khi nằm trong."""
+    if low is not None and value < low:
+        return low - value
+    if high is not None and value > high:
+        return value - high
+    return 0.0
+
+
+def range_verdict(value: float, low: float | None, high: float | None, warn: float) -> str:
+    g = gap(value, low, high)
+    return PASS if g == 0 else WARN if g <= warn else FAIL
+
+
+def overall(verdicts: list[str]) -> str:
+    """Cả lần tập: từ 2 rep không đạt mới FAIL, từ 2 rep (không đạt + sát) mới WARN."""
+    fails = verdicts.count(FAIL)
+    if fails >= MIN_REPS:
+        return FAIL
+    return WARN if fails + verdicts.count(WARN) >= MIN_REPS else PASS
+
+
+def grade_check(check, features: dict[str, Any]) -> dict[str, Any]:
+    """MỘT khớp cần kiểm trên bộ số của job → một dòng review_results."""
+    view = check.valid_viewpoints[0]
+    t = check.thresholds
+    low, high, warn = t.get("from"), t.get("to"), t.get("warn") or 0
+    base = {"view": view, "measure": check.metric, "moment": check.moment,
+            "from": low, "to": high, "warn": warn}
+    clips = [v for v in features["views"] if v["view"] == view]
+    if not clips:
+        return _graded(check, NOT_APPLICABLE, base,
+                       f"Chưa quay góc {LABEL_VI.get(view, view)}. Quay thêm góc này để chấm mục này.")
+    values = []
+    for clip in clips:
+        for rep in clip["reps"]:
+            value = _rep_value(rep, check, view, clip.get("near"), low, high)
+            if value is not None:
+                values.append({"rep": rep["rep"], "value": value})
+    if len(values) < MIN_REPS:
+        return _graded(check, LOW_CONFIDENCE, {**base, "reps": len(values)},
+                       "Chưa đủ rõ để chấm mục này. Quay lại, đủ sáng, cả người trong khung.")
+    verdicts = [range_verdict(v["value"], low, high, warn) for v in values]
+    result = overall(verdicts)
+    worst = max(range(len(values)),
+                key=lambda i: (_SEVERITY[verdicts[i]], gap(values[i]["value"], low, high)))
+    return _graded(check, result, {**base, "values": values, "worst": values[worst]},
+                   None if result == PASS else check.cue_fail_vi)
+
+
+def _rep_value(rep: dict[str, Any], check, view: str, near: str | None,
+               low: float | None, high: float | None) -> float | None:
+    """Số của một rep. Khớp có hai bên: góc ngang lấy bên gần camera (bên xa bị che), góc khác
+    lấy bên ra ngoài khoảng đạt xa hơn."""
+    at = MOMENT_SUFFIX[check.moment]
+    if check.metric not in SIDED:
+        return rep.get(f"{check.metric}_{at}")
+    sides = [near] if view == SAGITTAL and near else ["l", "r"]
+    values = [rep[k] for k in (f"{check.metric}_{s}_{at}" for s in sides) if k in rep]
+    return max(values, key=lambda v: gap(v, low, high)) if values else None
+
+
+def _graded(check, verdict: str, measured: dict[str, Any], cue: str | None) -> dict[str, Any]:
+    return {"form_check_id": check.id, "code": check.code, "name_vi": check.name_vi,
+            "verdict": verdict, "confidence": None, "measured": measured,
+            "cue_text_vi": cue, "is_primary": False}
