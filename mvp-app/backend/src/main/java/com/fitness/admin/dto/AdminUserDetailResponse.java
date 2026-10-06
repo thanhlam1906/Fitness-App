@@ -7,6 +7,9 @@ import java.util.List;
 
 public record AdminUserDetailResponse(
 		AdminUserRowResponse user,
+		String fullName,
+		String phone,
+		boolean mustChangePassword,
 		String goal,
 		String experience,
 		Short sessionsPerWeek,

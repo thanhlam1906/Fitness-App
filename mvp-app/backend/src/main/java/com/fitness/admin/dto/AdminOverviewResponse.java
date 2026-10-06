@@ -1,7 +1,14 @@
 package com.fitness.admin.dto;
 
-/** Bốn ô thống kê đầu màn 11 và các badge số trên sidebar admin. */
+import java.util.Map;
+
+/**
+ * Bốn ô thống kê đầu màn Người dùng — chỉ đếm người tập (role USER). `statusCounts` là số trên
+ * các tab (ALL, TRAINING, NOT_STARTED, IDLE, LOCKED), đếm mọi tài khoản. `wrongFeedbackCount` là
+ * badge "Góp ý bị báo sai" ở sidebar.
+ */
 public record AdminOverviewResponse(
-		long userCount, long activeLast7Days, long sessionsThisWeek,
-		long reviewsInQueue, long wrongFeedbackCount) {
+		long traineeCount, long newTraineesLast7Days, long activeTraineesLast7Days,
+		long notStartedTrainees, long traineeSessionsLast7Days,
+		Map<String, Long> statusCounts, long wrongFeedbackCount) {
 }

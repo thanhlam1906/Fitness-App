@@ -18,13 +18,4 @@ public interface VideoReviewRequestRepository extends JpaRepository<VideoReviewR
 
 	@Query("select r from VideoReviewRequest r where r.status = 'PROCESSING' and r.startedAt < :before")
 	List<VideoReviewRequest> findStuck(Instant before);
-
-	/** Cột "Clip" ở màn 11. */
-	@Query("select r.userId, count(r) from VideoReviewRequest r group by r.userId")
-	List<Object[]> requestCountPerUser();
-
-	/** Ô "Clip chờ chấm" ở màn 11. */
-	long countByStatusIn(List<String> statuses);
-
-	long countByUserId(UUID userId);
 }
