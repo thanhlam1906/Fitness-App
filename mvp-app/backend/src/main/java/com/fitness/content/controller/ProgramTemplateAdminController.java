@@ -2,6 +2,8 @@ package com.fitness.content.controller;
 
 import com.fitness.content.dto.ProgramTemplateAdminResponse;
 import com.fitness.content.dto.ProgramTemplateRequest;
+import com.fitness.content.dto.ProgressionPreviewRequest;
+import com.fitness.content.dto.ProgressionPreviewResponse;
 import com.fitness.content.service.ProgramTemplateService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -54,6 +56,17 @@ public class ProgramTemplateAdminController {
 	public ProgramTemplateAdminResponse update(
 			@PathVariable UUID id, @Valid @RequestBody ProgramTemplateRequest request) {
 		return templateService.update(id, request);
+	}
+
+	@PostMapping("/{id}/duplicate")
+	@ResponseStatus(HttpStatus.CREATED)
+	public ProgramTemplateAdminResponse duplicate(@PathVariable UUID id) {
+		return templateService.duplicate(id);
+	}
+
+	@PostMapping("/progression-preview")
+	public ProgressionPreviewResponse preview(@Valid @RequestBody ProgressionPreviewRequest request) {
+		return templateService.preview(request);
 	}
 
 	@DeleteMapping("/{id}")

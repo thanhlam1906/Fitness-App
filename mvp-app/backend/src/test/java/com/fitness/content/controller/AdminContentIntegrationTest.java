@@ -13,6 +13,9 @@ import com.fitness.content.dto.ProgramTemplateRequest;
 import com.fitness.content.dto.ProgramTemplateRequest.DayRequest;
 import com.fitness.content.dto.ProgramTemplateRequest.ProgressionRequest;
 import com.fitness.content.dto.ProgramTemplateRequest.TemplateExerciseRequest;
+import com.fitness.content.dto.ProgressionPreviewRequest;
+import com.fitness.content.dto.ProgressionPreviewResponse;
+import com.fitness.program.repository.LoadDecisionRepository;
 import com.fitness.program.service.ProgramService;
 import com.fitness.support.PostgresIntegrationTest;
 import java.math.BigDecimal;
@@ -433,6 +436,69 @@ class AdminContentIntegrationTest extends PostgresIntegrationTest {
 		assertThat(fullBody.progression().failStreakToDeload()).isEqualTo(2);
 		assertThat(fullBody.progression().minCompletionPct()).isEqualTo(70);
 		assertThat(fullBody.days()).extracting(DayResponse::label).containsExactly("A", "B");
+	}
+
+	@Autowired
+	private LoadDecisionRepository loadDecisions;
+
+	@Test
+	void nhanBan_taoBanSaoDangTat() {
+		var src = post(squatTemplate("Gốc " + UUID.randomUUID())).getBody();
+
+		var res = rest.exchange("/api/v1/program-templates/" + src.id() + "/duplicate", HttpMethod.POST,
+				new HttpEntity<>(adminHeaders()), ProgramTemplateAdminResponse.class);
+
+		assertThat(res.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+		var copy = res.getBody();
+		assertThat(copy.name()).isEqualTo(src.name() + " (bản sao)");
+		assertThat(copy.slug()).isNotEqualTo(src.slug());
+		assertThat(copy.active()).isFalse();
+		assertThat(copy.days()).usingRecursiveComparison().isEqualTo(src.days());
+	}
+
+	private static ProgressionPreviewRequest preview(ProgressionRequest p, List<Integer> reps) {
+		return new ProgressionPreviewRequest(p, "barbell-back-squat", 3, 6, 8, 60, reps, null, false, false, 0, 0);
+	}
+
+	private ResponseEntity<ProgressionPreviewResponse> runPreview(ProgressionPreviewRequest req) {
+		return rest.exchange("/api/v1/program-templates/progression-preview", HttpMethod.POST,
+				new HttpEntity<>(req, adminHeaders()), ProgressionPreviewResponse.class);
+	}
+
+	@Test
+	void thuQuyTac_duRep_tang_vaKhongGhiGi() {
+		long before = loadDecisions.count();
+		var res = runPreview(preview(new ProgressionRequest(8, 2, 1, 70, 2, 2, 10, inc("barbell-back-squat", "2.5")),
+				List.of(8, 8, 8))).getBody();
+
+		assertThat(res.direction()).isEqualTo("UP");
+		assertThat(res.newLoadKg()).isEqualTo(62.5);
+		assertThat(res.ruleId()).isEqualTo("DOUBLE_PROGRESSION_ALL_REPS_MET");
+		assertThat(loadDecisions.count()).isEqualTo(before);
+	}
+
+	@Test
+	void thuQuyTac_doiNguongHoanThanh_doiQuyTacQuyetDinh() {
+		// 8, 7, 5: 2/3 set đạt sàn 6 = 67%.
+		var mac = runPreview(preview(new ProgressionRequest(8, 2, 1, 70, 2, 2, 10, inc("barbell-back-squat", "2.5")),
+				List.of(8, 7, 5))).getBody();
+		var thap = runPreview(preview(new ProgressionRequest(8, 2, 1, 60, 2, 2, 10, inc("barbell-back-squat", "2.5")),
+				List.of(8, 7, 5))).getBody();
+
+		assertThat(mac.ruleId()).isEqualTo("LOW_COMPLETION_RATE");
+		assertThat(thap.ruleId()).isEqualTo("SETS_MISSED_TARGET");
+		assertThat(thap.newLoadKg()).isEqualTo(60);
+	}
+
+	@Test
+	void thuQuyTac_baiKhongTuTang_hoacThieuSet_400() {
+		var khongTang = runPreview(preview(new ProgressionRequest(8, 2, 1, 70, 2, 2, 10, inc("barbell-back-squat", null)),
+				List.of(8, 8, 8)));
+		var thieuSet = runPreview(preview(new ProgressionRequest(8, 2, 1, 70, 2, 2, 10, inc("barbell-back-squat", "2.5")),
+				List.of(8, 8)));
+
+		assertThat(khongTang.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		assertThat(thieuSet.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 	}
 
 	private HttpHeaders adminHeaders() {

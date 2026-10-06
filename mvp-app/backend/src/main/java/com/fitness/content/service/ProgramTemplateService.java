@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fitness.content.dto.ProgramTemplateAdminResponse;
 import com.fitness.content.dto.ProgramTemplateRequest;
 import com.fitness.content.dto.ProgramTemplateRequest.ProgressionRequest;
+import com.fitness.content.dto.ProgressionPreviewRequest;
+import com.fitness.content.dto.ProgressionPreviewResponse;
 import com.fitness.content.entity.CycleDay;
 import com.fitness.content.entity.CycleExercise;
 import com.fitness.content.entity.Exercise;
@@ -14,6 +16,8 @@ import com.fitness.content.repository.ProgramTemplateRepository;
 import com.fitness.program.entity.Program;
 import com.fitness.program.repository.ProgramRepository;
 import com.fitness.program.service.progression.ProgressionConfig;
+import com.fitness.program.service.progression.ProgressionEngine;
+import com.fitness.program.service.progression.ProgressionSignals;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -105,6 +109,39 @@ public class ProgramTemplateService {
 				template.getProgression(), false);
 		templates.save(template);
 		return get(id);
+	}
+
+	@Transactional
+	public ProgramTemplateAdminResponse duplicate(UUID id) {
+		ProgramTemplate src = findOrThrow(id);
+		String name = src.getName() + " (bản sao)";
+		ProgramTemplate copy = new ProgramTemplate(
+				uniqueSlug(name), name, src.getMethodology(), src.getSessionsMin(), src.getSessionsMax(),
+				src.getRequiredEquipment().clone(), src.getWeekStructure(), src.getProgression());
+		// Bản sao tắt sẵn: người tập chỉ thấy khi admin sửa xong và bật.
+		copy.update(name, copy.getMethodology(), copy.getSessionsMin(), copy.getSessionsMax(),
+				copy.getRequiredEquipment(), copy.getWeekStructure(), copy.getProgression(), false);
+		templates.save(copy);
+		return toResponse(copy, 0);
+	}
+
+	/** Không ghi DB: chỉ chạy đúng hàm gộp signal + engine mà buổi tập thật đi qua. */
+	public ProgressionPreviewResponse preview(ProgressionPreviewRequest r) {
+		if (r.repsMin() > r.repsMax()) {
+			throw badRequest("Rep từ lớn hơn rep đến");
+		}
+		if (r.reps().size() != r.sets()) {
+			throw badRequest("Cần nhập rep cho đủ " + r.sets() + " set");
+		}
+		ProgressionConfig config = toConfig(r.progression());
+		BigDecimal increment = config.incrementFor(r.slug());
+		if (increment == null) {
+			throw badRequest("Bài này không tự tăng tạ nên không có gì để thử");
+		}
+		var signal = ProgressionSignals.build(
+				r.sets(), r.repsMin(), r.repsMax(), r.reps(), r.rpe(), r.pain(), r.painBefore(),
+				r.failStreakBefore(), r.rpeLowStreakBefore(), r.loadKg(), increment.doubleValue(), config);
+		return ProgressionPreviewResponse.from(new ProgressionEngine(config).decide(signal), r.loadKg());
 	}
 
 	static ProgressionConfig toConfig(ProgressionRequest p) {
