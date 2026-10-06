@@ -148,3 +148,36 @@ export type AdminUserDetail = {
   measuredOn: string | null
   activeProgramName: string | null
 }
+
+/** GET /admin/workout-insights — doc/design-trang-buoi-tap-v1.md §6. Mỗi danh sách tối đa 10 dòng, đã sắp. */
+export type WorkoutInsights = {
+  days: number
+  templateId: string | null
+  skipped: {
+    exerciseId: string
+    exerciseName: string
+    sets: number
+    skippedSets: number
+    users: number
+    topReason: string | null
+  }[]
+  rpeOver: { exerciseId: string; exerciseName: string; rpeLogs: number; overCount: number; avgRpe: number }[]
+  repShort: {
+    exerciseId: string
+    exerciseName: string
+    sets: number
+    shortSets: number
+    avgReps: number
+    avgFloor: number
+  }[]
+  substituted: {
+    exerciseId: string
+    exerciseName: string
+    usersSubstituted: number
+    usersScheduled: number
+    topReplacementName: string | null
+  }[]
+  pain: { bodyArea: string; reports: number; users: number; avgSeverity: number; topExerciseName: string | null }[]
+  /** key = templateId khi lọc "Tất cả" (null = lịch tự thiết kế), exerciseId khi lọc một template. */
+  loadDecisions: { key: string | null; name: string; up: number; hold: number; down: number; topDownRule: string | null }[]
+}
