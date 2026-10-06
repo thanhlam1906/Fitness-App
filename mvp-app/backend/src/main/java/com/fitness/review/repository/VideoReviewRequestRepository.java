@@ -23,7 +23,7 @@ public interface VideoReviewRequestRepository extends JpaRepository<VideoReviewR
 	@Query("select r.userId, count(r) from VideoReviewRequest r group by r.userId")
 	List<Object[]> requestCountPerUser();
 
-	/** Badge "Hàng đợi phân tích" ở sidebar admin. */
+	/** Ô "Clip chờ chấm" ở màn 11. */
 	long countByStatusIn(List<String> statuses);
 
 	long countByUserId(UUID userId);

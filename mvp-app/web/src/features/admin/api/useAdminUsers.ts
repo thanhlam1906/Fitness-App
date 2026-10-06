@@ -12,7 +12,7 @@ export function useAdminUsers() {
   })
 }
 
-/** Bốn ô thống kê đầu màn 11, và hai badge "Hàng đợi" / "Góp ý bị báo sai" ở sidebar. */
+/** Bốn ô thống kê đầu màn 11, và badge "Góp ý bị báo sai" ở sidebar. */
 export function useAdminOverview() {
   return useQuery({
     queryKey: ["admin-overview"],

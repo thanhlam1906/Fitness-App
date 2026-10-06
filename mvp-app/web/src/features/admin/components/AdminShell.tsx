@@ -12,7 +12,7 @@ type Item = {
   label: string
   to?: string
   count?: number
-  /** Màu chấm đầu dòng — design tô cảnh báo cho hàng đợi và góp ý bị báo sai. */
+  /** Màu chấm đầu dòng — design tô cảnh báo cho góp ý bị báo sai. */
   dot?: string
 }
 
@@ -20,10 +20,11 @@ type Item = {
  * Bản admin là sản phẩm thật (§0 concept-frontend-v1.md), nên nó có khung riêng:
  * sidebar 248px chia nhóm, không dùng chung thanh nav với bản user.
  *
- * "Hàng đợi phân tích" và "Góp ý bị báo sai" đã có số thật từ
- * `GET /admin/overview`, nhưng chưa có màn riêng để mở nên vẫn để tắt: badge
- * cho HLV biết có việc cần xử lý, còn trang xử lý là việc của đợt sau.
- * "Tổng quan" và "Buổi tập" thì chưa có cả số lẫn màn.
+ * "Góp ý bị báo sai" đã có số thật từ `GET /admin/overview`, nhưng chưa có màn
+ * riêng để mở nên vẫn để tắt: badge cho HLV biết có việc cần xử lý, còn trang
+ * xử lý là việc của đợt sau. "Tổng quan" và "Buổi tập" thì chưa có cả số lẫn màn.
+ * Không có mục hàng đợi phân tích: chấm theo ngưỡng xong trong vài giây nên
+ * hàng đợi gần như luôn rỗng, admin không có gì để xử lý ở đó.
  */
 function useGroups(): { title: string; items: Item[] }[] {
   const users = useAdminUsers()
@@ -45,11 +46,6 @@ function useGroups(): { title: string; items: Item[] }[] {
       title: "Chấm form",
       items: [
         { label: "Bài tập và ngưỡng", to: "/admin/exercises", count: exercises.data?.length },
-        {
-          label: "Hàng đợi phân tích",
-          dot: "var(--color-warn)",
-          count: overview.data?.reviewsInQueue,
-        },
         {
           label: "Góp ý bị báo sai",
           dot: "var(--color-danger)",
