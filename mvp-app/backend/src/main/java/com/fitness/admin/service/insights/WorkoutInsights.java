@@ -150,7 +150,10 @@ public final class WorkoutInsights {
 			scheduledUsers.computeIfAbsent(original, k -> new HashSet<>()).add(r.userId());
 		}
 		List<SubstitutedResponse> out = new ArrayList<>();
-		List<ScheduledRow> swapped = rows.stream().filter(r -> r.substitutedFrom() != null).toList();
+		// Đổi A -> B rồi B -> A thì dòng còn substitutedFrom = exerciseId = A: người đó đã quay về bài gốc, không tính là đổi.
+		List<ScheduledRow> swapped = rows.stream()
+				.filter(r -> r.substitutedFrom() != null && !r.substitutedFrom().equals(r.exerciseId()))
+				.toList();
 		groupBy(swapped, ScheduledRow::substitutedFrom).forEach((original, rs) -> out.add(new SubstitutedResponse(
 				original, name.apply(original), distinct(rs, ScheduledRow::userId),
 				scheduledUsers.get(original).size(), name.apply(mostCommon(rs, ScheduledRow::exerciseId)))));

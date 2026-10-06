@@ -100,6 +100,21 @@ class WorkoutInsightsTest {
 	}
 
 	@Test
+	void substituted_switchingBackToOriginal_isNotASubstitution() {
+		UUID u1 = UUID.randomUUID();
+		UUID u2 = UUID.randomUUID();
+		// u1 đổi SQUAT -> BENCH rồi đổi lại: dòng còn exerciseId = substitutedFrom = SQUAT.
+		List<ScheduledRow> rows = List.of(
+				new ScheduledRow(u1, A, SQUAT, SQUAT),
+				new ScheduledRow(u2, A, BENCH, SQUAT));
+
+		var r = WorkoutInsights.compute(30, null, List.of(), rows, List.of(), List.of(), CONFIGS, NAMES, TEMPLATE_NAMES)
+				.substituted();
+
+		assertThat(r).containsExactly(new SubstitutedResponse(SQUAT, "Squat", 1, 2, "Đẩy ngực"));
+	}
+
+	@Test
 	void pain_groupsByArea_withMostFrequentExercise() {
 		UUID u1 = UUID.randomUUID();
 		UUID u2 = UUID.randomUUID();
