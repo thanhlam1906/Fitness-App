@@ -1,3 +1,20 @@
+export type TemplateExercise = { slug: string; sets: number; repsMin: number; repsMax: number; restSec: number }
+
+export type TemplateDay = { label: string; exercises: TemplateExercise[] }
+
+/** Con số của bộ quy tắc tăng tạ. incrementKg: thiếu khoá = chưa chọn, null = "Không tự tăng". */
+export type Progression = {
+  targetRpe: number
+  rpeLowStreak: number
+  rpeOver: number
+  minCompletionPct: number
+  missedSetsToDeload: number
+  failStreakToDeload: number
+  deloadPct: number
+  incrementKg: Record<string, number | null>
+}
+
+/** Khớp ProgramTemplateAdminResponse. activeUsers = số người đang dùng (quy tắc đổi là áp ngay cho họ). */
 export type ProgramTemplate = {
   id: string
   slug: string
@@ -6,21 +23,46 @@ export type ProgramTemplate = {
   sessionsMin: number
   sessionsMax: number
   requiredEquipment: string[]
-  weekStructure: string // JSON thô — [{order,label,exercises:[...]}], xem F4
-  progression: string // JSON thô — {mode,target_rpe,increment_kg}
   active: boolean
+  days: TemplateDay[]
+  progression: Progression
+  activeUsers: number
 }
 
+/** Khớp ProgramTemplateRequest. Không có slug: backend sinh từ tên. */
 export type ProgramTemplateInput = {
-  slug?: string // bắt buộc khi tạo, bỏ qua khi sửa
   name: string
   methodology: string
   sessionsMin: number
   sessionsMax: number
   requiredEquipment: string[]
-  weekStructure: string
-  progression: string
   active: boolean
+  days: TemplateDay[]
+  progression: Progression
+}
+
+export type ProgressionPreviewInput = {
+  progression: Progression
+  slug: string
+  sets: number
+  repsMin: number
+  repsMax: number
+  loadKg: number
+  reps: number[]
+  rpe: number | null
+  pain: boolean
+  painBefore: boolean
+  failStreakBefore: number
+  rpeLowStreakBefore: number
+}
+
+export type ProgressionPreview = {
+  direction: "UP" | "DOWN" | "HOLD" | "SUBSTITUTE"
+  deltaKg: number | null
+  newLoadKg: number
+  ruleId: string
+  ruleParams: Record<string, unknown>
+  messageVi: string
 }
 
 /** Khớp các DTO kho kiến thức ở backend (assistant/dto: UploadRowResponse, DocumentDetailResponse…). */
