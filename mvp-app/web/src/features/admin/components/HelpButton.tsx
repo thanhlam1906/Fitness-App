@@ -3,11 +3,11 @@ import { cn } from "@/lib/cn"
 import { HELP, type HelpKey } from "@/features/admin/utils/formCheckHelp"
 
 /** Hướng dẫn ẩn mặc định: bấm "?" để mở, bấm lại để ẩn; mở nhiều cái cùng lúc được. */
-export function useHelp() {
-  const [open, setOpen] = useState<ReadonlySet<HelpKey>>(new Set())
+export function useHelp<K extends string = HelpKey>() {
+  const [open, setOpen] = useState<ReadonlySet<K>>(new Set())
   return {
-    isOpen: (key: HelpKey) => open.has(key),
-    toggle: (key: HelpKey) =>
+    isOpen: (key: K) => open.has(key),
+    toggle: (key: K) =>
       setOpen((current) => {
         const next = new Set(current)
         if (next.has(key)) next.delete(key)
@@ -36,7 +36,9 @@ export function HelpButton({ open, onClick }: { open: boolean; onClick: () => vo
   )
 }
 
-export function HelpText({ id, className }: { id: HelpKey; className?: string }) {
+/** id: khoá của trang bài tập; lines: chữ của trang khác (template) truyền thẳng. */
+export function HelpText({ id, lines, className }: { id?: HelpKey; lines?: string[]; className?: string }) {
+  const text = lines ?? (id ? HELP[id] : [])
   return (
     <div
       className={cn(
@@ -44,7 +46,7 @@ export function HelpText({ id, className }: { id: HelpKey; className?: string })
         className,
       )}
     >
-      {HELP[id].map((line) => (
+      {text.map((line) => (
         <p key={line}>{line}</p>
       ))}
     </div>
