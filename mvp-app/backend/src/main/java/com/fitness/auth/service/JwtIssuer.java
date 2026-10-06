@@ -42,13 +42,23 @@ public class JwtIssuer {
 	}
 
 	public String issueAccessToken(UUID userId, Role role) {
+		return issueAccessToken(userId, role, Instant.MIN);
+	}
+
+	/**
+	 * iat trong JWT chỉ có độ phân giải giây, còn mốc tokens_valid_after cũng cắt về giây: token cũ và
+	 * token mới phát trong cùng một giây không phân biệt được. invalidateTokens đẩy mốc lên giây kế
+	 * tiếp, và token mới được đóng dấu không sớm hơn mốc đó (lệch tối đa 1 giây về tương lai, vô hại).
+	 */
+	public String issueAccessToken(UUID userId, Role role, Instant validAfter) {
 		Instant now = Instant.now();
+		Instant issuedAt = now.isBefore(validAfter) ? validAfter : now;
 		JWTClaimsSet claims = new JWTClaimsSet.Builder()
 				.subject(userId.toString())
 				.claim("role", role.name())
 				.issuer(ISSUER)
-				.issueTime(Date.from(now))
-				.expirationTime(Date.from(now.plus(ACCESS_TOKEN_TTL)))
+				.issueTime(Date.from(issuedAt))
+				.expirationTime(Date.from(issuedAt.plus(ACCESS_TOKEN_TTL)))
 				.build();
 		SignedJWT jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims);
 		try {

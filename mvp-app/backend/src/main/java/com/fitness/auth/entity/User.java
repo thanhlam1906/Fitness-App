@@ -105,8 +105,11 @@ public class User {
 		this.mustChangePassword = mustChangePassword;
 	}
 
-	/** Mọi access token đang lưu hành mất hiệu lực ở request kế tiếp. */
+	/**
+	 * Mọi access token đang lưu hành mất hiệu lực ở request kế tiếp. Mốc là giây KẾ TIẾP vì iat chỉ
+	 * có độ phân giải giây: mốc bằng giây hiện tại thì token cũ phát trong giây này vẫn lọt qua.
+	 */
 	public void invalidateTokens() {
-		this.tokensValidAfter = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+		this.tokensValidAfter = Instant.now().truncatedTo(ChronoUnit.SECONDS).plusSeconds(1);
 	}
 }

@@ -1,5 +1,7 @@
 package com.fitness.auth.service;
 
+import com.fitness.auth.dto.ChangePasswordRequest;
+import com.fitness.auth.dto.FirstLoginPasswordRequest;
 import com.fitness.auth.dto.RegisterRequest;
 import com.fitness.auth.dto.TokenResponse;
 import com.fitness.auth.entity.RefreshToken;
@@ -15,6 +17,7 @@ import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -124,8 +127,41 @@ public class AuthService {
 		users.saveAndFlush(user);
 	}
 
+	@Transactional
+	public TokenResponse changePasswordAtLogin(FirstLoginPasswordRequest request) {
+		User user = users.findByEmail(request.email())
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sai email hoặc mật khẩu"));
+		if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sai email hoặc mật khẩu");
+		}
+		if (!user.isActive()) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, LOCKED_MESSAGE);
+		}
+		return applyNewPassword(user, request.currentPassword(), request.newPassword());
+	}
+
+	@Transactional
+	public TokenResponse changePassword(UUID userId, ChangePasswordRequest request) {
+		User user = users.findById(userId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không tìm thấy người dùng"));
+		if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mật khẩu hiện tại không đúng");
+		}
+		return applyNewPassword(user, request.currentPassword(), request.newPassword());
+	}
+
+	/** Thu hồi phiên TRƯỚC rồi mới cấp token mới — thiết bị đang đổi giữ được phiên, thiết bị khác bị đăng xuất. */
+	private TokenResponse applyNewPassword(User user, String currentPassword, String newPassword) {
+		if (currentPassword.equals(newPassword)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mật khẩu mới phải khác mật khẩu hiện tại");
+		}
+		user.setPassword(passwordEncoder.encode(newPassword), false);
+		revokeSessions(user);
+		return issueTokens(user);
+	}
+
 	private TokenResponse issueTokens(User user) {
-		String accessToken = jwtIssuer.issueAccessToken(user.getId(), user.getRole());
+		String accessToken = jwtIssuer.issueAccessToken(user.getId(), user.getRole(), user.getTokensValidAfter());
 		String refreshTokenRaw = generateOpaqueToken();
 		refreshTokens.save(new RefreshToken(user.getId(), hash(refreshTokenRaw), Instant.now().plus(REFRESH_TOKEN_TTL)));
 		return new TokenResponse(accessToken, refreshTokenRaw, user.getId(), user.getRole());

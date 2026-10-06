@@ -1,5 +1,6 @@
 package com.fitness.auth.controller;
 
+import com.fitness.auth.dto.FirstLoginPasswordRequest;
 import com.fitness.auth.dto.LoginRequest;
 import com.fitness.auth.dto.RefreshRequest;
 import com.fitness.auth.dto.RegisterRequest;
@@ -32,6 +33,11 @@ public class AuthController {
 	@PostMapping("/login")
 	public TokenResponse login(@Valid @RequestBody LoginRequest request) {
 		return authService.login(request.email(), request.password());
+	}
+
+	@PostMapping("/change-password")
+	public TokenResponse changePasswordAtLogin(@Valid @RequestBody FirstLoginPasswordRequest request) {
+		return authService.changePasswordAtLogin(request);
 	}
 
 	@PostMapping("/refresh")
