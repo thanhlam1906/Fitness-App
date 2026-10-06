@@ -260,7 +260,11 @@ export function TemplateEditor({
             {renderPreview && (
               <>
                 {section("Thử quy tắc", "sim")}
-                {renderPreview(setHit, nameOf, needsLoad)}
+                {ready ? (
+                  renderPreview(setHit, nameOf, needsLoad)
+                ) : (
+                  <p className="mt-2 text-sm text-[var(--color-text-muted)]">Đang tải danh sách bài…</p>
+                )}
               </>
             )}
 

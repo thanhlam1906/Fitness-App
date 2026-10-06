@@ -1,6 +1,7 @@
 import { useParams } from "react-router"
 import { TemplateListPanel } from "@/features/admin/components/TemplateListPanel"
 import { TemplateEditor } from "@/features/admin/components/TemplateEditor"
+import { ProgressionPreview } from "@/features/admin/components/ProgressionPreview"
 import { useTemplate } from "@/features/admin/api/useTemplates"
 
 /** Hai cột như trang Bài tập. key={id}: đổi template (hoặc sang "new") là dựng form mới từ đầu. */
@@ -17,7 +18,14 @@ export function TemplateFormPage() {
       ) : !isNew && existing.isError ? (
         <p className="p-7 text-sm text-[var(--color-danger)]">{existing.error.message}</p>
       ) : (
-        <TemplateEditor key={id} id={isNew ? null : id!} template={isNew ? null : existing.data!} />
+        <TemplateEditor
+          key={id}
+          id={isNew ? null : id!}
+          template={isNew ? null : existing.data!}
+          renderPreview={(onHit, nameOf, needsLoad) => (
+            <ProgressionPreview onHit={onHit} nameOf={nameOf} needsLoad={needsLoad} />
+          )}
+        />
       )}
     </div>
   )
