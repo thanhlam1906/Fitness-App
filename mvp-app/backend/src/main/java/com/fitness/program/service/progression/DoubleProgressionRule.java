@@ -10,8 +10,18 @@ import java.util.Optional;
  */
 public class DoubleProgressionRule implements ProgressionRule {
 
-	private static final int MISSED_SETS_FOR_DELOAD_ELIGIBLE = 2;
-	private static final int STREAK_FOR_DELOAD = 2;
+	private final int missedSetsForDeload;
+	private final int streakForDeload;
+
+	public DoubleProgressionRule() {
+		this(ProgressionConfig.DEFAULT.missedSetsToDeload(), ProgressionConfig.DEFAULT.failStreakToDeload());
+	}
+
+	public DoubleProgressionRule(int missedSetsForDeload, int streakForDeload) {
+		this.missedSetsForDeload = missedSetsForDeload;
+		this.streakForDeload = streakForDeload;
+	}
+
 	@Override
 	public Optional<LoadDecisionResult> evaluate(ProgressionSignal signal) {
 		if (signal.setsMetTarget() == signal.setsTotal()) {
@@ -23,14 +33,15 @@ public class DoubleProgressionRule implements ProgressionRule {
 		}
 
 		int missed = signal.setsTotal() - signal.setsMetTarget();
-		boolean eligibleForDeload = missed >= MISSED_SETS_FOR_DELOAD_ELIGIBLE
-				&& signal.consecutiveFailStreak() >= STREAK_FOR_DELOAD;
+		boolean eligibleForDeload = missed >= missedSetsForDeload
+				&& signal.consecutiveFailStreak() >= streakForDeload;
 
 		if (eligibleForDeload) {
 			double delta = LoadRounding.deloadDelta(signal.currentLoadKg(), signal.deloadPct(), signal.incrementKg());
 			return Optional.of(new LoadDecisionResult(
 					Direction.DOWN, delta, "REPEATED_REP_FAILURE",
-					Map.of("missed_sets", missed, "consecutive_weeks", signal.consecutiveFailStreak()),
+					Map.of("missed_sets", missed, "consecutive_weeks", signal.consecutiveFailStreak(),
+							"missed_sets_threshold", missedSetsForDeload, "streak_threshold", streakForDeload),
 					"Trượt rep mục tiêu nhiều tuần liên tiếp → giảm tải"));
 		}
 

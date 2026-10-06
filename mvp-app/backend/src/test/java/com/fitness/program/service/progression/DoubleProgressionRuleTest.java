@@ -53,4 +53,12 @@ class DoubleProgressionRuleTest {
 		assertThat(r.deltaKg()).isEqualTo(-7.5);   // 60 * 0.9 = 54 → làm tròn xuống 2.5 = 52.5
 		assertThat(r.ruleId()).isEqualTo("REPEATED_REP_FAILURE");
 	}
+
+	@Test
+	void nguongTuTemplate_hut1BuoiLaGiam() {
+		DoubleProgressionRule custom = new DoubleProgressionRule(2, 1);
+		LoadDecisionResult r = custom.evaluate(signal(3, 5, 1)).orElseThrow();
+		assertThat(r.direction()).isEqualTo(Direction.DOWN);
+		assertThat(r.ruleParams()).containsEntry("streak_threshold", 1).containsEntry("missed_sets_threshold", 2);
+	}
 }

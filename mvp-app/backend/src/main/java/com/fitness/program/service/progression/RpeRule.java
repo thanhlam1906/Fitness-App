@@ -11,16 +11,25 @@ import java.util.Optional;
  */
 public class RpeRule implements ProgressionRule {
 
-	private static final int STREAK_THRESHOLD = 2;
+	private final int streakThreshold;
+
+	public RpeRule() {
+		this(ProgressionConfig.DEFAULT.rpeLowStreak());
+	}
+
+	public RpeRule(int streakThreshold) {
+		this.streakThreshold = streakThreshold;
+	}
 
 	@Override
 	public Optional<LoadDecisionResult> evaluate(ProgressionSignal signal) {
-		if (signal.rpeBelowTargetStreak() != null && signal.rpeBelowTargetStreak() >= STREAK_THRESHOLD) {
+		if (signal.rpeBelowTargetStreak() != null && signal.rpeBelowTargetStreak() >= streakThreshold) {
 			return Optional.of(new LoadDecisionResult(
 					Direction.UP, signal.incrementKg(), "RPE_BELOW_TARGET_STREAK",
-					Map.of("streak", signal.rpeBelowTargetStreak()),
-					"RPE thấp hơn mục tiêu 2 buổi liên tiếp → tăng thêm tải"));
+					Map.of("streak", signal.rpeBelowTargetStreak(), "threshold", streakThreshold),
+					"RPE thấp hơn mục tiêu " + streakThreshold + " buổi liên tiếp → tăng thêm tải"));
 		}
+		// "Vượt mục tiêu bao nhiêu" (rpe_over) đã được tính sẵn vào cờ này lúc gộp signal.
 		if (signal.rpeAboveTargetPlusOne()) {
 			return Optional.of(new LoadDecisionResult(
 					Direction.HOLD, null, "RPE_ABOVE_TARGET",

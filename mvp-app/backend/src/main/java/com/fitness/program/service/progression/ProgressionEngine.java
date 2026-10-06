@@ -11,11 +11,19 @@ import java.util.List;
  */
 public class ProgressionEngine {
 
-	private final List<ProgressionRule> rules = List.of(
-			new PainRule(),
-			new CompletionRateRule(),
-			new RpeRule(),
-			new DoubleProgressionRule());
+	private final List<ProgressionRule> rules;
+
+	public ProgressionEngine() {
+		this(ProgressionConfig.DEFAULT);
+	}
+
+	public ProgressionEngine(ProgressionConfig config) {
+		this.rules = List.of(
+				new PainRule(),
+				new CompletionRateRule(config.minCompletionPct() / 100.0),
+				new RpeRule(config.rpeLowStreak()),
+				new DoubleProgressionRule(config.missedSetsToDeload(), config.failStreakToDeload()));
+	}
 
 	public LoadDecisionResult decide(ProgressionSignal signal) {
 		for (ProgressionRule rule : rules) {

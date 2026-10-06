@@ -44,4 +44,13 @@ class RpeRuleTest {
 		assertThat(r.direction()).isEqualTo(Direction.HOLD);
 		assertThat(r.ruleId()).isEqualTo("RPE_ABOVE_TARGET");
 	}
+
+	@Test
+	void nguongTuTemplate_3BuoiMoiTang() {
+		RpeRule custom = new RpeRule(3);
+		assertThat(custom.evaluate(signal(2, false))).isEmpty();
+		LoadDecisionResult r = custom.evaluate(signal(3, false)).orElseThrow();
+		assertThat(r.ruleParams()).containsEntry("threshold", 3);
+		assertThat(r.messageVi()).contains("3 buổi");
+	}
 }

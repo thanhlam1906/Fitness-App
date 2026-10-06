@@ -34,4 +34,11 @@ class CompletionRateRuleTest {
 	void fires_justBelowThreshold() {
 		assertThat(rule.evaluate(signalWithCompletion(0.69))).isPresent();
 	}
+
+	@Test
+	void nguongTuTemplate_60PhanTram() {
+		CompletionRateRule custom = new CompletionRateRule(0.60);
+		assertThat(custom.evaluate(signalWithCompletion(0.67))).isEmpty();
+		assertThat(custom.evaluate(signalWithCompletion(0.5)).orElseThrow().ruleParams()).containsEntry("threshold", 0.60);
+	}
 }

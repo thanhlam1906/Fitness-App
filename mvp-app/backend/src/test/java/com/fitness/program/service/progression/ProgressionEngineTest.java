@@ -45,4 +45,14 @@ class ProgressionEngineTest {
 		assertThat(result.ruleId()).isEqualTo("DOUBLE_PROGRESSION_ALL_REPS_MET");
 		assertThat(result.direction()).isEqualTo(Direction.UP);
 	}
+
+	@Test
+	void engineDungTuConfig_doiNguongHoanThanh() {
+		// 2/3 set = 67%: mặc định 70% thì giữ ở quy tắc 2; hạ ngưỡng 60% thì rơi xuống quy tắc 4.
+		ProgressionSignal s = new ProgressionSignal(false, false, 2.0 / 3, null, false, 2, 3, 1, 60.0, 2.5, 10.0);
+		ProgressionConfig low = new ProgressionConfig(8, 2, 1, 60, 2, 2, 10, java.util.Map.of());
+
+		assertThat(engine.decide(s).ruleId()).isEqualTo("LOW_COMPLETION_RATE");
+		assertThat(new ProgressionEngine(low).decide(s).ruleId()).isEqualTo("SETS_MISSED_TARGET");
+	}
 }
