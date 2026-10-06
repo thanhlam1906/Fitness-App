@@ -29,6 +29,10 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class AuthService {
 
+	/** LoginPage web/mobile bắt đúng chuỗi này để chuyển sang bước đặt mật khẩu mới. */
+	public static final String PASSWORD_CHANGE_REQUIRED = "PASSWORD_CHANGE_REQUIRED";
+	static final String LOCKED_MESSAGE = "Tài khoản đã bị khoá. Liên hệ quản trị viên.";
+
 	private static final Duration REFRESH_TOKEN_TTL = Duration.ofDays(30);
 
 	private final UserRepository users;
@@ -73,6 +77,13 @@ public class AuthService {
 		if (!passwordEncoder.matches(password, user.getPasswordHash())) {
 			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sai email hoặc mật khẩu");
 		}
+		// Kiểm SAU mật khẩu: người không biết mật khẩu không dò được tài khoản nào đang bị khoá.
+		if (!user.isActive()) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, LOCKED_MESSAGE);
+		}
+		if (user.isMustChangePassword()) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, PASSWORD_CHANGE_REQUIRED);
+		}
 		return issueTokens(user);
 	}
 
@@ -88,6 +99,9 @@ public class AuthService {
 
 		User user = users.findById(stored.getUserId())
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không tìm thấy người dùng"));
+		if (!user.isActive()) {
+			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Tài khoản đã bị khoá");
+		}
 		return issueTokens(user);
 	}
 
@@ -96,6 +110,18 @@ public class AuthService {
 			rt.revoke();
 			refreshTokens.save(rt);
 		});
+	}
+
+	/**
+	 * Khoá, đổi vai trò, đặt lại hay đổi mật khẩu: mọi access token đang lưu hành hỏng ở request
+	 * kế tiếp (AccessTokenValidator) và mọi refresh token bị thu hồi. saveAndFlush để query JDBC
+	 * cùng transaction (danh sách admin) thấy ngay thay đổi.
+	 */
+	@Transactional
+	public void revokeSessions(User user) {
+		user.invalidateTokens();
+		refreshTokens.revokeAllForUser(user.getId(), Instant.now());
+		users.saveAndFlush(user);
 	}
 
 	private TokenResponse issueTokens(User user) {

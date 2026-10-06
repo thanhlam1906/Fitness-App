@@ -1,5 +1,6 @@
 package com.fitness.config;
 
+import com.fitness.auth.service.AccessTokenValidator;
 import java.util.Collection;
 import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.annotation.Value;
@@ -68,7 +69,8 @@ public class SecurityConfig {
 
 	@Bean
 	@Order(2)
-	SecurityFilterChain filterChain(HttpSecurity http, JwtDecoder jwtDecoder) throws Exception {
+	SecurityFilterChain filterChain(HttpSecurity http, JwtDecoder jwtDecoder, AccessTokenValidator tokenValidator)
+			throws Exception {
 		http
 			.csrf(csrf -> csrf.disable())                       // API JSON thuần, không session cookie
 			.sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -78,11 +80,11 @@ public class SecurityConfig {
 				.requestMatchers("/api/v1/auth/**", "/error").permitAll()
 				.anyRequest().authenticated())
 			.oauth2ResourceServer(oauth2 -> oauth2
-				.jwt(jwt -> jwt.decoder(jwtDecoder).jwtAuthenticationConverter(jwtAuthenticationConverter())));
+				.jwt(jwt -> jwt.decoder(jwtDecoder).jwtAuthenticationConverter(jwtAuthenticationConverter(tokenValidator))));
 		return http.build();
 	}
 
-	private Converter<Jwt, AbstractAuthenticationToken> jwtAuthenticationConverter() {
+	private Converter<Jwt, AbstractAuthenticationToken> jwtAuthenticationConverter(AccessTokenValidator tokenValidator) {
 		var converter = new JwtAuthenticationConverter();
 		converter.setJwtGrantedAuthoritiesConverter(jwt -> {
 			// "role" là 1 chuỗi ("ADMIN"/"USER"), không phải mảng — JwtGrantedAuthoritiesConverter
@@ -94,6 +96,10 @@ public class SecurityConfig {
 			}
 			return authorities;
 		});
-		return converter;
+		// Kiểm DB trước khi tin claim: khoá/thu hồi phiên phải có hiệu lực ngay (AccessTokenValidator).
+		return jwt -> {
+			tokenValidator.check(java.util.UUID.fromString(jwt.getSubject()), jwt.getIssuedAt());
+			return converter.convert(jwt);
+		};
 	}
 }
