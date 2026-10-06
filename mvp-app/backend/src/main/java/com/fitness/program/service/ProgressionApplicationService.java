@@ -18,8 +18,10 @@ import com.fitness.program.repository.ScheduledExerciseRepository;
 import com.fitness.program.repository.ScheduledWorkoutRepository;
 import com.fitness.program.service.progression.Direction;
 import com.fitness.program.service.progression.LoadDecisionResult;
+import com.fitness.program.service.progression.ProgressionConfig;
 import com.fitness.program.service.progression.ProgressionEngine;
 import com.fitness.program.service.progression.ProgressionSignal;
+import com.fitness.program.service.progression.ProgressionSignals;
 import com.fitness.workout.entity.SetLog;
 import com.fitness.workout.entity.WorkoutSession;
 import com.fitness.workout.repository.PainReportRepository;
@@ -46,6 +48,7 @@ import org.springframework.transaction.annotation.Transactional;
  * thật — nếu dùng trần thì double progression bình thường (đang leo dần từ
  * sàn lên trần qua nhiều buổi) sẽ bị tính nhầm là "trượt" liên tục và bị
  * deload oan. Set thiếu (không log) hoặc bị bỏ cũng tính là thất bại thật.
+ * Phần gộp số liệu ở ProgressionSignals.build, dùng chung với Thử quy tắc của admin.
  */
 @Service
 public class ProgressionApplicationService {
@@ -60,7 +63,6 @@ public class ProgressionApplicationService {
 	private final ExerciseProgressionStateRepository progressionStates;
 	private final LoadDecisionRepository loadDecisions;
 	private final ObjectMapper objectMapper;
-	private final ProgressionEngine engine = new ProgressionEngine();
 
 	public ProgressionApplicationService(
 			SetLogRepository setLogs, PainReportRepository painReports,
@@ -92,10 +94,8 @@ public class ProgressionApplicationService {
 		}
 		ProgramTemplate template = templates.findById(program.getTemplateId()).orElseThrow();
 
-		JsonNode progressionConfig = readJson(template.getProgression());
-		double targetRpe = progressionConfig.path("target_rpe").asDouble(8);
-		double deloadPct = progressionConfig.path("deload_pct").asDouble(10);
-		JsonNode incrementMap = progressionConfig.path("increment_kg");
+		ProgressionConfig config = ProgressionConfig.from(readJson(template.getProgression()));
+		ProgressionEngine engine = new ProgressionEngine(config);
 
 		boolean painThisSession = !painReports.findBySessionId(session.getId()).isEmpty();
 		List<SetLog> sessionLogs = setLogs.findBySessionId(session.getId());
@@ -107,65 +107,35 @@ public class ProgressionApplicationService {
 				continue; // bodyweight (vd push-up) — tăng tiến bằng rep, chưa xử lý ở đợt này
 			}
 			UUID exerciseId = scheduledExercise.getExerciseId();
-			List<SetLog> logsForExercise = byExercise.getOrDefault(exerciseId, List.of());
 			Exercise exercise = exercises.findById(exerciseId).orElseThrow();
-			BigDecimal incrementKg = readIncrement(incrementMap, exercise.getSlug());
+			BigDecimal incrementKg = config.incrementFor(exercise.getSlug());
 			if (incrementKg == null) {
-				continue; // template thiếu increment_kg cho bài này — admin nhập chưa đủ, bỏ qua an toàn
+				continue; // admin chọn "Không tự tăng" hoặc template cũ thiếu bước tăng — bỏ qua an toàn
 			}
+			List<SetLog> logs = byExercise.getOrDefault(exerciseId, List.of()).stream()
+					.sorted(Comparator.comparingInt(SetLog::getSetIndex)).toList();
+			// Stream.toList nhận phần tử null: null = set bị bỏ hoặc không ghi rep.
+			List<Integer> reps = logs.stream()
+					.map(l -> l.isSkipped() || l.getReps() == null ? null : (Integer) l.getReps().intValue())
+					.toList();
+			Short lastRpe = logs.isEmpty() ? null : logs.get(logs.size() - 1).getRpe();
 
 			ExerciseProgressionState state = progressionStates
 					.findByUserIdAndProgramIdAndExerciseId(session.getUserId(), program.getId(), exerciseId)
 					.orElseGet(() -> new ExerciseProgressionState(session.getUserId(), program.getId(), exerciseId));
 
-			ProgressionSignal signal = buildSignal(
-					scheduledExercise, logsForExercise, painThisSession, targetRpe, deloadPct,
-					incrementKg.doubleValue(), state);
+			ProgressionSignal signal = ProgressionSignals.build(
+					scheduledExercise.getTargetSets(), scheduledExercise.getTargetReps(),
+					scheduledExercise.getTargetRepsMax(), reps, lastRpe == null ? null : lastRpe.doubleValue(),
+					painThisSession, state.isLastPainReported(), state.getConsecutiveFailStreak(),
+					state.getRpeBelowTargetStreak(), scheduledExercise.getTargetLoadKg().doubleValue(),
+					incrementKg.doubleValue(), config);
 			LoadDecisionResult result = engine.decide(signal);
 
 			persistDecision(session, program, exerciseId, workout.getScheduledOn(), result);
 			applyToFutureSchedule(program.getId(), exerciseId, workout.getScheduledOn(), scheduledExercise, result);
 			updateState(state, signal, painThisSession);
 		}
-	}
-
-	private ProgressionSignal buildSignal(
-			ScheduledExercise scheduledExercise, List<SetLog> logsForExercise, boolean painThisSession,
-			double targetRpe, double deloadPct, double incrementKg, ExerciseProgressionState state) {
-		int floor = scheduledExercise.getTargetReps();
-		int ceiling = scheduledExercise.getTargetRepsMax();
-		int setsTotal = scheduledExercise.getTargetSets();
-
-		int setsMetTarget = (int) logsForExercise.stream()
-				.filter(l -> !l.isSkipped() && l.getReps() != null && l.getReps() >= ceiling)
-				.count();
-
-		boolean anyTrueFail = logsForExercise.stream()
-				.anyMatch(l -> l.isSkipped() || (l.getReps() != null && l.getReps() < floor));
-		boolean incompleteLogging = logsForExercise.size() < setsTotal;
-		boolean trueFailThisSession = anyTrueFail || incompleteLogging;
-		int consecutiveFailStreak = trueFailThisSession ? state.getConsecutiveFailStreak() + 1 : 0;
-
-		Short lastSetRpe = logsForExercise.stream()
-				.max(Comparator.comparingInt(SetLog::getSetIndex))
-				.map(SetLog::getRpe).orElse(null);
-		Integer rpeBelowTargetStreak = lastSetRpe == null
-				? null
-				: (lastSetRpe < targetRpe ? state.getRpeBelowTargetStreak() + 1 : 0);
-		boolean rpeAboveTargetPlusOne = lastSetRpe != null && lastSetRpe > targetRpe + 1;
-
-		double completionRate = setsTotal == 0 ? 1.0 : (double) countCompleted(logsForExercise, floor) / setsTotal;
-
-		return new ProgressionSignal(
-				painThisSession, painThisSession && state.isLastPainReported(), completionRate,
-				rpeBelowTargetStreak, rpeAboveTargetPlusOne, setsMetTarget, setsTotal,
-				consecutiveFailStreak, scheduledExercise.getTargetLoadKg().doubleValue(), incrementKg, deloadPct);
-	}
-
-	private int countCompleted(List<SetLog> logs, int floor) {
-		return (int) logs.stream()
-				.filter(l -> !l.isSkipped() && l.getReps() != null && l.getReps() >= floor)
-				.count();
 	}
 
 	private void persistDecision(
@@ -210,11 +180,6 @@ public class ProgressionApplicationService {
 				: signal.rpeBelowTargetStreak());
 		state.update(newFailStreak, newRpeStreak, painThisSession);
 		progressionStates.save(state);
-	}
-
-	private BigDecimal readIncrement(JsonNode incrementMap, String slug) {
-		JsonNode value = incrementMap.get(slug);
-		return value == null || value.isNull() ? null : BigDecimal.valueOf(value.asDouble());
 	}
 
 	private JsonNode readJson(String json) {

@@ -113,6 +113,37 @@ class ProgressionApplicationServiceIntegrationTest extends PostgresIntegrationTe
 		assertThat(squatAfter.targetLoadKg()).isEqualByComparingTo(new BigDecimal("80.00"));
 	}
 
+	@Test
+	void nguongCuaTemplate_duocEngineThatDoc() {
+		// Cùng 4 set 5/6/6/6 như doubleProgression_missedFloor_holdsNotDeloadsOnFirstMiss: mặc định thì giữ 80 kg.
+		// Template đặt fail_streak_to_deload = 1 → hụt rep lần đầu đã giảm: 80 × 0.9 = 72 → làm tròn 2.5 → 70.
+		ProgramTemplate upperLower = templateRepository.findAll().stream()
+				.filter(t -> t.getSlug().equals("upper-lower-4x")).findFirst().orElseThrow();
+		ProgramTemplate strict = templateRepository.save(new ProgramTemplate(
+				"ul-strict-" + UUID.randomUUID(), "UL test", null, (short) 4, (short) 4, new String[] {"BARBELL_RACK"},
+				upperLower.getWeekStructure(),
+				"{\"target_rpe\":8,\"increment_kg\":{\"barbell-back-squat\":2.5},\"deload_pct\":10,\"fail_streak_to_deload\":1}"));
+		var user = newAuthedUser(Role.USER);
+		programService.createProgram(user.userId(), strict.getId(), Map.of("barbell-back-squat", 80.0),
+				Set.of(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY), A_MONDAY);
+
+		ScheduledWorkoutResponse duoiA = getSchedule(user.headers()).workouts().get(1);
+		ScheduledExerciseResponse squat = findSquat(duoiA);
+		SessionResponse session = rest.exchange("/api/v1/sessions", HttpMethod.POST,
+				new HttpEntity<>(new StartSessionRequest(duoiA.id()), user.headers()), SessionResponse.class).getBody();
+		logSet(user.headers(), session.id(), squat, 1, 5);
+		logSet(user.headers(), session.id(), squat, 2, 6);
+		logSet(user.headers(), session.id(), squat, 3, 6);
+		logSet(user.headers(), session.id(), squat, 4, 6);
+		rest.exchange("/api/v1/sessions/" + session.id() + "/finish", HttpMethod.POST,
+				new HttpEntity<>(new FinishSessionRequest(List.of(), null), user.headers()), SessionResponse.class);
+
+		ScheduledExerciseResponse next = getSchedule(user.headers()).workouts().stream()
+				.filter(w -> findSquatOrNull(w) != null && w.scheduledOn().isAfter(duoiA.scheduledOn()))
+				.map(this::findSquat).findFirst().orElseThrow();
+		assertThat(next.targetLoadKg()).isEqualByComparingTo(new BigDecimal("70.00"));
+	}
+
 	private ScheduleResponse getSchedule(HttpHeaders headers) {
 		return rest.exchange("/api/v1/schedule", HttpMethod.GET, new HttpEntity<>(headers), ScheduleResponse.class)
 				.getBody();
