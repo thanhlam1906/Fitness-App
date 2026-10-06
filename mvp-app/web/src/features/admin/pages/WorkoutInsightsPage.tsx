@@ -26,7 +26,9 @@ export function WorkoutInsightsPage() {
   const templates = useTemplates()
   const insights = useWorkoutInsights(filter.templateId, filter.days)
   const data = insights.data
-  const link = filter.templateId ? `/admin/templates/${filter.templateId}` : undefined
+  // Lấy theo dữ liệu đang hiện, không theo URL: lúc đổi bộ lọc keepPreviousData còn giữ số của bộ lọc cũ.
+  const shownTemplateId = data?.templateId ?? null
+  const link = shownTemplateId ? `/admin/templates/${shownTemplateId}` : undefined
 
   function update(next: Partial<InsightsFilter>) {
     setParams(writeInsightsFilter({ ...filter, ...next }), { replace: true })
@@ -113,7 +115,7 @@ export function WorkoutInsightsPage() {
             />
             <InsightTable
               title="Bài hay bị đổi"
-              hint="Số người đã đổi bài này sang bài khác, trên số người có bài này trong lịch."
+              hint={'Số người đã bấm "Thay bài" lúc tập để đổi bài này, trên số người có bài này trong lịch.'}
               columns={["Bài gốc", "Người đổi", "Đổi sang nhiều nhất"]}
               rows={data.substituted.map((r) => ({
                 key: r.exerciseId,
@@ -133,14 +135,14 @@ export function WorkoutInsightsPage() {
             <InsightTable
               title="Tăng / giảm tạ"
               hint={
-                filter.templateId
+                shownTemplateId
                   ? "Quyết định tải của template này, theo bài."
                   : "Quyết định tải theo template. Chọn một template để xem theo bài."
               }
-              columns={[filter.templateId ? "Bài" : "Template", "Tăng", "Giữ", "Giảm", "Lý do giảm chính"]}
+              columns={[shownTemplateId ? "Bài" : "Template", "Tăng", "Giữ", "Giảm", "Lý do giảm chính"]}
               rows={data.loadDecisions.map((r) => ({
                 key: r.key ?? "custom",
-                to: filter.templateId ? link : undefined,
+                to: shownTemplateId ? link : undefined,
                 cells: [r.name, r.up, r.hold, r.down, ruleLabel(r.topDownRule)],
               }))}
             />
