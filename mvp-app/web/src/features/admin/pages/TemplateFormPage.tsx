@@ -12,7 +12,7 @@ export function TemplateFormPage() {
   return (
     <div className="flex min-h-0 flex-1">
       <TemplateListPanel activeId={isNew ? undefined : id} />
-      {!isNew && existing.isLoading ? (
+      {!isNew && existing.isPending ? (
         <p className="p-7 text-sm text-[var(--color-text-muted)]">Đang tải…</p>
       ) : !isNew && existing.isError ? (
         <p className="p-7 text-sm text-[var(--color-danger)]">{existing.error.message}</p>

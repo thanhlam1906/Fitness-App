@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { emptyTemplate, loadedSlugs, missingIncrements, ruleNumber, toInput } from "@/features/admin/utils/templateForm"
+import { emptyTemplate, loadedSlugs, missingIncrements, parseKg, pruneIncrements, ruleNumber, toInput } from "@/features/admin/utils/templateForm"
 import type { ProgramTemplate } from "@/features/admin/types"
 
 const ex = (slug: string) => ({ slug, sets: 3, repsMin: 5, repsMax: 5, restSec: 90 })
@@ -52,5 +52,25 @@ describe("toInput / emptyTemplate", () => {
     const t = emptyTemplate()
     expect(t.active).toBe(false)
     expect(t.progression).toMatchObject({ targetRpe: 8, minCompletionPct: 70, failStreakToDeload: 2, deloadPct: 10 })
+  })
+})
+
+describe("parseKg", () => {
+  it("đọc số thập phân, chấp nhận dấu phẩy, rỗng hoặc chữ là NaN", () => {
+    expect(parseKg("1.25")).toBe(1.25)
+    expect(parseKg("1.")).toBe(1)
+    expect(parseKg("2,5")).toBe(2.5)
+    expect(parseKg("  ")).toBeNaN()
+    expect(parseKg("abc")).toBeNaN()
+  })
+})
+
+describe("pruneIncrements", () => {
+  it("bỏ khoá không còn trong danh sách bài, giữ null và số", () => {
+    expect(pruneIncrements({ squat: 2.5, kb: null, gone: Number.NaN }, ["squat", "kb"])).toEqual({ squat: 2.5, kb: null })
+  })
+  it("không có gì để bỏ thì trả đúng object cũ", () => {
+    const inc = { squat: 2.5 }
+    expect(pruneIncrements(inc, ["squat", "row"])).toBe(inc)
   })
 })

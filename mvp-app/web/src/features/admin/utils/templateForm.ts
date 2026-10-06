@@ -66,3 +66,23 @@ export function ruleNumber(ruleId: string): 1 | 2 | 3 | 4 {
   if (ruleId.startsWith("RPE")) return 3
   return 4
 }
+
+/** Chữ admin gõ ở ô kg → số; rỗng hoặc không đọc được là NaN để schema báo lỗi. Chấp nhận dấu phẩy "2,5". */
+export function parseKg(text: string): number {
+  return text.trim() === "" ? Number.NaN : Number(text.replace(",", "."))
+}
+
+/**
+ * Bỏ khoá bước tăng của bài không còn cần tạ trong template (xoá dòng, đổi bài).
+ * Schema kiểm mọi khoá, nên khoá cũ mà sai sẽ chặn lưu mà admin không thấy hàng nào để sửa.
+ * Trả đúng object cũ khi không có gì phải bỏ, để gọi ra biết không cần setValue.
+ */
+export function pruneIncrements(
+  incrementKg: Record<string, number | null>,
+  slugs: string[],
+): Record<string, number | null> {
+  const keep = new Set(slugs)
+  const keys = Object.keys(incrementKg)
+  if (keys.every((k) => keep.has(k))) return incrementKg
+  return Object.fromEntries(keys.filter((k) => keep.has(k)).map((k) => [k, incrementKg[k]]))
+}

@@ -1,4 +1,4 @@
-import { useFieldArray, useFormContext } from "react-hook-form"
+import { useFieldArray, useFormContext, useWatch } from "react-hook-form"
 import { cn } from "@/lib/cn"
 import type { ProgramTemplateInput } from "@/features/admin/types"
 import type { Exercise } from "@/features/exercise/types"
@@ -9,7 +9,10 @@ const FIELD =
   "h-[34px] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-2 text-sm outline-none focus:border-[var(--color-accent)]"
 const NUM = cn(FIELD, "num w-full text-right font-bold")
 
-/** Buổi luân phiên theo thứ tự; mỗi buổi là danh sách bài. Lỗi hiện ngay dưới dòng (mode onChange). */
+/**
+ * Buổi luân phiên theo thứ tự; mỗi buổi là danh sách bài. Lỗi hiện ngay dưới dòng (mode onChange).
+ * catalog là MỌI bài (kể cả đã tắt): bài đã tắt vẫn hiện ở dòng đang dùng nó, chỉ không có trong danh sách chọn mới.
+ */
 export function TemplateDaysEditor({ catalog }: { catalog: Exercise[] }) {
   const { control, getValues } = useFormContext<ProgramTemplateInput>()
   const days = useFieldArray({ control, name: "days" })
@@ -59,8 +62,9 @@ function DayCard({
   const { control, register, formState } = useFormContext<ProgramTemplateInput>()
   const rows = useFieldArray({ control, name: `days.${index}.exercises` })
   const dayErrors = formState.errors.days?.[index]
-  const withGear = catalog.filter((e) => e.equipment.length > 0)
-  const noGear = catalog.filter((e) => e.equipment.length === 0)
+  const current = useWatch({ control, name: `days.${index}.exercises` })
+  const withGear = catalog.filter((e) => e.active && e.equipment.length > 0)
+  const noGear = catalog.filter((e) => e.active && e.equipment.length === 0)
   const name = (e: Exercise) => e.nameVi ?? e.nameEn
 
   return (
@@ -102,11 +106,13 @@ function DayCard({
         const err = dayErrors?.exercises?.[i]
         const message = err?.slug?.message ?? err?.sets?.message ?? err?.repsMin?.message ?? err?.repsMax?.message ?? err?.restSec?.message
         const p = `days.${index}.exercises.${i}` as const
+        const retired = catalog.find((e) => e.slug === current?.[i]?.slug && !e.active)
         return (
           <div key={row.id} className="mt-1.5 grid grid-cols-[22px_minmax(170px,1fr)_70px_140px_100px_92px] items-center gap-2">
             <span className="text-right text-xs text-[var(--color-text-muted)]">{i + 1}</span>
             <select {...register(`${p}.slug`)} aria-label={`Bài thứ ${i + 1}`} className={cn(FIELD, "w-full", err?.slug && "border-[var(--color-danger)]")}>
               <option value="">— Chọn bài —</option>
+              {retired && <option value={retired.slug}>{name(retired)} (đã tắt)</option>}
               <optgroup label="Có dụng cụ">
                 {withGear.map((e) => (
                   <option key={e.slug} value={e.slug}>{name(e)}</option>

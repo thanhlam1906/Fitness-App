@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 import { useNavigate } from "react-router"
 import { FormProvider, useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -12,7 +12,7 @@ import { ProgressionRulesEditor } from "@/features/admin/components/ProgressionR
 import { useDuplicateTemplate, useSaveTemplate } from "@/features/admin/api/useTemplates"
 import type { ProgramTemplate, ProgramTemplateInput } from "@/features/admin/types"
 import { templateSchema } from "@/features/admin/types/templateSchema"
-import { emptyTemplate, loadedSlugs, missingIncrements, toInput } from "@/features/admin/utils/templateForm"
+import { emptyTemplate, loadedSlugs, missingIncrements, pruneIncrements, toInput } from "@/features/admin/utils/templateForm"
 import { TEMPLATE_HELP, type TemplateHelpKey } from "@/features/admin/utils/templateHelp"
 import { useExercises } from "@/features/exercise/api/useExercises"
 import { EQUIPMENT_OPTIONS } from "@/features/profile/types"
@@ -43,7 +43,7 @@ export function TemplateEditor({
   const confirmRef = useRef<HTMLDialogElement>(null)
   const pending = useRef<ProgramTemplateInput | null>(null)
   const [hit, setHit] = useState<1 | 2 | 3 | 4 | null>(null)
-  const [blocked, setBlocked] = useState<string | null>(null)
+  const [tried, setTried] = useState(false)
 
   const form = useForm<ProgramTemplateInput>({
     resolver: zodResolver(templateSchema),
@@ -53,8 +53,11 @@ export function TemplateEditor({
   const days = useWatch({ control: form.control, name: "days" })
   const equipment = useWatch({ control: form.control, name: "requiredEquipment" })
   const active = useWatch({ control: form.control, name: "active" })
+  const incrementKg = useWatch({ control: form.control, name: "progression.incrementKg" })
 
-  const catalog = (exercises.data ?? []).filter((e) => e.active)
+  // Backend đếm dụng cụ trên mọi bài, kể cả bài đã tắt, nên tra theo toàn bộ danh sách.
+  const catalog = exercises.data ?? []
+  const ready = exercises.data !== undefined
   const bySlug = new Map(catalog.map((e) => [e.slug, e]))
   const needsLoad = (slug: string) => (bySlug.get(slug)?.equipment.length ?? 0) > 0
   const nameOf = (slug: string) => {
@@ -63,6 +66,18 @@ export function TemplateEditor({
   }
   const slugs = loadedSlugs(days ?? [], needsLoad)
   const activeUsers = template?.activeUsers ?? 0
+  const missing = ready ? missingIncrements(slugs, incrementKg ?? {}) : []
+  const blocked = tried && missing.length > 0 ? `Chọn bước tăng tạ cho: ${missing.map(nameOf).join(", ")}.` : null
+
+  // Bài bị xoá hay đổi thì bỏ bước tăng của nó: khoá cũ mà sai số sẽ chặn lưu không rõ vì sao.
+  // Chỉ chạy khi danh sách bài đã tải, lúc chưa tải mọi bài đều "không cần tạ".
+  const slugKey = slugs.join(",")
+  useEffect(() => {
+    if (!ready) return
+    const current = form.getValues("progression.incrementKg")
+    const pruned = pruneIncrements(current, slugKey ? slugKey.split(",") : [])
+    if (pruned !== current) form.setValue("progression.incrementKg", pruned, { shouldDirty: true, shouldValidate: true })
+  }, [ready, slugKey, form])
 
   function doSave(values: ProgramTemplateInput) {
     save.mutate(values, {
@@ -74,12 +89,8 @@ export function TemplateEditor({
   }
 
   function onSubmit(values: ProgramTemplateInput) {
-    const missing = missingIncrements(loadedSlugs(values.days, needsLoad), values.progression.incrementKg)
-    if (missing.length) {
-      setBlocked(`Chọn bước tăng tạ cho: ${missing.map(nameOf).join(", ")}.`)
-      return
-    }
-    setBlocked(null)
+    setTried(true)
+    if (missingIncrements(loadedSlugs(values.days, needsLoad), values.progression.incrementKg).length) return
     // Quy tắc tăng tạ áp ngay cho người đang tập — hỏi lại trước khi lưu.
     if (activeUsers > 0) {
       pending.current = values
@@ -100,10 +111,13 @@ export function TemplateEditor({
     </>
   )
   const errors = form.formState.errors
+  const invalid = form.formState.submitCount > 0 && !form.formState.isValid
+  // oxlint-disable-next-line react/refs -- onSubmit chỉ đụng ref lúc submit, không phải lúc render
+  const submit = form.handleSubmit(onSubmit)
 
   return (
     <FormProvider {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex min-w-0 flex-1 flex-col">
+      <form onSubmit={submit} className="flex min-w-0 flex-1 flex-col">
         <AdminHeader group="Cấu hình · template" title={id ? (template?.name ?? "") : "Template mới"}>
           {id && (
             <Button
@@ -118,10 +132,19 @@ export function TemplateEditor({
               Nhân bản
             </Button>
           )}
-          <Button type="submit" size="sm" disabled={save.isPending}>
+          <Button type="submit" size="sm" disabled={save.isPending || !ready}>
             {save.isPending ? "Đang lưu…" : "Lưu template"}
           </Button>
         </AdminHeader>
+
+        {(blocked || invalid || save.isError || duplicate.isError) && (
+          <div role="alert" className="space-y-1 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-7 py-2.5 text-sm text-[var(--color-danger)]">
+            {blocked && <p>{blocked}</p>}
+            {invalid && <p>Còn ô chưa hợp lệ, xem các dòng báo đỏ bên dưới.</p>}
+            {save.isError && <p>{save.error.message}</p>}
+            {duplicate.isError && <p>{duplicate.error.message}</p>}
+          </div>
+        )}
 
         <div className="overflow-auto px-7 py-5 pb-16">
           <div className="max-w-[900px]">
@@ -213,12 +236,22 @@ export function TemplateEditor({
               <p className="mt-1 text-xs text-[var(--color-danger)]">{errors.days?.message ?? errors.days?.root?.message}</p>
             )}
             <div className="mt-3">
-              <TemplateDaysEditor catalog={catalog} />
+              {ready ? (
+                <TemplateDaysEditor catalog={catalog} />
+              ) : exercises.isError ? (
+                <p className="text-sm text-[var(--color-danger)]">{exercises.error.message}</p>
+              ) : (
+                <p className="text-sm text-[var(--color-text-muted)]">Đang tải danh sách bài…</p>
+              )}
             </div>
 
             {section("Bước tăng tạ", "inc")}
             <div className="mt-2">
-              <IncrementEditor slugs={slugs} nameOf={nameOf} />
+              {ready ? (
+                <IncrementEditor slugs={slugs} nameOf={nameOf} />
+              ) : (
+                <p className="text-sm text-[var(--color-text-muted)]">Đang tải danh sách bài…</p>
+              )}
             </div>
 
             {section("Quy tắc tăng tạ", "rules")}
@@ -231,9 +264,6 @@ export function TemplateEditor({
               </>
             )}
 
-            {blocked && <p className="mt-4 text-sm text-[var(--color-danger)]">{blocked}</p>}
-            {save.isError && <p className="mt-4 text-sm text-[var(--color-danger)]">{save.error.message}</p>}
-            {duplicate.isError && <p className="mt-4 text-sm text-[var(--color-danger)]">{duplicate.error.message}</p>}
           </div>
         </div>
 
@@ -254,7 +284,6 @@ export function TemplateEditor({
             <Button
               type="button"
               size="sm"
-              autoFocus
               onClick={() => {
                 confirmRef.current?.close()
                 if (pending.current) doSave(pending.current)
