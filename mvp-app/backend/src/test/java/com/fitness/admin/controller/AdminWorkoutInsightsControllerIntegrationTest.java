@@ -95,10 +95,11 @@ class AdminWorkoutInsightsControllerIntegrationTest extends PostgresIntegrationT
 		jdbc.update("insert into load_decisions (user_id, program_id, exercise_id, effective_from, direction, rule_id, "
 				+ "rule_params, message_vi) values (?, ?, ?, current_date, 'DOWN', 'SETS_MISSED_TARGET', '{}'::jsonb, 'x')",
 				user, program, squat);
-		// SUBSTITUTE (PainRule ghi khi đau lặp lại) không thuộc Tăng/Giữ/Giảm: phải bị loại, không làm đổi dòng squat.
+		// SUBSTITUTE (PainRule ghi khi đau lặp lại) không thuộc Tăng/Giữ/Giảm: phải bị loại. Đặt trên bài khác
+		// (bench) để nếu lọc hỏng thì thành thêm một dòng toàn 0, test mới đỏ.
 		jdbc.update("insert into load_decisions (user_id, program_id, exercise_id, effective_from, direction, rule_id, "
 				+ "rule_params, message_vi) values (?, ?, ?, current_date, 'SUBSTITUTE', 'PAIN_REPEATED', '{}'::jsonb, 'x')",
-				user, program, squat);
+				user, program, bench);
 
 		var resp = get(newAuthedUser(Role.ADMIN).headers(), "?days=30&templateId=" + template,
 				WorkoutInsightsResponse.class);
@@ -124,6 +125,7 @@ class AdminWorkoutInsightsControllerIntegrationTest extends PostgresIntegrationT
 		assertThat(r.loadDecisions()).extracting(LoadDecisionResponse::key, LoadDecisionResponse::down,
 				LoadDecisionResponse::topDownRule)
 				.containsExactly(tuple(squat, 1, "SETS_MISSED_TARGET"));
+		assertThat(r.loadDecisions()).hasSize(1);
 		assertThat(r.loadDecisions()).extracting(LoadDecisionResponse::up, LoadDecisionResponse::hold)
 				.containsExactly(tuple(0, 0));
 	}
