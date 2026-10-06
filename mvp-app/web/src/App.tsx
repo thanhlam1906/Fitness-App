@@ -21,6 +21,7 @@ import { TemplateFormPage } from "@/features/admin/pages/TemplateFormPage"
 import { TemplateListPage } from "@/features/admin/pages/TemplateListPage"
 import { UserDetailPage } from "@/features/admin/pages/UserDetailPage"
 import { UserListPage } from "@/features/admin/pages/UserListPage"
+import { WorkoutInsightsPage } from "@/features/admin/pages/WorkoutInsightsPage"
 import { FilmingGuidePage } from "@/features/review/pages/FilmingGuidePage"
 import { FormCheckListPage } from "@/features/review/pages/FormCheckListPage"
 import { LiveCheckPage } from "@/features/review/pages/LiveCheckPage"
@@ -80,6 +81,14 @@ export function App() {
                     element={
                       <RequireAdmin>
                         <UserDetailPage />
+                      </RequireAdmin>
+                    }
+                  />
+                  <Route
+                    path="/admin/sessions"
+                    element={
+                      <RequireAdmin>
+                        <WorkoutInsightsPage />
                       </RequireAdmin>
                     }
                   />
