@@ -47,10 +47,19 @@ class RpeRuleTest {
 
 	@Test
 	void nguongTuTemplate_3BuoiMoiTang() {
-		RpeRule custom = new RpeRule(3);
+		RpeRule custom = new RpeRule(3, 7.0, 1.5);
 		assertThat(custom.evaluate(signal(2, false))).isEmpty();
 		LoadDecisionResult r = custom.evaluate(signal(3, false)).orElseThrow();
 		assertThat(r.ruleParams()).containsEntry("threshold", 3);
 		assertThat(r.messageVi()).contains("3 buổi");
+		// Mục tiêu RPE của template cũng phải nằm trong lý do, để giải thích được sau khi admin sửa template.
+		assertThat(r.ruleParams()).containsEntry("streak", 3).containsEntry("target_rpe", 7.0);
+	}
+
+	@Test
+	void rpeCaoHonMucTieu_luuNguongCuaTemplate() {
+		RpeRule custom = new RpeRule(3, 7.0, 1.5);
+		LoadDecisionResult r = custom.evaluate(signal(null, true)).orElseThrow();
+		assertThat(r.ruleParams()).containsEntry("target_rpe", 7.0).containsEntry("rpe_over", 1.5);
 	}
 }

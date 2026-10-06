@@ -1,6 +1,7 @@
 -- Seed nội dung. Nguồn: content-seed-v1.md §7.
 -- Repeatable migration (tiền tố R__): Flyway chạy lại mỗi khi checksum file đổi.
--- ON CONFLICT DO UPDATE nên chạy lại bao nhiêu lần cũng an toàn.
+-- exercises vẫn ON CONFLICT DO UPDATE. program_templates chỉ insert (DO NOTHING) để bản admin đã sửa
+-- không bị ghi đè khi chạy lại; sửa một template seed đã có thì phải thêm migration V<n>__*.sql.
 --
 -- ĐÂY LÀ BỘ SEED GIẢ LẬP để chạy được end-to-end (20 bài, 10 template), KHÔNG
 -- PHẢI nội dung phát hành. Giới hạn đã biết: content-seed-v1.md §8.

@@ -47,7 +47,8 @@ public class DoubleProgressionRule implements ProgressionRule {
 
 		return Optional.of(new LoadDecisionResult(
 				Direction.HOLD, null, "SETS_MISSED_TARGET",
-				Map.of("sets_met", signal.setsMetTarget(), "sets_total", signal.setsTotal()),
+				Map.of("sets_met", signal.setsMetTarget(), "sets_total", signal.setsTotal(),
+						"missed_sets_threshold", missedSetsForDeload, "streak_threshold", streakForDeload),
 				"Chưa đủ rep mọi set tuần trước → giữ nguyên tải"));
 	}
 }

@@ -43,6 +43,8 @@ class DoubleProgressionRuleTest {
 
 		assertThat(r.direction()).isEqualTo(Direction.HOLD);
 		assertThat(r.ruleId()).isEqualTo("SETS_MISSED_TARGET");
+		// HOLD nghĩa là "chưa đủ điều kiện giảm tải theo các ngưỡng này", nên ngưỡng phải được lưu.
+		assertThat(r.ruleParams()).containsEntry("missed_sets_threshold", 2).containsEntry("streak_threshold", 2);
 	}
 
 	@Test

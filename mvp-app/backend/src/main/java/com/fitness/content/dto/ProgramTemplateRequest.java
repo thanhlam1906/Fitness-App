@@ -22,7 +22,7 @@ public record ProgramTemplateRequest(
 		String methodology,
 		@Min(1) @Max(7) short sessionsMin,
 		@Min(1) @Max(7) short sessionsMax,
-		@NotNull List<String> requiredEquipment,
+		@NotNull List<@NotNull String> requiredEquipment,
 		boolean active,
 		@NotEmpty List<@Valid @NotNull DayRequest> days,
 		@NotNull @Valid ProgressionRequest progression) {
@@ -41,15 +41,18 @@ public record ProgramTemplateRequest(
 			@Min(0) @Max(600) int restSec) {
 	}
 
-	/** incrementKg: giá trị null = "Không tự tăng". Khoảng 0 < kg ≤ 20 kiểm ở service (Map value). */
+	/**
+	 * Số quy tắc dùng kiểu bọc + @NotNull: kiểu nguyên thuỷ biến key thiếu thành 0 và vẫn qua kiểm khoảng
+	 * (minCompletionPct = 0 lặng lẽ tắt rule tỉ lệ hoàn thành).
+	 * incrementKg: giá trị null = "Không tự tăng". Khoảng 0 < kg ≤ 20 kiểm ở service (Map value). */
 	public record ProgressionRequest(
-			@DecimalMin("1") @DecimalMax("10") double targetRpe,
-			@Min(1) @Max(10) int rpeLowStreak,
-			@DecimalMin("0") @DecimalMax("5") double rpeOver,
-			@DecimalMin("0") @DecimalMax("100") double minCompletionPct,
-			@Min(1) @Max(10) int missedSetsToDeload,
-			@Min(1) @Max(10) int failStreakToDeload,
-			@DecimalMin("1") @DecimalMax("50") double deloadPct,
+			@NotNull @DecimalMin("1") @DecimalMax("10") Double targetRpe,
+			@NotNull @Min(1) @Max(10) Integer rpeLowStreak,
+			@NotNull @DecimalMin("0") @DecimalMax("5") Double rpeOver,
+			@NotNull @DecimalMin("0") @DecimalMax("100") Double minCompletionPct,
+			@NotNull @Min(1) @Max(10) Integer missedSetsToDeload,
+			@NotNull @Min(1) @Max(10) Integer failStreakToDeload,
+			@NotNull @DecimalMin("1") @DecimalMax("50") Double deloadPct,
 			@NotNull Map<String, BigDecimal> incrementKg) {
 	}
 }

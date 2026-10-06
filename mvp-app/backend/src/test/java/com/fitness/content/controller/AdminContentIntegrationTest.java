@@ -316,7 +316,7 @@ class AdminContentIntegrationTest extends PostgresIntegrationTest {
 	private static ProgramTemplateRequest template(
 			String name, List<String> equipment, int min, int max, List<DayRequest> days, Map<String, BigDecimal> inc) {
 		return new ProgramTemplateRequest(name, "mô tả", (short) min, (short) max, equipment, true, days,
-				new ProgressionRequest(8, 2, 1, 70, 2, 2, 10, inc));
+				new ProgressionRequest(8.0, 2, 1.0, 70.0, 2, 2, 10.0, inc));
 	}
 
 	private static ProgramTemplateRequest squatTemplate(String name) {
@@ -370,12 +370,37 @@ class AdminContentIntegrationTest extends PostgresIntegrationTest {
 				template("Set 0", List.of(), 2, 3,
 						List.of(new DayRequest("A", List.of(new TemplateExerciseRequest("push-up", 0, 8, 12, 90)))), Map.of()),
 				new ProgramTemplateRequest("Ngưỡng lạ", null, (short) 2, (short) 3, List.of(), true, ok,
-						new ProgressionRequest(8, 2, 1, 70, 2, 2, 90, okInc)));
+						new ProgressionRequest(8.0, 2, 1.0, 70.0, 2, 2, 90.0, okInc)));
 	}
 
 	@ParameterizedTest
 	@MethodSource("templateHong")
 	void templateHong_400(ProgramTemplateRequest req) {
+		var res = rest.exchange("/api/v1/program-templates", HttpMethod.POST, new HttpEntity<>(req, adminHeaders()),
+				Map.class);
+		assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+	}
+
+	@Test
+	void thieuMotSoQuyTac_400_khongNgamThanh0() {
+		// Số nguyên thuỷ thiếu key sẽ thành 0 và qua kiểm khoảng (minCompletionPct = 0 tắt rule tỉ lệ hoàn thành).
+		Map<String, Object> progression = new HashMap<>(Map.of("targetRpe", 8, "rpeLowStreak", 2, "rpeOver", 1,
+				"missedSetsToDeload", 2, "failStreakToDeload", 2, "deloadPct", 10,
+				"incrementKg", Map.of("barbell-back-squat", 2.5)));
+		Map<String, Object> body = Map.of("name", "Thiếu số " + UUID.randomUUID(), "sessionsMin", 2, "sessionsMax", 3,
+				"requiredEquipment", List.of(), "active", true,
+				"days", List.of(Map.of("label", "A", "exercises", List.of(
+						Map.of("slug", "barbell-back-squat", "sets", 5, "repsMin", 5, "repsMax", 5, "restSec", 90)))),
+				"progression", progression);
+		var res = rest.exchange("/api/v1/program-templates", HttpMethod.POST, new HttpEntity<>(body, adminHeaders()),
+				Map.class);
+		assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+	}
+
+	@Test
+	void thietBiNull_400_khongPhai500() {
+		var req = template("Thiết bị null", Arrays.asList((String) null), 2, 3,
+				List.of(new DayRequest("A", List.of(ex("barbell-back-squat", 5, 5)))), inc("barbell-back-squat", "2.5"));
 		var res = rest.exchange("/api/v1/program-templates", HttpMethod.POST, new HttpEntity<>(req, adminHeaders()),
 				Map.class);
 		assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
@@ -468,7 +493,7 @@ class AdminContentIntegrationTest extends PostgresIntegrationTest {
 	@Test
 	void thuQuyTac_duRep_tang_vaKhongGhiGi() {
 		long before = loadDecisions.count();
-		var res = runPreview(preview(new ProgressionRequest(8, 2, 1, 70, 2, 2, 10, inc("barbell-back-squat", "2.5")),
+		var res = runPreview(preview(new ProgressionRequest(8.0, 2, 1.0, 70.0, 2, 2, 10.0, inc("barbell-back-squat", "2.5")),
 				List.of(8, 8, 8))).getBody();
 
 		assertThat(res.direction()).isEqualTo("UP");
@@ -480,9 +505,9 @@ class AdminContentIntegrationTest extends PostgresIntegrationTest {
 	@Test
 	void thuQuyTac_doiNguongHoanThanh_doiQuyTacQuyetDinh() {
 		// 8, 7, 5: 2/3 set đạt sàn 6 = 67%.
-		var mac = runPreview(preview(new ProgressionRequest(8, 2, 1, 70, 2, 2, 10, inc("barbell-back-squat", "2.5")),
+		var mac = runPreview(preview(new ProgressionRequest(8.0, 2, 1.0, 70.0, 2, 2, 10.0, inc("barbell-back-squat", "2.5")),
 				List.of(8, 7, 5))).getBody();
-		var thap = runPreview(preview(new ProgressionRequest(8, 2, 1, 60, 2, 2, 10, inc("barbell-back-squat", "2.5")),
+		var thap = runPreview(preview(new ProgressionRequest(8.0, 2, 1.0, 60.0, 2, 2, 10.0, inc("barbell-back-squat", "2.5")),
 				List.of(8, 7, 5))).getBody();
 
 		assertThat(mac.ruleId()).isEqualTo("LOW_COMPLETION_RATE");
@@ -492,9 +517,9 @@ class AdminContentIntegrationTest extends PostgresIntegrationTest {
 
 	@Test
 	void thuQuyTac_baiKhongTuTang_hoacThieuSet_400() {
-		var khongTang = runPreview(preview(new ProgressionRequest(8, 2, 1, 70, 2, 2, 10, inc("barbell-back-squat", null)),
+		var khongTang = runPreview(preview(new ProgressionRequest(8.0, 2, 1.0, 70.0, 2, 2, 10.0, inc("barbell-back-squat", null)),
 				List.of(8, 8, 8)));
-		var thieuSet = runPreview(preview(new ProgressionRequest(8, 2, 1, 70, 2, 2, 10, inc("barbell-back-squat", "2.5")),
+		var thieuSet = runPreview(preview(new ProgressionRequest(8.0, 2, 1.0, 70.0, 2, 2, 10.0, inc("barbell-back-squat", "2.5")),
 				List.of(8, 8)));
 
 		assertThat(khongTang.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);

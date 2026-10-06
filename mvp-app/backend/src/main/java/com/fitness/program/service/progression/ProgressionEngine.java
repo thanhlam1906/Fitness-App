@@ -21,7 +21,7 @@ public class ProgressionEngine {
 		this.rules = List.of(
 				new PainRule(),
 				new CompletionRateRule(config.minCompletionPct() / 100.0),
-				new RpeRule(config.rpeLowStreak()),
+				new RpeRule(config.rpeLowStreak(), config.targetRpe(), config.rpeOver()),
 				new DoubleProgressionRule(config.missedSetsToDeload(), config.failStreakToDeload()));
 	}
 
