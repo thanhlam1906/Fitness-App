@@ -8,15 +8,26 @@ import com.fitness.content.dto.ExerciseResponse;
 import com.fitness.content.dto.FormCheckRequest;
 import com.fitness.content.dto.FormCheckResponse;
 import com.fitness.content.dto.ProgramTemplateAdminResponse;
+import com.fitness.content.dto.ProgramTemplateAdminResponse.DayResponse;
 import com.fitness.content.dto.ProgramTemplateRequest;
+import com.fitness.content.dto.ProgramTemplateRequest.DayRequest;
+import com.fitness.content.dto.ProgramTemplateRequest.ProgressionRequest;
+import com.fitness.content.dto.ProgramTemplateRequest.TemplateExerciseRequest;
+import com.fitness.program.service.ProgramService;
 import com.fitness.support.PostgresIntegrationTest;
+import java.math.BigDecimal;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpEntity;
@@ -283,95 +294,146 @@ class AdminContentIntegrationTest extends PostgresIntegrationTest {
 		assertThat(exercise(admin, exerciseId).checkViews()).containsExactly("SAGITTAL", "FRONTAL");
 	}
 
-	@Test
-	void createTemplate_persistsAndReturns201() {
-		HttpHeaders admin = adminHeaders();
-		var req = new ProgramTemplateRequest(
-				"test-template-" + UUID.randomUUID(), "Test Template", "mô tả", (short) 2, (short) 3,
-				List.of("ADMIN_TEST_EQUIPMENT"), VALID_WEEK,
-				"{\"mode\":\"LINEAR\",\"target_rpe\":8,\"increment_kg\":{}}", true);
+	@Autowired
+	private ProgramService programService;
 
-		var response = rest.exchange("/api/v1/program-templates", HttpMethod.POST,
-				new HttpEntity<>(req, admin), ProgramTemplateAdminResponse.class);
+	private static TemplateExerciseRequest ex(String slug, int repsMin, int repsMax) {
+		return new TemplateExerciseRequest(slug, 3, repsMin, repsMax, 90);
+	}
 
-		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-		assertThat(response.getBody().name()).isEqualTo("Test Template");
+	private static Map<String, BigDecimal> inc(Object... slugAndKg) {
+		// HashMap vì Map.of không nhận null ("Không tự tăng").
+		Map<String, BigDecimal> m = new HashMap<>();
+		for (int i = 0; i < slugAndKg.length; i += 2) {
+			m.put((String) slugAndKg[i], slugAndKg[i + 1] == null ? null : new BigDecimal(slugAndKg[i + 1].toString()));
+		}
+		return m;
+	}
+
+	private static ProgramTemplateRequest template(
+			String name, List<String> equipment, int min, int max, List<DayRequest> days, Map<String, BigDecimal> inc) {
+		return new ProgramTemplateRequest(name, "mô tả", (short) min, (short) max, equipment, true, days,
+				new ProgressionRequest(8, 2, 1, 70, 2, 2, 10, inc));
+	}
+
+	private static ProgramTemplateRequest squatTemplate(String name) {
+		return template(name, List.of("BARBELL_RACK"), 2, 3,
+				List.of(new DayRequest("A", List.of(ex("barbell-back-squat", 5, 5), ex("push-up", 8, 12)))),
+				inc("barbell-back-squat", "2.5"));
+	}
+
+	private ResponseEntity<ProgramTemplateAdminResponse> post(ProgramTemplateRequest req) {
+		return rest.exchange("/api/v1/program-templates", HttpMethod.POST, new HttpEntity<>(req, adminHeaders()),
+				ProgramTemplateAdminResponse.class);
 	}
 
 	@Test
-	void createTemplate_invalidWeekStructureJson_returns400() {
-		HttpHeaders admin = adminHeaders();
-		var req = new ProgramTemplateRequest(
-				"bad-template-" + UUID.randomUUID(), "Bad", null, (short) 2, (short) 3,
-				List.of("ADMIN_TEST_EQUIPMENT"), "not json", "{\"mode\":\"LINEAR\",\"target_rpe\":8,\"increment_kg\":{}}", true);
+	void taoTemplate_slugTuSinh_luuDungCauTruc() {
+		String tag = UUID.randomUUID().toString().substring(0, 8);
+		var res = post(squatTemplate("Tạo Mới " + tag));
 
-		var response = rest.exchange("/api/v1/program-templates", HttpMethod.POST,
-				new HttpEntity<>(req, admin), Map.class);
-
-		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		assertThat(res.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+		var body = res.getBody();
+		assertThat(body.slug()).isEqualTo("tao-moi-" + tag);
+		assertThat(body.days()).hasSize(1);
+		assertThat(body.days().get(0).exercises().get(0).slug()).isEqualTo("barbell-back-squat");
+		assertThat(body.progression().minCompletionPct()).isEqualTo(70);
+		assertThat(body.progression().incrementKg().get("barbell-back-squat")).isEqualByComparingTo("2.5");
+		assertThat(body.activeUsers()).isZero();
 	}
 
 	@Test
-	void updateTemplate_changesFields() {
-		HttpHeaders admin = adminHeaders();
-		var req = new ProgramTemplateRequest(
-				"upd-template-" + UUID.randomUUID(), "Before", null, (short) 2, (short) 3,
-				List.of("ADMIN_TEST_EQUIPMENT"), VALID_WEEK, "{\"mode\":\"LINEAR\",\"target_rpe\":8,\"increment_kg\":{}}", true);
-		var created = rest.exchange("/api/v1/program-templates", HttpMethod.POST,
-				new HttpEntity<>(req, admin), ProgramTemplateAdminResponse.class).getBody();
+	void trungTen_slugThem2() {
+		String name = "Trùng " + UUID.randomUUID().toString().substring(0, 8);
+		var first = post(squatTemplate(name)).getBody();
+		var second = post(squatTemplate(name)).getBody();
 
-		var updateReq = new ProgramTemplateRequest(
-				"ignored", "After", "cập nhật", (short) 4, (short) 4,
-				List.of("ADMIN_TEST_EQUIPMENT_2"), VALID_WEEK, "{\"mode\":\"DOUBLE\",\"target_rpe\":9,\"increment_kg\":{}}", true);
-		rest.exchange("/api/v1/program-templates/" + created.id(), HttpMethod.PUT,
-				new HttpEntity<>(updateReq, admin), ProgramTemplateAdminResponse.class);
+		assertThat(second.slug()).isEqualTo(first.slug() + "-2");
+	}
 
-		var fetched = rest.exchange("/api/v1/program-templates/" + created.id(), HttpMethod.GET,
-				new HttpEntity<>(admin), ProgramTemplateAdminResponse.class).getBody();
-		assertThat(fetched.name()).isEqualTo("After");
-		assertThat(fetched.sessionsMin()).isEqualTo((short) 4);
-		assertThat(fetched.slug()).isEqualTo(created.slug());
+	static Stream<ProgramTemplateRequest> templateHong() {
+		List<DayRequest> ok = List.of(new DayRequest("A", List.of(ex("barbell-back-squat", 5, 5))));
+		Map<String, BigDecimal> okInc = inc("barbell-back-squat", "2.5");
+		return Stream.of(
+				template("Rep ngược", List.of(), 2, 3, List.of(new DayRequest("A", List.of(ex("push-up", 12, 8)))), Map.of()),
+				template("Bài lạ", List.of(), 2, 3, List.of(new DayRequest("A", List.of(ex("khong-co-bai-nay", 5, 5)))), Map.of()),
+				template("Thiết bị lạ", List.of("XYZ"), 2, 3, ok, okInc),
+				template("Số buổi ngược", List.of(), 4, 2, ok, okInc),
+				template("Thiếu bước tăng", List.of(), 2, 3, ok, Map.of()),
+				template("Bước tăng 0", List.of(), 2, 3, ok, inc("barbell-back-squat", "0")),
+				template("Bước tăng 25", List.of(), 2, 3, ok, inc("barbell-back-squat", "25")),
+				template("Không buổi", List.of(), 2, 3, List.of(), okInc),
+				template("Buổi rỗng", List.of(), 2, 3, List.of(new DayRequest("A", List.of())), okInc),
+				template("Set 0", List.of(), 2, 3,
+						List.of(new DayRequest("A", List.of(new TemplateExerciseRequest("push-up", 0, 8, 12, 90)))), Map.of()),
+				new ProgramTemplateRequest("Ngưỡng lạ", null, (short) 2, (short) 3, List.of(), true, ok,
+						new ProgressionRequest(8, 2, 1, 70, 2, 2, 90, okInc)));
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = {
-			"[]",
-			"null",
-			"[null]",
-			"[{\"order\":1,\"label\":\"A\",\"exercises\":[{\"sets\":3}]}]",
-			"[{\"order\":1,\"label\":\"A\",\"exercises\":[]}]",
-			"[{\"order\":1,\"label\":\"A\",\"exercises\":[{\"slug\":\"khong-co-bai-nay\",\"sets\":3,\"reps_min\":5,\"reps_max\":5,\"rest_sec\":60}]}]"})
-	void createTemplate_unusableWeekStructure_returns400(String weekStructure) {
-		// Người dùng chọn template như vậy sẽ lỗi 500 lúc sinh lịch (chia cho 0, bài không tồn tại).
-		var req = new ProgramTemplateRequest(
-				"unusable-" + UUID.randomUUID(), "Hỏng", null, (short) 2, (short) 3,
-				List.of("ADMIN_TEST_EQUIPMENT"), weekStructure, PROGRESSION, true);
-
-		var response = rest.exchange("/api/v1/program-templates", HttpMethod.POST,
-				new HttpEntity<>(req, adminHeaders()), Map.class);
-
-		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+	@MethodSource("templateHong")
+	void templateHong_400(ProgramTemplateRequest req) {
+		var res = rest.exchange("/api/v1/program-templates", HttpMethod.POST, new HttpEntity<>(req, adminHeaders()),
+				Map.class);
+		assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 	}
 
 	@Test
-	void updateTemplate_toEmptyWeekStructure_returns400() {
-		HttpHeaders admin = adminHeaders();
-		var created = rest.exchange("/api/v1/program-templates", HttpMethod.POST,
-				new HttpEntity<>(new ProgramTemplateRequest("upd-empty-" + UUID.randomUUID(), "Trước", null,
-						(short) 2, (short) 3, List.of("ADMIN_TEST_EQUIPMENT"), VALID_WEEK, PROGRESSION, true), admin),
-				ProgramTemplateAdminResponse.class).getBody();
+	void khongTuTang_luuNull_vaBoKhoaCuaBaiKhongCoTrongTemplate() {
+		var req = template("Tạ ấm " + UUID.randomUUID(), List.of("BARBELL_RACK"), 2, 3,
+				List.of(new DayRequest("A", List.of(ex("barbell-back-squat", 5, 5)))),
+				inc("barbell-back-squat", null, "overhead-press", "1.25"));
+		var body = post(req).getBody();
 
-		var response = rest.exchange("/api/v1/program-templates/" + created.id(), HttpMethod.PUT,
-				new HttpEntity<>(new ProgramTemplateRequest(null, "Sau", null, (short) 2, (short) 3,
-						List.of("ADMIN_TEST_EQUIPMENT"), "[]", PROGRESSION, true), admin),
-				Map.class);
-
-		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		assertThat(body.progression().incrementKg()).containsKey("barbell-back-squat");
+		assertThat(body.progression().incrementKg().get("barbell-back-squat")).isNull();
+		assertThat(body.progression().incrementKg()).doesNotContainKey("overhead-press");
 	}
 
-	private static final String VALID_WEEK =
-			"[{\"order\":1,\"label\":\"A\",\"exercises\":[{\"slug\":\"push-up\",\"sets\":3,\"reps_min\":8,\"reps_max\":12,\"rest_sec\":60}]}]";
-	private static final String PROGRESSION = "{\"mode\":\"LINEAR\",\"target_rpe\":8,\"increment_kg\":{}}";
+	@Test
+	void suaTemplate_giuSlug() {
+		var created = post(squatTemplate("Trước " + UUID.randomUUID())).getBody();
+		var update = template("Sau", List.of("BARBELL_RACK", "BENCH"), 4, 4,
+				List.of(new DayRequest("Trên", List.of(ex("barbell-back-squat", 6, 8)))), inc("barbell-back-squat", "5"));
+
+		rest.exchange("/api/v1/program-templates/" + created.id(), HttpMethod.PUT,
+				new HttpEntity<>(update, adminHeaders()), ProgramTemplateAdminResponse.class);
+		var fetched = rest.exchange("/api/v1/program-templates/" + created.id(), HttpMethod.GET,
+				new HttpEntity<>(adminHeaders()), ProgramTemplateAdminResponse.class).getBody();
+
+		assertThat(fetched.name()).isEqualTo("Sau");
+		assertThat(fetched.slug()).isEqualTo(created.slug());
+		assertThat(fetched.days().get(0).label()).isEqualTo("Trên");
+		assertThat(fetched.progression().incrementKg().get("barbell-back-squat")).isEqualByComparingTo("5");
+	}
+
+	@Test
+	void soNguoiDangDung() {
+		var created = post(template("Đếm " + UUID.randomUUID(), List.of(), 2, 3,
+				List.of(new DayRequest("A", List.of(ex("push-up", 8, 12)))), Map.of())).getBody();
+		programService.createProgram(newAuthedUser(Role.USER).userId(), created.id(), Map.of(),
+				Set.of(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY), LocalDate.of(2026, 9, 7));
+
+		var one = rest.exchange("/api/v1/program-templates/" + created.id(), HttpMethod.GET,
+				new HttpEntity<>(adminHeaders()), ProgramTemplateAdminResponse.class).getBody();
+		var list = rest.exchange("/api/v1/program-templates", HttpMethod.GET,
+				new HttpEntity<>(adminHeaders()), ProgramTemplateAdminResponse[].class).getBody();
+
+		assertThat(one.activeUsers()).isEqualTo(1);
+		assertThat(Arrays.stream(list).filter(t -> t.id().equals(created.id())).findFirst().orElseThrow().activeUsers())
+				.isEqualTo(1);
+	}
+
+	@Test
+	void templateSeedCu_thieuNguong_traVeSoMacDinh() {
+		var list = rest.exchange("/api/v1/program-templates", HttpMethod.GET,
+				new HttpEntity<>(adminHeaders()), ProgramTemplateAdminResponse[].class).getBody();
+		var fullBody = Arrays.stream(list).filter(t -> t.slug().equals("full-body-3x")).findFirst().orElseThrow();
+
+		assertThat(fullBody.progression().failStreakToDeload()).isEqualTo(2);
+		assertThat(fullBody.progression().minCompletionPct()).isEqualTo(70);
+		assertThat(fullBody.days()).extracting(DayResponse::label).containsExactly("A", "B");
+	}
 
 	private HttpHeaders adminHeaders() {
 		return newAuthedUser(Role.ADMIN).headers();

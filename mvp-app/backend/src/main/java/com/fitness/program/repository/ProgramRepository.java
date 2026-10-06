@@ -12,4 +12,7 @@ public interface ProgramRepository extends JpaRepository<Program, UUID> {
 
 	/** Cột "Chương trình" ở màn 11 — lấy một lần cho cả bảng. */
 	List<Program> findByStatus(String status);
+
+	/** Số người đang dùng một template — màn admin cảnh báo trước khi sửa quy tắc. */
+	long countByTemplateIdAndStatus(UUID templateId, String status);
 }

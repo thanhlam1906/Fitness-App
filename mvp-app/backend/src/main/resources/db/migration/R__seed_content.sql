@@ -442,9 +442,6 @@ INSERT INTO program_templates
                    "barbell-back-squat":2.5,"romanian-deadlift":2.5,"lunge-dumbbell":2},
    "deload_pct":10,"fail_streak_to_deload":2}'::jsonb)
 
-ON CONFLICT (slug) DO UPDATE SET
-  name = EXCLUDED.name, methodology = EXCLUDED.methodology,
-  sessions_min = EXCLUDED.sessions_min, sessions_max = EXCLUDED.sessions_max,
-  required_equipment = EXCLUDED.required_equipment,
-  week_structure = EXCLUDED.week_structure, progression = EXCLUDED.progression,
-  updated_at = now();
+-- DO NOTHING: Flyway chạy lại file R__ mỗi khi file đổi; DO UPDATE sẽ ghi đè template admin đã sửa
+-- trên form (doc/design-template-admin-v1.md §4.3). Seed chỉ tạo template còn thiếu.
+ON CONFLICT (slug) DO NOTHING;
