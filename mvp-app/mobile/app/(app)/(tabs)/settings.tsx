@@ -1,7 +1,7 @@
 import type { ComponentType, ReactNode } from "react"
 import { Pressable, Text, View } from "react-native"
 import { useRouter, type Href } from "expo-router"
-import { ChevronRight, Info, ListChecks, Scale, ShieldCheck, TrendingUp, User } from "lucide-react-native"
+import { ChevronRight, Info, KeyRound, ListChecks, Scale, ShieldCheck, TrendingUp, User } from "lucide-react-native"
 import { GOALS, labelOf } from "@/features/profile/types"
 import { cn } from "@/lib/cn"
 import { formatKg } from "@/lib/format"
@@ -95,6 +95,7 @@ export default function SettingsScreen() {
       </Group>
 
       <Group title="Khác">
+        <Row to="/settings/password" Icon={KeyRound} title="Đổi mật khẩu" sub="Đăng xuất các thiết bị khác" />
         <Row to="/settings/privacy" Icon={ShieldCheck} title="Dữ liệu & quyền riêng tư" sub="Camera, clip, trợ lý" />
         <Row to="/settings/about" Icon={Info} title="Giới thiệu & điều khoản" sub="Cam kết an toàn" />
       </Group>

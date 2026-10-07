@@ -1,9 +1,14 @@
 import { useState } from "react"
-import { Text, View } from "react-native"
+import { Pressable, Text, View } from "react-native"
 import { Link, Redirect, useRouter } from "expo-router"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
+import {
+  isPasswordChangeRequired,
+  newPasswordSchema,
+  type NewPasswordValues,
+} from "@/features/auth/types/passwordSchema"
 import { ApiError } from "~/api/client"
 import { useAuth } from "~/features/auth/components/AuthContext"
 import { AuthField, AuthLayout, OrDivider, SocialButtons } from "~/features/auth/components/AuthLayout"
@@ -18,9 +23,10 @@ type LoginValues = z.infer<typeof loginSchema>
 
 /** Màn 01 concept-frontend-v1.md, dựng lại theo doc/design-ui-m1-v1.md — bản mobile của LoginPage web. */
 export default function LoginScreen() {
-  const { login, isAuthenticated } = useAuth()
+  const { login, completePasswordChange, isAuthenticated } = useAuth()
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
+  const [pending, setPending] = useState<{ email: string; password: string } | null>(null)
   const {
     control,
     handleSubmit,
@@ -38,8 +44,24 @@ export default function LoginScreen() {
       await login(values.email, values.password)
       router.replace("/schedule")
     } catch (e) {
+      if (isPasswordChangeRequired(e)) {
+        setPending({ email: values.email, password: values.password })
+        return
+      }
       setError(e instanceof ApiError ? e.message : "Đăng nhập thất bại")
     }
+  }
+
+  if (pending) {
+    return (
+      <NewPasswordStep
+        onSubmit={async (newPassword) => {
+          await completePasswordChange(pending.email, pending.password, newPassword)
+          router.replace("/schedule")
+        }}
+        onBack={() => setPending(null)}
+      />
+    )
   }
 
   return (
@@ -85,6 +107,75 @@ export default function LoginScreen() {
           Đăng ký
         </Link>
       </Text>
+    </AuthLayout>
+  )
+}
+
+/**
+ * Bản mobile của NewPasswordStep trong LoginPage web — giữ chữ và thứ tự. Khác web: sau khi lưu,
+ * vào thẳng /schedule (mobile không có location.state.from để quay lại).
+ */
+function NewPasswordStep({
+  onSubmit,
+  onBack,
+}: {
+  onSubmit: (newPassword: string) => Promise<void>
+  onBack: () => void
+}) {
+  const [error, setError] = useState<string | null>(null)
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<NewPasswordValues>({
+    resolver: zodResolver(newPasswordSchema),
+    defaultValues: { newPassword: "", confirmPassword: "" },
+  })
+
+  async function submit(values: NewPasswordValues) {
+    setError(null)
+    try {
+      await onSubmit(values.newPassword)
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Không đổi được mật khẩu")
+    }
+  }
+
+  return (
+    <AuthLayout title="Đặt mật khẩu mới" subtitle="Tài khoản đang dùng mật khẩu tạm. Đặt mật khẩu của riêng bạn để tiếp tục.">
+      <View className="gap-3.5">
+        <AuthField
+          control={control}
+          name="newPassword"
+          label="Mật khẩu mới"
+          error={errors.newPassword?.message}
+          password
+          autoComplete="new-password"
+          textContentType="newPassword"
+        />
+        <AuthField
+          control={control}
+          name="confirmPassword"
+          label="Nhập lại mật khẩu mới"
+          error={errors.confirmPassword?.message}
+          password
+          autoComplete="new-password"
+          textContentType="newPassword"
+          returnKeyType="go"
+          onSubmitEditing={handleSubmit(submit)}
+        />
+        {error && (
+          <Text accessibilityRole="alert" className="text-sm text-danger">
+            {error}
+          </Text>
+        )}
+        <Button className="mt-2 w-full" disabled={isSubmitting} onPress={handleSubmit(submit)}>
+          {isSubmitting ? "Đang lưu…" : "Lưu và vào app"}
+        </Button>
+      </View>
+      <Pressable accessibilityRole="button" onPress={onBack} className="mt-4">
+        <Text className="text-center text-[13px] text-text-muted">← Quay lại đăng nhập</Text>
+      </Pressable>
     </AuthLayout>
   )
 }
