@@ -210,7 +210,7 @@ export function UserListPage() {
                         to={`/admin/users/${user.id}`}
                         state={{ back: `/admin/users?${searchParams.toString()}` }}
                       >
-                        Quản lý
+                        Chi tiết
                       </Link>
                     </td>
                   </tr>
