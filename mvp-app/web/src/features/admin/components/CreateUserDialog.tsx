@@ -44,6 +44,9 @@ export function CreateUserDialog({ onClose }: { onClose: () => void }) {
     <dialog
       ref={ref}
       onClose={onClose}
+      onCancel={(e) => {
+        if (isSubmitting) e.preventDefault()
+      }}
       className="m-auto w-[min(440px,calc(100vw-32px))] rounded-[var(--radius-md)] bg-[var(--color-surface)] p-5 text-[var(--color-text)] backdrop:bg-[var(--color-bg)]/70"
     >
       <h2 className="text-lg font-bold">Thêm người dùng</h2>
@@ -72,7 +75,7 @@ export function CreateUserDialog({ onClose }: { onClose: () => void }) {
           </p>
         )}
         <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="secondary" onClick={() => ref.current?.close()}>
+          <Button type="button" variant="secondary" disabled={isSubmitting} onClick={() => ref.current?.close()}>
             Huỷ
           </Button>
           <Button type="submit" disabled={isSubmitting}>

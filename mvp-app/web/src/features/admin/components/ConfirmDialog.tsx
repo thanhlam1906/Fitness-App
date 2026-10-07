@@ -49,6 +49,9 @@ export function ConfirmDialog({
     <dialog
       ref={ref}
       onClose={onClose}
+      onCancel={(e) => {
+        if (pending) e.preventDefault()
+      }}
       className="m-auto w-[min(440px,calc(100vw-32px))] rounded-[var(--radius-md)] bg-[var(--color-surface)] p-5 text-[var(--color-text)] backdrop:bg-[var(--color-bg)]/70"
     >
       <h2 className="text-lg font-bold">{title}</h2>

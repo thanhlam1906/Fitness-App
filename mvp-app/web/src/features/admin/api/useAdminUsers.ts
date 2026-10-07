@@ -82,11 +82,18 @@ export function useResetUserPassword(userId: string) {
   })
 }
 
+// Không làm mới hồ sơ và nhật ký của chính người vừa xoá: màn hồ sơ còn mở nên nó sẽ tải lại, nhận 404,
+// thử lại 3 lần, và navigate trong onSuccess phải chờ hết (~7 s đứng màn, giống useCorpus.ts).
 export function useDeleteUser(userId: string) {
-  const invalidate = useInvalidateAdminUsers()
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (reason: string) => api.del<void>(`/admin/users/${userId}`, { reason }),
-    onSuccess: invalidate,
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: usersKey }),
+        queryClient.invalidateQueries({ queryKey: overviewKey }),
+        queryClient.invalidateQueries({ queryKey: ["admin-audit", "all"] }),
+      ]),
   })
 }
 
