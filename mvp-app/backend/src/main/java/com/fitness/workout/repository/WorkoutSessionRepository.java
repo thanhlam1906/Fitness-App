@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 /** concept-backend-v1.md §5 Lớp 1: entity thuộc user không có findById, chỉ findByIdAndUserId. */
 public interface WorkoutSessionRepository extends JpaRepository<WorkoutSession, UUID> {
@@ -26,6 +27,13 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSession, 
 	boolean existsByUserIdAndScheduledWorkoutIdAndStatus(UUID userId, UUID scheduledWorkoutId, String status);
 
 	List<WorkoutSession> findByUserIdAndStatus(UUID userId, String status);
+
+	/** Trang "Buổi tập" của admin: buổi DONE bắt đầu từ `from`. Cột: userId, templateId (null = ngoài lịch/lịch tự thiết kế). */
+	@Query("select ws.userId, p.templateId from WorkoutSession ws "
+			+ "left join ScheduledWorkout sw on sw.id = ws.scheduledWorkoutId "
+			+ "left join Program p on p.id = sw.programId "
+			+ "where ws.startedAt >= :from and ws.status = 'DONE'")
+	List<Object[]> insightRowsSince(Instant from);
 
 	/** ProgressSummaryTool §9 nhóm B3 — tiến bộ N tuần qua, theo userId. */
 	List<WorkoutSession> findByUserIdAndStartedAtAfter(UUID userId, Instant since);

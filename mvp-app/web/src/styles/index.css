@@ -26,6 +26,16 @@
   --color-warn-tint: rgba(245, 181, 68, 0.16);
   --color-danger-tint: rgba(242, 99, 95, 0.16);
 
+  /* Biểu đồ phân loại (trang Buổi tập): 5 màu đã chạy validate_palette dark trên --color-surface, đạt cả
+     5 kiểm tra. Gán theo vị trí cố định của thực thể, không theo hạng. */
+  --color-chart-1: #3987e5;
+  --color-chart-2: #d95926;
+  --color-chart-3: #199e70;
+  --color-chart-4: #c98500;
+  --color-chart-5: #d55181;
+  /* "Giữ" và "Khác": trung tính, vẫn tách khỏi nền thẻ. */
+  --color-chart-neutral: #5b666d;
+
   /* Thẻ kính nằm trên ảnh nền màn đăng nhập, đăng ký: surface 62% đục để ảnh
      còn lộ qua mà chữ trong form vẫn đọc được. */
   --color-glass: rgba(20, 24, 27, 0.62);

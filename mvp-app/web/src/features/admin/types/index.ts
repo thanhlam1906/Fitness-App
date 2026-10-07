@@ -179,3 +179,53 @@ export type AdminAuditEntry = {
 
 export type CreateUserPayload = { fullName: string; email: string; phone: string | null; role: UserRole }
 export type AdminUserCreated = { user: AdminUserRow; temporaryPassword: string }
+
+/** GET /admin/workout-insights — doc/design-trang-buoi-tap-v1.md §6. Mỗi danh sách tối đa 5 dòng, đã sắp. */
+export type WorkoutInsights = {
+  days: number
+  templateId: string | null
+  /** Tổng cả khoảng, kể cả bài bị ẩn ở các khối top 5. skipReasons đủ 4 mã, thứ tự cố định. */
+  summary: {
+    sessions: number
+    users: number
+    missedWorkouts: number
+    sets: number
+    skippedSets: number
+    skipReasons: { key: string; count: number }[]
+    rpeLogs: number
+    overCount: number
+    painReports: number
+    painUsers: number
+    avgPainSeverity: number
+    up: number
+    hold: number
+    down: number
+  }
+  skipped: {
+    exerciseId: string
+    exerciseName: string
+    sets: number
+    skippedSets: number
+    users: number
+    topReason: string | null
+  }[]
+  rpeOver: { exerciseId: string; exerciseName: string; rpeLogs: number; overCount: number; avgRpe: number }[]
+  repShort: {
+    exerciseId: string
+    exerciseName: string
+    sets: number
+    shortSets: number
+    avgReps: number
+    avgFloor: number
+  }[]
+  substituted: {
+    exerciseId: string
+    exerciseName: string
+    usersSubstituted: number
+    usersScheduled: number
+    topReplacementName: string | null
+  }[]
+  pain: { bodyArea: string; reports: number; users: number; avgSeverity: number; topExerciseName: string | null }[]
+  /** key = templateId khi lọc "Tất cả" (null = lịch tự thiết kế), exerciseId khi lọc một template. */
+  loadDecisions: { key: string | null; name: string; up: number; hold: number; down: number; topDownRule: string | null }[]
+}
