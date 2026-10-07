@@ -71,6 +71,12 @@ describe("biểu đồ tròn", () => {
     expect(s[0].detail).toBe("2 người · mức TB 2.5 · hay có Squat")
   })
 
+  it("phần Khác gộp có khoá riêng, không trùng vùng OTHER thật", () => {
+    const s = painSlices([{ bodyArea: "OTHER", reports: 2, users: 1, avgSeverity: 1, topExerciseName: null }], 5)
+    expect(s.map((x) => x.key)).toEqual(["OTHER", "__rest"])
+    expect(s.map((x) => x.label)).toEqual(["Chỗ khác", "Khác"])
+  })
+
   it("không thêm Khác khi top 5 đã đủ tổng", () => {
     expect(painSlices([{ bodyArea: "WRIST", reports: 2, users: 1, avgSeverity: 1, topExerciseName: null }], 2)).toHaveLength(1)
   })

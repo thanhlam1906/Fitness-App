@@ -88,7 +88,8 @@ export function painSlices(pain: WorkoutInsights["pain"], totalReports: number):
     detail: `${p.users} người · mức TB ${p.avgSeverity.toFixed(1)}${p.topExerciseName ? ` · hay có ${p.topExerciseName}` : ""}`,
   }))
   const rest = totalReports - pain.reduce((a, p) => a + p.reports, 0)
-  if (rest > 0) slices.push({ key: "OTHER", label: "Khác", value: rest, color: "var(--color-chart-neutral)" })
+  // Khoá riêng: BODY_AREAS đã có vùng OTHER thật, dùng "OTHER" cho phần gộp sẽ trùng key trong danh sách.
+  if (rest > 0) slices.push({ key: "__rest", label: "Khác", value: rest, color: "var(--color-chart-neutral)" })
   return slices
 }
 

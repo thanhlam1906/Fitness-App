@@ -46,7 +46,7 @@ export function DonutChart({ slices, center, centerLabel }: { slices: Slice[]; c
           {centerLabel}
         </text>
       </svg>
-      {slices.length === 0 ? (
+      {total === 0 ? (
         <p className="text-center text-xs text-[var(--color-text-muted)]">Chưa có dữ liệu trong khoảng này.</p>
       ) : (
         <ul className="flex flex-col gap-1.5">
