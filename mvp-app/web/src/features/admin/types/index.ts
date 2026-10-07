@@ -149,10 +149,27 @@ export type AdminUserDetail = {
   activeProgramName: string | null
 }
 
-/** GET /admin/workout-insights — doc/design-trang-buoi-tap-v1.md §6. Mỗi danh sách tối đa 10 dòng, đã sắp. */
+/** GET /admin/workout-insights — doc/design-trang-buoi-tap-v1.md §6. Mỗi danh sách tối đa 5 dòng, đã sắp. */
 export type WorkoutInsights = {
   days: number
   templateId: string | null
+  /** Tổng cả khoảng, kể cả bài bị ẩn ở các khối top 5. skipReasons đủ 4 mã, thứ tự cố định. */
+  summary: {
+    sessions: number
+    users: number
+    missedWorkouts: number
+    sets: number
+    skippedSets: number
+    skipReasons: { key: string; count: number }[]
+    rpeLogs: number
+    overCount: number
+    painReports: number
+    painUsers: number
+    avgPainSeverity: number
+    up: number
+    hold: number
+    down: number
+  }
   skipped: {
     exerciseId: string
     exerciseName: string

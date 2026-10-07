@@ -1,3 +1,4 @@
+import type { WorkoutInsights } from "@/features/admin/types"
 import { BODY_AREAS, SKIP_REASONS } from "@/features/workout/types"
 
 export const INSIGHT_DAYS = [7, 30, 90] as const
@@ -47,4 +48,65 @@ export function bodyAreaLabel(code: string): string {
 
 export function percent(part: number, whole: number): string {
   return whole === 0 ? "—" : `${Math.round((part * 100) / whole)}%`
+}
+
+export const CHART_COLORS = [
+  "var(--color-chart-1)",
+  "var(--color-chart-2)",
+  "var(--color-chart-3)",
+  "var(--color-chart-4)",
+  "var(--color-chart-5)",
+] as const
+
+export type Slice = { key: string; label: string; value: number; color: string; detail?: string }
+
+/**
+ * Cung của vòng donut theo tỉ lệ: độ dài nét và điểm bắt đầu trên chu vi. Chừa khe `gap` giữa các phần
+ * để màu nền tách chúng (không vẽ viền). Phần 0 có độ dài 0 để component bỏ qua.
+ */
+export function donutArcs(values: number[], circumference: number, gap = 2): { length: number; offset: number }[] {
+  const total = values.reduce((a, v) => a + v, 0)
+  let start = 0
+  return values.map((v) => {
+    const full = total === 0 ? 0 : (v / total) * circumference
+    const arc = { length: v === 0 ? 0 : Math.max(full - gap, 0.5), offset: start }
+    start += full
+    return arc
+  })
+}
+
+/**
+ * Top 5 vùng đau + "Khác" cho số lần còn lại, để vòng tròn cộng đủ tổng số lần báo đau.
+ * ponytail: màu theo hạng vì có 10 vùng mà chỉ 5 màu; đổi bộ lọc có thể đổi màu một vùng, chú thích luôn ghi tên.
+ */
+export function painSlices(pain: WorkoutInsights["pain"], totalReports: number): Slice[] {
+  const slices: Slice[] = pain.map((p, i) => ({
+    key: p.bodyArea,
+    label: bodyAreaLabel(p.bodyArea),
+    value: p.reports,
+    color: CHART_COLORS[i % CHART_COLORS.length],
+    detail: `${p.users} người · mức TB ${p.avgSeverity.toFixed(1)}${p.topExerciseName ? ` · hay có ${p.topExerciseName}` : ""}`,
+  }))
+  const rest = totalReports - pain.reduce((a, p) => a + p.reports, 0)
+  if (rest > 0) slices.push({ key: "OTHER", label: "Khác", value: rest, color: "var(--color-chart-neutral)" })
+  return slices
+}
+
+/** Lý do bỏ set: backend trả thứ tự cố định nên màu gắn theo lý do, không theo hạng. */
+export function skipReasonSlices(reasons: WorkoutInsights["summary"]["skipReasons"]): Slice[] {
+  return reasons.map((r, i) => ({
+    key: r.key,
+    label: skipReasonLabel(r.key),
+    value: r.count,
+    color: CHART_COLORS[i % CHART_COLORS.length],
+  }))
+}
+
+/** Lý do có nhiều set bị bỏ nhất; null khi chưa set nào bị bỏ. */
+export function topSkipReason(reasons: WorkoutInsights["summary"]["skipReasons"]): string | null {
+  const top = reasons.reduce<{ key: string; count: number } | null>(
+    (best, r) => (r.count > (best?.count ?? 0) ? r : best),
+    null,
+  )
+  return top ? skipReasonLabel(top.key) : null
 }
