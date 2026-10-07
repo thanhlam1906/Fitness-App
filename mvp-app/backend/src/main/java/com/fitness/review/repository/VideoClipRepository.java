@@ -13,4 +13,8 @@ public interface VideoClipRepository extends JpaRepository<VideoClip, UUID> {
 
 	@Query("select c from VideoClip c where c.deletedAt is null and c.uploadedAt < :before")
 	List<VideoClip> findOrphans(Instant before);
+
+	@Query("select c from VideoClip c, VideoReviewRequest r "
+			+ "where r.id = c.requestId and r.userId = :userId and c.deletedAt is null")
+	List<VideoClip> findUndeletedByUserId(UUID userId);
 }

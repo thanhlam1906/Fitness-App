@@ -4,9 +4,11 @@ import com.fitness.review.entity.VideoClip;
 import com.fitness.review.entity.VideoReviewRequest;
 import com.fitness.review.repository.VideoClipRepository;
 import com.fitness.review.repository.VideoReviewRequestRepository;
+import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -69,6 +71,21 @@ public class ClipCleanupJob {
 		}
 		if (!orphans.isEmpty()) {
 			log.warn("Xoá {} clip mồ côi quá 24h — analyzer lẽ ra phải xoá ngay sau khi chấm", orphans.size());
+		}
+	}
+
+	/**
+	 * Xoá tài khoản (doc/design-quan-ly-user-v1.md §5.6): file clip chưa xoá phải đi trước, vì
+	 * row clip mất theo CASCADE thì job mồ côi không còn thấy file đó nữa. Lỗi xoá một file không
+	 * chặn xoá tài khoản — ghi warn kèm storage_key để dọn tay.
+	 */
+	public void deleteClipsOfUser(UUID userId) {
+		for (VideoClip clip : clips.findUndeletedByUserId(userId)) {
+			try {
+				clipStorage.delete(clip.getStorageKey());
+			} catch (UncheckedIOException e) {
+				log.warn("Không xoá được clip {} khi xoá tài khoản", clip.getStorageKey(), e);
+			}
 		}
 	}
 }
