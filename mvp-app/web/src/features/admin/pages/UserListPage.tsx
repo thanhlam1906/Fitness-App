@@ -10,10 +10,10 @@ import { downloadUsersCsv } from "@/features/admin/api/adminUsersApi"
 import type { UserStatus } from "@/features/admin/types"
 import { ROLE_LABEL, STATUS_LABEL } from "@/features/admin/utils/userLabels"
 import {
+  applyListPatch,
   nextSort,
   PAGE_SIZE,
   readUserListParams,
-  writeUserListParams,
   type UserListParams,
   type UserSort,
 } from "@/features/admin/utils/userListParams"
@@ -44,17 +44,24 @@ export function UserListPage() {
   const users = useAdminUsers(params)
   const overview = useAdminOverview()
   const [query, setQuery] = useState(params.q)
+  const [prevQ, setPrevQ] = useState(params.q)
   const [exportError, setExportError] = useState<string | null>(null)
 
-  function update(patch: Partial<UserListParams>) {
-    // Đổi lọc/tìm/sắp xếp thì về trang đầu; chỉ bấm Trước/Sau mới giữ page trong patch.
-    setSearchParams(writeUserListParams({ ...params, page: 0, ...patch }))
+  // URL đổi từ bên ngoài (Back/Forward, link) thì ô tìm kiếm theo URL. Gõ dở không bị ảnh hưởng
+  // vì params.q chỉ đổi sau khi timer debounce ghi lên URL.
+  if (params.q !== prevQ) {
+    setPrevQ(params.q)
+    setQuery(params.q)
   }
 
-  // Gõ tìm kiếm: chờ 300ms ngừng gõ mới gọi server.
+  function update(patch: Partial<UserListParams>, replace = false) {
+    setSearchParams((prev) => applyListPatch(prev, patch), { replace })
+  }
+
+  // Gõ tìm kiếm: chờ 300ms ngừng gõ mới gọi server. replace để mỗi từ khoá không thêm một mục lịch sử.
   useEffect(() => {
     if (query === params.q) return
-    const t = setTimeout(() => update({ q: query }), 300)
+    const t = setTimeout(() => update({ q: query }, true), 300)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ chạy lại khi chữ gõ đổi
   }, [query])

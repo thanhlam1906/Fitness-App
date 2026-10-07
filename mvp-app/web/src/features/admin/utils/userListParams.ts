@@ -68,3 +68,12 @@ export function nextSort(p: UserListParams, column: UserSort): Pick<UserListPara
   if (p.sort === column) return { sort: column, dir: p.dir === "asc" ? "desc" : "asc" }
   return { sort: column, dir: column === "email" ? "asc" : "desc" }
 }
+
+/**
+ * Áp patch lên URL HIỆN TẠI (không phải bản chụp lúc render): timer debounce của ô tìm kiếm
+ * chạy trễ, nếu dùng params cũ thì sẽ ghi đè tab/vai trò vừa đổi trong lúc đó.
+ * Đổi lọc/tìm/sắp xếp thì về trang đầu; chỉ Trước/Sau mới giữ page trong patch.
+ */
+export function applyListPatch(current: URLSearchParams, patch: Partial<UserListParams>): URLSearchParams {
+  return writeUserListParams({ ...readUserListParams(current), page: 0, ...patch })
+}

@@ -1,5 +1,6 @@
 import { expect, it } from "vitest"
 import {
+  applyListPatch,
   DEFAULT_USER_LIST_PARAMS,
   nextSort,
   readUserListParams,
@@ -33,4 +34,10 @@ it("bấm cùng cột thì đảo chiều, cột mới thì giảm dần (email 
   expect(nextSort(p, "createdAt")).toEqual({ sort: "createdAt", dir: "asc" })
   expect(nextSort(p, "sessionCount")).toEqual({ sort: "sessionCount", dir: "desc" })
   expect(nextSort(p, "email")).toEqual({ sort: "email", dir: "asc" })
+})
+
+it("áp patch lên URL hiện tại: patch q không làm mất tab vừa đổi, và về trang đầu", () => {
+  const current = new URLSearchParams("status=IDLE&role=USER&page=3")
+  expect(applyListPatch(current, { q: "an" }).toString()).toBe("q=an&status=IDLE&role=USER")
+  expect(applyListPatch(current, { page: 2 }).toString()).toBe("status=IDLE&role=USER&page=2")
 })
