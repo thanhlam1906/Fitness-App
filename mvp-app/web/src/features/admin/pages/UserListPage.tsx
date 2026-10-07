@@ -63,8 +63,8 @@ export function UserListPage() {
     if (query === params.q) return
     const t = setTimeout(() => update({ q: query }, true), 300)
     return () => clearTimeout(t)
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ chạy lại khi chữ gõ đổi
-  }, [query])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- chạy lại khi chữ gõ hoặc URL đổi; URL đổi thì timer cũ (giữ setSearchParams cũ) bị huỷ và dựng lại với setter mới nhất, nên không ghi đè tab/vai trò vừa chọn
+  }, [query, searchParams.toString()])
 
   const page = users.data
   const pageCount = page ? Math.max(1, Math.ceil(page.total / PAGE_SIZE)) : 1
