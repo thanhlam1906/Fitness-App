@@ -1,14 +1,23 @@
+# Ghim tên project: chạy từ thư mục nào cũng ra cùng stack/volume. Không ghim thì
+# chạy từ mvp-app/ sẽ tạo stack "mvp-app" thứ hai với Postgres rỗng.
+name: fitnessapp
+
 services:
   postgres:
-    image: postgres:16-alpine
+    # Bậc 2 trợ lý (concept-chatbot-v1.md §5.2): cần extension pgvector, không có
+    # sẵn trong postgres:16-alpine. Image chính chủ pgvector — cùng Postgres 16,
+    # chỉ thêm extension, ghim patch version.
+    image: pgvector/pgvector:0.8.6-pg16
     environment:
       POSTGRES_DB: fitness
       POSTGRES_USER: fitness
       POSTGRES_PASSWORD: fitness_dev_only
     ports:
-      # 55432, không phải 5432: máy dev này đã có postgres.exe (Windows Service,
-      # dự án khác) chiếm sẵn 5432. Container bên trong vẫn dùng 5432 bình thường.
-      - "55432:5432"
+      # 15432, không phải 5432: máy dev này đã có postgres.exe (Windows Service,
+      # dự án khác) chiếm sẵn 5432. Không dùng cổng >= 49152: Hyper-V/WinNAT giữ
+      # chỗ ngẫu nhiên trong vùng đó mỗi lần Docker khởi động lại (55432 từng dính
+      # 09-27). Container bên trong vẫn dùng 5432 bình thường.
+      - "15432:5432"
     volumes:
       - fitness-postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -16,6 +25,38 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  backend:
+    image: gradle:jdk21-jammy
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+      - fitness-gradle-cache:/home/gradle/.gradle
+    command: sh -c "gradle bootRun --no-daemon"
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/fitness
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      # Máy trích PDF (profile corpus). Chưa bật thì thả PDF báo lỗi kèm lệnh bật.
+      PDF_HYBRID_URL: http://pdf-hybrid:5002
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    image: node:22-alpine
+    working_dir: /app
+    volumes:
+      - ./web:/app
+      - fitness-web-node-modules:/app/node_modules
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    ports:
+      - "5173:5173"
+    environment:
+      BACKEND_URL: http://backend:8080
+    depends_on:
+      - backend
 
   # Worker chấm form. Không mở cổng nào — nó chỉ đọc Postgres và thư mục clip
   # (concept-analyzer-v1.md §1). Chạy khi cần TN2:  docker compose --profile tn2 up -d
@@ -29,7 +70,8 @@ services:
       DB_URL: postgresql://fitness:fitness_dev_only@postgres:5432/fitness
       CLIP_STORAGE_PATH: /data
       POSE_MODEL: ${POSE_MODEL:-full}
-      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      # Màn camera chờ kết quả ngay trên màn hình: poll 1 s thay vì 5 s mặc định.
+      POLL_INTERVAL_SEC: "1"
     volumes:
       # PHẢI trỏ đúng app.clip-storage-path của backend — analyzer đọc chính
       # file backend vừa ghi, rồi xoá nó (N2).
@@ -37,6 +79,22 @@ services:
       - fitness-pose-models:/app/models
     restart: unless-stopped
 
+  # Máy trích PDF cho "Kho kiến thức" (doc/design-nap-tai-lieu-v1.md §6). Docling + OCR nặng nên
+  # chỉ bật khi nạp tài liệu:
+  #   docker compose -f mvp-app/docker-compose.yml --profile corpus up -d pdf-hybrid
+  pdf-hybrid:
+    profiles: ["corpus"]
+    build: ./pdf-hybrid
+    ports:
+      # Backend chạy ngoài Docker (preview_start) gọi localhost:5002. Cổng < 49152, xem ghi chú postgres.
+      - "5002:5002"
+    volumes:
+      - fitness-pdf-models:/models
+    restart: unless-stopped
+
 volumes:
   fitness-postgres-data:
   fitness-pose-models:
+  fitness-gradle-cache:
+  fitness-web-node-modules:
+  fitness-pdf-models:

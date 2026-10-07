@@ -21,6 +21,16 @@ class FrameMetrics:
     depth_ratio: float         # (hông trên cổ chân)/(gối trên cổ chân). ≈1 là ngang gối
     torso_axis: np.ndarray     # vector đơn vị hông→vai
     knee_lateral_m: list[float]  # lệch ngang gối so cổ chân, dương = RA NGOÀI, mét
+    knee_angle_deg: list[float]    # [trái, phải] góc hông–gối–cổ chân
+    elbow_angle_deg: list[float]   # [trái, phải] góc vai–khuỷu–cổ tay
+    elbow_mean_deg: float          # tín hiệu rep push-up
+    front_knee_angle_deg: float    # min hai gối — tín hiệu rep lunge
+    torso_tilt_deg: float          # trục hông→vai TRÊN ẢNH so với phương đứng của ảnh; ~90 = nằm ngang
+    hip_side_deg: list[float]        # [trái, phải] góc vai–hông–gối từng bên
+    shoulder_angle_deg: list[float]  # [trái, phải] góc hông–vai–khuỷu; 0 = tay sát thân
+    shoulder_mean_deg: float         # tín hiệu rep chung cho bài tay: nâng tạ ngang vai, đẩy vai
+    ankle_angle_deg: list[float]     # [trái, phải] góc gối–cổ chân–mũi chân; 90 = cẳng chân dựng đứng
+    valgus_deg: list[float]          # [trái, phải] gối chụm vào trong, độ; lệch ra ngoài = 0
 
 
 def angle_deg(a: np.ndarray, b: np.ndarray) -> float:
@@ -29,6 +39,27 @@ def angle_deg(a: np.ndarray, b: np.ndarray) -> float:
         return 0.0
     cos = float(np.dot(a, b)) / (na * nb)
     return math.degrees(math.acos(max(-1.0, min(1.0, cos))))
+
+
+def _valgus(w: np.ndarray, hip: np.ndarray, lateral_n: np.ndarray) -> list[float]:
+    """Gối chụm vào trong, độ, từng chân. Chiếu hông–gối–cổ chân lên mặt phẳng trán của CHÍNH
+    người tập (trục ngang = hông trái→phải, trục đứng = cổ chân→hông bỏ phần theo trục ngang) rồi
+    đo gối gập khỏi đường thẳng hông–cổ chân bao nhiêu độ. Dùng trục cơ thể, không dùng trục
+    camera, nên nghiêng máy không đổi số. Gối lệch ra ngoài tính 0: spec chỉ kiểm chụm vào."""
+    ankle = (w[LM["l_ankle"]] + w[LM["r_ankle"]]) / 2.0
+    up = hip - ankle
+    up = up - float(np.dot(up, lateral_n)) * lateral_n
+    up = up / (np.linalg.norm(up) + 1e-9)
+    out = []
+    # Chụm vào trong: gối trái đi về phía hông phải (+trục ngang), gối phải ngược lại.
+    for s, inward in (("l", 1.0), ("r", -1.0)):
+        h, k, a = (np.array([float(np.dot(w[LM[f"{s}_{j}"]], lateral_n)),
+                             float(np.dot(w[LM[f"{s}_{j}"]], up))]) for j in ("hip", "knee", "ankle"))
+        bend = 180.0 - angle_deg(h - k, a - k)
+        span = h[1] - a[1]
+        on_line = a[0] + (k[1] - a[1]) / span * (h[0] - a[0]) if abs(span) > 1e-9 else a[0]
+        out.append(bend if inward * (k[0] - on_line) > 0 else 0.0)
+    return out
 
 
 def frame_metrics(frame: Frame) -> FrameMetrics:
@@ -56,11 +87,45 @@ def frame_metrics(frame: Frame) -> FrameMetrics:
         +1.0 * float(np.dot(w[LM["r_knee"]] - w[LM["r_ankle"]], lateral_n)),
     ]
 
+    knee_angle = [
+        angle_deg(w[LM[f"{s}_hip"]] - w[LM[f"{s}_knee"]], w[LM[f"{s}_ankle"]] - w[LM[f"{s}_knee"]])
+        for s in ("l", "r")]
+    elbow_angle = [
+        angle_deg(w[LM[f"{s}_sho"]] - w[LM[f"{s}_elbow"]], w[LM[f"{s}_wrist"]] - w[LM[f"{s}_elbow"]])
+        for s in ("l", "r")]
+
+    # Trên ảnh y hướng xuống, nên "đứng thẳng" là vector (0, -1). world không có trọng lực
+    # để so — giả định máy quay đặt ngang (A6 concept-recognition-v1.md).
+    n = frame.norm
+    torso_img = ((n[LM["l_sho"]] + n[LM["r_sho"]]) / 2.0 - (n[LM["l_hip"]] + n[LM["r_hip"]]) / 2.0)[:2]
+    tilt = angle_deg(torso_img, np.array([0.0, -1.0]))
+
+    hip_side = [
+        angle_deg(w[LM[f"{s}_sho"]] - w[LM[f"{s}_hip"]], w[LM[f"{s}_knee"]] - w[LM[f"{s}_hip"]])
+        for s in ("l", "r")]
+    shoulder_angle = [
+        angle_deg(w[LM[f"{s}_hip"]] - w[LM[f"{s}_sho"]], w[LM[f"{s}_elbow"]] - w[LM[f"{s}_sho"]])
+        for s in ("l", "r")]
+
+    ankle_angle = [
+        angle_deg(w[LM[f"{s}_knee"]] - w[LM[f"{s}_ankle"]], w[LM[f"{s}_foot"]] - w[LM[f"{s}_ankle"]])
+        for s in ("l", "r")]
+
     return FrameMetrics(
         hip_angle_deg=angle_deg(shoulder - hip, knee - hip),
         depth_ratio=ratio,
         torso_axis=up,
         knee_lateral_m=knee_lateral,
+        knee_angle_deg=knee_angle,
+        elbow_angle_deg=elbow_angle,
+        elbow_mean_deg=(elbow_angle[0] + elbow_angle[1]) / 2.0,
+        front_knee_angle_deg=min(knee_angle),
+        torso_tilt_deg=tilt,
+        hip_side_deg=hip_side,
+        shoulder_angle_deg=shoulder_angle,
+        shoulder_mean_deg=(shoulder_angle[0] + shoulder_angle[1]) / 2.0,
+        ankle_angle_deg=ankle_angle,
+        valgus_deg=_valgus(w, hip, lateral_n),
     )
 
 

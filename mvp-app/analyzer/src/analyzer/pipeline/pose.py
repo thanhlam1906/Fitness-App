@@ -27,8 +27,9 @@ MODEL_URLS = {
 }
 
 # Landmark indices của MediaPipe Pose (33 điểm).
-LM = dict(nose=0, l_sho=11, r_sho=12, l_hip=23, r_hip=24,
-          l_knee=25, r_knee=26, l_ankle=27, r_ankle=28)
+LM = dict(nose=0, l_sho=11, r_sho=12, l_elbow=13, r_elbow=14, l_wrist=15, r_wrist=16,
+          l_hip=23, r_hip=24, l_knee=25, r_knee=26, l_ankle=27, r_ankle=28,
+          l_foot=31, r_foot=32)   # 31, 32 = mũi chân (foot_index) của MediaPipe
 
 # Các khớp phải nhìn rõ thì frame mới dùng được để phân đoạn rep.
 CORE_JOINTS = [LM["l_hip"], LM["r_hip"], LM["l_knee"], LM["r_knee"],

@@ -22,6 +22,16 @@ toàn thân trong khung, quay NGANG hoặc CHÍNH DIỆN).
 
 Đổi model nhẹ hơn nếu máy chậm: `$env:POSE_MODEL="lite"`.
 
+Bản camera trực tiếp có hướng dẫn: `http://127.0.0.1:8000/live` — trang validate
+người đứng đủ toàn thân trong khung, **nhận diện bài đang tập** (squat / push-up / lunge,
+`POST /api/recognize`), rồi yêu cầu từng góc quay theo bài, đếm 5 rep mỗi góc và gửi
+**toạ độ khớp** (không gửi hình) lên `POST /api/analyze-live` để chấm gộp. Hồ sơ bài
+(ngưỡng rep, góc quay) lấy từ `GET /api/exercises`. Kiểm tra end-to-end khi server đang
+chạy: `python test_engine.py`.
+
+Pipeline không nằm trong thư mục này — `main.py` import từ `../analyzer/src` (worker
+thật), xem `doc/concept-recognition-v1.md`. Test pipeline: `python ../analyzer/tests/test_pipeline.py`.
+
 ## Gọi API trực tiếp
 
 ```powershell
@@ -45,17 +55,18 @@ Sau đó khởi động lại server. Chi phí rất thấp (deepseek-chat ~vài
 
 ## Cấu trúc
 
-- `main.py` — FastAPI: nhận file, gọi engine, **xóa video ngay sau phân tích**
-  (không lưu trữ — TTL tức thì, đúng tinh thần đặc tả §6.3).
-- `squat_engine.py` — pipeline + rule config mẫu (`RULES`).
+- `main.py` — FastAPI: nhận file hoặc toạ độ khớp, gọi pipeline chung của worker,
+  **xóa video ngay sau phân tích** (không lưu trữ — TTL tức thì, đúng tinh thần đặc tả §6.3).
+- `../analyzer/src/analyzer/exercises.py` — hồ sơ 3 bài + bộ check demo (squat chép đúng số DB).
 - `llm_advisor.py` — lớp LLM (DeepSeek) diễn giải số liệu (opt-in, an toàn khi không có key).
 - `web/index.html` — UI demo tiếng Việt (1 file, không build).
+- `web/live.html` — camera trực tiếp: nhận diện bài → hướng dẫn góc → đếm rep → chấm.
 
 ## Lưu ý
 
-- **Ngưỡng trong `RULES` là số tạm (demo)** — cần HLV hiệu chỉnh bằng clip
-  đúng/sai (đặc tả Q1); bản thật sẽ đưa rule vào DB (bảng `form_checks`)
-  để web admin sửa được.
+- **Ngưỡng trong `exercises.py` là số tạm (demo)** — squat chép từ DB, push-up/lunge
+  là số đoán, cần HLV hiệu chỉnh bằng clip đúng/sai (đặc tả Q1); bản thật đọc
+  rule từ DB (bảng `form_checks`) để web admin sửa được.
 - Góc quay quyết định check được chạy (đặc tả Tầng 2): NGANG → độ sâu +
   thân/lưng; CHÍNH DIỆN → gối; ~45° → không chấm số, chỉ báo cần quay góc khác.
 - Video tự xóa ngay sau khi xử lý; kết luận (đạt/chưa đạt + số đo) luôn từ

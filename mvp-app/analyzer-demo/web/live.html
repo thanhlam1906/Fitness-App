@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Demo — Nhận diện khớp trực tiếp (camera)</title>
+<title>Demo — Tập có hướng dẫn, tự nhận diện bài (camera trực tiếp)</title>
 <style>
-  :root{--bg:#0e1116; --panel:#171c24; --line:#262e3a; --txt:#e8edf4; --mut:#93a1b3; --acc:#4cc38a; --acc2:#5b8def; --warn:#e8b34b}
+  :root{--bg:#0e1116; --panel:#171c24; --line:#262e3a; --txt:#e8edf4; --mut:#93a1b3; --acc:#4cc38a; --acc2:#5b8def; --warn:#e8b34b; --bad:#e2605c; --na:#7c8aa0}
   *{box-sizing:border-box; margin:0; padding:0}
   body{background:var(--bg); color:var(--txt); font:15px/1.5 system-ui,"Segoe UI",Roboto,sans-serif; min-height:100vh}
   .wrap{max-width:980px; margin:0 auto; padding:22px 16px 40px}
@@ -14,62 +14,91 @@
   .stage{margin-top:16px; position:relative; border:1px solid var(--line); border-radius:14px; overflow:hidden; background:#000; min-height:360px}
   video{position:absolute; width:100%; height:100%; object-fit:contain; opacity:0}
   canvas{display:block; width:100%}
-  .overlay-note{position:absolute; left:10px; top:10px; background:rgba(0,0,0,.55); padding:6px 10px; border-radius:8px; font-size:12.5px; color:var(--txt)}
-  .panel{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px}
-  @media(max-width:720px){ .panel{grid-template-columns:1fr} }
-  .card{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px}
-  .card h2{font-size:12.5px; text-transform:uppercase; letter-spacing:1.3px; color:var(--acc2); margin-bottom:10px}
-  .metric{font-size:22px; font-weight:700; font-variant-numeric:tabular-nums}
-  .metric small{font-size:13px; color:var(--mut); font-weight:400}
-  .row{display:flex; gap:10px; margin-top:14px; flex-wrap:wrap}
+  .dbg{margin-top:6px; font-size:12px; color:var(--mut); font-variant-numeric:tabular-nums}
+  .steps{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap}
+  .step{flex:1 1 150px; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:8px 12px; font-size:13px; color:var(--mut)}
+  .step.active{border-color:var(--acc2); color:var(--txt); background:#1a2230}
+  .step.done{border-color:var(--acc); color:var(--acc)}
+  .row{display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; align-items:center}
   button{background:var(--acc2); color:#fff; border:0; border-radius:8px; padding:10px 18px; font-size:14px; font-weight:600; cursor:pointer}
+  button:disabled{opacity:.5; cursor:not-allowed}
   button.ghost{background:transparent; border:1px solid var(--line); color:var(--txt)}
+  #choices{display:none}
+  #choices span{color:var(--mut); font-size:13.5px}
   #status{margin-top:10px; font-size:13.5px; color:var(--warn); min-height:20px; white-space:pre-wrap}
-  .legend{display:flex; gap:16px; flex-wrap:wrap; margin-top:10px; font-size:12.5px; color:var(--mut)}
-  .dot{display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; vertical-align:middle}
   .note{font-size:12.5px; color:var(--mut); border-left:3px solid var(--line); padding:6px 10px; margin-top:12px; background:#131923}
   a{color:var(--acc2)}
+  .result{margin-top:16px; display:none}
+  .big-card{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px}
+  .overall{display:flex; gap:14px; align-items:center; flex-wrap:wrap}
+  .pill{border-radius:20px; padding:4px 14px; font-size:13px; font-weight:700}
+  .pill.good{background:#123524; color:var(--acc)} .pill.bad{background:#3a1d1c; color:var(--bad)}
+  .advice{font-size:16px; font-weight:600; margin-top:10px}
+  .chk{display:flex; gap:12px; padding:12px 0; border-top:1px solid var(--line); align-items:flex-start}
+  .chk:first-of-type{border-top:0}
+  .ico{flex:0 0 26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800}
+  .ico.pass{background:#123524; color:var(--acc)} .ico.warn{background:#3a2f16; color:var(--warn)}
+  .ico.fail{background:#3a1d1c; color:var(--bad)} .ico.na,.ico.low{background:#1d2430; color:var(--na)}
+  .chk .name{font-weight:700; font-size:14.5px}
+  .chk .txt{color:var(--mut); font-size:13.5px; margin-top:3px}
+  .chk .metric{color:var(--acc2); font-size:12.5px; margin-top:5px; font-family:ui-monospace,Consolas,monospace}
+  .meta{color:var(--mut); font-size:12.5px; margin-top:8px}
+  .llm-card{margin-top:14px; border:1px solid #3a4a6b; background:#141b2b; border-radius:10px; padding:12px 14px}
+  .llm-card .llm-title{font-size:12px; letter-spacing:1.2px; text-transform:uppercase; color:#8fa8e8; margin-bottom:8px}
+  .llm-card .llm-text{font-size:14px; line-height:1.65; white-space:pre-wrap}
+  .err-card{background:#3a1d1c; border:1px solid #5a2a28; border-radius:12px; padding:16px; margin-top:14px; display:none}
+  .err-card h3{color:var(--bad); font-size:15px}
+  .err-card ul{list-style:none; margin-top:8px} .err-card li{color:var(--txt); font-size:13.5px; padding:2px 0}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>🎥 Nhận diện khớp trực tiếp — 33 điểm trên cơ thể</h1>
-  <p class="sub">Đứng trước camera, toàn thân trong khung. Toàn bộ xử lý chạy <b>ngay trong trình duyệt</b> (MediaPipe on-device) — không gửi ảnh/video đi đâu. ← <a href="/">về trang gửi video</a></p>
+  <h1>🎥 Tập có hướng dẫn — tự nhận diện bài, camera trực tiếp</h1>
+  <p class="sub">Đứng cách camera 2–3 m. Trang nhận diện bạn đang tập gì (squat / push-up / lunge), rồi hướng dẫn từng góc quay,
+    đếm rep và chấm kỹ thuật. Pose chạy <b>ngay trong trình duyệt</b>; chỉ toạ độ khớp (không phải hình ảnh) được gửi lên server.
+    ← <a href="/">về trang gửi video</a></p>
 
   <div class="stage" id="stage">
     <video id="video" playsinline muted></video>
     <canvas id="canvas"></canvas>
-    <div class="overlay-note" id="fpsNote">—</div>
   </div>
+  <div class="dbg" id="fpsNote">—</div>
 
+  <div class="steps" id="steps"></div>
+
+  <div class="row" id="choices"><span>Chọn bài:</span></div>
   <div class="row">
     <button id="startBtn">▶ Bật camera</button>
     <button id="stopBtn" class="ghost" disabled>⏹ Tắt</button>
+    <button id="resetBtn" class="ghost" style="display:none">↺ Làm lại</button>
   </div>
   <div id="status"></div>
 
-  <div class="panel">
-    <div class="card">
-      <h2>Số đo trực tiếp (từ world 3D)</h2>
-      <div class="metric" id="hipAng">—°<small> góc hông</small></div>
-      <div class="metric" id="depthRatio">—<small> tỷ lệ độ sâu (≈1 = ngang gối)</small></div>
-      <div class="metric" id="phase">—</div>
-    </div>
-    <div class="card">
-      <h2>Cách đọc màu điểm</h2>
-      <div class="legend">
-        <span><span class="dot" style="background:#4cc38a"></span>Rõ (tin cậy &gt; 0.8)</span>
-        <span><span class="dot" style="background:#e8b34b"></span>Tạm (0.5–0.8)</span>
-        <span><span class="dot" style="background:#e2605c"></span>Mờ (&lt; 0.5)</span>
-        <span><span class="dot" style="background:#5b8def"></span>Khớp quan trọng</span>
+  <div class="result" id="result">
+    <div class="big-card">
+      <div class="overall">
+        <div id="verdictPill" class="pill">—</div>
+        <div class="meta" id="viewMeta">—</div>
       </div>
-      <div class="note">Góc hông = góc (vai–hông–gối). Squat: góc &lt; 128° = "đang hạ", trở lại &gt; 148° = "đứng" — đúng state machine của engine phân tích video.</div>
+      <div class="advice" id="advice"></div>
+      <div id="checks"></div>
+      <div class="llm-card" id="llmCard" style="display:none">
+        <div class="llm-title">💬 Phân tích AI (LLM) — dựa trên số liệu đo được</div>
+        <div class="llm-text" id="llmText"></div>
+      </div>
+      <div class="meta" id="notes"></div>
+      <div class="meta" id="perf"></div>
     </div>
   </div>
 
+  <div class="err-card" id="errCard">
+    <h3>Không phân tích được</h3>
+    <ul id="errList"></ul>
+  </div>
+
   <div class="note">
-    ⚠️ Demo kỹ thuật: webcam càng tốt (đủ sáng, đứng cách ~2–3 m, không ngược sáng) thì điểm khớp càng bám đúng.
-    Cần mạng lần đầu để tải thư viện MediaPipe từ CDN (cdn.jsdelivr.net).
+    ⚠️ Demo kỹ thuật: đủ sáng, không ngược sáng, toàn thân trong khung thì điểm khớp mới bám đúng.
+    Ngưỡng đếm rep và chấm của push-up / lunge là số tạm. Cần mạng lần đầu để tải MediaPipe từ CDN (cdn.jsdelivr.net).
   </div>
 </div>
 
@@ -88,11 +117,16 @@ setTimeout(()=>{
 import { FilesetResolver, PoseLandmarker } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
 window.__liveReady = true;
 
+const HOLD_MS = 1500, COUNTDOWN_MS = 3000, MARGIN = 0.03, MIN_VIS = 0.5;
+const RECOG_CYCLES = 3, RECOG_MAX_MS = 8000, RECOG_MIN_ROM = 40, CONFIRM_MS = 3000, CONFIRM_MIN_CONF = 0.6;
+const VIEW_VI = {FRONTAL:'chính diện', SAGITTAL:'ngang', DIAGONAL:'~45°'};
+const VIEW_HINT = {FRONTAL:'Xoay người CHÍNH DIỆN — mặt hướng về camera', SAGITTAL:'Xoay người sang NGANG — vai vuông góc với camera'};
+
 const $ = id => document.getElementById(id);
 const video=$('video'), canvas=$('canvas'), ctx=canvas.getContext('2d');
-const startBtn=$('startBtn'), stopBtn=$('stopBtn'), statusEl=$('status');
+const startBtn=$('startBtn'), stopBtn=$('stopBtn'), resetBtn=$('resetBtn'), statusEl=$('status');
+const resultBox=$('result'), errBox=$('errCard'), choices=$('choices'), stepsEl=$('steps');
 
-// Bảng nối 33 khớp chuẩn BlazePose (dự phòng nếu PoseLandmarker.POSE_CONNECTIONS không khả dụng)
 const POSE_CONNECTIONS = (PoseLandmarker && PoseLandmarker.POSE_CONNECTIONS) || [
   [0,1],[1,2],[2,3],[3,7],[0,4],[4,5],[5,6],[6,8],[9,10],
   [11,12],[11,13],[13,15],[15,17],[15,19],[15,21],[17,19],
@@ -101,11 +135,22 @@ const POSE_CONNECTIONS = (PoseLandmarker && PoseLandmarker.POSE_CONNECTIONS) || 
   [23,25],[25,27],[27,29],[29,31],[27,31],
   [24,26],[26,28],[28,30],[30,32],[28,32],
 ];
-const KEY_IDS = new Set([11,12,23,24,25,26,27,28]);
+const KEY_IDS = [11,12,23,24,25,26,27,28];
+const KEY_SET = new Set(KEY_IDS);
 
+let EXERCISES = {};           // slug → hồ sơ từ /api/exercises (một nguồn ngưỡng)
 let landmarker=null, stream=null, raf=0, running=false;
 let fps=0, frames=0, lastFpsT=performance.now();
-let drawErrors=0;
+let drawErrors=0, viewRatio=0.35, lastStepKey='';
+let S = {phase:'idle'};
+
+function reset(){
+  S = {phase:'frame0', profile:null, step:0, okSince:0, countdownEnd:0, clip:[], clips:[], rep:null, reps:0, flash:null,
+       recog:null, confirmEnd:0, recognition:null};
+  viewRatio=0.35;
+  resultBox.style.display='none'; errBox.style.display='none'; resetBtn.style.display='none'; choices.style.display='none';
+  renderSteps();
+}
 
 function angleDeg(a,b){
   const dot=a.x*b.x+a.y*b.y+a.z*b.z;
@@ -113,6 +158,9 @@ function angleDeg(a,b){
   if(na<1e-9||nb<1e-9) return 0;
   return Math.acos(Math.max(-1,Math.min(1,dot/(na*nb))))*180/Math.PI;
 }
+const sub=(p,q)=>({x:p.x-q.x, y:p.y-q.y, z:p.z-q.z});
+const mid=(p,q)=>({x:(p.x+q.x)/2, y:(p.y+q.y)/2, z:(p.z+q.z)/2});
+const jointAngle=(wl,a,b,c)=>angleDeg(sub(wl[a],wl[b]), sub(wl[c],wl[b]));
 
 async function initModel(){
   statusEl.textContent='Đang tải thư viện wasm từ CDN…';
@@ -129,15 +177,28 @@ async function initModel(){
   }
 }
 
+async function loadExercises(){
+  const list = await (await fetch('/api/exercises')).json();
+  EXERCISES = Object.fromEntries(list.map(e=>[e.slug, e]));
+  choices.querySelectorAll('button').forEach(b=>b.remove());
+  for(const e of list){
+    const b=document.createElement('button'); b.className='ghost'; b.textContent=e.label;
+    b.addEventListener('click', ()=>{ if(S.phase==='confirm' || S.phase==='recog') chooseExercise(e.slug); });
+    choices.appendChild(b);
+  }
+}
+
 startBtn.addEventListener('click', async ()=>{
   statusEl.textContent='Đang khởi tạo…';
   startBtn.disabled=true;
   try{
+    if(!Object.keys(EXERCISES).length) await loadExercises();
     stream = await navigator.mediaDevices.getUserMedia(
       {video:{width:{ideal:1280},height:{ideal:720},facingMode:"user"},audio:false});
     video.srcObject=stream;
     await video.play();
     if(!landmarker) landmarker=await initModel();
+    reset();
     running=true; drawErrors=0; stopBtn.disabled=false; statusEl.textContent='';
     loop();
   }catch(e){
@@ -152,9 +213,11 @@ stopBtn.addEventListener('click', ()=>{
   running=false; cancelAnimationFrame(raf);
   if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
   video.srcObject=null; ctx.clearRect(0,0,canvas.width,canvas.height);
+  S={phase:'idle'}; renderSteps(); choices.style.display='none';
   stopBtn.disabled=true; startBtn.disabled=false; statusEl.textContent='Đã tắt camera.';
-  $('hipAng').textContent='—°'; $('depthRatio').textContent='—'; $('phase').textContent='—';
 });
+
+resetBtn.addEventListener('click', reset);
 
 function loop(){
   raf=requestAnimationFrame(loop);
@@ -164,9 +227,15 @@ function loop(){
     canvas.width=video.videoWidth; canvas.height=video.videoHeight;
     const ts=performance.now();
     const res=landmarker.detectForVideo(video, ts);
-    draw(res);
+    drawFrame(res);
+    const p=readPose(res);
+    update(p, ts);
+    drawHud(p, ts);
+    syncSteps();
     frames++;
     if(ts-lastFpsT>1000){ fps=frames*1000/(ts-lastFpsT); frames=0; lastFpsT=ts; }
+    const a=p.angles;
+    $('fpsNote').textContent=`${fps.toFixed(0)} fps · hông ${a?a.hip_angle_deg.toFixed(0):'—'}° · khuỷu ${a?a.elbow_mean_deg.toFixed(0):'—'}° · gối trước ${a?a.front_knee_angle_deg.toFixed(0):'—'}° · góc nhìn ${viewRatio.toFixed(2)} (${VIEW_VI[p.view]||'—'})`;
   }catch(e){
     drawErrors++;
     if(drawErrors===1){
@@ -180,23 +249,171 @@ function loop(){
   }
 }
 
-function draw(res){
+// ---- Đọc tư thế từ 1 frame: trong khung? góc nhìn? các góc khớp? --------------
+function readPose(res){
+  const lm=(res && res.landmarks && res.landmarks.length)?res.landmarks[0]:null;
+  const wl=(res && res.worldLandmarks && res.worldLandmarks.length)?res.worldLandmarks[0]:null;
+  if(!lm || !wl) return {lm:null, wl:null, inFrame:false, why:'Không thấy người — đứng vào trước camera', view:null, angles:null};
+  const vis=KEY_IDS.map(i=>lm[i].visibility??0);
+  const xs=KEY_IDS.map(i=>lm[i].x), ys=KEY_IDS.map(i=>lm[i].y);
+  const shoMid={x:(lm[11].x+lm[12].x)/2, y:(lm[11].y+lm[12].y)/2}, hipMid={x:(lm[23].x+lm[24].x)/2, y:(lm[23].y+lm[24].y)/2};
+  const sw=Math.abs(lm[11].x-lm[12].x);
+  const torsoLen=Math.hypot(shoMid.x-hipMid.x, shoMid.y-hipMid.y);   // 2D như server: push-up nằm ngang vẫn đo được
+  let why=null;
+  if(Math.min(...vis)<MIN_VIS) why='Không thấy rõ toàn thân — lùi lại, đủ sáng, đừng để vật che';
+  else if(Math.min(...ys)<MARGIN || Math.max(...ys)>1-MARGIN || lm[0].y<MARGIN) why='Lùi lại để toàn thân (đầu tới chân) nằm trong khung';
+  else if(Math.min(...xs)<MARGIN || Math.max(...xs)>1-MARGIN) why='Đứng vào giữa khung hình';
+  else if(torsoLen<0.12) why='Tiến lại gần camera hơn một chút';
+  if(torsoLen>0.03) viewRatio=viewRatio*0.85+(sw/torsoLen)*0.15;
+  const view=viewRatio>=0.42?'FRONTAL':viewRatio<=0.28?'SAGITTAL':'DIAGONAL';
+  const sho=mid(wl[11],wl[12]), hip=mid(wl[23],wl[24]), kne=mid(wl[25],wl[26]);
+  const angles={
+    hip_angle_deg: angleDeg(sub(sho,hip), sub(kne,hip)),
+    elbow_mean_deg: (jointAngle(wl,11,13,15)+jointAngle(wl,12,14,16))/2,
+    front_knee_angle_deg: Math.min(jointAngle(wl,23,25,27), jointAngle(wl,24,26,28)),
+  };
+  return {lm, wl, inFrame:!why, why, view, angles};
+}
+
+function coreVisible(p, joints){ return !!p.lm && Math.min(...joints.map(i=>p.lm[i].visibility??0))>=MIN_VIS; }
+
+// ---- State machine hướng dẫn ------------------------------------------------
+function update(p, ts){
+  const prof=S.profile, view=prof?prof.protocol[S.step]:null;
+  const posed = p.inFrame && (!view || p.view===view.code);
+  switch(S.phase){
+    case 'frame0':            // vào khung, chưa cần góc
+      if(!p.inFrame){ S.okSince=0; break; }
+      if(!S.okSince) S.okSince=ts;
+      if(ts-S.okSince>=HOLD_MS){ S.phase='recog'; S.clip=[]; S.recog={t0:ts, hist:{hip_angle_deg:[],elbow_mean_deg:[],front_knee_angle_deg:[]}, cycles:0, state:'up', dom:null}; }
+      break;
+    case 'recog': {           // làm vài rep bất kỳ → nhận diện
+      pushFrame(p);
+      if(p.angles) countCycle(p.angles);
+      if(S.recog.cycles>=RECOG_CYCLES || ts-S.recog.t0>=RECOG_MAX_MS){ S.phase='recognizing'; submitRecognize(); }
+      break;
+    }
+    case 'confirm':
+      if(ts>=S.confirmEnd) chooseExercise(S.recognition.label);
+      break;
+    case 'frame':
+      if(!posed){ S.okSince=0; break; }
+      if(!S.okSince) S.okSince=ts;
+      if(ts-S.okSince>=HOLD_MS){ S.phase='countdown'; S.countdownEnd=ts+COUNTDOWN_MS; S.clip=[]; }
+      break;
+    case 'countdown':
+      if(!posed){ S.phase='frame'; S.okSince=0; break; }
+      pushFrame(p);
+      if(ts>=S.countdownEnd){ S.phase='reps'; S.reps=0; S.rep={inRep:false,minA:999,n:0}; }
+      break;
+    case 'reps': {
+      pushFrame(p);
+      const r=stepRep(p);
+      if(r==='rep'){ S.reps++; flash(`Rep ${S.reps} ✓`, ts); }
+      else if(r==='shallow') flash('Chưa đủ biên độ — chưa tính rep, hạ thấp hơn', ts, true);
+      if(S.reps>=prof.reps_per_view){
+        S.clips.push({frames:S.clip}); S.clip=[];
+        S.step++;
+        if(S.step<prof.protocol.length){ S.phase='frame'; S.okSince=0; flash(`✓ Xong ${prof.reps_per_view} rep góc ${VIEW_VI[view.code]}`, ts); }
+        else { S.phase='analyzing'; submit(); }
+      }
+      break;
+    }
+  }
+}
+
+// Một chu kỳ = góc chủ (biên độ lớn nhất) đi xuống dưới rồi lên trên điểm giữa biên độ.
+function countCycle(a){
+  const R=S.recog;
+  for(const k in R.hist) R.hist[k].push(a[k]);
+  let dom=null, rom=0, lo=0, hi=0;
+  for(const k in R.hist){
+    const h=R.hist[k], mn=Math.min(...h), mx=Math.max(...h);
+    if(mx-mn>rom){ rom=mx-mn; dom=k; lo=mn; hi=mx; }
+  }
+  if(!dom || rom<RECOG_MIN_ROM){ R.dom=null; return; }
+  if(R.dom!==dom){ R.dom=dom; R.state='up'; }
+  const midv=(lo+hi)/2, band=rom*0.15, v=a[dom];
+  if(R.state==='up' && v<midv-band) R.state='down';
+  else if(R.state==='down' && v>midv+band){ R.state='up'; R.cycles++; }
+}
+
+async function submitRecognize(){
+  const frames=S.clip; S.clip=[];
+  try{
+    const res=await fetch('/api/recognize',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({frames})});
+    const j=await res.json();
+    S.recognition = (j && j.ok) ? j : {label:'unknown', confidence:0};
+  }catch(e){ S.recognition={label:'unknown', confidence:0}; }
+  if(S.phase!=='recognizing') return;           // người dùng đã bấm Làm lại / Tắt
+  S.phase='confirm'; choices.style.display='flex';
+  S.confirmEnd = (S.recognition.label in EXERCISES && S.recognition.confidence>=CONFIRM_MIN_CONF)
+    ? performance.now()+CONFIRM_MS : Infinity;   // không chắc → chờ người dùng chọn
+}
+
+function chooseExercise(slug){
+  S.profile=EXERCISES[slug]; S.step=0; S.okSince=0; S.clips=[]; S.clip=[];
+  S.phase='frame'; choices.style.display='none'; renderSteps();
+}
+
+const r4=v=>Math.round(v*1e4)/1e4;
+function pushFrame(p){
+  if(S.clip.length>=3000) S.clip.shift();
+  if(!p.lm){ S.clip.push(null); return; }
+  S.clip.push({
+    norm: p.lm.map(q=>[r4(q.x),r4(q.y),r4(q.z)]),
+    vis:  p.lm.map(q=>r4(q.visibility??0)),
+    world:p.wl.map(q=>[r4(q.x),r4(q.y),r4(q.z)]),
+  });
+}
+
+function stepRep(p){
+  const sig=S.profile.signal, rep=S.rep;
+  if(!p.angles) return null;
+  const a=p.angles[sig.attr], visOk=coreVisible(p, sig.core_joints);
+  if(rep.inRep){
+    if(visOk && a<rep.minA) rep.minA=a;
+    rep.n++;
+    if(a>sig.up){
+      rep.inRep=false;
+      if(rep.n>=6 && rep.minA<sig.min_bottom) return 'rep';
+      return rep.n>=6 ? 'shallow' : null;
+    }
+  } else if(visOk && a<sig.down){
+    rep.inRep=true; rep.minA=a; rep.n=1;
+  }
+  return null;
+}
+
+function flash(text, ts, warn=false){ S.flash={text, t:ts, warn}; }
+
+async function submit(){
+  const body=JSON.stringify({exercise:S.profile.slug, clips:S.clips});
+  try{
+    const res=await fetch('/api/analyze-live',{method:'POST',headers:{'Content-Type':'application/json'},body});
+    let j=null; try{ j=await res.json(); }catch(_){}
+    if(!res.ok || !j || !j.ok){
+      const d=(j&&j.detail)?j.detail:(j||{});
+      showError({error:d.error||`Server trả lỗi HTTP ${res.status}.`, hints:d.hints||[]});
+    } else render(j);
+  }catch(e){
+    showError({error:'Không gửi được tới server.', hints:[`Chi tiết kỹ thuật: ${e.message||e}`,'Kiểm tra server đang chạy ở cổng 8000.']});
+  }
+  S.phase='result'; resetBtn.style.display='';
+}
+
+// ---- Vẽ -----------------------------------------------------------------------
+function drawFrame(res){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   const W=canvas.width, H=canvas.height;
   // vẽ hình camera lên canvas (lật gương cho giống soi gương), rồi vẽ khung xương lên trên
-  if(video.videoWidth){
-    ctx.save();
-    ctx.translate(W,0); ctx.scale(-1,1);
-    ctx.drawImage(video, 0, 0, W, H);
-    ctx.restore();
-  }
+  ctx.save();
+  ctx.translate(W,0); ctx.scale(-1,1);
+  ctx.drawImage(video, 0, 0, W, H);
+  ctx.restore();
   const lm=(res && res.landmarks && res.landmarks.length)?res.landmarks[0]:null;
   if(!lm) return;
-  const pts=[];
-  for(let i=0;i<lm.length;i++){
-    const p=lm[i];
-    pts.push({x:(1-(p&&p.x!==undefined?p.x:0))*W, y:(p&&p.y!==undefined?p.y:0)*H, v:(p&&p.visibility!==undefined?p.visibility:0)});
-  }
+  const pts=lm.map(p=>({x:(1-(p.x??0))*W, y:(p.y??0)*H, v:p.visibility??0}));
   ctx.lineWidth=2; ctx.strokeStyle='rgba(91,141,239,.85)';
   for(const pair of POSE_CONNECTIONS){
     if(!pair || pair.length<2) continue;
@@ -204,32 +421,146 @@ function draw(res){
     if(!a||!b) continue;
     ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
   }
-  for(let i=0;i<pts.length;i++){
-    const p=pts[i];
-    ctx.beginPath(); ctx.arc(p.x,p.y, KEY_IDS.has(i)?6:4, 0, Math.PI*2);
+  pts.forEach((p,i)=>{
+    ctx.beginPath(); ctx.arc(p.x,p.y, KEY_SET.has(i)?6:4, 0, Math.PI*2);
     ctx.fillStyle = p.v>0.8 ? '#4cc38a' : p.v>0.5 ? '#e8b34b' : '#e2605c';
     ctx.fill();
-    if(KEY_IDS.has(i)){ ctx.lineWidth=2; ctx.strokeStyle='#5b8def'; ctx.stroke(); }
-  }
-  const wl=(res && res.worldLandmarks && res.worldLandmarks.length)?res.worldLandmarks[0]:null;
-  if(wl){
-    const mid=(i,j)=>({x:(wl[i].x+wl[j].x)/2, y:(wl[i].y+wl[j].y)/2, z:(wl[i].z+wl[j].z)/2});
-    const sho=mid(11,12), hip=mid(23,24), kne=mid(25,26);
-    const ang=angleDeg({x:sho.x-hip.x,y:sho.y-hip.y,z:sho.z-hip.z},
-                       {x:kne.x-hip.x,y:kne.y-hip.y,z:kne.z-hip.z});
-    $('hipAng').innerHTML=`${ang.toFixed(0)}°<small> góc hông</small>`;
-    const up={x:sho.x-hip.x,y:sho.y-hip.y,z:sho.z-hip.z};
-    const ulen=Math.hypot(up.x,up.y,up.z)||1e-9; up.x/=ulen; up.y/=ulen; up.z/=ulen;
-    const dot=(a,b)=>a.x*b.x+a.y*b.y+a.z*b.z;
-    const hA=dot({x:hip.x-wl[27].x,y:hip.y-wl[27].y,z:hip.z-wl[27].z},up);
-    const kA=Math.max(dot({x:wl[25].x-wl[27].x,y:wl[25].y-wl[27].y,z:wl[25].z-wl[27].z},up),0.05);
-    $('depthRatio').innerHTML=`${(hA/kA).toFixed(2)}<small> tỷ lệ độ sâu (≈1 = ngang gối)</small>`;
-    $('phase').textContent = ang<128 ? '⬇ ĐANG HẠ' : ang>148 ? '⬆ ĐANG ĐỨNG' : '● TRONG REP';
-  } else {
-    $('hipAng').textContent='—°'; $('depthRatio').textContent='—'; $('phase').textContent='Chưa có world landmarks';
-  }
-  $('fpsNote').textContent=`${fps.toFixed(0)} fps · pose on-device (MediaPipe)`;
+    if(KEY_SET.has(i)){ ctx.lineWidth=2; ctx.strokeStyle='#5b8def'; ctx.stroke(); }
+  });
 }
+
+function pill(text, x, y, size, align='center', color='#fff', bg='rgba(0,0,0,.6)'){
+  ctx.font=`700 ${size}px system-ui,"Segoe UI",sans-serif`;
+  ctx.textAlign=align; ctx.textBaseline='middle';
+  const w=ctx.measureText(text).width+size*1.2, h=size*1.7;
+  const x0 = align==='center' ? x-w/2 : align==='left' ? x : x-w;
+  ctx.fillStyle=bg; ctx.beginPath(); ctx.roundRect(x0, y-h/2, w, h, h/2); ctx.fill();
+  ctx.fillStyle=color; ctx.fillText(text, x, y);
+}
+
+function drawHud(p, ts){
+  if(S.phase==='idle') return;
+  const W=canvas.width, H=canvas.height, big=Math.round(W*0.028), huge=Math.round(W*0.12);
+  const prof=S.profile, view=prof?prof.protocol[S.step]:null;
+  const recent = S.flash && ts-S.flash.t<2500;
+  const frameBox=(ok)=>{
+    ctx.setLineDash([12,8]); ctx.lineWidth=3;
+    ctx.strokeStyle= ok ? 'rgba(76,195,138,.9)' : 'rgba(232,179,75,.9)';
+    ctx.strokeRect(W*MARGIN, H*MARGIN, W*(1-2*MARGIN), H*(1-2*MARGIN)); ctx.setLineDash([]);
+  };
+  if(S.phase==='frame0'){
+    frameBox(p.inFrame);
+    pill('Bước 0 · Vào khung hình', W/2, big*1.2, big);
+    pill(p.inFrame ? `Giữ nguyên… ${Math.round(Math.min(1,(ts-S.okSince)/HOLD_MS)*100)}%` : p.why,
+         W/2, H-big*1.6, big, 'center', p.inFrame?'#4cc38a':'#e8b34b');
+  }
+  else if(S.phase==='recog' || S.phase==='recognizing'){
+    pill('Bước 0 · Nhận diện bài tập', W/2, big*1.2, big);
+    const left=Math.max(0, Math.ceil((RECOG_MAX_MS-(ts-S.recog.t0))/1000));
+    pill(S.phase==='recog' ? `Làm 3 rep bài bạn muốn tập — ${S.recog.cycles}/${RECOG_CYCLES} · ${left}s` : 'Đang nhận diện…',
+         W/2, H-big*1.6, big, 'center', '#4cc38a');
+    if(!p.inFrame) pill(p.why, W/2, H-big*3.4, big*0.8, 'center', '#e2605c');
+  }
+  else if(S.phase==='confirm'){
+    const r=S.recognition, known=r.label in EXERCISES;
+    pill(known ? `Bạn đang tập: ${EXERCISES[r.label].label.toUpperCase()} (${Math.round(r.confidence*100)}%)` : 'Chưa nhận ra bài tập',
+         W/2, H/2, big*1.4, 'center', known?'#4cc38a':'#e8b34b');
+    pill(S.confirmEnd<Infinity ? `Tự tiếp tục sau ${Math.ceil((S.confirmEnd-ts)/1000)}s — sai thì chọn bài bên dưới`
+                               : 'Chọn bài bên dưới để tiếp tục', W/2, H-big*1.6, big*0.85);
+  }
+  else if(S.phase==='frame'){
+    const posed = p.inFrame && p.view===view.code;
+    frameBox(posed);
+    pill(`${prof.label} · Vào khung — góc ${VIEW_VI[view.code].toUpperCase()} (${S.step+1}/${prof.protocol.length})`, W/2, big*1.2, big);
+    let msg, color;
+    if(!p.inFrame){ msg=p.why; color='#e8b34b'; }
+    else if(!posed){ msg=VIEW_HINT[view.code]; color='#e8b34b'; }
+    else { msg=`Giữ nguyên… ${Math.round(Math.min(1,(ts-S.okSince)/HOLD_MS)*100)}%`; color='#4cc38a'; }
+    pill(msg, W/2, H-big*1.6, big, 'center', color);
+    if(p.inFrame && !posed) pill(`đang thấy: ${VIEW_VI[p.view]}`, W/2, H-big*3.4, big*0.75, 'center', '#93a1b3');
+    else if(recent) pill(S.flash.text, W/2, H-big*3.4, big*0.85, 'center', '#4cc38a');
+  }
+  else if(S.phase==='countdown'){
+    pill(`Chuẩn bị ${prof.label} — góc ${VIEW_VI[view.code]}`, W/2, big*1.2, big);
+    pill(String(Math.ceil((S.countdownEnd-ts)/1000)), W/2, H/2, huge, 'center', '#fff', 'rgba(0,0,0,.45)');
+  }
+  else if(S.phase==='reps'){
+    pill(`${prof.label} · góc ${VIEW_VI[view.code].toUpperCase()} — làm ${prof.reps_per_view} rep`, W/2, big*1.2, big);
+    pill(`${S.reps}/${prof.reps_per_view}`, W-big*1.2, H/2, huge, 'right', '#4cc38a', 'rgba(0,0,0,.45)');
+    if(recent) pill(S.flash.text, W/2, H-big*1.6, big, 'center', S.flash.warn?'#e8b34b':'#4cc38a');
+    if(!p.inFrame) pill(p.why, W/2, H-big*3.4, big*0.8, 'center', '#e2605c');
+  }
+  else if(S.phase==='analyzing') pill('Đang phân tích…', W/2, H/2, big*1.3);
+  else if(S.phase==='result') pill('Xong — xem kết quả bên dưới ↓', W/2, H/2, big*1.3);
+}
+
+// ---- Dải bước: sinh từ protocol của bài ----------------------------------------
+function stepList(){
+  const out=[{key:'recog', text:'0 · Nhận diện bài'}];
+  if(!S.profile) return out;
+  S.profile.protocol.forEach((v,i)=>{
+    out.push({key:`frame${i}`, text:`${2*i+1} · Vào khung — ${VIEW_VI[v.code]}`});
+    out.push({key:`reps${i}`,  text:`${2*i+2} · ${S.profile.reps_per_view} rep ${VIEW_VI[v.code]}`});
+  });
+  return out;
+}
+function currentKey(){
+  switch(S.phase){
+    case 'idle': return '';
+    case 'frame0': case 'recog': case 'recognizing': case 'confirm': return 'recog';
+    case 'frame': case 'countdown': return `frame${S.step}`;
+    case 'reps': return `reps${S.step}`;
+    default: return 'done';
+  }
+}
+function renderSteps(){
+  stepsEl.innerHTML = stepList().map(s=>`<div class="step" data-key="${s.key}">${s.text}</div>`).join('');
+  lastStepKey=''; syncSteps();
+}
+function syncSteps(){
+  const k=currentKey(); if(k===lastStepKey) return; lastStepKey=k;
+  const els=[...stepsEl.children], i=els.findIndex(el=>el.dataset.key===k);
+  els.forEach((el,n)=>{ el.classList.toggle('active', n===i); el.classList.toggle('done', k==='done' || (i>=0 && n<i)); });
+}
+
+// ---- Kết quả (cùng format với trang gửi video) ---------------------------------
+function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
+
+function showError(j){
+  errBox.style.display='block';
+  const items=[];
+  if(j && j.error) items.push(`<li><b>${esc(j.error)}</b></li>`);
+  (j && j.hints||[]).forEach(h=>items.push(`<li>💡 ${esc(h)}</li>`));
+  $('errList').innerHTML = items.join('') || '<li>Lỗi không xác định</li>';
+}
+
+function render(j){
+  resultBox.style.display='block';
+  const allOk=j.overall_ok;
+  $('verdictPill').textContent= allOk ? '✅ Kỹ thuật ổn' : '⚠️ Cần cải thiện';
+  $('verdictPill').className='pill '+(allOk?'good':'bad');
+  $('viewMeta').textContent=`Bài: ${j.exercise} · Góc quay: ${j.viewpoint.label} · Số rep phát hiện: ${j.reps}`;
+  $('advice').textContent = j.primary_advice || 'Không thấy lỗi rõ ràng nào. Tiếp tục giữ kỹ thuật này!';
+  const icons={pass:'✓',warn:'!',fail:'✕',na:'–',low:'?'};
+  $('checks').innerHTML = j.checks.map(c=>`
+    <div class="chk">
+      <div class="ico ${c.status}">${icons[c.status]||'?'}</div>
+      <div>
+        <div class="name">${esc(c.name)}</div>
+        <div class="txt">${esc(c.text)}</div>
+        ${c.metric?`<div class="metric">${esc(c.metric)}</div>`:''}
+      </div>
+    </div>`).join('');
+  $('notes').innerHTML = j.notes.map(n=>`• ${esc(n)}`).join('<br>');
+  const llmCard=$('llmCard');
+  if(j.llm && j.llm.ok && j.llm.advice){ llmCard.style.display='block'; $('llmText').textContent=j.llm.advice; }
+  else llmCard.style.display='none';
+  const llmNote = (j.llm && j.llm.ok) ? ` · LLM: ${j.llm.model}` : ' · LLM: tắt';
+  $('perf').textContent = `Thời gian xử lý: ${(j.perf_ms/1000).toFixed(1)}s · ${j.disclaimer}${llmNote}`;
+  resultBox.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+renderSteps();
 </script>
 </body>
 </html>

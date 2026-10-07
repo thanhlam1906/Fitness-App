@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Sáu câu SQL, không hơn (concept-analyzer-v1.md §4).
+"""Mọi câu SQL của worker, mỗi việc một câu (concept-analyzer-v1.md §4).
 
 Hàng đợi là một bảng. `FOR UPDATE SKIP LOCKED` cho phép chạy nhiều analyzer
 song song mà không sửa gì và không cần broker (concept-backend-v1.md §8).
@@ -18,9 +18,9 @@ from psycopg.types.json import Json
 class Job:
     id: str
     user_id: str
-    exercise_id: str
-    exercise_name: str
+    exercise_id: str | None      # None = yêu cầu cũ gửi từ màn camera khi LLM còn đoán bài
     attempts: int
+    features: dict | None        # đã có = chấm lại sau khi sửa bài, hoặc chạy lại sau lỗi LLM
 
 
 @dataclass(frozen=True)
@@ -35,6 +35,8 @@ class FormCheck:
     cue_warn_vi: str | None
     cue_fail_vi: str
     priority: int
+    name_vi: str | None
+    moment: str | None           # START | PEAK; null ở dòng ngưỡng kiểu cũ (đã tắt)
 
 
 @dataclass(frozen=True)
@@ -62,26 +64,21 @@ class Db:
                               ORDER BY created_at
                               FOR UPDATE SKIP LOCKED
                               LIMIT 1)
-                RETURNING id, user_id, exercise_id, attempts
+                RETURNING id, user_id, exercise_id, attempts, features
                 """
             )
             row = cur.fetchone()
-            if row is None:
-                return None
-            # Ten bai lay kem trong cung mot vong, khong them mot query rieng.
-            cur.execute(
-                "SELECT coalesce(name_vi, name_en) AS name FROM exercises WHERE id = %s",
-                (row["exercise_id"],))
-            name_row = cur.fetchone()
-        return Job(str(row["id"]), str(row["user_id"]), str(row["exercise_id"]),
-                   (name_row or {}).get("name") or "", row["attempts"])
+        if row is None:
+            return None
+        exercise_id = str(row["exercise_id"]) if row["exercise_id"] else None
+        return Job(str(row["id"]), str(row["user_id"]), exercise_id, row["attempts"], row["features"])
 
     def load_form_checks(self, exercise_id: str) -> list[FormCheck]:
         with self._conn.cursor() as cur:
             cur.execute(
                 """
                 SELECT id, code, metric, valid_viewpoints, thresholds, confidence_min,
-                       cue_pass_vi, cue_warn_vi, cue_fail_vi, priority
+                       cue_pass_vi, cue_warn_vi, cue_fail_vi, priority, name_vi, moment
                   FROM form_checks
                  WHERE exercise_id = %s AND is_active
                  ORDER BY priority
@@ -101,6 +98,8 @@ class Db:
                 cue_warn_vi=r["cue_warn_vi"],
                 cue_fail_vi=r["cue_fail_vi"],
                 priority=int(r["priority"]),
+                name_vi=r["name_vi"],
+                moment=r["moment"],
             )
             for r in rows
         ]
@@ -115,6 +114,11 @@ class Db:
             rows = cur.fetchall()
         return [Clip(str(r["id"]), r["storage_key"], r["viewpoint"]) for r in rows]
 
+    def save_features(self, request_id: str, features: dict[str, Any]) -> None:
+        with self._conn.cursor() as cur:
+            cur.execute("UPDATE video_review_requests SET features = %s WHERE id = %s",
+                        (Json(features), request_id))
+
     def save_results(self, request_id: str, results: Iterable[dict[str, Any]]) -> None:
         """Ghi lại từ đầu mỗi lần chấm — lần thử thứ 2 không để lại kết quả cũ nửa vời."""
         with self._conn.transaction(), self._conn.cursor() as cur:
@@ -123,12 +127,14 @@ class Db:
                 cur.execute(
                     """
                     INSERT INTO review_results
-                      (request_id, form_check_id, verdict, confidence, measured, cue_text_vi, is_primary)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                      (request_id, form_check_id, name_vi, verdict, confidence, measured,
+                       cue_text_vi, is_primary)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
                         request_id,
                         r["form_check_id"],
+                        r.get("name_vi"),
                         r["verdict"],
                         r["confidence"],
                         Json(r["measured"]),

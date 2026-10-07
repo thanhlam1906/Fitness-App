@@ -22,7 +22,13 @@ export default defineConfig({
     // backend chưa cấu hình CORS — proxy /api sang Spring Boot (port 8080) khi dev,
     // đỡ phải đụng SecurityConfig cho việc chạy local.
     proxy: {
-      '/api': 'http://localhost:8080',
+      // BACKEND_URL cho phép override khi chạy trong Docker (service name thay vì localhost).
+      '/api': process.env.BACKEND_URL || 'http://localhost:8080',
+    },
+    watch: {
+      // Bind mount Windows -> container không bắn inotify: sửa file mà Vite không
+      // biết, HMR im và dev server trả bản cũ. Chỉ bật polling khi chạy trong Docker.
+      usePolling: !!process.env.BACKEND_URL,
     },
   },
 })

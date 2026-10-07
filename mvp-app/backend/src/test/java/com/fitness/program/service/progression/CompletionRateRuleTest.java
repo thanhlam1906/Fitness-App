@@ -1,0 +1,44 @@
+package com.fitness.program.service.progression;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+
+class CompletionRateRuleTest {
+
+	private final CompletionRateRule rule = new CompletionRateRule();
+
+	private static ProgressionSignal signalWithCompletion(double rate) {
+		return new ProgressionSignal(false, false, rate, null, false, 5, 5, 0, 60.0, 2.5, 10.0);
+	}
+
+	@Test
+	void fires_whenCompletionRateBelow70Percent() {
+		Optional<LoadDecisionResult> result = rule.evaluate(signalWithCompletion(0.5));
+
+		assertThat(result).isPresent();
+		LoadDecisionResult r = result.get();
+		assertThat(r.direction()).isEqualTo(Direction.HOLD);
+		assertThat(r.deltaKg()).isNull();
+		assertThat(r.ruleId()).isEqualTo("LOW_COMPLETION_RATE");
+	}
+
+	@Test
+	void doesNotFire_whenCompletionRateAtOrAboveThreshold() {
+		assertThat(rule.evaluate(signalWithCompletion(0.70))).isEmpty();
+		assertThat(rule.evaluate(signalWithCompletion(0.8))).isEmpty();
+	}
+
+	@Test
+	void fires_justBelowThreshold() {
+		assertThat(rule.evaluate(signalWithCompletion(0.69))).isPresent();
+	}
+
+	@Test
+	void nguongTuTemplate_60PhanTram() {
+		CompletionRateRule custom = new CompletionRateRule(0.60);
+		assertThat(custom.evaluate(signalWithCompletion(0.67))).isEmpty();
+		assertThat(custom.evaluate(signalWithCompletion(0.5)).orElseThrow().ruleParams()).containsEntry("threshold", 0.60);
+	}
+}

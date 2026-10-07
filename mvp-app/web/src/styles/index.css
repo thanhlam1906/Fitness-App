@@ -26,6 +26,11 @@
   --color-warn-tint: rgba(245, 181, 68, 0.16);
   --color-danger-tint: rgba(242, 99, 95, 0.16);
 
+  /* Thẻ kính nằm trên ảnh nền màn đăng nhập, đăng ký: surface 62% đục để ảnh
+     còn lộ qua mà chữ trong form vẫn đọc được. */
+  --color-glass: rgba(20, 24, 27, 0.62);
+  --color-glass-border: rgba(255, 255, 255, 0.08);
+
   --text-xs: 12px;
   --text-sm: 14px;
   --text-base: 16px;

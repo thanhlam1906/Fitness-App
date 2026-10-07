@@ -12,6 +12,8 @@ kiểm trên nhiều dáng người. Đo lại khi có bộ clip regression.
 """
 from __future__ import annotations
 
+import numpy as np
+
 from ..viewpoints import DIAGONAL, FRONTAL, SAGITTAL, UNKNOWN
 from .pose import LM, Frame
 
@@ -26,8 +28,10 @@ def classify(frames: list[Frame], min_visibility: float) -> str:
         if min(v[LM["l_sho"]], v[LM["r_sho"]], v[LM["l_hip"]], v[LM["r_hip"]]) < min_visibility:
             continue
         shoulder_span = abs(n[LM["l_sho"]][0] - n[LM["r_sho"]][0])
-        torso_len = abs(
-            (n[LM["l_sho"]][1] + n[LM["r_sho"]][1]) / 2.0 - (n[LM["l_hip"]][1] + n[LM["r_hip"]][1]) / 2.0)
+        # Khoảng cách 2D chứ không chỉ chênh y: push-up nằm ngang thì chênh y ≈ 0.
+        # Người đứng thẳng: hai cách cho cùng một số.
+        torso_len = float(np.linalg.norm(
+            ((n[LM["l_sho"]] + n[LM["r_sho"]]) / 2.0 - (n[LM["l_hip"]] + n[LM["r_hip"]]) / 2.0)[:2]))
         if torso_len > 0.03:
             ratios.append(shoulder_span / torso_len)
 

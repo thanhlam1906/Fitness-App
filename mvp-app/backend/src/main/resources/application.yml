@@ -2,8 +2,8 @@ spring:
   application:
     name: fitness-backend
   datasource:
-    # 55432 khớp docker-compose.yml — máy dev có postgres.exe khác chiếm sẵn 5432
-    url: ${DB_URL:jdbc:postgresql://localhost:55432/fitness}
+    # 15432 khớp docker-compose.yml — máy dev có postgres.exe khác chiếm sẵn 5432
+    url: ${DB_URL:jdbc:postgresql://localhost:15432/fitness}
     username: ${DB_USER:fitness}
     password: ${DB_PASSWORD:fitness_dev_only}
   flyway:
@@ -24,6 +24,30 @@ spring:
       # Clip TN2: vài rep, ~10–20 MB mỗi clip, tối đa 3 clip mỗi lần gửi.
       max-file-size: 60MB
       max-request-size: 200MB
+
+  ai:
+    model:
+      # Chỉ bật chat + embedding — Spring AI starter mặc định tự cấu hình cả
+      # audio/image/moderation, mỗi cái đòi hỏi api-key riêng lúc khởi động dù
+      # không dùng. embedding: bậc 2 trợ lý, concept-chatbot-v1.md §5.2.
+      chat: openai
+      embedding: openai
+      image: none
+      moderation: none
+      audio:
+        speech: none
+        transcription: none
+    openai:
+      # Placeholder để context load được khi chưa set (test, dev chưa cần gọi
+      # thật) — cùng kiểu JWT_SECRET ở dưới. Gọi thật thì PHẢI set OPENAI_API_KEY.
+      api-key: ${OPENAI_API_KEY:sk-dev-placeholder-not-a-real-key}
+      chat:
+        options:
+          model: ${OPENAI_CHAT_MODEL:gpt-4o-mini}
+      embedding:
+        options:
+          model: text-embedding-3-small
+          dimensions: 512
 
 server:
   port: ${SERVER_PORT:8080}
@@ -58,3 +82,10 @@ app:
   # Q8 của đặc tả còn treo (PM chốt khi biết chi phí xử lý thật), để ở config
   # nên đổi không cần sửa code.
   review-weekly-limit: ${REVIEW_WEEKLY_LIMIT:10}
+
+  # Máy trích PDF chế độ hybrid (doc/design-nap-tai-lieu-v1.md §6). Backend chạy ngoài Docker gọi
+  # cổng 5002 mở ra host; trong compose đặt PDF_HYBRID_URL=http://pdf-hybrid:5002.
+  pdf-hybrid-url: ${PDF_HYBRID_URL:http://localhost:5002}
+  # Giới hạn mỗi lần gọi server hybrid (một lần tối đa 50 trang). Đo 10-02 trên CPU: trang khó
+  # 17–50 s, lô 50 trang của sách 288 trang mất ~27 phút → 60 phút còn dư.
+  pdf-hybrid-timeout: ${PDF_HYBRID_TIMEOUT:PT60M}

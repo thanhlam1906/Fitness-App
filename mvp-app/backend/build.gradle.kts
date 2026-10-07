@@ -19,9 +19,20 @@ tasks.withType<JavaCompile> {
 
 repositories {
 	mavenCentral()
+	// veraPDF (OpenDataLoader kéo theo) chỉ phát hành ở kho của Open Preservation Foundation, không
+	// lên Maven Central. Chỉ nhóm org.verapdf được lấy từ đây, mọi gói khác vẫn từ Maven Central.
+	maven("https://artifactory.openpreservation.org/artifactory/vera-dev") {
+		content { includeGroup("org.verapdf") }
+	}
 }
 
 dependencies {
+	// Trợ lý — concept-chatbot-v1.md §3 (đổi DeepSeek → OpenAI theo quyết định
+	// thật của dự án). Boot 3.5.x đi với nhánh Spring AI 1.1 (2.0 nhắm Boot
+	// 4/Spring 7, chưa khớp). Ghim bản vá mới nhất của 1.1.
+	implementation(platform("org.springframework.ai:spring-ai-bom:1.1.8"))
+	implementation("org.springframework.ai:spring-ai-starter-model-openai")
+
 	// web + validation
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
@@ -42,6 +53,9 @@ dependencies {
 	// API docs
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5")
 
+	// Trích PDF cho kho kiến thức trợ lý, chế độ hybrid — doc/design-nap-tai-lieu-v1.md §6.
+	implementation("org.opendataloader:opendataloader-pdf-core:2.5.12")
+
 	// test — concept-backend-v1.md §10: Testcontainers Postgres, không H2
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	// TestRestTemplate mac dinh dung HttpURLConnection, khong gui duoc PATCH
@@ -56,4 +70,7 @@ dependencies {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+	// JVM test chạy UTC như container backend, không theo giờ máy dev (UTC+7): nhờ vậy test
+	// thấy được lỗi "hôm nay" lệch ngày nếu ai bỏ múi giờ đặt ở FitnessApplication.
+	systemProperty("user.timezone", "UTC")
 }

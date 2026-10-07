@@ -1,4 +1,4 @@
-import { clearSession, getAccessToken, getRefreshToken, setTokens } from "@/auth/tokenStorage"
+import { clearSession, getAccessToken, getRefreshToken, setTokens } from "@/features/auth/utils/tokenStorage"
 
 /**
  * concept-frontend-v1.md §5.2: đúng một chỗ gọi fetch. Không component nào
@@ -69,7 +69,7 @@ async function tryRefresh(): Promise<boolean> {
   return refreshInFlight
 }
 
-async function request<T>(path: string, init?: RequestInit, isRetry = false): Promise<T> {
+async function request<T>(path: string, init?: RequestInit, isRetry = false, as: "json" | "blob" = "json"): Promise<T> {
   // /auth/* là endpoint ẩn danh. Gắn access token cũ vào đây thì
   // BearerTokenAuthenticationFilter của Spring chặn NGAY ở tầng xác thực, trước
   // cả khi tới rule permitAll — nên ai còn token hết hạn trong localStorage sẽ
@@ -88,7 +88,7 @@ async function request<T>(path: string, init?: RequestInit, isRetry = false): Pr
 
   if (res.status === 401 && !isRetry && !isAuthEndpoint(path)) {
     const refreshed = await tryRefresh()
-    if (refreshed) return request<T>(path, init, true)
+    if (refreshed) return request<T>(path, init, true, as)
     clearSession()
     window.dispatchEvent(new Event(LOGGED_OUT_EVENT))
   }
@@ -105,6 +105,7 @@ async function request<T>(path: string, init?: RequestInit, isRetry = false): Pr
   }
 
   if (res.status === 204) return undefined as T
+  if (as === "blob") return (await res.blob()) as T
   return (await res.json()) as T
 }
 
@@ -123,5 +124,9 @@ export const api = {
     request<T>(path, { method: "PATCH", body: JSON.stringify(body) }),
   postForm: <T>(path: string, form: FormData) =>
     request<T>(path, { method: "POST", body: form }),
-  del: <T>(path: string) => request<T>(path, { method: "DELETE" }),
+  // DELETE có body: xoá tài khoản phải kèm lý do (doc/design-quan-ly-user-v1.md §5).
+  del: <T>(path: string, body?: unknown) =>
+    request<T>(path, { method: "DELETE", ...(body === undefined ? {} : { body: JSON.stringify(body) }) }),
+  /** File tải về (CSV) — vẫn đi qua đây để có Authorization và luồng refresh. */
+  getBlob: (path: string) => request<Blob>(path, undefined, false, "blob"),
 }
