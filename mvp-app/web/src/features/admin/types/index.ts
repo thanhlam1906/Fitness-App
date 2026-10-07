@@ -108,11 +108,16 @@ export type CorpusDocumentDetail = CorpusDocument & { chunks: DocumentChunk[]; w
 
 export type Published = { documentId: string; chunkCount: number }
 
+export type UserStatus = "TRAINING" | "NOT_STARTED" | "IDLE" | "LOCKED"
+export type UserRole = "USER" | "ADMIN"
+
 export type AdminUserRow = {
   id: string
   email: string
-  role: string
+  fullName: string | null
+  role: UserRole
   active: boolean
+  status: UserStatus
   createdAt: string
   lastActivityAt: string | null
   programName: string | null
@@ -125,16 +130,25 @@ export type AdminUserRow = {
   adherencePct: number | null
 }
 
+/** Một trang kết quả; `page` đếm từ 0. */
+export type AdminPage<T> = { items: T[]; total: number; page: number; size: number }
+
+/** Bốn ô chỉ đếm người tập; `statusCounts` đếm mọi tài khoản (số trên tab). */
 export type AdminOverview = {
-  userCount: number
-  activeLast7Days: number
-  sessionsThisWeek: number
-  reviewsInQueue: number
+  traineeCount: number
+  newTraineesLast7Days: number
+  activeTraineesLast7Days: number
+  notStartedTrainees: number
+  traineeSessionsLast7Days: number
+  statusCounts: Record<"ALL" | UserStatus, number>
   wrongFeedbackCount: number
 }
 
 export type AdminUserDetail = {
   user: AdminUserRow
+  fullName: string | null
+  phone: string | null
+  mustChangePassword: boolean
   goal: string | null
   experience: string | null
   sessionsPerWeek: number | null
@@ -148,3 +162,20 @@ export type AdminUserDetail = {
   measuredOn: string | null
   activeProgramName: string | null
 }
+
+export type AuditAction = "CREATE" | "LOCK" | "UNLOCK" | "CHANGE_ROLE" | "RESET_PASSWORD" | "DELETE"
+
+export type AdminAuditEntry = {
+  id: string
+  actorEmail: string
+  /** null = tài khoản đã bị xoá. */
+  targetId: string | null
+  targetEmail: string
+  action: AuditAction
+  detail: Record<string, string> | null
+  reason: string | null
+  createdAt: string
+}
+
+export type CreateUserPayload = { fullName: string; email: string; phone: string | null; role: UserRole }
+export type AdminUserCreated = { user: AdminUserRow; temporaryPassword: string }

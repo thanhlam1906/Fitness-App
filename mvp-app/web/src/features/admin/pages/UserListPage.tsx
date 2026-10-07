@@ -1,59 +1,98 @@
-import { useState } from "react"
-import { Link } from "react-router"
+import { useEffect, useState } from "react"
+import { Link, useSearchParams } from "react-router"
 import { AdminHeader } from "@/features/admin/components/AdminShell"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/cn"
 import { formatDate } from "@/lib/format"
 import { useAdminOverview, useAdminUsers } from "@/features/admin/api/useAdminUsers"
-import type { AdminUserRow } from "@/features/admin/types"
+import { downloadUsersCsv } from "@/features/admin/api/adminUsersApi"
+import type { UserStatus } from "@/features/admin/types"
+import { ROLE_LABEL, STATUS_LABEL } from "@/features/admin/utils/userLabels"
+import {
+  nextSort,
+  PAGE_SIZE,
+  readUserListParams,
+  writeUserListParams,
+  type UserListParams,
+  type UserSort,
+} from "@/features/admin/utils/userListParams"
 
-/** Đợt thử nghiệm MVP giới hạn 100 người — con số này nằm ở đặc tả, không phải API. */
-const TRIAL_SEATS = 100
+const TABS: ["ALL" | UserStatus, string][] = [
+  ["ALL", "Tất cả"],
+  ["TRAINING", STATUS_LABEL.TRAINING],
+  ["NOT_STARTED", STATUS_LABEL.NOT_STARTED],
+  ["IDLE", STATUS_LABEL.IDLE],
+  ["LOCKED", STATUS_LABEL.LOCKED],
+]
 
-type Filter = "ALL" | "TRAINING" | "IDLE" | "LOCKED"
+const STATUS_TONE: Record<UserStatus, string> = {
+  TRAINING: "bg-[var(--color-success-tint)] text-[var(--color-success)]",
+  NOT_STARTED: "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]",
+  IDLE: "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]",
+  LOCKED: "bg-[var(--color-danger-tint)] text-[var(--color-danger)]",
+}
 
 /**
- * Màn 11 concept-frontend-v1.md — danh sách người dùng cho admin.
- * "Không có nút xem video ở bất cứ đâu" — và cũng không có endpoint nào trả về
- * clip hay kết quả chấm, nên không phải chỉ là ẩn nút.
- *
- * Cột Chương trình / Tuần / Buổi / Clip / Tuân thủ lịch lấy từ `GET /admin/users`;
- * bốn ô thống kê lấy từ `GET /admin/overview`.
+ * Màn admin Người dùng (doc/design-quan-ly-user-v1.md §6.4). Lọc, tìm, sắp xếp, phân trang đều do
+ * server làm; trạng thái nằm trên URL. Không có nút xem video ở bất cứ đâu — và không có endpoint
+ * nào trả clip, nên không phải chỉ là ẩn nút.
  */
 export function UserListPage() {
-  const users = useAdminUsers()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const params = readUserListParams(searchParams)
+  const users = useAdminUsers(params)
   const overview = useAdminOverview()
-  const [query, setQuery] = useState("")
-  const [filter, setFilter] = useState<Filter>("ALL")
+  const [query, setQuery] = useState(params.q)
+  const [exportError, setExportError] = useState<string | null>(null)
 
-  const rows = users.data ?? []
-  const counts = {
-    ALL: rows.length,
-    TRAINING: rows.filter((u) => u.active && withinDays(u.lastActivityAt, 7)).length,
-    IDLE: rows.filter((u) => u.active && !withinDays(u.lastActivityAt, 7)).length,
-    LOCKED: rows.filter((u) => !u.active).length,
+  function update(patch: Partial<UserListParams>) {
+    // Đổi lọc/tìm/sắp xếp thì về trang đầu; chỉ bấm Trước/Sau mới giữ page trong patch.
+    setSearchParams(writeUserListParams({ ...params, page: 0, ...patch }))
   }
 
-  const needle = query.trim().toLowerCase()
-  const visible = rows.filter((user) => {
-    if (filter === "LOCKED" && user.active) return false
-    if (filter === "TRAINING" && (!user.active || !withinDays(user.lastActivityAt, 7))) return false
-    if (filter === "IDLE" && (!user.active || withinDays(user.lastActivityAt, 7))) return false
-    return needle === "" || user.email.toLowerCase().includes(needle)
-  })
+  // Gõ tìm kiếm: chờ 300ms ngừng gõ mới gọi server.
+  useEffect(() => {
+    if (query === params.q) return
+    const t = setTimeout(() => update({ q: query }), 300)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ chạy lại khi chữ gõ đổi
+  }, [query])
+
+  const page = users.data
+  const pageCount = page ? Math.max(1, Math.ceil(page.total / PAGE_SIZE)) : 1
+  const o = overview.data
+
+  async function exportCsv() {
+    setExportError(null)
+    try {
+      await downloadUsersCsv(params)
+    } catch (e) {
+      setExportError(e instanceof Error ? e.message : "Không xuất được CSV")
+    }
+  }
 
   return (
     <>
-      <AdminHeader group="Theo dõi" title="Người dùng thử nghiệm">
+      <AdminHeader group="Theo dõi" title="Người dùng">
         <Input
           type="search"
-          placeholder="Tìm theo email"
+          placeholder="Tìm theo tên hoặc email"
           className="h-[38px] w-60 text-sm"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <Button size="sm" variant="secondary" onClick={() => downloadCsv(visible)}>
+        <select
+          aria-label="Lọc theo vai trò"
+          className="h-[38px] rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]"
+          value={params.role}
+          onChange={(e) => update({ role: e.target.value as UserListParams["role"] })}
+        >
+          <option value="ALL">Mọi vai trò</option>
+          <option value="USER">{ROLE_LABEL.USER}</option>
+          <option value="ADMIN">{ROLE_LABEL.ADMIN}</option>
+        </select>
+        <Button size="sm" variant="secondary" onClick={exportCsv}>
           Xuất CSV
         </Button>
       </AdminHeader>
@@ -61,90 +100,72 @@ export function UserListPage() {
       <div className="overflow-auto px-7 py-5.5">
         <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
           <Stat
-            label="Chỗ đã dùng"
-            value={`${overview.data?.userCount ?? rows.length}`}
-            suffix={` / ${TRIAL_SEATS}`}
+            label="Người tập"
+            value={`${o?.traineeCount ?? "—"}`}
+            suffix={o ? ` · +${o.newTraineesLast7Days} trong 7 ngày` : undefined}
           />
-          <Stat
-            label="Hoạt động 7 ngày"
-            value={`${overview.data?.activeLast7Days ?? "—"}`}
-            tone="var(--color-success)"
-          />
-          <Stat label="Buổi tập 7 ngày" value={`${overview.data?.sessionsThisWeek ?? "—"}`} />
-          <Stat
-            label="Clip chờ chấm"
-            value={`${overview.data?.reviewsInQueue ?? "—"}`}
-            tone="var(--color-warn)"
-          />
+          <Stat label="Đang tập · 7 ngày" value={`${o?.activeTraineesLast7Days ?? "—"}`} tone="var(--color-success)" />
+          <Stat label="Chưa bắt đầu" value={`${o?.notStartedTrainees ?? "—"}`} tone="var(--color-warn)" />
+          <Stat label="Buổi tập · 7 ngày" value={`${o?.traineeSessionsLast7Days ?? "—"}`} />
         </div>
 
-        <div className="mt-5.5 flex items-center gap-2.5">
+        <div className="mt-5.5 flex flex-wrap items-center gap-2.5">
           <div className="flex overflow-hidden rounded-lg border border-[var(--color-border)]">
-            {(
-              [
-                ["ALL", "Tất cả"],
-                ["TRAINING", "Đang tập"],
-                ["IDLE", "Bỏ dở"],
-                ["LOCKED", "Đã khoá"],
-              ] as const
-            ).map(([value, label], i) => (
+            {TABS.map(([value, label], i) => (
               <button
                 key={value}
                 type="button"
-                onClick={() => setFilter(value)}
+                onClick={() => update({ status: value })}
                 className={cn(
-                  "num px-4 py-2.5 text-[13px]",
+                  "num px-4 py-2.5 text-[13px] focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]",
                   i > 0 && "border-l border-[var(--color-border)]",
-                  filter === value
+                  params.status === value
                     ? "bg-[var(--color-accent)] font-bold text-[var(--color-accent-fg)]"
                     : "text-[var(--color-text-muted)] hover:text-[var(--color-text)]",
                 )}
               >
-                {label} {counts[value]}
+                {label} {o?.statusCounts[value] ?? ""}
               </button>
             ))}
           </div>
-          <div className="flex-1" />
-          <span className="num text-[13px] text-[var(--color-text-muted)]">
-            {visible.length} dòng · sắp theo ngày tham gia
-          </span>
         </div>
 
+        {exportError && <p className="mt-3 text-sm text-[var(--color-danger)]">{exportError}</p>}
         {users.isLoading && <p className="mt-4 text-sm text-[var(--color-text-muted)]">Đang tải…</p>}
-        {users.isError && (
-          <p className="mt-4 text-sm text-[var(--color-danger)]">{users.error.message}</p>
-        )}
+        {users.isError && <p className="mt-4 text-sm text-[var(--color-danger)]">{users.error.message}</p>}
 
-        {users.data && (
+        {page && (
           <div className="mt-4 overflow-x-auto rounded-[var(--radius-md)] bg-[var(--color-surface)]">
-            <table className="w-full min-w-[900px] text-sm">
+            <table className="w-full min-w-[1000px] text-sm">
               <thead>
                 <tr className="border-b border-[var(--color-border)] text-left text-[10px] tracking-[0.1em] text-[var(--color-text-muted)] uppercase">
-                  <th className="px-4 py-3 font-normal">Email</th>
-                  <th className="px-4 py-3 font-normal">Tham gia</th>
-                  <th className="px-4 py-3 font-normal">Hoạt động</th>
+                  <SortHeader column="email" label="Người dùng" params={params} onSort={(s) => update(s)} />
+                  <th className="px-4 py-3 font-normal">Vai trò</th>
+                  <SortHeader column="createdAt" label="Tham gia" params={params} onSort={(s) => update(s)} />
+                  <SortHeader column="lastActivityAt" label="Hoạt động" params={params} onSort={(s) => update(s)} />
                   <th className="px-4 py-3 font-normal">Chương trình</th>
                   <th className="px-4 py-3 font-normal">Tuần</th>
-                  <th className="px-4 py-3 text-right font-normal">Buổi</th>
+                  <SortHeader column="sessionCount" label="Buổi" params={params} onSort={(s) => update(s)} right />
                   <th className="px-4 py-3 text-right font-normal">Clip</th>
                   <th className="px-4 py-3 font-normal">Tuân thủ lịch</th>
                   <th className="px-4 py-3 font-normal">Trạng thái</th>
                 </tr>
               </thead>
               <tbody>
-                {visible.map((user) => (
-                  <tr
-                    key={user.id}
-                    className="border-b border-[var(--color-surface-2)] last:border-0"
-                  >
+                {page.items.map((user) => (
+                  <tr key={user.id} className="border-b border-[var(--color-surface-2)] last:border-0">
                     <td className="px-4 py-3">
-                      <Link className="text-[var(--color-accent)]" to={`/admin/users/${user.id}`}>
-                        {user.email}
+                      <Link
+                        className="font-semibold text-[var(--color-accent)] focus-visible:underline"
+                        to={`/admin/users/${user.id}`}
+                        state={{ back: `/admin/users?${searchParams.toString()}` }}
+                      >
+                        {user.fullName ?? "—"}
                       </Link>
+                      <div className="text-xs text-[var(--color-text-muted)]">{user.email}</div>
                     </td>
-                    <td className="num px-4 py-3 text-[var(--color-text-muted)]">
-                      {formatDate(user.createdAt)}
-                    </td>
+                    <td className="px-4 py-3">{ROLE_LABEL[user.role]}</td>
+                    <td className="num px-4 py-3 text-[var(--color-text-muted)]">{formatDate(user.createdAt)}</td>
                     <td className="num px-4 py-3 text-[var(--color-text-muted)]">
                       {user.lastActivityAt ? formatDate(user.lastActivityAt) : "chưa tập"}
                     </td>
@@ -161,25 +182,17 @@ export function UserListPage() {
                       <span
                         className={cn(
                           "rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap",
-                          !user.active
-                            ? "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]"
-                            : withinDays(user.lastActivityAt, 7)
-                              ? "bg-[var(--color-success-tint)] text-[var(--color-success)]"
-                              : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]",
+                          STATUS_TONE[user.status],
                         )}
                       >
-                        {!user.active
-                          ? "Đã khoá"
-                          : withinDays(user.lastActivityAt, 7)
-                            ? "Đang tập"
-                            : "Bỏ dở"}
+                        {STATUS_LABEL[user.status]}
                       </span>
                     </td>
                   </tr>
                 ))}
-                {visible.length === 0 && (
+                {page.items.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="px-4 py-6 text-center text-[var(--color-text-muted)]">
+                    <td colSpan={10} className="px-4 py-6 text-center text-[var(--color-text-muted)]">
                       Không có người dùng nào khớp.
                     </td>
                   </tr>
@@ -189,11 +202,69 @@ export function UserListPage() {
           </div>
         )}
 
+        {page && (
+          <div className="mt-3.5 flex items-center gap-3 text-[13px] text-[var(--color-text-muted)]">
+            <span className="num">
+              Trang {params.page + 1} / {pageCount} · {page.total} người
+            </span>
+            <div className="flex-1" />
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={params.page === 0}
+              onClick={() => update({ page: params.page - 1 })}
+            >
+              Trước
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={params.page + 1 >= pageCount}
+              onClick={() => update({ page: params.page + 1 })}
+            >
+              Sau
+            </Button>
+          </div>
+        )}
+
         <p className="mt-3.5 text-xs text-[var(--color-text-muted)]">
           Không có nút xem video ở bất cứ đâu — HLV chỉ đọc verdict và độ tin cậy.
         </p>
       </div>
     </>
+  )
+}
+
+function SortHeader({
+  column,
+  label,
+  params,
+  onSort,
+  right,
+}: {
+  column: UserSort
+  label: string
+  params: UserListParams
+  onSort: (s: Pick<UserListParams, "sort" | "dir">) => void
+  right?: boolean
+}) {
+  const active = params.sort === column
+  return (
+    <th
+      className={cn("px-4 py-3 font-normal", right && "text-right")}
+      aria-sort={active ? (params.dir === "asc" ? "ascending" : "descending") : "none"}
+    >
+      <button
+        type="button"
+        onClick={() => onSort(nextSort(params, column))}
+        className={cn(
+          "uppercase hover:text-[var(--color-text)] focus-visible:underline",
+          active && "font-bold text-[var(--color-text)]",
+        )}
+      >
+        {label} {active ? (params.dir === "asc" ? "↑" : "↓") : ""}
+      </button>
+    </th>
   )
 }
 
@@ -241,45 +312,4 @@ function Stat({
       </div>
     </div>
   )
-}
-
-function withinDays(iso: string | null, days: number): boolean {
-  if (!iso) return false
-  return Date.now() - new Date(iso).getTime() <= days * 86_400_000
-}
-
-/** Xuất đúng những dòng đang hiện — không gọi API, chỉ đóng gói lại dữ liệu đã tải. */
-function downloadCsv(rows: AdminUserRow[]) {
-  const header = [
-    "email",
-    "tham_gia",
-    "hoat_dong_gan_nhat",
-    "chuong_trinh",
-    "tuan",
-    "buoi",
-    "clip",
-    "tuan_thu_pct",
-    "trang_thai",
-  ]
-  const body = rows.map((u) => [
-    u.email,
-    u.createdAt,
-    u.lastActivityAt ?? "",
-    u.programName ?? "",
-    u.weekIndex == null ? "" : `${u.weekIndex}/${u.totalWeeks}`,
-    u.sessionCount,
-    u.clipCount,
-    u.adherencePct ?? "",
-    u.active ? "active" : "locked",
-  ])
-  const csv = [header, ...body]
-    .map((cells) => cells.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
-    .join("\n")
-
-  const url = URL.createObjectURL(new Blob([`﻿${csv}`], { type: "text/csv;charset=utf-8" }))
-  const link = document.createElement("a")
-  link.href = url
-  link.download = `nguoi-dung-${new Date().toISOString().slice(0, 10)}.csv`
-  link.click()
-  URL.revokeObjectURL(url)
 }

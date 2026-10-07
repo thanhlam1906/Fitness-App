@@ -1,29 +1,41 @@
-import { useQuery } from "@tanstack/react-query"
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/api/client"
-import type { AdminOverview, AdminUserDetail, AdminUserRow } from "@/features/admin/types"
+import type { AdminOverview, AdminPage, AdminUserDetail, AdminUserRow } from "@/features/admin/types"
+import { toUsersApiQuery, type UserListParams } from "@/features/admin/utils/userListParams"
 
 const usersKey = ["admin-users"] as const
+const overviewKey = ["admin-overview"] as const
 
-/** Dùng chung giữa màn 11 và badge đếm trên sidebar — cùng queryKey nên chỉ một request. */
-export function useAdminUsers() {
+/** Một trang danh sách; giữ trang cũ trong lúc tải trang mới để bảng không nháy trống. */
+export function useAdminUsers(params: UserListParams) {
   return useQuery({
-    queryKey: usersKey,
-    queryFn: () => api.get<AdminUserRow[]>("/admin/users"),
+    queryKey: [...usersKey, params],
+    queryFn: () => api.get<AdminPage<AdminUserRow>>(`/admin/users?${toUsersApiQuery(params)}`),
+    placeholderData: keepPreviousData,
   })
 }
 
-/** Bốn ô thống kê đầu màn 11, và badge "Góp ý bị báo sai" ở sidebar. */
+/** Bốn ô thống kê, số trên tab, và badge "Người dùng" / "Góp ý bị báo sai" ở sidebar. */
 export function useAdminOverview() {
-  return useQuery({
-    queryKey: ["admin-overview"],
-    queryFn: () => api.get<AdminOverview>("/admin/overview"),
-  })
+  return useQuery({ queryKey: overviewKey, queryFn: () => api.get<AdminOverview>("/admin/overview") })
 }
 
-/** Hồ sơ một người dùng ở màn 11. */
 export function useAdminUser(userId: string | undefined) {
   return useQuery({
     queryKey: ["admin-user", userId],
     queryFn: () => api.get<AdminUserDetail>(`/admin/users/${userId}`),
+    enabled: userId !== undefined,
   })
+}
+
+/** Sau mỗi thao tác quản trị: danh sách, số đếm, hồ sơ và nhật ký đều có thể đã đổi. */
+export function useInvalidateAdminUsers() {
+  const queryClient = useQueryClient()
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: usersKey }),
+      queryClient.invalidateQueries({ queryKey: overviewKey }),
+      queryClient.invalidateQueries({ queryKey: ["admin-user"] }),
+      queryClient.invalidateQueries({ queryKey: ["admin-audit"] }),
+    ])
 }

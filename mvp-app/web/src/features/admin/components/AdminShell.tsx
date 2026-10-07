@@ -5,7 +5,7 @@ import { Logo } from "@/components/Logo"
 import { useDocuments } from "@/features/admin/api/useCorpus"
 import { useExercises } from "@/features/exercise/api/useExercises"
 import { useTemplates } from "@/features/admin/api/useTemplates"
-import { useAdminOverview, useAdminUsers } from "@/features/admin/api/useAdminUsers"
+import { useAdminOverview } from "@/features/admin/api/useAdminUsers"
 import { cn } from "@/lib/cn"
 
 type Item = {
@@ -27,7 +27,6 @@ type Item = {
  * hàng đợi gần như luôn rỗng, admin không có gì để xử lý ở đó.
  */
 function useGroups(): { title: string; items: Item[] }[] {
-  const users = useAdminUsers()
   const exercises = useExercises()
   const templates = useTemplates()
   const overview = useAdminOverview()
@@ -38,7 +37,7 @@ function useGroups(): { title: string; items: Item[] }[] {
       title: "Theo dõi",
       items: [
         { label: "Tổng quan" },
-        { label: "Người dùng", to: "/admin/users", count: users.data?.length },
+        { label: "Người dùng", to: "/admin/users", count: overview.data?.statusCounts.ALL },
         { label: "Buổi tập" },
       ],
     },
@@ -90,6 +89,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
           <div className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">
             {role === "ADMIN" ? "huấn luyện viên · toàn quyền" : role}
           </div>
+          <NavLink
+            to="/admin/password"
+            className="mt-2 block text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] focus-visible:underline"
+          >
+            Đổi mật khẩu
+          </NavLink>
           <button
             onClick={logout}
             className="mt-2 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
