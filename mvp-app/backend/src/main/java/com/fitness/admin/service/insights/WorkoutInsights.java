@@ -1,12 +1,14 @@
 package com.fitness.admin.service.insights;
 
 import com.fitness.admin.dto.WorkoutInsightsResponse;
+import com.fitness.admin.dto.WorkoutInsightsResponse.CountResponse;
 import com.fitness.admin.dto.WorkoutInsightsResponse.LoadDecisionResponse;
 import com.fitness.admin.dto.WorkoutInsightsResponse.PainResponse;
 import com.fitness.admin.dto.WorkoutInsightsResponse.RepShortResponse;
 import com.fitness.admin.dto.WorkoutInsightsResponse.RpeOverResponse;
 import com.fitness.admin.dto.WorkoutInsightsResponse.SkippedResponse;
 import com.fitness.admin.dto.WorkoutInsightsResponse.SubstitutedResponse;
+import com.fitness.admin.dto.WorkoutInsightsResponse.SummaryResponse;
 import com.fitness.program.service.progression.ProgressionConfig;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,7 +37,9 @@ public final class WorkoutInsights {
 
 	/** Bài có ít mẫu hơn thế trong khoảng thì ẩn: vài set lẻ đẩy tỉ lệ lên 100%. */
 	static final int MIN_SETS = 10;
-	static final int MAX_ROWS = 10;
+	static final int MAX_ROWS = 5;
+	/** Thứ tự cố định để web tô màu theo lý do, không theo hạng (spec §10). */
+	static final List<String> SKIP_REASONS = List.of("TIRED", "NO_EQUIPMENT", "PAIN", "OTHER");
 	static final String CUSTOM_PROGRAM = "Lịch tự thiết kế";
 
 	/** templateId null = buổi ngoài lịch hoặc lịch tự thiết kế. floorReps null = buổi không có lịch. */
@@ -52,6 +56,10 @@ public final class WorkoutInsights {
 	public record PainRow(UUID userId, UUID templateId, String bodyArea, int severity, Set<UUID> exerciseIds) {
 	}
 
+	/** Một buổi DONE trong khoảng. templateId null = ngoài lịch hoặc lịch tự thiết kế. */
+	public record SessionRow(UUID userId, UUID templateId) {
+	}
+
 	public record DecisionRow(UUID templateId, UUID exerciseId, String direction, String ruleId) {
 	}
 
@@ -61,19 +69,46 @@ public final class WorkoutInsights {
 	public static WorkoutInsightsResponse compute(
 			int days, UUID templateId,
 			List<SetRow> sets, List<ScheduledRow> scheduled, List<PainRow> pains, List<DecisionRow> decisions,
+			List<SessionRow> sessions, List<UUID> missedWorkoutTemplateIds,
 			Map<UUID, ProgressionConfig> configs, Map<UUID, String> exerciseNames, Map<UUID, String> templateNames) {
 		Function<UUID, String> name = id -> id == null ? null : exerciseNames.getOrDefault(id, "?");
-		List<SetRow> s = sets.stream().filter(r -> matches(templateId, r.templateId())).toList();
+		List<SetRow> s = filter(sets, templateId, SetRow::templateId);
+		List<PainRow> p = filter(pains, templateId, PainRow::templateId);
+		List<DecisionRow> d = filter(decisions, templateId, DecisionRow::templateId);
+		int missed = (int) missedWorkoutTemplateIds.stream().filter(t -> matches(templateId, t)).count();
 		return new WorkoutInsightsResponse(
 				days, templateId,
+				summary(s, filter(sessions, templateId, SessionRow::templateId), missed, p, d, configs),
 				skipped(s, name),
 				rpeOver(s, configs, name),
 				repShort(s, name),
-				substituted(scheduled.stream().filter(r -> matches(templateId, r.templateId())).toList(), name),
-				pain(pains.stream().filter(r -> matches(templateId, r.templateId())).toList(), name),
-				loadDecisions(
-						decisions.stream().filter(r -> matches(templateId, r.templateId())).toList(),
-						templateId != null, name, templateNames));
+				substituted(filter(scheduled, templateId, ScheduledRow::templateId), name),
+				pain(p, name),
+				loadDecisions(d, templateId != null, name, templateNames));
+	}
+
+	private static <T> List<T> filter(List<T> rows, UUID templateId, Function<T, UUID> template) {
+		return rows.stream().filter(r -> matches(templateId, template.apply(r))).toList();
+	}
+
+	private static SummaryResponse summary(
+			List<SetRow> sets, List<SessionRow> sessions, int missed, List<PainRow> pains,
+			List<DecisionRow> decisions, Map<UUID, ProgressionConfig> configs) {
+		List<SetRow> skippedRows = sets.stream().filter(SetRow::skipped).toList();
+		// Set bỏ không ghi lý do tính là Khác, để 4 phần cộng đủ số set bị bỏ.
+		List<CountResponse> reasons = SKIP_REASONS.stream()
+				.map(code -> new CountResponse(code, (int) skippedRows.stream()
+						.filter(r -> code.equals(r.skipReason() == null ? "OTHER" : r.skipReason()))
+						.count()))
+				.toList();
+		List<SetRow> rated = sets.stream().filter(r -> !r.skipped() && r.rpe() != null).toList();
+		return new SummaryResponse(
+				sessions.size(), distinct(sessions, SessionRow::userId), missed,
+				sets.size(), skippedRows.size(), reasons,
+				rated.size(), (int) rated.stream().filter(r -> isOver(configs, r)).count(),
+				pains.size(), distinct(pains, PainRow::userId),
+				round1(pains.stream().mapToInt(PainRow::severity).average().orElse(0)),
+				count(decisions, "UP"), count(decisions, "HOLD"), count(decisions, "DOWN"));
 	}
 
 	/** Lọc một template thì buổi ngoài lịch (template null) không thuộc về nó. */
@@ -101,10 +136,7 @@ public final class WorkoutInsights {
 		List<RpeOverResponse> out = new ArrayList<>();
 		List<SetRow> rated = sets.stream().filter(r -> !r.skipped() && r.rpe() != null).toList();
 		groupBy(rated, SetRow::exerciseId).forEach((exerciseId, rows) -> {
-			int over = (int) rows.stream().filter(r -> {
-				ProgressionConfig c = configFor(configs, r.templateId());
-				return r.rpe() > c.targetRpe() + c.rpeOver();
-			}).count();
+			int over = (int) rows.stream().filter(r -> isOver(configs, r)).count();
 			if (rows.size() < MIN_SETS || over == 0) {
 				return;
 			}
@@ -113,6 +145,12 @@ public final class WorkoutInsights {
 		});
 		return top(out, r -> ratio(r.overCount(), r.rpeLogs()), RpeOverResponse::overCount,
 				RpeOverResponse::exerciseName);
+	}
+
+	/** RPE vượt = cao hơn mục tiêu + mức vượt của template buổi đó, đúng ngưỡng RpeRule giữ tạ. */
+	private static boolean isOver(Map<UUID, ProgressionConfig> configs, SetRow r) {
+		ProgressionConfig c = configFor(configs, r.templateId());
+		return r.rpe() > c.targetRpe() + c.rpeOver();
 	}
 
 	/** Map.of ném NPE khi get(null), nên template null xử lý trước. */

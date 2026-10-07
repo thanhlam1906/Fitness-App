@@ -4,15 +4,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import com.fitness.admin.dto.WorkoutInsightsResponse;
+import com.fitness.admin.dto.WorkoutInsightsResponse.CountResponse;
 import com.fitness.admin.dto.WorkoutInsightsResponse.LoadDecisionResponse;
 import com.fitness.admin.dto.WorkoutInsightsResponse.PainResponse;
 import com.fitness.admin.dto.WorkoutInsightsResponse.RepShortResponse;
 import com.fitness.admin.dto.WorkoutInsightsResponse.RpeOverResponse;
 import com.fitness.admin.dto.WorkoutInsightsResponse.SkippedResponse;
 import com.fitness.admin.dto.WorkoutInsightsResponse.SubstitutedResponse;
+import com.fitness.admin.dto.WorkoutInsightsResponse.SummaryResponse;
 import com.fitness.auth.entity.Role;
 import com.fitness.content.repository.ExerciseRepository;
 import com.fitness.support.PostgresIntegrationTest;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,9 +75,12 @@ class AdminWorkoutInsightsControllerIntegrationTest extends PostgresIntegrationT
 						+ "values (?, ?, '{}'::jsonb, current_date - 7) returning id",
 				UUID.class, user, template);
 		UUID workout = jdbc.queryForObject(
-				"insert into scheduled_workouts (program_id, scheduled_on, week_index) "
-						+ "values (?, current_date - 1, 1) returning id",
+				"insert into scheduled_workouts (program_id, scheduled_on, week_index, status) "
+						+ "values (?, current_date - 1, 1, 'DONE') returning id",
 				UUID.class, program);
+		// Buổi lỡ: PLANNED mà đã qua ngày, không có buổi tập.
+		jdbc.update("insert into scheduled_workouts (program_id, scheduled_on, week_index) values (?, current_date - 2, 1)",
+				program);
 		jdbc.update("insert into scheduled_exercises (scheduled_workout_id, exercise_id, order_index, target_sets, "
 				+ "target_reps, target_reps_max) values (?, ?, 0, 12, 8, 12)", workout, squat);
 		// Bench trong lịch đã bị đổi sang chống đẩy.
@@ -128,6 +134,13 @@ class AdminWorkoutInsightsControllerIntegrationTest extends PostgresIntegrationT
 		assertThat(r.loadDecisions()).hasSize(1);
 		assertThat(r.loadDecisions()).extracting(LoadDecisionResponse::up, LoadDecisionResponse::hold)
 				.containsExactly(tuple(0, 0));
+		assertThat(r.summary()).isEqualTo(new SummaryResponse(
+				1, 1, 1,
+				12, 2, List.of(new CountResponse("TIRED", 2), new CountResponse("NO_EQUIPMENT", 0),
+						new CountResponse("PAIN", 0), new CountResponse("OTHER", 0)),
+				10, 3,
+				1, 1, 4.0,
+				0, 0, 1));
 	}
 
 	private <T> org.springframework.http.ResponseEntity<T> get(HttpHeaders headers, String query, Class<T> type) {

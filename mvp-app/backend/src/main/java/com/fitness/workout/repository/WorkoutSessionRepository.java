@@ -28,6 +28,13 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSession, 
 
 	List<WorkoutSession> findByUserIdAndStatus(UUID userId, String status);
 
+	/** Trang "Buổi tập" của admin: buổi DONE bắt đầu từ `from`. Cột: userId, templateId (null = ngoài lịch/lịch tự thiết kế). */
+	@Query("select ws.userId, p.templateId from WorkoutSession ws "
+			+ "left join ScheduledWorkout sw on sw.id = ws.scheduledWorkoutId "
+			+ "left join Program p on p.id = sw.programId "
+			+ "where ws.startedAt >= :from and ws.status = 'DONE'")
+	List<Object[]> insightRowsSince(Instant from);
+
 	/** "Hoạt động gần nhất" ở màn admin Người dùng (màn 11). Một query gộp, không N+1. */
 	@Query("select s.userId, max(s.startedAt) from WorkoutSession s group by s.userId")
 	List<Object[]> lastActivityPerUser();

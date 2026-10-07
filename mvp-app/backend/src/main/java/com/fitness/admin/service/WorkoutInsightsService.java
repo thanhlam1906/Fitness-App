@@ -8,6 +8,7 @@ import com.fitness.admin.service.insights.WorkoutInsights;
 import com.fitness.admin.service.insights.WorkoutInsights.DecisionRow;
 import com.fitness.admin.service.insights.WorkoutInsights.PainRow;
 import com.fitness.admin.service.insights.WorkoutInsights.ScheduledRow;
+import com.fitness.admin.service.insights.WorkoutInsights.SessionRow;
 import com.fitness.admin.service.insights.WorkoutInsights.SetRow;
 import com.fitness.content.entity.Exercise;
 import com.fitness.content.entity.ProgramTemplate;
@@ -15,9 +16,11 @@ import com.fitness.content.repository.ExerciseRepository;
 import com.fitness.content.repository.ProgramTemplateRepository;
 import com.fitness.program.repository.LoadDecisionRepository;
 import com.fitness.program.repository.ScheduledExerciseRepository;
+import com.fitness.program.repository.ScheduledWorkoutRepository;
 import com.fitness.program.service.progression.ProgressionConfig;
 import com.fitness.workout.repository.PainReportRepository;
 import com.fitness.workout.repository.SetLogRepository;
+import com.fitness.workout.repository.WorkoutSessionRepository;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -46,6 +49,8 @@ public class WorkoutInsightsService {
 	private final PainReportRepository painReports;
 	private final ScheduledExerciseRepository scheduledExercises;
 	private final LoadDecisionRepository loadDecisions;
+	private final WorkoutSessionRepository workoutSessions;
+	private final ScheduledWorkoutRepository scheduledWorkouts;
 	private final ProgramTemplateRepository templates;
 	private final ExerciseRepository exercises;
 	private final ObjectMapper objectMapper;
@@ -53,11 +58,14 @@ public class WorkoutInsightsService {
 	public WorkoutInsightsService(
 			SetLogRepository setLogs, PainReportRepository painReports,
 			ScheduledExerciseRepository scheduledExercises, LoadDecisionRepository loadDecisions,
+			WorkoutSessionRepository workoutSessions, ScheduledWorkoutRepository scheduledWorkouts,
 			ProgramTemplateRepository templates, ExerciseRepository exercises, ObjectMapper objectMapper) {
 		this.setLogs = setLogs;
 		this.painReports = painReports;
 		this.scheduledExercises = scheduledExercises;
 		this.loadDecisions = loadDecisions;
+		this.workoutSessions = workoutSessions;
+		this.scheduledWorkouts = scheduledWorkouts;
 		this.templates = templates;
 		this.exercises = exercises;
 		this.objectMapper = objectMapper;
@@ -94,6 +102,10 @@ public class WorkoutInsightsService {
 				loadDecisions.insightRowsSince(from).stream()
 						.map(r -> new DecisionRow((UUID) r[0], (UUID) r[1], (String) r[2], (String) r[3]))
 						.toList(),
+				workoutSessions.insightRowsSince(from).stream()
+						.map(r -> new SessionRow((UUID) r[0], (UUID) r[1]))
+						.toList(),
+				scheduledWorkouts.missedTemplateIdsBetween(today.minusDays(days), today),
 				configs, exerciseNames, templateNames);
 	}
 

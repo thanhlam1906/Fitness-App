@@ -1,6 +1,7 @@
 package com.fitness.program.repository;
 
 import com.fitness.program.entity.ScheduledWorkout;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,4 +22,13 @@ public interface ScheduledWorkoutRepository extends JpaRepository<ScheduledWorko
 			+ "from ScheduledWorkout sw join Program p on p.id = sw.programId "
 			+ "where p.status = 'ACTIVE' group by p.userId")
 	List<Object[]> scheduleStatsPerUser();
+
+	/**
+	 * Trang "Buổi tập" của admin: buổi lỡ có ngày trong [from, today). Lỡ = status MISSED, hoặc PLANNED mà
+	 * đã qua ngày — đúng quy tắc ScheduledWorkout.displayStatus, vì DB không tự đổi PLANNED sang MISSED.
+	 * Một cột: templateId của chương trình (null = lịch tự thiết kế).
+	 */
+	@Query("select p.templateId from ScheduledWorkout sw join Program p on p.id = sw.programId "
+			+ "where sw.scheduledOn >= :from and sw.scheduledOn < :today and sw.status in ('MISSED', 'PLANNED')")
+	List<UUID> missedTemplateIdsBetween(LocalDate from, LocalDate today);
 }

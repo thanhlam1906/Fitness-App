@@ -3,18 +3,22 @@ package com.fitness.admin.service.insights;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fitness.admin.dto.WorkoutInsightsResponse;
+import com.fitness.admin.dto.WorkoutInsightsResponse.CountResponse;
 import com.fitness.admin.dto.WorkoutInsightsResponse.LoadDecisionResponse;
 import com.fitness.admin.dto.WorkoutInsightsResponse.PainResponse;
 import com.fitness.admin.dto.WorkoutInsightsResponse.RepShortResponse;
 import com.fitness.admin.dto.WorkoutInsightsResponse.RpeOverResponse;
 import com.fitness.admin.dto.WorkoutInsightsResponse.SkippedResponse;
 import com.fitness.admin.dto.WorkoutInsightsResponse.SubstitutedResponse;
+import com.fitness.admin.dto.WorkoutInsightsResponse.SummaryResponse;
 import com.fitness.admin.service.insights.WorkoutInsights.DecisionRow;
 import com.fitness.admin.service.insights.WorkoutInsights.PainRow;
 import com.fitness.admin.service.insights.WorkoutInsights.ScheduledRow;
+import com.fitness.admin.service.insights.WorkoutInsights.SessionRow;
 import com.fitness.admin.service.insights.WorkoutInsights.SetRow;
 import com.fitness.program.service.progression.ProgressionConfig;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -93,7 +97,7 @@ class WorkoutInsightsTest {
 				List.of(new ScheduledRow(u2, A, ROW, SQUAT)),
 				Collections.nCopies(4, new ScheduledRow(u3, A, SQUAT, null)));
 
-		var r = WorkoutInsights.compute(30, null, List.of(), rows, List.of(), List.of(), CONFIGS, NAMES, TEMPLATE_NAMES)
+		var r = WorkoutInsights.compute(30, null, List.of(), rows, List.of(), List.of(), List.of(), List.of(), CONFIGS, NAMES, TEMPLATE_NAMES)
 				.substituted();
 
 		assertThat(r).containsExactly(new SubstitutedResponse(SQUAT, "Squat", 2, 3, "Đẩy ngực"));
@@ -108,7 +112,7 @@ class WorkoutInsightsTest {
 				new ScheduledRow(u1, A, SQUAT, SQUAT),
 				new ScheduledRow(u2, A, BENCH, SQUAT));
 
-		var r = WorkoutInsights.compute(30, null, List.of(), rows, List.of(), List.of(), CONFIGS, NAMES, TEMPLATE_NAMES)
+		var r = WorkoutInsights.compute(30, null, List.of(), rows, List.of(), List.of(), List.of(), List.of(), CONFIGS, NAMES, TEMPLATE_NAMES)
 				.substituted();
 
 		assertThat(r).containsExactly(new SubstitutedResponse(SQUAT, "Squat", 1, 2, "Đẩy ngực"));
@@ -123,7 +127,7 @@ class WorkoutInsightsTest {
 				new PainRow(u1, A, "KNEE_L", 5, Set.of(SQUAT)),
 				new PainRow(u2, A, "LOWER_BACK", 2, Set.of(ROW)));
 
-		var r = WorkoutInsights.compute(30, null, List.of(), List.of(), rows, List.of(), CONFIGS, NAMES, TEMPLATE_NAMES)
+		var r = WorkoutInsights.compute(30, null, List.of(), List.of(), rows, List.of(), List.of(), List.of(), CONFIGS, NAMES, TEMPLATE_NAMES)
 				.pain();
 
 		assertThat(r).containsExactly(
@@ -140,14 +144,14 @@ class WorkoutInsightsTest {
 				new DecisionRow(B, SQUAT, "DOWN", "PAIN_REPORTED"),
 				new DecisionRow(null, ROW, "UP", "DOUBLE_PROGRESSION_ALL_REPS_MET"));
 
-		var all = WorkoutInsights.compute(30, null, List.of(), List.of(), List.of(), rows, CONFIGS, NAMES, TEMPLATE_NAMES)
+		var all = WorkoutInsights.compute(30, null, List.of(), List.of(), List.of(), rows, List.of(), List.of(), CONFIGS, NAMES, TEMPLATE_NAMES)
 				.loadDecisions();
 		assertThat(all).containsExactly(
 				new LoadDecisionResponse(B, "Template B", 0, 0, 1, "PAIN_REPORTED"),
 				new LoadDecisionResponse(A, "Template A", 1, 1, 1, "SETS_MISSED_TARGET"),
 				new LoadDecisionResponse(null, "Lịch tự thiết kế", 1, 0, 0, null));
 
-		var onlyA = WorkoutInsights.compute(30, A, List.of(), List.of(), List.of(), rows, CONFIGS, NAMES, TEMPLATE_NAMES)
+		var onlyA = WorkoutInsights.compute(30, A, List.of(), List.of(), List.of(), rows, List.of(), List.of(), CONFIGS, NAMES, TEMPLATE_NAMES)
 				.loadDecisions();
 		assertThat(onlyA).containsExactly(
 				new LoadDecisionResponse(SQUAT, "Squat", 1, 0, 1, "SETS_MISSED_TARGET"),
@@ -167,7 +171,7 @@ class WorkoutInsightsTest {
 	}
 
 	@Test
-	void eachBlock_keepsTenRows_highestRateFirst() {
+	void eachBlock_keepsFiveRows_highestRateFirst() {
 		UUID u = UUID.randomUUID();
 		List<SetRow> rows = new ArrayList<>();
 		for (int skipped = 1; skipped <= 12; skipped++) {
@@ -177,11 +181,50 @@ class WorkoutInsightsTest {
 		}
 
 		assertThat(sets(null, rows).skipped()).extracting(SkippedResponse::skippedSets)
-				.containsExactly(12, 11, 10, 9, 8, 7, 6, 5, 4, 3);
+				.containsExactly(12, 11, 10, 9, 8);
+	}
+
+	@Test
+	void summary_countsEveryRowAfterTemplateFilter_includingHiddenExercises() {
+		UUID u1 = UUID.randomUUID();
+		UUID u2 = UUID.randomUUID();
+		List<SetRow> sets = concat(
+				Collections.nCopies(3, logged(u1, A, SQUAT, 8, 9, 8)),           // dưới 10 set: ẩn ở khối, vẫn vào tổng
+				List.of(logged(u1, B, SQUAT, 8, 9, 8)),                          // B: 9 > 7 + 1 → vượt
+				List.of(skip(u1, A, BENCH, "TIRED"), skip(u2, A, BENCH, "PAIN")),
+				List.of(new SetRow(u2, A, BENCH, true, null, null, null, 8)),    // bỏ không ghi lý do → Khác
+				List.of(logged(u2, null, ROW, 8, 10, null)));                    // ngoài lịch, ngưỡng mặc định → vượt
+		List<SessionRow> sessions = List.of(new SessionRow(u1, A), new SessionRow(u1, A), new SessionRow(u2, null));
+		List<UUID> missed = Arrays.asList(A, A, null);
+		List<PainRow> pains = List.of(
+				new PainRow(u1, A, "KNEE_L", 3, Set.of()), new PainRow(u2, A, "KNEE_L", 4, Set.of()));
+		List<DecisionRow> decisions = List.of(
+				new DecisionRow(A, SQUAT, "UP", "x"), new DecisionRow(A, SQUAT, "DOWN", "y"),
+				new DecisionRow(B, SQUAT, "HOLD", "z"));
+
+		SummaryResponse all = WorkoutInsights.compute(30, null, sets, List.of(), pains, decisions, sessions, missed,
+				CONFIGS, NAMES, TEMPLATE_NAMES).summary();
+		assertThat(all).isEqualTo(new SummaryResponse(
+				3, 2, 3,
+				8, 3, List.of(new CountResponse("TIRED", 1), new CountResponse("NO_EQUIPMENT", 0),
+						new CountResponse("PAIN", 1), new CountResponse("OTHER", 1)),
+				5, 2,
+				2, 2, 3.5,
+				1, 1, 1));
+
+		SummaryResponse onlyA = WorkoutInsights.compute(30, A, sets, List.of(), pains, decisions, sessions, missed,
+				CONFIGS, NAMES, TEMPLATE_NAMES).summary();
+		assertThat(onlyA).isEqualTo(new SummaryResponse(
+				2, 1, 2,
+				6, 3, List.of(new CountResponse("TIRED", 1), new CountResponse("NO_EQUIPMENT", 0),
+						new CountResponse("PAIN", 1), new CountResponse("OTHER", 1)),
+				3, 0,
+				2, 2, 3.5,
+				1, 0, 1));
 	}
 
 	private static WorkoutInsightsResponse sets(UUID filter, List<SetRow> rows) {
-		return WorkoutInsights.compute(30, filter, rows, List.of(), List.of(), List.of(), CONFIGS, NAMES, TEMPLATE_NAMES);
+		return WorkoutInsights.compute(30, filter, rows, List.of(), List.of(), List.of(), List.of(), List.of(), CONFIGS, NAMES, TEMPLATE_NAMES);
 	}
 
 	private static SetRow logged(UUID user, UUID template, UUID exercise, Integer reps, Integer rpe, Integer floor) {
