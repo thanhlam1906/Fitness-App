@@ -9,5 +9,6 @@ export async function downloadUsersCsv(params: UserListParams) {
   a.href = url
   a.download = "nguoi-dung.csv"
   a.click()
-  URL.revokeObjectURL(url)
+  // Thu hồi ngay sau click có thể huỷ lượt tải ở vài trình duyệt; để sau một nhịp.
+  setTimeout(() => URL.revokeObjectURL(url), 0)
 }
