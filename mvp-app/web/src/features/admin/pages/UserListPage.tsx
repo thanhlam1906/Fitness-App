@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { Link, useSearchParams } from "react-router"
 import { AdminHeader } from "@/features/admin/components/AdminShell"
+import { CreateUserDialog } from "@/features/admin/components/CreateUserDialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/cn"
@@ -46,6 +47,7 @@ export function UserListPage() {
   const [query, setQuery] = useState(params.q)
   const [prevQ, setPrevQ] = useState(params.q)
   const [exportError, setExportError] = useState<string | null>(null)
+  const [creating, setCreating] = useState(false)
 
   // URL đổi từ bên ngoài (Back/Forward, link) thì ô tìm kiếm theo URL. Gõ dở không bị ảnh hưởng
   // vì params.q chỉ đổi sau khi timer debounce ghi lên URL.
@@ -101,6 +103,9 @@ export function UserListPage() {
         </select>
         <Button size="sm" variant="secondary" onClick={exportCsv}>
           Xuất CSV
+        </Button>
+        <Button size="sm" onClick={() => setCreating(true)}>
+          Thêm người dùng
         </Button>
       </AdminHeader>
 
@@ -238,6 +243,7 @@ export function UserListPage() {
           Không có nút xem video ở bất cứ đâu — HLV chỉ đọc verdict và độ tin cậy.
         </p>
       </div>
+      {creating && <CreateUserDialog onClose={() => setCreating(false)} />}
     </>
   )
 }

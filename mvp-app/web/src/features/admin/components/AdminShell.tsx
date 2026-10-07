@@ -25,6 +25,7 @@ type Item = {
  * xử lý là việc của đợt sau. "Tổng quan" và "Buổi tập" thì chưa có cả số lẫn màn.
  * Không có mục hàng đợi phân tích: chấm theo ngưỡng xong trong vài giây nên
  * hàng đợi gần như luôn rỗng, admin không có gì để xử lý ở đó.
+ * Nhật ký quản trị: doc/design-quan-ly-user-v1.md §6.7.
  */
 function useGroups(): { title: string; items: Item[] }[] {
   const exercises = useExercises()
@@ -38,6 +39,7 @@ function useGroups(): { title: string; items: Item[] }[] {
       items: [
         { label: "Tổng quan" },
         { label: "Người dùng", to: "/admin/users", count: overview.data?.statusCounts.ALL },
+        { label: "Nhật ký quản trị", to: "/admin/audit" },
         { label: "Buổi tập" },
       ],
     },

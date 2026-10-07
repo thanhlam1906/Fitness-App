@@ -17,6 +17,7 @@ import { SettingsPage } from "@/features/profile/pages/SettingsPage"
 import { WeightHistoryPage } from "@/features/profile/pages/WeightHistoryPage"
 import { CorpusPage } from "@/features/admin/pages/CorpusPage"
 import { ExerciseFormPage } from "@/features/admin/pages/ExerciseFormPage"
+import { AuditLogPage } from "@/features/admin/pages/AuditLogPage"
 import { ExerciseListPage } from "@/features/admin/pages/ExerciseListPage"
 import { TemplateFormPage } from "@/features/admin/pages/TemplateFormPage"
 import { TemplateListPage } from "@/features/admin/pages/TemplateListPage"
@@ -82,6 +83,14 @@ export function App() {
                     element={
                       <RequireAdmin>
                         <UserListPage />
+                      </RequireAdmin>
+                    }
+                  />
+                  <Route
+                    path="/admin/audit"
+                    element={
+                      <RequireAdmin>
+                        <AuditLogPage />
                       </RequireAdmin>
                     }
                   />

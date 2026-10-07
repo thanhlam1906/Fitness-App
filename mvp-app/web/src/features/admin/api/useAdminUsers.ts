@@ -1,6 +1,15 @@
-import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query"
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/api/client"
-import type { AdminOverview, AdminPage, AdminUserDetail, AdminUserRow } from "@/features/admin/types"
+import type {
+  AdminAuditEntry,
+  AdminOverview,
+  AdminPage,
+  AdminUserCreated,
+  AdminUserDetail,
+  AdminUserRow,
+  CreateUserPayload,
+  UserRole,
+} from "@/features/admin/types"
 import { toUsersApiQuery, type UserListParams } from "@/features/admin/utils/userListParams"
 
 const usersKey = ["admin-users"] as const
@@ -38,4 +47,57 @@ export function useInvalidateAdminUsers() {
       queryClient.invalidateQueries({ queryKey: ["admin-user"] }),
       queryClient.invalidateQueries({ queryKey: ["admin-audit"] }),
     ])
+}
+
+export function useCreateUser() {
+  const invalidate = useInvalidateAdminUsers()
+  return useMutation({
+    mutationFn: (body: CreateUserPayload) => api.post<AdminUserCreated>("/admin/users", body),
+    onSuccess: invalidate,
+  })
+}
+
+export function useSetUserStatus(userId: string) {
+  const invalidate = useInvalidateAdminUsers()
+  return useMutation({
+    mutationFn: (body: { active: boolean; reason: string | null }) =>
+      api.patch<AdminUserRow>(`/admin/users/${userId}/status`, body),
+    onSuccess: invalidate,
+  })
+}
+
+export function useChangeUserRole(userId: string) {
+  const invalidate = useInvalidateAdminUsers()
+  return useMutation({
+    mutationFn: (role: UserRole) => api.patch<AdminUserRow>(`/admin/users/${userId}/role`, { role }),
+    onSuccess: invalidate,
+  })
+}
+
+export function useResetUserPassword(userId: string) {
+  const invalidate = useInvalidateAdminUsers()
+  return useMutation({
+    mutationFn: () => api.post<{ temporaryPassword: string }>(`/admin/users/${userId}/reset-password`, {}),
+    onSuccess: invalidate,
+  })
+}
+
+export function useDeleteUser(userId: string) {
+  const invalidate = useInvalidateAdminUsers()
+  return useMutation({
+    mutationFn: (reason: string) => api.del<void>(`/admin/users/${userId}`, { reason }),
+    onSuccess: invalidate,
+  })
+}
+
+/** targetId undefined = nhật ký toàn hệ thống (trang Nhật ký quản trị). */
+export function useAuditLog(targetId: string | undefined, page: number) {
+  return useQuery({
+    queryKey: ["admin-audit", targetId ?? "all", page],
+    queryFn: () =>
+      api.get<AdminPage<AdminAuditEntry>>(
+        `/admin/audit?page=${page}&size=20${targetId ? `&targetId=${targetId}` : ""}`,
+      ),
+    placeholderData: keepPreviousData,
+  })
 }
