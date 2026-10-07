@@ -65,6 +65,12 @@ class AdminAccountActionsIntegrationTest extends PostgresIntegrationTest {
 				.getStatusCode();
 	}
 
+	/** Tài khoản còn active nên chỉ việc thu hồi refresh token mới làm refresh trả 401. */
+	private void assertRefreshRevoked(Registered target) {
+		assertThat(rest.postForEntity("/api/v1/auth/refresh", new RefreshRequest(target.tokens().refreshToken()),
+				Map.class).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+	}
+
 	private <T> org.springframework.http.ResponseEntity<T> call(
 			HttpMethod method, String path, Object body, HttpHeaders admin, Class<T> type) {
 		return rest.exchange("/api/v1/admin" + path, method, new HttpEntity<>(body, admin), type);
@@ -123,6 +129,7 @@ class AdminAccountActionsIntegrationTest extends PostgresIntegrationTest {
 
 		assertThat(resp.getBody().role()).isEqualTo("ADMIN");
 		assertThat(profileStatus(target.tokens().accessToken())).isEqualTo(HttpStatus.UNAUTHORIZED);
+		assertRefreshRevoked(target);
 		TokenResponse again = rest.postForEntity("/api/v1/auth/login", new LoginRequest(target.email(), PASSWORD),
 				TokenResponse.class).getBody();
 		assertThat(again.role()).isEqualTo(Role.ADMIN);
@@ -139,6 +146,7 @@ class AdminAccountActionsIntegrationTest extends PostgresIntegrationTest {
 
 		assertThat(temp).hasSize(12).doesNotContainAnyWhitespaces();
 		assertThat(profileStatus(target.tokens().accessToken())).isEqualTo(HttpStatus.UNAUTHORIZED);
+		assertRefreshRevoked(target);
 		var login = rest.postForEntity("/api/v1/auth/login", new LoginRequest(target.email(), temp), Map.class);
 		assertThat(login.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
 		assertThat(login.getBody().get("message")).isEqualTo("PASSWORD_CHANGE_REQUIRED");

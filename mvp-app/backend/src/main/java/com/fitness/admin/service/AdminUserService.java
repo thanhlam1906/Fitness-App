@@ -77,7 +77,8 @@ public class AdminUserService {
 			String q, String status, String role, String sort, String dir, int page, int size) {
 		Filter filter = filter(q, status, role);
 		checkSort(sort, dir);
-		if (page < 0 || size < 1 || size > MAX_PAGE_SIZE) {
+		// page * size tính bằng long: tràn int cho OFFSET âm → 500 thay vì 400.
+		if (page < 0 || size < 1 || size > MAX_PAGE_SIZE || (long) page * size > Integer.MAX_VALUE) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Trang không hợp lệ");
 		}
 		List<AdminUserRowResponse> items = query.find(filter, sort, "asc".equals(dir), size, page * size)

@@ -4,7 +4,6 @@ import com.fitness.review.entity.VideoClip;
 import com.fitness.review.entity.VideoReviewRequest;
 import com.fitness.review.repository.VideoClipRepository;
 import com.fitness.review.repository.VideoReviewRequestRepository;
-import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -77,13 +76,13 @@ public class ClipCleanupJob {
 	/**
 	 * Xoá tài khoản (doc/design-quan-ly-user-v1.md §5.6): file clip chưa xoá phải đi trước, vì
 	 * row clip mất theo CASCADE thì job mồ côi không còn thấy file đó nữa. Lỗi xoá một file không
-	 * chặn xoá tài khoản — ghi warn kèm storage_key để dọn tay.
+	 * chặn xoá tài khoản (kể cả storage_key hỏng làm ClipStorage ném IllegalArgumentException) — ghi warn kèm storage_key để dọn tay.
 	 */
 	public void deleteClipsOfUser(UUID userId) {
 		for (VideoClip clip : clips.findUndeletedByUserId(userId)) {
 			try {
 				clipStorage.delete(clip.getStorageKey());
-			} catch (UncheckedIOException e) {
+			} catch (RuntimeException e) {
 				log.warn("Không xoá được clip {} khi xoá tài khoản", clip.getStorageKey(), e);
 			}
 		}

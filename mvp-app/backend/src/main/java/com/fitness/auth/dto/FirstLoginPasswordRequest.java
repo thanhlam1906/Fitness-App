@@ -1,6 +1,5 @@
 package com.fitness.auth.dto;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -9,7 +8,7 @@ import jakarta.validation.constraints.Size;
  * xác minh bằng email + mật khẩu tạm như lúc đăng nhập.
  */
 public record FirstLoginPasswordRequest(
-		@NotBlank @Email String email,
+		@NotBlank String email,
 		@NotBlank String currentPassword,
 		@NotBlank @Size(min = 8) String newPassword) {
 }

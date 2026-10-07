@@ -47,7 +47,7 @@ public class AdminUserQueryRepository {
 			"email", "email",
 			"sessionCount", "session_count");
 
-	// "Đang tập" = có buổi trong 7 ngày; mốc truyền từ Java để mọi query trong một request dùng cùng một mốc.
+	// "Đang tập" = có buổi trong 7 ngày; mốc truyền từ Java (mỗi query tự lấy Instant.now(), lệch vài mili giây giữa các query trong một request là vô hại).
 	private static final String BASE = """
 			WITH s AS (
 			    SELECT user_id, max(started_at) AS last_at, count(*) AS n

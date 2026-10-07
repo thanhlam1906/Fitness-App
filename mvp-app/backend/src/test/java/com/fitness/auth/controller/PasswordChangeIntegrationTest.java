@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fitness.auth.dto.ChangePasswordRequest;
 import com.fitness.auth.dto.FirstLoginPasswordRequest;
 import com.fitness.auth.dto.LoginRequest;
+import com.fitness.auth.dto.RefreshRequest;
 import com.fitness.auth.dto.RegisterRequest;
 import com.fitness.auth.dto.TokenResponse;
 import com.fitness.support.PostgresIntegrationTest;
@@ -60,6 +61,9 @@ class PasswordChangeIntegrationTest extends PostgresIntegrationTest {
 
 		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
 		assertThat(profileStatus(r.tokens().accessToken())).isEqualTo(HttpStatus.UNAUTHORIZED);
+		// Thiết bị khác giữ refresh token cũ không được xin access token mới sau khi đổi mật khẩu.
+		assertThat(rest.postForEntity("/api/v1/auth/refresh", new RefreshRequest(r.tokens().refreshToken()),
+				Map.class).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
 		assertThat(profileStatus(resp.getBody().accessToken())).isEqualTo(HttpStatus.OK);
 		assertThat(rest.postForEntity("/api/v1/auth/login", new LoginRequest(r.email(), NEW), TokenResponse.class)
 				.getStatusCode()).isEqualTo(HttpStatus.OK);

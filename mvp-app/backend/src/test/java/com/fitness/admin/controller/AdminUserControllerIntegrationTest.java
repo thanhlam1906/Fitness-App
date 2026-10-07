@@ -153,7 +153,8 @@ class AdminUserControllerIntegrationTest extends PostgresIntegrationTest {
 	@Test
 	void danhSach_thamSoSai_400() {
 		HttpHeaders admin = newAuthedUser(Role.ADMIN).headers();
-		for (String bad : List.of("status=WHATEVER", "role=ROOT", "sort=password", "dir=up", "size=101", "page=-1")) {
+		for (String bad : List.of("status=WHATEVER", "role=ROOT", "sort=password", "dir=up", "size=101", "page=-1",
+				"page=2147483647&size=2")) {
 			var resp = rest.exchange("/api/v1/admin/users?" + bad, HttpMethod.GET, new HttpEntity<>(admin), String.class);
 			assertThat(resp.getStatusCode()).as(bad).isEqualTo(HttpStatus.BAD_REQUEST);
 		}

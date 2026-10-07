@@ -16,10 +16,9 @@ public interface SetLogRepository extends JpaRepository<SetLog, UUID> {
 	List<SetLog> findBySessionId(UUID sessionId);
 
 	/**
-	 * Tonnage (kg nâng, không tính set bỏ qua) của các buổi bắt đầu trong [from, to) —
-	 * ProgressService, dùng cho cả trợ lý (§9 nhóm B3) và màn Tiến bộ. Join ad-hoc qua
-	 * session_id — set_logs không map
-	 * quan hệ tới WorkoutSession, chỉ có session_id.
+	 * Tonnage (kg nâng, không tính set bỏ qua) của các buổi bắt đầu trong [from, to), dùng cho
+	 * cả trợ lý (§9 nhóm B3) và màn Tiến bộ (ProgressService). Join ad-hoc qua session_id vì
+	 * set_logs không map quan hệ tới WorkoutSession, chỉ có session_id.
 	 */
 	@Query("select coalesce(sum(coalesce(s.loadKg, 0) * coalesce(s.reps, 0)), 0) "
 			+ "from SetLog s join WorkoutSession ws on ws.id = s.sessionId "
