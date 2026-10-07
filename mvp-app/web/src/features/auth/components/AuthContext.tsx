@@ -13,6 +13,10 @@ type AuthContextValue = {
   login: (email: string, password: string) => Promise<void>
   register: (payload: RegisterPayload) => Promise<void>
   logout: () => void
+  /** Đăng nhập bằng mật khẩu tạm → đặt mật khẩu mới → vào app như đăng nhập thường. */
+  completePasswordChange: (email: string, currentPassword: string, newPassword: string) => Promise<void>
+  /** Cài đặt › Đổi mật khẩu. Server thu hồi mọi phiên cũ và trả token mới cho thiết bị này. */
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -46,6 +50,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     applyTokens(await authApi.register(payload))
   }
 
+  async function completePasswordChange(email: string, currentPassword: string, newPassword: string) {
+    applyTokens(await authApi.changePasswordAtLogin(email, currentPassword, newPassword))
+  }
+
+  async function changePassword(currentPassword: string, newPassword: string) {
+    applyTokens(await authApi.changePassword(currentPassword, newPassword))
+  }
+
   function logout() {
     const refreshToken = getRefreshToken()
     clearSession()
@@ -66,6 +78,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
+        completePasswordChange,
+        changePassword,
       }}
     >
       {children}

@@ -3,6 +3,7 @@ import { AppShell } from "@/components/AppShell"
 import { RequireAdmin } from "@/features/auth/components/RequireAdmin"
 import { RequireAuth } from "@/features/auth/components/RequireAuth"
 import { RequireOnboarding } from "@/features/auth/components/RequireOnboarding"
+import { ChangePasswordPage } from "@/features/auth/pages/ChangePasswordPage"
 import { LoginPage } from "@/features/auth/pages/LoginPage"
 import { RegisterPage } from "@/features/auth/pages/RegisterPage"
 import { AssistantPage } from "@/features/assistant/pages/AssistantPage"
@@ -67,6 +68,15 @@ export function App() {
                   <Route path="/settings/weight" element={<WeightHistoryPage />} />
                   <Route path="/settings/privacy" element={<PrivacyPage />} />
                   <Route path="/settings/about" element={<AboutPage />} />
+                  <Route path="/settings/password" element={<ChangePasswordPage />} />
+                  <Route
+                    path="/admin/password"
+                    element={
+                      <RequireAdmin>
+                        <ChangePasswordPage inAdmin />
+                      </RequireAdmin>
+                    }
+                  />
                   <Route
                     path="/admin/users"
                     element={

@@ -1,5 +1,5 @@
 import type { ComponentType, ReactNode } from "react"
-import { ChevronRight, Info, ListChecks, Scale, ShieldCheck, TrendingUp, User } from "lucide-react"
+import { ChevronRight, Info, KeyRound, ListChecks, Scale, ShieldCheck, TrendingUp, User } from "lucide-react"
 import { Link } from "react-router"
 import { useAuth } from "@/features/auth/components/AuthContext"
 import { SHEET_FOCUS } from "@/components/ui/sheet"
@@ -83,6 +83,7 @@ export function SettingsPage() {
       </Group>
 
       <Group title="Khác">
+        <Row to="/settings/password" Icon={KeyRound} title="Đổi mật khẩu" sub="Đăng xuất các thiết bị khác" />
         <Row to="/settings/privacy" Icon={ShieldCheck} title="Dữ liệu & quyền riêng tư" sub="Camera, clip, trợ lý" />
         <Row to="/settings/about" Icon={Info} title="Giới thiệu & điều khoản" sub="Cam kết an toàn" />
       </Group>
