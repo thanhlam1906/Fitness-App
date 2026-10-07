@@ -81,6 +81,13 @@ class AdminWorkoutInsightsControllerIntegrationTest extends PostgresIntegrationT
 		// Buổi lỡ: PLANNED mà đã qua ngày, không có buổi tập.
 		jdbc.update("insert into scheduled_workouts (program_id, scheduled_on, week_index) values (?, current_date - 2, 1)",
 				program);
+		// Chương trình cũ đã lưu trữ (người dùng đổi chương trình): buổi PLANNED của nó không phải buổi lỡ.
+		UUID archived = jdbc.queryForObject(
+				"insert into programs (user_id, template_id, params, start_date, status) "
+						+ "values (?, ?, '{}'::jsonb, current_date - 20, 'ARCHIVED') returning id",
+				UUID.class, user, template);
+		jdbc.update("insert into scheduled_workouts (program_id, scheduled_on, week_index) values (?, current_date - 3, 1)",
+				archived);
 		jdbc.update("insert into scheduled_exercises (scheduled_workout_id, exercise_id, order_index, target_sets, "
 				+ "target_reps, target_reps_max) values (?, ?, 0, 12, 8, 12)", workout, squat);
 		// Bench trong lịch đã bị đổi sang chống đẩy.
