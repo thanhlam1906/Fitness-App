@@ -148,7 +148,7 @@ export function UserListPage() {
 
         {page && (
           <div className="mt-4 overflow-x-auto rounded-[var(--radius-md)] bg-[var(--color-surface)]">
-            <table className="w-full min-w-[1000px] text-sm">
+            <table className="w-full min-w-[1080px] text-sm">
               <thead>
                 <tr className="border-b border-[var(--color-border)] text-left text-[10px] tracking-[0.1em] text-[var(--color-text-muted)] uppercase">
                   <SortHeader column="email" label="Người dùng" params={params} onSort={(s) => update(s)} />
@@ -161,6 +161,7 @@ export function UserListPage() {
                   <th className="px-4 py-3 text-right font-normal">Clip</th>
                   <th className="px-4 py-3 font-normal">Tuân thủ lịch</th>
                   <th className="px-4 py-3 font-normal">Trạng thái</th>
+                  <th className="px-4 py-3 font-normal" />
                 </tr>
               </thead>
               <tbody>
@@ -172,9 +173,11 @@ export function UserListPage() {
                         to={`/admin/users/${user.id}`}
                         state={{ back: `/admin/users?${searchParams.toString()}` }}
                       >
-                        {user.fullName ?? "—"}
+                        {/* Tài khoản chưa có họ tên thì lấy email làm chữ để bấm — một dấu "—" thì
+                            không ai nhận ra đó là đường vào hồ sơ (người dùng hỏi 10-07). */}
+                        {user.fullName ?? user.email}
                       </Link>
-                      <div className="text-xs text-[var(--color-text-muted)]">{user.email}</div>
+                      {user.fullName && <div className="text-xs text-[var(--color-text-muted)]">{user.email}</div>}
                     </td>
                     <td className="px-4 py-3">{ROLE_LABEL[user.role]}</td>
                     <td className="num px-4 py-3 text-[var(--color-text-muted)]">{formatDate(user.createdAt)}</td>
@@ -200,11 +203,21 @@ export function UserListPage() {
                         {STATUS_LABEL[user.status]}
                       </span>
                     </td>
+                    <td className="px-4 py-3 text-right">
+                      {/* Khoá, đổi vai trò, đặt lại mật khẩu, xoá nằm ở hồ sơ — nút này chỉ đường tới đó. */}
+                      <Link
+                        className="inline-flex h-8 items-center rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-xs font-semibold whitespace-nowrap hover:bg-[var(--color-surface-2)] focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]"
+                        to={`/admin/users/${user.id}`}
+                        state={{ back: `/admin/users?${searchParams.toString()}` }}
+                      >
+                        Quản lý
+                      </Link>
+                    </td>
                   </tr>
                 ))}
                 {page.items.length === 0 && (
                   <tr>
-                    <td colSpan={10} className="px-4 py-6 text-center text-[var(--color-text-muted)]">
+                    <td colSpan={11} className="px-4 py-6 text-center text-[var(--color-text-muted)]">
                       Không có người dùng nào khớp.
                     </td>
                   </tr>
