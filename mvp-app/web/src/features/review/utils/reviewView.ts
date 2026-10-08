@@ -1,4 +1,4 @@
-import type { CheckResult, Evidence } from "@/features/review/types"
+import type { CheckResult, Evidence, FilmingGuide } from "@/features/review/types"
 import { MEASURES, MOMENT_NAME, rangeText, type MeasureKey, type Moment, type ViewCode } from "@/lib/formMeasures"
 
 /** Mục do LLM chấm có tên tiếng Việt; kết quả rule cũ (trước V11) chỉ có code. */
@@ -61,4 +61,21 @@ export function gradedLines(g: Graded): string[] {
 export function checkDetails(c: CheckResult): string[] {
   const graded = gradedOf(c)
   return graded ? gradedLines(graded) : evidenceOf(c).map(evidenceLine)
+}
+
+/**
+ * Dòng "Để kiểm" của một góc quay, lấy từ hướng dẫn admin nhập. Seed viết "Ngang (bên hông) — kiểm
+ * tra …" mà thẻ đã ghi tên góc rồi, nên bỏ phần trước dấu gạch cho khỏi lặp.
+ */
+export function angleNote(guide: FilmingGuide | null, view: ViewCode): string | null {
+  const why = guide?.angles?.find((a) => a.code === view)?.why
+  if (!why) return null
+  // Chỉ cắt ở dấu gạch đầu: phần sau có thể chứa dấu gạch của chính câu admin viết.
+  const i = why.indexOf(" — ")
+  return (i >= 0 ? why.slice(i + 3) : why).trim()
+}
+
+/** Góc bài cần mà chưa clip nào được gắn: khớp cần kiểm ở góc đó sẽ không chấm được. */
+export function missingViews(needed: ViewCode[], picked: string[]): ViewCode[] {
+  return needed.filter((v) => !picked.includes(v))
 }

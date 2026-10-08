@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { checkDetails, checkLabel, evidenceLine, evidenceOf, gradedOf, isOverallOk } from "./reviewView"
+import { angleNote, checkDetails, missingViews, checkLabel, evidenceLine, evidenceOf, gradedOf, isOverallOk } from "./reviewView"
 import type { CheckResult } from "@/features/review/types"
 
 const check = (over: Partial<CheckResult>): CheckResult => ({
@@ -84,5 +84,50 @@ describe("kết quả chấm theo ngưỡng", () => {
     expect(checkDetails(check({ measured: JSON.stringify({ evidence: [EVIDENCE] }) }))).toEqual([
       "Rep 4 · góc ngang · tỉ lệ độ sâu ở điểm xa nhất 1.42",
     ])
+  })
+})
+
+describe("angleNote", () => {
+  const guide = {
+    angles: [
+      { code: "SAGITTAL", label: "Ngang", why: "Ngang (bên hông) — kiểm tra độ sâu và độ nghiêng thân." },
+      { code: "FRONTAL", label: "Chính diện", why: "gối có chụm vào trong không" },
+    ],
+  }
+
+  it("bỏ phần tên góc trước dấu gạch, chỉ giữ điều cần kiểm", () => {
+    expect(angleNote(guide, "SAGITTAL")).toBe("kiểm tra độ sâu và độ nghiêng thân.")
+  })
+
+  it("chỉ cắt ở dấu gạch đầu, giữ nguyên các dấu gạch sau", () => {
+    const g = { angles: [{ code: "SAGITTAL", label: "Ngang", why: "Ngang — kiểm tra độ sâu — quan trọng nhất" }] }
+    expect(angleNote(g, "SAGITTAL")).toBe("kiểm tra độ sâu — quan trọng nhất")
+  })
+
+  it("giữ nguyên câu admin nhập khi không có tên góc phía trước", () => {
+    expect(angleNote(guide, "FRONTAL")).toBe("gối có chụm vào trong không")
+  })
+
+  it("góc admin chưa nhập hoặc chưa có hướng dẫn thì không có dòng nào", () => {
+    expect(angleNote(guide, "DIAGONAL")).toBeNull()
+    expect(angleNote(null, "SAGITTAL")).toBeNull()
+  })
+})
+
+describe("missingViews", () => {
+  it("bài cần 2 góc mà mới gửi 1 thì báo góc còn thiếu", () => {
+    expect(missingViews(["SAGITTAL", "FRONTAL"], ["SAGITTAL"])).toEqual(["FRONTAL"])
+  })
+
+  it("hai clip cùng một góc vẫn tính là thiếu góc kia", () => {
+    expect(missingViews(["SAGITTAL", "FRONTAL"], ["SAGITTAL", "SAGITTAL"])).toEqual(["FRONTAL"])
+  })
+
+  it("đủ góc thì không thiếu, thứ tự clip không quan trọng", () => {
+    expect(missingViews(["SAGITTAL", "FRONTAL"], ["FRONTAL", "SAGITTAL"])).toEqual([])
+  })
+
+  it("clip góc thừa không làm thiếu góc nào", () => {
+    expect(missingViews(["SAGITTAL"], ["SAGITTAL", "DIAGONAL"])).toEqual([])
   })
 })

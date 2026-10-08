@@ -4,6 +4,7 @@ import type { PoseLandmarker } from "@mediapipe/tasks-vision"
 import { ApiError } from "@/api/client"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { BackLink } from "@/features/review/components/BackLink"
 import { FlowScreen } from "@/components/UserShell"
 import { drawSkeleton, drawVideoMirrored, pill, readTheme, type HudTheme } from "@/features/review/utils/liveDraw"
 import {
@@ -147,7 +148,9 @@ export function LiveCheckPage() {
 
   return (
     <FlowScreen>
-      <h1 className="text-[26px] font-extrabold tracking-[-0.02em]">
+      {/* Bấm nhầm bài thì quay lại chọn bài khác; rời trang thì effect dọn dẹp tự tắt camera. */}
+      <BackLink to="/form-check">← Chọn bài khác</BackLink>
+      <h1 className="mt-2.5 text-[26px] font-extrabold tracking-[-0.02em]">
         {exercise.data ? `Chấm form: ${exercise.data.nameVi ?? exercise.data.nameEn}` : "Chấm form"}
       </h1>
       <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--color-text-muted)]">
@@ -229,12 +232,43 @@ export function LiveCheckPage() {
           </>
         )}
       </div>
-      <Link
-        to={`/form-check/${exerciseId}`}
-        className="mt-3 self-center rounded-[var(--radius-sm)] text-xs text-[var(--color-text-muted)] underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
-      >
-        Đã quay sẵn? Gửi clip thay vì bật camera
-      </Link>
+      {screen === "consent" && (
+        <>
+          <div className="mt-3.5 flex items-center gap-2.5 text-xs text-[var(--color-text-muted)] before:h-px before:flex-1 before:bg-[var(--color-border)] after:h-px after:flex-1 after:bg-[var(--color-border)]">
+            hoặc
+          </div>
+          {/* Lối gửi clip quay sẵn từng là dòng chữ nhỏ gạch chân, người dùng không thấy; làm thành nút. */}
+          <Link
+            to={`/form-check/${exerciseId}`}
+            className="mt-3 flex min-h-14 items-center gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+          >
+            <svg
+              aria-hidden
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="shrink-0 text-[var(--color-accent)]"
+            >
+              <path d="M12 16V4M7 9l5-5 5 5" />
+              <path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" />
+            </svg>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-bold">Gửi video đã quay sẵn</span>
+              <span className="block text-xs text-[var(--color-text-muted)]">
+                Chọn clip có sẵn trong máy, không cần bật camera
+              </span>
+            </span>
+            <span aria-hidden className="text-[var(--color-text-muted)]">
+              ›
+            </span>
+          </Link>
+        </>
+      )}
     </FlowScreen>
   )
 }
