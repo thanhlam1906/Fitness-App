@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from "react"
+import { Ban, Camera, CloudOff, CloudUpload } from "lucide-react"
 import { Link, useNavigate, useParams } from "react-router"
 import type { PoseLandmarker } from "@mediapipe/tasks-vision"
 import { ApiError } from "@/api/client"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { BackLink } from "@/features/review/components/BackLink"
+import { PoseLoading, Viewfinder } from "@/features/review/components/PoseLoading"
 import { FlowScreen } from "@/components/UserShell"
+import { IconCircle, IconText, Notice } from "@/components/StatusViews"
 import { drawSkeleton, drawVideoMirrored, pill, readTheme, type HudTheme } from "@/features/review/utils/liveDraw"
 import {
   advance,
@@ -27,6 +30,10 @@ const WASM_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/w
 const MODEL_URL =
   "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/latest/pose_landmarker_full.task"
 const FLASH_MS = 2000
+// Cỡ hai file tải lần đầu (wasm bản 0.10.14, model float16 lúc 10-2026) để thanh chờ chạy theo byte thật.
+// ponytail: cỡ ghi cứng; file đổi cỡ thì thanh chỉ chạy lệch (đứng ở cuối hoặc nhảy), không hỏng gì.
+const WASM_BYTES = 9_400_000
+const MODEL_BYTES = 9_400_000
 
 type Screen = "consent" | "loading" | "live" | "sending" | "failed"
 
@@ -52,6 +59,7 @@ export function LiveCheckPage() {
   const [screen, setScreen] = useState<Screen>("consent")
   const [optIn, setOptIn] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [progress, setProgress] = useState(0)
 
   // Rời trang giữa chừng thì tắt camera, không để đèn camera còn sáng.
   useEffect(
@@ -71,8 +79,11 @@ export function LiveCheckPage() {
   async function start() {
     setScreen("loading")
     setError(null)
+    // Bật lại lần hai: bộ nhận dạng đã có sẵn, chỉ còn chờ camera.
+    setProgress(landmarker.current ? 1 : 0)
     try {
-      landmarker.current ??= await createLandmarker()
+      landmarker.current ??= await createLandmarker(setProgress)
+      setProgress(1)
       stream.current = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false,
@@ -137,14 +148,6 @@ export function LiveCheckPage() {
   }
 
   const quota = submit.error instanceof ApiError && submit.error.status === 429
-  const placeholder =
-    screen === "loading"
-      ? "Đang tải bộ nhận dạng tư thế (khoảng 10 MB)…"
-      : screen === "sending"
-        ? "Đang gửi số đo để chấm…"
-        : screen === "failed"
-          ? "Chưa gửi được. Số đo vẫn còn trên máy, bấm Gửi lại."
-          : "Camera chưa bật."
 
   return (
     <FlowScreen>
@@ -158,7 +161,9 @@ export function LiveCheckPage() {
         {views.map((v) => VIEW_NAME[v]).join(" → ")}.
       </p>
       {exercise.data && views.length === 0 && (
-        <p className="mt-3 text-sm text-[var(--color-danger)]">Bài này chưa chấm form được.</p>
+        <Notice icon={Ban} tone="danger" className="mt-3">
+          Bài này chưa chấm form được.
+        </Notice>
       )}
 
       <div className="relative mt-4 overflow-hidden rounded-xl bg-[var(--color-surface)]">
@@ -170,10 +175,10 @@ export function LiveCheckPage() {
           aria-label="Hình camera kèm hướng dẫn vào khung, xoay góc và đếm rep"
           className={screen === "live" ? "block w-full" : "hidden"}
         />
-        {screen !== "live" && (
-          <div className="flex h-[240px] items-center justify-center px-6 text-center text-sm text-[var(--color-text-muted)]">
-            {placeholder}
-          </div>
+        {screen === "loading" ? (
+          <PoseLoading progress={progress} />
+        ) : (
+          screen !== "live" && <CameraStatus screen={screen} />
         )}
       </div>
 
@@ -189,11 +194,14 @@ export function LiveCheckPage() {
         </label>
       )}
 
-      {error && <p className="mt-3 text-sm text-[var(--color-danger)]">{error}</p>}
+      {error && <IconText className="mt-3">{error}</IconText>}
       {screen === "failed" && (
-        <p className="mt-3 text-sm text-[var(--color-danger)]">
-          {quota ? "Bạn đã dùng hết lượt chấm trong 7 ngày qua. Thử lại vào tuần sau." : submit.error?.message}
-        </p>
+        <IconText className="mt-3">
+          {/* Câu "số đo còn trên máy" từng nằm trong khung camera, nay khung chỉ còn biểu tượng. */}
+          {quota
+            ? "Bạn đã dùng hết lượt chấm trong 7 ngày qua. Thử lại vào tuần sau."
+            : `${submit.error?.message ?? ""} Số đo vẫn còn trên máy, bấm Gửi lại.`}
+        </IconText>
       )}
 
       <div className="flex-1" />
@@ -273,6 +281,33 @@ export function LiveCheckPage() {
   )
 }
 
+const STATUS = {
+  consent: { icon: Camera, label: "Camera chưa bật", tone: "muted" },
+  sending: { icon: CloudUpload, label: "Đang gửi số đo để chấm", tone: "accent" },
+  failed: { icon: CloudOff, label: "Chưa gửi được", tone: "danger" },
+} as const
+
+/**
+ * Khung camera khi chưa có hình: biểu tượng thay câu chữ (doc/mockup-khung-cho, người dùng duyệt 10-09).
+ * Lý do cụ thể khi gửi lỗi nằm ở dòng chữ đỏ dưới khung.
+ */
+function CameraStatus({ screen }: { screen: keyof typeof STATUS }) {
+  const { icon, label, tone } = STATUS[screen]
+  return (
+    <div role="status" aria-label={label} className="relative grid h-[240px] place-items-center">
+      {screen === "consent" && <Viewfinder on={false} />}
+      <IconCircle icon={icon} tone={tone} className="size-17 [&>svg]:size-7.5">
+        {screen === "sending" && (
+          <span
+            aria-hidden
+            className="absolute inset-0 animate-ping rounded-full border-2 border-[var(--color-accent)] motion-reduce:animate-none"
+          />
+        )}
+      </IconCircle>
+    </div>
+  )
+}
+
 /** Chữ hướng dẫn trên hình camera, theo từng bước của máy trạng thái. */
 function drawHud(ctx: CanvasRenderingContext2D, t: HudTheme, s: Session, pose: PoseRead, now: number) {
   const { width: w, height: h } = ctx.canvas
@@ -304,21 +339,70 @@ function drawHud(ctx: CanvasRenderingContext2D, t: HudTheme, s: Session, pose: P
   }
 }
 
-async function createLandmarker(): Promise<PoseLandmarker> {
+async function createLandmarker(onProgress: (fraction: number) => void): Promise<PoseLandmarker> {
   // Nạp thư viện lúc bấm nút, không nằm trong bundle chính: phần lớn người dùng không mở màn này.
   const mp = await import("@mediapipe/tasks-vision")
   const files = await mp.FilesetResolver.forVisionTasks(WASM_URL)
+  // Tự tải hai file lớn để đếm byte cho thanh chờ: MediaPipe tự tải thì không báo tiến độ. Tải chỉ chiếm
+  // 90% thanh: dựng wasm và GPU sau đó còn mất vài giây trên điện thoại yếu, thanh đầy sớm trông như treo.
+  const got = { wasm: 0, model: 0 }
+  const report = () => onProgress((0.9 * (got.wasm + got.model)) / (WASM_BYTES + MODEL_BYTES))
+  // Một file hỏng thì huỷ file kia: không tốn thêm 9 MB và không đẩy thanh của lần bấm sau.
+  const abort = new AbortController()
+  const [wasm, model] = await Promise.all([
+    download(files.wasmBinaryPath, abort.signal, (n) => {
+      got.wasm = Math.min(n, WASM_BYTES)
+      report()
+    }),
+    download(MODEL_URL, abort.signal, (n) => {
+      got.model = Math.min(n, MODEL_BYTES)
+      report()
+    }),
+  ]).catch((e: unknown) => {
+    abort.abort()
+    throw e
+  })
+  // Wasm đã có trong bộ nhớ: đưa MediaPipe link blob thay vì để nó tải lại từ CDN.
+  const wasmUrl = URL.createObjectURL(new Blob([wasm], { type: "application/wasm" }))
+  const fileset = { ...files, wasmBinaryPath: wasmUrl }
   const options = (delegate: "GPU" | "CPU") => ({
-    baseOptions: { modelAssetPath: MODEL_URL, delegate },
+    baseOptions: { modelAssetBuffer: model, delegate },
     runningMode: "VIDEO" as const,
     numPoses: 1,
   })
   try {
-    return await mp.PoseLandmarker.createFromOptions(files, options("GPU"))
+    return await mp.PoseLandmarker.createFromOptions(fileset, options("GPU"))
   } catch {
     // Máy không có WebGL2 thì chạy CPU: chậm hơn nhưng vẫn dùng được.
-    return await mp.PoseLandmarker.createFromOptions(files, options("CPU"))
+    return await mp.PoseLandmarker.createFromOptions(fileset, options("CPU"))
+  } finally {
+    URL.revokeObjectURL(wasmUrl)
   }
+}
+
+/** Tải một file, báo số byte đã nhận sau mỗi gói. */
+async function download(
+  url: string,
+  signal: AbortSignal,
+  onBytes: (received: number) => void,
+): Promise<Uint8Array<ArrayBuffer>> {
+  const res = await fetch(url, { signal })
+  if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`)
+  const reader = res.body.getReader()
+  const chunks: Uint8Array[] = []
+  let received = 0
+  for (let part = await reader.read(); !part.done; part = await reader.read()) {
+    chunks.push(part.value)
+    received += part.value.length
+    onBytes(received)
+  }
+  const all = new Uint8Array(received)
+  let at = 0
+  for (const chunk of chunks) {
+    all.set(chunk, at)
+    at += chunk.length
+  }
+  return all
 }
 
 function cameraError(e: unknown): string {

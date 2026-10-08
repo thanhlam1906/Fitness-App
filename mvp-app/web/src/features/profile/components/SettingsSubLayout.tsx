@@ -1,7 +1,8 @@
 import type { ReactNode } from "react"
-import { ChevronLeft } from "lucide-react"
+import { ChevronLeft, CloudOff } from "lucide-react"
 import { Link } from "react-router"
 import { SHEET_FOCUS } from "@/components/ui/sheet"
+import { StatusBlock } from "@/components/StatusViews"
 import { cn } from "@/lib/cn"
 
 /** Khung chung của các màn con trong Cài đặt: nút "‹ Cài đặt" và tiêu đề. */
@@ -24,11 +25,13 @@ export function SettingsSubLayout({ title, children }: { title: string; children
   )
 }
 
-/** Dòng trạng thái tải/lỗi dùng chung cho các màn con. */
-export function LoadState({ error }: { error?: Error | null }) {
+/** Trạng thái tải/lỗi dùng chung cho các màn con; `skeleton` là khung của chính màn đó. */
+export function LoadState({ error, skeleton }: { error?: Error | null; skeleton: ReactNode }) {
   return error ? (
-    <p className="mt-5 text-sm text-[var(--color-danger)]">{error.message}</p>
+    <StatusBlock icon={CloudOff} tone="danger" title="Không tải được dữ liệu" detail={error.message} className="mt-5" />
   ) : (
-    <p className="mt-5 text-sm text-[var(--color-text-muted)]">Đang tải…</p>
+    <div role="status" aria-label="Đang tải">
+      {skeleton}
+    </div>
   )
 }

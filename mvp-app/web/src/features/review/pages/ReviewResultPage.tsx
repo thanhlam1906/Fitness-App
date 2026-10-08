@@ -1,10 +1,24 @@
+import type { ReactNode } from "react"
 import { Link, useParams } from "react-router"
+import {
+  CircleCheckBig,
+  CloudOff,
+  Dumbbell,
+  EyeOff,
+  Repeat,
+  ScanLine,
+  SwitchCamera,
+  TriangleAlert,
+  type LucideIcon,
+} from "lucide-react"
 import { Stepper } from "@/components/Stepper"
 import { VerdictChip } from "@/features/review/components/VerdictChip"
 import { WrongFeedbackButton } from "@/features/feedback/components/WrongFeedbackButton"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { FlowScreen } from "@/components/UserShell"
+import { IconCircle, StatusBlock, type Tone } from "@/components/StatusViews"
 import { cn } from "@/lib/cn"
 import { formatDayMonth } from "@/lib/format"
 import { checkDetails, checkLabel, isOverallOk } from "@/features/review/utils/reviewView"
@@ -23,10 +37,10 @@ export function ReviewResultPage() {
   const review = useReview(reviewId!)
 
   if (review.isLoading) {
-    return <p className="text-sm text-[var(--color-text-muted)]">Đang tải…</p>
+    return <ResultSkeleton />
   }
   if (review.isError) {
-    return <p className="text-sm text-[var(--color-danger)]">{review.error.message}</p>
+    return <StatusBlock icon={CloudOff} tone="danger" title="Không tải được kết quả" detail={review.error.message} />
   }
 
   const data = review.data!
@@ -49,34 +63,34 @@ export function ReviewResultPage() {
       )}
 
       {(data.status === "PENDING" || data.status === "PROCESSING") && (
-        <Card className="mt-5 space-y-3">
-          <p className="text-sm text-[var(--color-warn)]">Đang phân tích. Việc này mất vài giây tới vài chục giây.</p>
-          <p className="text-sm text-[var(--color-text-muted)]">
-            Không cần đợi ở đây — kết quả tự hiện khi xong, và vẫn nằm trong danh sách "Lần gửi gần đây".
-          </p>
+        <ResultCard
+          icon={ScanLine}
+          tone="warn"
+          scanning
+          title="Đang phân tích"
+          detail="Kết quả tự hiện khi xong, không cần đợi ở đây."
+        >
           <Link to="/form-check">
             <Button variant="secondary">Quay lại</Button>
           </Link>
-        </Card>
+        </ResultCard>
       )}
 
       {unknownExercise && (
-        <Card className="mt-5 space-y-3">
-          <p className="text-sm">Lần chấm này chưa có bài. Chọn bài rồi tập lại.</p>
+        <ResultCard icon={Dumbbell} title="Lần chấm này chưa có bài" detail="Chọn bài rồi tập lại.">
           <Link to="/form-check">
             <Button>Chọn bài</Button>
           </Link>
-        </Card>
+        </ResultCard>
       )}
       {data.status === "REJECTED" && !unknownExercise && <RejectedCard review={data} again={again} />}
 
       {data.status === "FAILED" && (
-        <Card className="mt-5 space-y-3">
-          <p className="text-sm text-[var(--color-danger)]">Chấm không thành công. {data.error}</p>
+        <ResultCard icon={TriangleAlert} tone="danger" title="Chấm không thành công" detail={data.error}>
           <Link to={again}>
             <Button>Thử lại</Button>
           </Link>
-        </Card>
+        </ResultCard>
       )}
 
       {data.status === "DONE" && (
@@ -109,11 +123,13 @@ export function ReviewResultPage() {
               </div>
             </div>
           ) : (
-            <Card className="mt-4">
-              <p className="text-sm text-[var(--color-success)]">
-                Không có lỗi nào ở các mục chấm được. Giữ nguyên như vậy.
-              </p>
-            </Card>
+            <ResultCard
+              icon={CircleCheckBig}
+              tone="success"
+              title="Không có lỗi nào"
+              detail="Giữ nguyên như vậy."
+              className="mt-4"
+            />
           )}
 
           <div className="mt-4 flex flex-col gap-2">
@@ -162,6 +178,35 @@ export function ReviewResultPage() {
   )
 }
 
+/** Cùng khung với kết quả đã chấm: stepper, tiêu đề, tên bài, nhãn kết luận, thẻ lỗi chính, các mục, hai nút. */
+function ResultSkeleton() {
+  return (
+    <FlowScreen>
+      <div role="status" aria-label="Đang tải" className="flex flex-1 flex-col">
+        <div className="flex justify-between">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-3 w-16" />
+        </div>
+        <Skeleton className="mt-2.5 h-1.5 w-full" />
+        <Skeleton className="mt-3 h-8 w-64" />
+        <Skeleton className="mt-1.5 h-3 w-48" />
+        <Skeleton className="mt-4 h-11" />
+        <Skeleton className="mt-5 h-8 w-32 rounded-full" />
+        <Skeleton className="mt-4 h-40 rounded-xl" />
+        <div className="mt-4 flex flex-col gap-2">
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+        </div>
+        <div className="flex-1" />
+        <div className="mt-6 flex gap-2.5">
+          <Skeleton className="h-12 flex-1" />
+          <Skeleton className="h-12 flex-1" />
+        </div>
+      </div>
+    </FlowScreen>
+  )
+}
+
 function subtitle(review: Review): string {
   const parts = [formatDayMonth(review.createdAt)]
   const clips = review.viewpoints.length
@@ -175,21 +220,57 @@ function subtitle(review: Review): string {
 
 /** §5.3 — bị từ chối phải nêu LÝ DO CỤ THỂ + đường thử lại, không phải "có lỗi xảy ra". */
 function RejectedCard({ review, again }: { review: Review; again: string }) {
-  const REASONS: Record<string, string> = {
-    BAD_VIEWPOINT: "Góc quay chưa dùng được cho bài này.",
-    LOW_VISIBILITY: "Không nhìn rõ người trong khung hình.",
-    NO_REPS: "Không tách được rep nào.",
-    UNREADABLE: "Không đọc được dữ liệu gửi lên.",
+  const REASONS: Record<string, { icon: LucideIcon; title: string }> = {
+    BAD_VIEWPOINT: { icon: SwitchCamera, title: "Góc quay chưa dùng được cho bài này" },
+    LOW_VISIBILITY: { icon: EyeOff, title: "Không nhìn rõ người trong khung hình" },
+    NO_REPS: { icon: Repeat, title: "Không tách được rep nào" },
+    UNREADABLE: { icon: TriangleAlert, title: "Không đọc được dữ liệu gửi lên" },
   }
+  const reason = REASONS[review.rejectReason ?? ""] ?? { icon: TriangleAlert, title: "Dữ liệu gửi lên chưa dùng được" }
   return (
-    <Card className="mt-5 space-y-3">
-      <p className="text-sm text-[var(--color-danger)]">
-        {REASONS[review.rejectReason ?? ""] ?? "Dữ liệu gửi lên chưa dùng được."}
-      </p>
-      {review.error && <p className="text-sm text-[var(--color-text-muted)]">{review.error}</p>}
+    <ResultCard icon={reason.icon} tone="warn" title={reason.title} detail={review.error}>
       <Link to={again}>
         <Button>Xem lại hướng dẫn và thử lại</Button>
       </Link>
+    </ResultCard>
+  )
+}
+
+/** Thẻ trạng thái của lần chấm, biểu tượng ở đầu thẻ (doc/mockup-bieu-tuong kiểu 3). */
+function ResultCard({
+  icon,
+  tone = "muted",
+  scanning = false,
+  title,
+  detail,
+  className = "mt-5",
+  children,
+}: {
+  icon: LucideIcon
+  tone?: Tone
+  scanning?: boolean
+  title: string
+  detail?: string | null
+  className?: string
+  children?: ReactNode
+}) {
+  return (
+    <Card className={cn("space-y-3.5", className)}>
+      <div className="flex items-center gap-3.5">
+        <IconCircle icon={icon} tone={tone} className="size-11.5 overflow-hidden [&>svg]:size-5.5">
+          {scanning && (
+            <span
+              aria-hidden
+              className="absolute inset-x-2 h-0.5 animate-[status-scan_1.6s_ease-in-out_infinite] bg-current shadow-[0_0_8px_currentColor] motion-reduce:hidden"
+            />
+          )}
+        </IconCircle>
+        <div className="min-w-0">
+          <b className="block text-[15px]">{title}</b>
+          {detail && <p className="mt-0.5 text-[12.5px] text-[var(--color-text-muted)]">{detail}</p>}
+        </div>
+      </div>
+      {children}
     </Card>
   )
 }

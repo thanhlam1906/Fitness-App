@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react"
+import { TrendingUp } from "lucide-react"
+import { IconText } from "@/components/StatusViews"
 import { useFormContext, useWatch } from "react-hook-form"
+import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/cn"
 import { useProgressionPreview } from "@/features/admin/api/useTemplates"
 import type { ProgramTemplateInput, ProgressionPreviewInput } from "@/features/admin/types"
@@ -88,7 +91,11 @@ export function ProgressionPreview({
   }, [hit, onHit])
 
   if (candidates.length === 0) {
-    return <p className="mt-2 text-[13px] text-[var(--color-text-muted)]">Cần ít nhất một bài có “Tăng mỗi lần” để thử.</p>
+    return (
+      <IconText icon={TrendingUp} tone="muted" className="mt-2 text-[13px]">
+        Cần ít nhất một bài có “Tăng mỗi lần” để thử
+      </IconText>
+    )
   }
 
   const label = "text-[13px] text-[var(--color-text-muted)]"
@@ -157,9 +164,15 @@ export function ProgressionPreview({
           {!input ? (
             <p className="text-xs text-[var(--color-text-muted)]">Sửa các ô đang lỗi để thử.</p>
           ) : preview.isError ? (
-            <p className="text-xs text-[var(--color-danger)]">{preview.error.message}</p>
+            <IconText className="text-xs">{preview.error.message}</IconText>
           ) : !result ? (
-            <p className="text-xs text-[var(--color-text-muted)]">Đang tính…</p>
+            // Khung của kết quả: nhãn "Buổi tới", số tải lớn, hai dòng lý do.
+            <div role="status" aria-label="Đang tải">
+              <Skeleton className="h-3 w-14" />
+              <Skeleton className="mt-1.5 h-7 w-36" />
+              <Skeleton className="mt-2 h-4 w-full" />
+              <Skeleton className="mt-1 h-4 w-3/4" />
+            </div>
           ) : (
             <>
               <div className="text-xs text-[var(--color-text-muted)]">Buổi tới</div>

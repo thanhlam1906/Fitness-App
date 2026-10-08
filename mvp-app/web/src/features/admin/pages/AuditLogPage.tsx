@@ -1,5 +1,7 @@
 import { useState } from "react"
+import { IconText } from "@/components/StatusViews"
 import { useAuditLog } from "@/features/admin/api/useAdminUsers"
+import { TableSkeleton } from "@/components/ui/skeleton"
 import { AdminHeader } from "@/features/admin/components/AdminShell"
 import { AuditLogTable } from "@/features/admin/components/AuditLogTable"
 
@@ -11,8 +13,8 @@ export function AuditLogPage() {
     <>
       <AdminHeader group="Theo dõi" title="Nhật ký quản trị" />
       <div className="overflow-auto px-7 py-5.5">
-        {log.isLoading && <p className="text-sm text-[var(--color-text-muted)]">Đang tải…</p>}
-        {log.isError && <p className="text-sm text-[var(--color-danger)]">{log.error.message}</p>}
+        {log.isLoading && <TableSkeleton />}
+        {log.isError && <IconText>{log.error.message}</IconText>}
         {log.data && <AuditLogTable page={log.data} showTarget onPage={setPage} />}
       </div>
     </>

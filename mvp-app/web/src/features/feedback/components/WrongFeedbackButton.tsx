@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Input } from "@/components/ui/input"
+import { IconText } from "@/components/StatusViews"
 import { useReportWrong } from "@/features/feedback/api/useReportWrong"
 import type { FeedbackSource } from "@/features/feedback/types"
 
@@ -60,7 +61,7 @@ export function WrongFeedbackButton({ source, hint }: { source: FeedbackSource; 
       >
         Huỷ
       </button>
-      {send.isError && <span className="text-xs text-[var(--color-danger)]">Gửi thất bại.</span>}
+      {send.isError && <IconText className="text-xs">Gửi thất bại.</IconText>}
     </div>
   )
 }

@@ -1,5 +1,7 @@
 import { useRef, useState, type ReactNode } from "react"
+import { IconText } from "@/components/StatusViews"
 import { Link, useNavigate } from "react-router"
+import { ListRowsSkeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/cn"
 import { formatDate } from "@/lib/format"
 import { splitPdfs } from "@/features/admin/utils/corpusFiles"
@@ -18,7 +20,7 @@ export function CorpusListPanel({ activeId }: { activeId?: string }) {
     <div className="flex w-[340px] flex-none flex-col border-r border-[var(--color-border)]">
       <DropZone />
       <div className="min-h-0 flex-1 overflow-auto pb-4">
-        {error && <p className="px-4 text-sm text-[var(--color-danger)]">{error.message}</p>}
+        {error && <IconText className="px-4">{error.message}</IconText>}
         {pending.length > 0 && (
           <>
             <GroupLabel>
@@ -34,7 +36,7 @@ export function CorpusListPanel({ activeId }: { activeId?: string }) {
         <GroupLabel>
           Trong kho · <span className="num">{docs.length}</span>
         </GroupLabel>
-        {documents.isLoading && <p className="px-4 text-sm text-[var(--color-text-muted)]">Đang tải…</p>}
+        {documents.isLoading && <ListRowsSkeleton count={5} />}
         {docs.map((d) => (
           <Row key={d.id} to={`/admin/corpus/documents/${d.id}`} active={d.id === activeId} title={d.title}>
             <span className="num">
@@ -110,9 +112,9 @@ function DropZone() {
         {upload.isPending ? "Đang gửi…" : "hoặc bấm để chọn · nhiều file cùng lúc · tối đa 60 MB mỗi file"}
       </div>
       {errors.map((m) => (
-        <p key={m} className="mt-2 text-xs text-[var(--color-danger)]">
+        <IconText key={m} className="mt-2 text-xs">
           {m}
-        </p>
+        </IconText>
       ))}
       <input
         ref={input}

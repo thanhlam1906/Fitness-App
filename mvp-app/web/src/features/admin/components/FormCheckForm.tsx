@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react"
+import { IconText } from "@/components/StatusViews"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -141,7 +142,7 @@ export function FormCheckForm({
             {showErrors && errors.cueFailVi && <Err>{errors.cueFailVi}</Err>}
           </>,
         )}
-        {save.isError && <p className="col-span-2 text-sm text-[var(--color-danger)]">{save.error.message}</p>}
+        {save.isError && <IconText className="col-span-2">{save.error.message}</IconText>}
         <div className="col-span-2 flex gap-2.5">
           <Button size="sm" onClick={submit} disabled={save.isPending}>
             {save.isPending ? "Đang lưu…" : "Xong"}

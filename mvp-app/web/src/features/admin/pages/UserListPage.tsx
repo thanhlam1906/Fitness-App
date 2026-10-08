@@ -1,9 +1,13 @@
 import { useEffect, useState } from "react"
+import { Users } from "lucide-react"
+import { IconText } from "@/components/StatusViews"
+import { TableEmpty } from "@/features/admin/components/TableEmpty"
 import { Link, useSearchParams } from "react-router"
 import { AdminHeader } from "@/features/admin/components/AdminShell"
 import { CreateUserDialog } from "@/features/admin/components/CreateUserDialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { TableSkeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/cn"
 import { formatDate } from "@/lib/format"
 import { useAdminOverview, useAdminUsers } from "@/features/admin/api/useAdminUsers"
@@ -142,9 +146,9 @@ export function UserListPage() {
           </div>
         </div>
 
-        {exportError && <p className="mt-3 text-sm text-[var(--color-danger)]">{exportError}</p>}
-        {users.isLoading && <p className="mt-4 text-sm text-[var(--color-text-muted)]">Đang tải…</p>}
-        {users.isError && <p className="mt-4 text-sm text-[var(--color-danger)]">{users.error.message}</p>}
+        {exportError && <IconText className="mt-3">{exportError}</IconText>}
+        {users.isLoading && <TableSkeleton className="mt-4" />}
+        {users.isError && <IconText className="mt-4">{users.error.message}</IconText>}
 
         {page && (
           <div className="mt-4 overflow-x-auto rounded-[var(--radius-md)] bg-[var(--color-surface)]">
@@ -216,11 +220,9 @@ export function UserListPage() {
                   </tr>
                 ))}
                 {page.items.length === 0 && (
-                  <tr>
-                    <td colSpan={11} className="px-4 py-6 text-center text-[var(--color-text-muted)]">
-                      Không có người dùng nào khớp.
-                    </td>
-                  </tr>
+                  <TableEmpty icon={Users} colSpan={11}>
+                    Không có người dùng khớp
+                  </TableEmpty>
                 )}
               </tbody>
             </table>

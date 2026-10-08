@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router"
+import { IconText } from "@/components/StatusViews"
 import { Button } from "@/components/ui/button"
 import { formatDate } from "@/lib/format"
-import { ChunkList } from "./ChunkList"
+import { ChunkList, CorpusDetailSkeleton } from "./ChunkList"
 import { useDocument, useRemoveDocument } from "@/features/admin/api/useCorpus"
 
 /** Cột phải khi chọn một tài liệu trong kho: câu trả lời bị báo sai, các đoạn, nút gỡ. */
@@ -10,8 +11,8 @@ export function DocumentDetail({ id }: { id: string }) {
   const remove = useRemoveDocument()
   const navigate = useNavigate()
 
-  if (doc.isLoading) return <p className="text-sm text-[var(--color-text-muted)]">Đang tải…</p>
-  if (doc.isError) return <p className="text-sm text-[var(--color-danger)]">{doc.error.message}</p>
+  if (doc.isLoading) return <CorpusDetailSkeleton />
+  if (doc.isError) return <IconText>{doc.error.message}</IconText>
   const d = doc.data
   if (!d) return null
 
@@ -39,7 +40,7 @@ export function DocumentDetail({ id }: { id: string }) {
       >
         Gỡ khỏi trợ lý
       </Button>
-      {remove.isError && <p className="mt-2 text-sm text-[var(--color-danger)]">{remove.error.message}</p>}
+      {remove.isError && <IconText className="mt-2">{remove.error.message}</IconText>}
 
       {d.wrongAnswers.length > 0 && (
         <>

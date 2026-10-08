@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from "react"
 import { useNavigate, useParams } from "react-router"
+import { Ban, CloudOff, TriangleAlert } from "lucide-react"
 import { ApiError } from "@/api/client"
 import { Stepper } from "@/components/Stepper"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
 import { FlowScreen } from "@/components/UserShell"
+import { IconText, Notice, StatusBlock } from "@/components/StatusViews"
 import { BackLink } from "@/features/review/components/BackLink"
 import { Section } from "@/features/review/components/Section"
 import { parseFilmingGuide, VIEWPOINT_OPTIONS } from "@/features/review/types"
@@ -64,10 +67,10 @@ export function FilmingGuidePage() {
   useEffect(() => () => previews.forEach((u) => URL.revokeObjectURL(u)), [previews])
 
   if (exercise.isLoading) {
-    return <p className="text-sm text-[var(--color-text-muted)]">Đang tải…</p>
+    return <GuideSkeleton />
   }
   if (exercise.isError) {
-    return <p className="text-sm text-[var(--color-danger)]">{exercise.error.message}</p>
+    return <StatusBlock icon={CloudOff} tone="danger" title="Không tải được bài tập" detail={exercise.error.message} />
   }
 
   const name = exercise.data!.nameVi ?? exercise.data!.nameEn
@@ -107,7 +110,11 @@ export function FilmingGuidePage() {
       <p className="mt-1.5 text-[13px] text-[var(--color-text-muted)]">Quay mỗi góc một clip.</p>
 
       {/* Mở từ link cũ tới bài chưa có khớp cần kiểm: chặn như màn camera, gửi lên cũng không chấm được. */}
-      {views.length === 0 && <p className="mt-3 text-sm text-[var(--color-danger)]">Bài này chưa chấm form được.</p>}
+      {views.length === 0 && (
+        <Notice icon={Ban} tone="danger" className="mt-3">
+          Bài này chưa chấm form được.
+        </Notice>
+      )}
 
       {/* Chỉ các góc bài này có khớp cần kiểm; thẻ đầu mở sẵn, các thẻ sau gập cho màn đỡ dài. */}
       <div className="mt-4 flex flex-col gap-2.5">
@@ -199,18 +206,18 @@ export function FilmingGuidePage() {
       )}
 
       {missing.length > 0 && (
-        <p role="alert" className="mt-3 text-sm text-[var(--color-warn)]">
+        <Notice icon={TriangleAlert} tone="warn" role="alert" className="mt-3">
           Bài này cần đủ góc {views.map((v) => VIEW_NAME[v]).join(", ")}. Còn thiếu clip góc{" "}
           {missing.map((v) => VIEW_NAME[v]).join(", ")}: chọn lại clip hoặc đổi ô Góc quay.
-        </p>
+        </Notice>
       )}
       {quotaExceeded && (
-        <p className="mt-3 text-sm text-[var(--color-warn)]">
+        <IconText tone="warn" className="mt-3">
           Bạn đã dùng hết lượt chấm trong 7 ngày qua. Thử lại vào tuần sau.
-        </p>
+        </IconText>
       )}
       {submit.isError && !quotaExceeded && (
-        <p className="mt-3 text-sm text-[var(--color-danger)]">{submit.error.message}</p>
+        <IconText className="mt-3">{submit.error.message}</IconText>
       )}
 
       <div className="flex-1" />
@@ -247,6 +254,32 @@ export function FilmingGuidePage() {
           </Button>
         </div>
       )}
+    </FlowScreen>
+  )
+}
+
+/** Cùng khung với màn: nút quay lại, stepper, tiêu đề, thẻ góc đầu mở sẵn có ảnh, thẻ gập, ô đồng ý, nút chọn clip. */
+function GuideSkeleton() {
+  return (
+    <FlowScreen>
+      <div role="status" aria-label="Đang tải" className="flex flex-1 flex-col">
+        <Skeleton className="h-4 w-20" />
+        <div className="mt-2.5">
+          <div className="flex justify-between">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-3 w-16" />
+          </div>
+          <Skeleton className="mt-2.5 h-1.5 w-full" />
+        </div>
+        <Skeleton className="mt-3 h-8 w-64" />
+        <Skeleton className="mt-1.5 h-4 w-36" />
+        <Skeleton className="mt-4 h-80 rounded-[var(--radius-lg)]" />
+        <Skeleton className="mt-2.5 h-14 rounded-[var(--radius-lg)]" />
+        <Skeleton className="mt-3 h-11" />
+        <Skeleton className="mt-4 h-24 rounded-xl" />
+        <div className="flex-1" />
+        <Skeleton className="mt-6 h-[52px]" />
+      </div>
     </FlowScreen>
   )
 }

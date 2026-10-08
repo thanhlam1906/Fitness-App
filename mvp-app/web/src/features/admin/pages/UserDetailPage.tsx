@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { IconText } from "@/components/StatusViews"
 import { Link, useLocation, useParams } from "react-router"
 import { useAdminUser, useAuditLog } from "@/features/admin/api/useAdminUsers"
 import { AdminHeader } from "@/features/admin/components/AdminShell"
@@ -7,6 +8,7 @@ import { UserActionsCard } from "@/features/admin/components/UserActionsCard"
 import { ROLE_LABEL, STATUS_LABEL } from "@/features/admin/utils/userLabels"
 import { useAuth } from "@/features/auth/components/AuthContext"
 import { Card } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { EQUIPMENT_OPTIONS, EXPERIENCE_LEVELS, GOALS, labelOf } from "@/features/profile/types"
 import { formatDate } from "@/lib/format"
 
@@ -24,10 +26,24 @@ export function UserDetailPage() {
   const audit = useAuditLog(userId, auditPage)
 
   if (detail.isLoading) {
-    return <p className="p-7 text-sm text-[var(--color-text-muted)]">Đang tải…</p>
+    // Khung của trang: header, thẻ tài khoản (2 dòng), thẻ hồ sơ (5 dòng), ghi chú cuối.
+    return (
+      <>
+        <AdminHeader group="Theo dõi · người dùng" title={<Skeleton className="h-6 w-56" />}>
+          <Link to="/admin/users" className="text-[13px] whitespace-nowrap text-[var(--color-text-muted)] hover:text-[var(--color-text)]">
+            ← Danh sách
+          </Link>
+        </AdminHeader>
+        <div role="status" aria-label="Đang tải" className="space-y-4 overflow-auto px-7 py-5.5">
+          <Skeleton className="h-[104px]" />
+          <Skeleton className="h-[300px]" />
+          <Skeleton className="h-4 w-80" />
+        </div>
+      </>
+    )
   }
   if (detail.isError) {
-    return <p className="p-7 text-sm text-[var(--color-danger)]">{detail.error.message}</p>
+    return <IconText className="p-7">{detail.error.message}</IconText>
   }
 
   const d = detail.data!

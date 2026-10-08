@@ -1,4 +1,6 @@
 import { Link } from "react-router"
+import { IconText } from "@/components/StatusViews"
+import { ListRowsSkeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/cn"
 import { useTemplates } from "@/features/admin/api/useTemplates"
 
@@ -15,8 +17,8 @@ export function TemplateListPanel({ activeId }: { activeId?: string }) {
         + Thêm template
       </Link>
       <div className="min-h-0 flex-1 overflow-auto">
-        {templates.isLoading && <p className="p-4 text-sm text-[var(--color-text-muted)]">Đang tải…</p>}
-        {templates.isError && <p className="p-4 text-sm text-[var(--color-danger)]">{templates.error.message}</p>}
+        {templates.isLoading && <ListRowsSkeleton />}
+        {templates.isError && <IconText className="p-4">{templates.error.message}</IconText>}
         {templates.data?.map((t) => {
           const active = t.id === activeId
           const sessions = t.sessionsMin === t.sessionsMax ? `${t.sessionsMin}` : `${t.sessionsMin}–${t.sessionsMax}`

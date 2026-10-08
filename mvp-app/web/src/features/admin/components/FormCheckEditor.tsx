@@ -1,4 +1,7 @@
 import { useState } from "react"
+import { Crosshair, TriangleAlert } from "lucide-react"
+import { IconText, Notice } from "@/components/StatusViews"
+import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/cn"
 import { MEASURES, MOMENT_NAME, VIEW_NAME, VIEW_ORDER, shortRule, type ViewCode } from "@/lib/formMeasures"
 import type { FormCheck } from "@/features/exercise/types"
@@ -30,8 +33,8 @@ export function FormCheckEditor({ exerciseId }: { exerciseId: string }) {
         <HelpButton open={help.isOpen("form")} onClick={() => help.toggle("form")} />
       </div>
       {help.isOpen("form") && <HelpText id="form" className="mt-2" />}
-      {formChecks.isLoading && <p className="mt-1 text-sm text-[var(--color-text-muted)]">Đang tải…</p>}
-      {formChecks.isError && <p className="mt-1 text-sm text-[var(--color-danger)]">{formChecks.error.message}</p>}
+      {formChecks.isLoading && <Skeleton className="mt-2 h-4 w-64" />}
+      {formChecks.isError && <IconText className="mt-1">{formChecks.error.message}</IconText>}
       {formChecks.data &&
         (order.length > 0 ? (
           <p className="mt-1 text-[13px] text-[var(--color-text-muted)]">
@@ -39,9 +42,9 @@ export function FormCheckEditor({ exerciseId }: { exerciseId: string }) {
             <b className="text-[var(--color-text)]">{order.map((v) => VIEW_NAME[v]).join(" → ")}</b>
           </p>
         ) : (
-          <p className="mt-1 text-[13px] text-[var(--color-warn)]">
+          <Notice icon={TriangleAlert} tone="warn" className="mt-2">
             Chưa chấm form được. Chọn góc quay rồi thêm khớp cần kiểm.
-          </p>
+          </Notice>
         ))}
 
       <div className="mt-4 flex items-center text-[13px] text-[var(--color-text-muted)]">
@@ -85,10 +88,16 @@ export function FormCheckEditor({ exerciseId }: { exerciseId: string }) {
         <p className="mt-2 text-[13px] text-[var(--color-text-muted)]">Góc chéo đo kém chính xác hơn. Chỉ dùng khi thật cần.</p>
       )}
 
+      {formChecks.isLoading && (
+        <div role="status" aria-label="Đang tải">
+          <Skeleton className="mt-2.5 h-[62px] rounded-xl" />
+          <Skeleton className="mt-2.5 h-[62px] rounded-xl" />
+        </div>
+      )}
       {formChecks.data && inView.length === 0 && editing !== "new" && (
-        <p className="mt-2.5 text-[13px] text-[var(--color-text-muted)]">
-          Góc {VIEW_NAME[view].toLowerCase()} chưa có khớp nào.
-        </p>
+        <IconText icon={Crosshair} tone="muted" className="mt-2.5 text-[13px]">
+          Góc {VIEW_NAME[view].toLowerCase()} chưa có khớp nào
+        </IconText>
       )}
       {inView.map((c) =>
         editing === c.id ? (

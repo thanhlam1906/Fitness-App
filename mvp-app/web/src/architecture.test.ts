@@ -40,4 +40,20 @@ describe("chuẩn cấu trúc", () => {
   it("đuôi Page chỉ nằm trong pages/, pages/ chỉ chứa đuôi Page", () => {
     expect(files.filter((f) => !isTest(f) && f.endsWith("Page.tsx") !== f.includes("/pages/"))).toEqual([])
   })
+
+  // Chờ dữ liệu thì hiện khung xám (components/ui/skeleton.tsx), không hiện chữ — người dùng chốt 10-08.
+  // aria-label="Đang tải" thì được: chỉ trình đọc màn hình đọc, mắt không thấy.
+  it("không hiện chữ Đang tải", () => {
+    const wrong = files.filter(
+      (f) =>
+        !isTest(f) &&
+        !WAITING_FOR_DASHBOARD.has(f) &&
+        readFileSync(path.join(SRC, f), "utf8").replaceAll('aria-label="Đang tải"', "").includes("Đang tải"),
+    )
+    expect(wrong).toEqual([])
+  })
 })
+
+// Đang có thay đổi dở của trang Tổng quan admin ở thư mục chính chưa commit; người dùng chọn sửa sau khi
+// phần đó commit (10-08). Sửa xong thì xoá khỏi đây.
+const WAITING_FOR_DASHBOARD = new Set(["features/admin/pages/WorkoutInsightsPage.tsx"])

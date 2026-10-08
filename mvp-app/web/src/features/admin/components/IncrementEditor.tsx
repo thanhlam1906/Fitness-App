@@ -1,4 +1,6 @@
 import { useState } from "react"
+import { Dumbbell } from "lucide-react"
+import { IconText } from "@/components/StatusViews"
 import { Controller, useFormContext, useWatch } from "react-hook-form"
 import { cn } from "@/lib/cn"
 import type { ProgramTemplateInput } from "@/features/admin/types"
@@ -15,7 +17,11 @@ export function IncrementEditor({ slugs, nameOf }: { slugs: string[]; nameOf: (s
   const incrementKg = useWatch({ control, name: "progression.incrementKg" })
 
   if (slugs.length === 0) {
-    return <p className="mt-1 text-[13px] text-[var(--color-text-muted)]">Template không có bài nào cần tạ.</p>
+    return (
+      <IconText icon={Dumbbell} tone="muted" className="mt-1 text-[13px]">
+        Template không có bài nào cần tạ
+      </IconText>
+    )
   }
 
   return (

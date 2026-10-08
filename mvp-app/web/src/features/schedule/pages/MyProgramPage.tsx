@@ -1,11 +1,12 @@
 import { useState, type ReactNode } from "react"
-import { ChevronLeft, ChevronRight, LayoutTemplate, Pencil, PencilRuler } from "lucide-react"
+import { CalendarOff, ChevronLeft, ChevronRight, CloudOff, LayoutTemplate, Pencil, PencilRuler } from "lucide-react"
 import { Link } from "react-router"
 import { ApiError } from "@/api/client"
 import { ExerciseImage } from "@/components/ExerciseImage"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+import { StatusBlock } from "@/components/StatusViews"
 import { SHEET_FOCUS } from "@/components/ui/sheet"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useCurrentProgram } from "@/features/program/api/useCurrentProgram"
 import { cn } from "@/lib/cn"
 import { ExerciseGuideSheet } from "@/features/schedule/components/ExerciseGuideSheet"
@@ -38,26 +39,24 @@ export function MyProgramPage() {
   const [guide, setGuide] = useState<ScheduledExerciseView | null>(null)
 
   if (schedule.isLoading || program.isLoading) {
-    return <p className="text-sm text-[var(--color-text-muted)]">Đang tải…</p>
+    return <MyProgramSkeleton />
   }
   if ([schedule.error, program.error].some((e) => e instanceof ApiError && e.status === 404)) {
     return (
-      <Card className="space-y-3 text-center">
-        <p className="text-sm text-[var(--color-text-muted)]">Chưa có chương trình đang chạy.</p>
+      <StatusBlock icon={CalendarOff} title="Chưa có chương trình">
         <Link to="/program">
           <Button>Chọn chương trình</Button>
         </Link>
-      </Card>
+      </StatusBlock>
     )
   }
   if (schedule.isError || program.isError) {
     return (
-      <Card className="space-y-3">
-        <p className="text-sm text-[var(--color-danger)]">Không tải được chương trình.</p>
+      <StatusBlock icon={CloudOff} tone="danger" title="Không tải được chương trình">
         <Button variant="secondary" onClick={() => { schedule.refetch(); program.refetch() }}>
           Thử lại
         </Button>
-      </Card>
+      </StatusBlock>
     )
   }
 
@@ -169,6 +168,31 @@ export function MyProgramPage() {
         />
       )}
       {guide && <ExerciseGuideSheet exercise={guide} days={days} open onClose={() => setGuide(null)} />}
+    </div>
+  )
+}
+
+/** Cùng khung với trang: nút Lịch, tiêu đề chương trình, 7 ô ngày, các thẻ buổi, hai lối đổi chương trình. */
+function MyProgramSkeleton() {
+  return (
+    <div role="status" aria-label="Đang tải">
+      <Skeleton className="h-5 w-12" />
+      <Skeleton className="mt-3.5 h-3 w-36" />
+      <Skeleton className="mt-2 h-8 w-64" />
+      <Skeleton className="mt-2 h-4 w-48" />
+      <Skeleton className="mt-2.5 h-5 w-32 rounded-full" />
+      <Skeleton className="mt-6 mb-2.5 h-3 w-40" />
+      <div className="grid grid-cols-7 gap-1.5">
+        {Array.from({ length: 7 }, (_, i) => (
+          <Skeleton key={i} className="h-9" />
+        ))}
+      </div>
+      <Skeleton className="mt-6 mb-2.5 h-3 w-48" />
+      <Skeleton className="mt-2.5 h-44 rounded-[var(--radius-lg)]" />
+      <Skeleton className="mt-2.5 h-44 rounded-[var(--radius-lg)]" />
+      <Skeleton className="mt-6 mb-2.5 h-3 w-40" />
+      <Skeleton className="mt-2.5 h-[72px] rounded-[var(--radius-lg)]" />
+      <Skeleton className="mt-2.5 h-[72px] rounded-[var(--radius-lg)]" />
     </div>
   )
 }

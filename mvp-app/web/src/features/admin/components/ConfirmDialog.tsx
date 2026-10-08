@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react"
+import { IconText } from "@/components/StatusViews"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -69,9 +70,7 @@ export function ConfirmDialog({
         </label>
       )}
       {error && (
-        <p role="alert" className="mt-3 text-sm text-[var(--color-danger)]">
-          {error}
-        </p>
+        <IconText className="mt-3">{error}</IconText>
       )}
       <div className="mt-5 flex justify-end gap-2">
         <Button variant="secondary" onClick={() => ref.current?.close()} disabled={pending}>

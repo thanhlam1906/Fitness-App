@@ -1,8 +1,10 @@
 import { useState } from "react"
 import { useNavigate, useParams } from "react-router"
+import { CloudOff, SearchX } from "lucide-react"
 import { BodyMap } from "@/features/workout/components/BodyMap"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+import { IconText, StatusBlock } from "@/components/StatusViews"
+import { Skeleton } from "@/components/ui/skeleton"
 import { FlowScreen } from "@/components/UserShell"
 import { cn } from "@/lib/cn"
 import { formatDayMonth, formatNumber } from "@/lib/format"
@@ -42,18 +44,20 @@ export function FinishSessionPage() {
   const workout = schedule.data?.workouts.find((w) => w.id === scheduledWorkoutId)
 
   if (schedule.isLoading || session.isLoading) {
-    return <p className="text-sm text-[var(--color-text-muted)]">Đang tổng kết buổi tập…</p>
+    return <FinishSkeleton />
   }
   if (session.isError || !workout) {
     return (
-      <Card className="space-y-3">
-        <p className="text-sm text-[var(--color-danger)]">
-          {session.isError ? session.error.message : "Không tìm thấy buổi tập này trong lịch."}
-        </p>
+      <StatusBlock
+        icon={session.isError ? CloudOff : SearchX}
+        tone="danger"
+        title={session.isError ? "Không tải được buổi tập" : "Không tìm thấy buổi tập"}
+        detail={session.isError ? session.error.message : undefined}
+      >
         <Button variant="secondary" onClick={() => navigate("/schedule")}>
           Về lịch tuần
         </Button>
-      </Card>
+      </StatusBlock>
     )
   }
 
@@ -143,7 +147,7 @@ export function FinishSessionPage() {
       </div>
 
       {finish.isError && (
-        <p className="mt-3 text-sm text-[var(--color-danger)]">{finish.error.message}</p>
+        <IconText className="mt-3">{finish.error.message}</IconText>
       )}
 
       <div className="flex-1" />
@@ -162,6 +166,29 @@ export function FinishSessionPage() {
       >
         {finish.isPending ? "Đang lưu…" : "Lưu và về lịch tuần"}
       </Button>
+    </FlowScreen>
+  )
+}
+
+/** Cùng khung với màn kết buổi: ngày, tiêu đề, lưới 4 số, hai khối hỏi RPE và đau, nút cuối. */
+function FinishSkeleton() {
+  return (
+    <FlowScreen>
+      <div role="status" aria-label="Đang tải" className="flex flex-1 flex-col">
+        <Skeleton className="h-3 w-16" />
+        <Skeleton className="mt-3 h-8 w-56" />
+        <div className="mt-4.5 grid grid-cols-2 gap-2">
+          {Array.from({ length: 4 }, (_, i) => (
+            <Skeleton key={i} className="h-20" />
+          ))}
+        </div>
+        <Skeleton className="mt-6 h-5 w-44" />
+        <Skeleton className="mt-3 h-11 w-full" />
+        <Skeleton className="mt-6 h-5 w-40" />
+        <Skeleton className="mt-3 h-56 w-full" />
+        <div className="flex-1" />
+        <Skeleton className="mt-6 h-12 w-full" />
+      </div>
     </FlowScreen>
   )
 }

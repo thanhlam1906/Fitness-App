@@ -1,14 +1,16 @@
 import { useState } from "react"
 import { Link } from "react-router"
+import { CloudOff, ListX, UserRound, type LucideIcon } from "lucide-react"
 import { ApiError } from "@/api/client"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { SHEET_FOCUS } from "@/components/ui/sheet"
+import { Skeleton } from "@/components/ui/skeleton"
 import { FlowScreen } from "@/components/UserShell"
 import { EQUIPMENT_OPTIONS } from "@/features/profile/types"
 import { useProfile } from "@/features/profile/api/useProfile"
+import { IconText, StatusBlock, type Tone } from "@/components/StatusViews"
 import { cn } from "@/lib/cn"
 import { defaultTrainingDays, WEEKDAYS } from "@/features/program/types/schema"
 import { loadableExercises, useCandidates, type TemplateCandidate } from "@/features/program/api/useCandidates"
@@ -45,18 +47,16 @@ export function ProgramSelectionPage() {
   const loadable = selected ? loadableExercises(selected) : []
 
   if (candidates.isLoading) {
-    return <p className="text-sm text-[var(--color-text-muted)]">Đang tải đề xuất…</p>
+    return <ProgramSkeleton />
   }
 
   if (candidates.isError) {
     const needsOnboarding = candidates.error instanceof ApiError && candidates.error.status === 404
     return (
       <EmptyState
-        message={
-          needsOnboarding
-            ? "Cần hoàn tất hồ sơ trước khi đề xuất chương trình."
-            : `Không tải được đề xuất: ${candidates.error.message}`
-        }
+        {...(needsOnboarding
+          ? { icon: UserRound, title: "Cần hoàn tất hồ sơ trước" }
+          : { icon: CloudOff, tone: "danger" as const, title: "Không tải được đề xuất", detail: candidates.error.message })}
         action={{ to: "/onboarding", label: needsOnboarding ? "Hoàn tất hồ sơ" : "Về onboarding" }}
       />
     )
@@ -65,7 +65,8 @@ export function ProgramSelectionPage() {
   if (candidates.data!.length === 0) {
     return (
       <EmptyState
-        message="Chưa có chương trình nào hợp thiết bị bạn đã khai. Tự thiết kế lịch, hoặc chỉnh thiết bị ở Hồ sơ."
+        icon={ListX}
+        title="Chưa có chương trình hợp thiết bị"
         action={{ to: "/settings/profile", label: "Mở hồ sơ" }}
       />
     )
@@ -160,7 +161,7 @@ export function ProgramSelectionPage() {
             Đổi được sau, không mất tiến độ.
           </p>
           {trainingDays.length === 0 && (
-            <p className="mt-2 text-xs text-[var(--color-danger)]">Chọn ít nhất một ngày tập.</p>
+            <IconText className="mt-2 text-xs">Chọn ít nhất một ngày tập.</IconText>
           )}
 
           <div className="mt-5 space-y-1.5">
@@ -207,9 +208,7 @@ export function ProgramSelectionPage() {
           )}
 
           {createProgram.isError && (
-            <p className="mt-3 text-sm text-[var(--color-danger)]">
-              Tạo chương trình thất bại: {createProgram.error.message}
-            </p>
+            <IconText className="mt-3">Tạo chương trình thất bại: {createProgram.error.message}</IconText>
           )}
 
           <div className="flex-1" />
@@ -239,6 +238,23 @@ export function ProgramSelectionPage() {
           </Button>
         </>
       )}
+    </FlowScreen>
+  )
+}
+
+/** Cùng khung với màn chọn: kicker, tiêu đề, các thẻ đề xuất, nút tự thiết kế lịch. */
+function ProgramSkeleton() {
+  return (
+    <FlowScreen>
+      <div role="status" aria-label="Đang tải">
+        <Skeleton className="h-3 w-52" />
+        <Skeleton className="mt-3 h-8 w-64" />
+        <div className="mt-5 space-y-3">
+          <Skeleton className="h-40 rounded-xl" />
+          <Skeleton className="h-40 rounded-xl" />
+        </div>
+        <Skeleton className="mt-3 h-11 w-full" />
+      </div>
     </FlowScreen>
   )
 }
@@ -345,24 +361,27 @@ function Tag({ selected, children }: { selected: boolean; children: React.ReactN
 }
 
 function EmptyState({
-  message,
+  icon,
+  tone,
+  title,
+  detail,
   action,
 }: {
-  message: string
+  icon: LucideIcon
+  tone?: Tone
+  title: string
+  detail?: string
   action: { to: string; label: string }
 }) {
   return (
-    <Card className="space-y-3">
-      <p className="text-sm text-[var(--color-text-muted)]">{message}</p>
+    <StatusBlock icon={icon} tone={tone} title={title} detail={detail}>
+      <Link to={action.to}>
+        <Button>{action.label}</Button>
+      </Link>
       {/* Lịch tự thiết kế không cần hồ sơ hay template: lối ra này luôn phải có. */}
-      <div className="flex flex-wrap gap-2">
-        <Link to={action.to}>
-          <Button>{action.label}</Button>
-        </Link>
-        <Link to="/my-schedule">
-          <Button variant="secondary">Tự thiết kế lịch riêng</Button>
-        </Link>
-      </div>
-    </Card>
+      <Link to="/my-schedule">
+        <Button variant="secondary">Tự thiết kế lịch riêng</Button>
+      </Link>
+    </StatusBlock>
   )
 }
