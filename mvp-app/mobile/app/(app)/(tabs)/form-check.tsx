@@ -6,6 +6,7 @@ import { Kicker } from "~/components/Kicker"
 import { Screen } from "~/components/Screen"
 import { StatusBadge } from "~/features/review/components/StatusBadge"
 import { Card } from "~/components/ui/Card"
+import { Skeleton } from "~/components/ui/Skeleton"
 import { useReviews } from "~/features/review/api/useReviews"
 import { useRefreshOnFocus } from "~/lib/focus"
 import { colors } from "~/theme"
@@ -29,7 +30,13 @@ export default function FormCheckScreen() {
       </Text>
 
       <Kicker className="mt-7">Lần gửi gần đây</Kicker>
-      {reviews.isLoading && <Text className="mt-3 text-sm text-text-muted">Đang tải…</Text>}
+      {reviews.isLoading && (
+        <View accessible accessibilityLabel="Đang tải" className="mt-3 gap-2">
+          <Skeleton className="h-16" />
+          <Skeleton className="h-16" />
+          <Skeleton className="h-16" />
+        </View>
+      )}
       {reviews.isError && <Text className="mt-3 text-sm text-danger">{reviews.error.message}</Text>}
       {reviews.data && reviews.data.length === 0 && (
         <Card className="mt-3">

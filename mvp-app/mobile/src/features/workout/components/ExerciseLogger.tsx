@@ -7,6 +7,7 @@ import { formatKg } from "@/lib/format"
 import { ExerciseImage } from "~/components/ExerciseImage"
 import { LoadDeltaBadge } from "~/components/LoadDeltaBadge"
 import { Button } from "~/components/ui/Button"
+import { Skeleton } from "~/components/ui/Skeleton"
 import { Kicker } from "~/components/Kicker"
 import { WrongFeedbackButton } from "~/features/feedback/components/WrongFeedbackButton"
 import { useLogSet, useSubstitute, useSubstitutes } from "~/features/workout/api/useWorkoutSession"
@@ -383,7 +384,14 @@ function SubstitutePanel({ exercise }: { exercise: ScheduledExerciseView }) {
       <Text className="text-xs leading-5 text-text-muted">
         Bài cùng nhóm cơ, lọc theo thiết bị bạn đang có. Set và rep giữ nguyên; tải cần nhập lại.
       </Text>
-      {suggestions.isLoading && <Text className="text-xs text-text-muted">Đang tìm…</Text>}
+      {suggestions.isLoading && (
+        // Khung của hàng nút bài gợi ý.
+        <View accessible accessibilityLabel="Đang tải" className="flex-row flex-wrap gap-2">
+          <Skeleton className="h-8 w-28" />
+          <Skeleton className="h-8 w-36" />
+          <Skeleton className="h-8 w-24" />
+        </View>
+      )}
       {suggestions.data?.length === 0 && (
         <Text className="text-xs text-text-muted">Không có bài thay thế nào khớp thiết bị đã khai ở hồ sơ.</Text>
       )}

@@ -3,6 +3,7 @@ import { Pressable, Text, View } from "react-native"
 import { barHeights } from "@/features/profile/utils/charts"
 import { cn } from "@/lib/cn"
 import { formatDayMonth, formatNumber } from "@/lib/format"
+import { Skeleton } from "~/components/ui/Skeleton"
 import { LoadState, SettingsSubLayout } from "~/features/profile/components/SettingsSubLayout"
 import { useProgress } from "~/features/profile/api/useProfile"
 
@@ -41,7 +42,18 @@ export default function ProgressScreen() {
       </View>
 
       {!p ? (
-        <LoadState error={progress.error} />
+        <LoadState
+          error={progress.error}
+          skeleton={
+            <View className="mt-3 gap-2">
+              <View className="flex-row gap-2">
+                <Skeleton className="h-[102px] flex-1" />
+                <Skeleton className="h-[102px] flex-1" />
+              </View>
+              <Skeleton className="h-[222px]" />
+            </View>
+          }
+        />
       ) : (
         <>
           <View className="mt-3 flex-row flex-wrap gap-2">

@@ -4,6 +4,7 @@ import { EQUIPMENT_OPTIONS, EXPERIENCE_LEVELS, GOALS, HEIGHT_CM, WEIGHT_KG, labe
 import { cn } from "@/lib/cn"
 import { formatKg } from "@/lib/format"
 import { Checkbox } from "~/components/ui/Checkbox"
+import { Skeleton } from "~/components/ui/Skeleton"
 import { MetricEditor } from "~/features/profile/components/MetricEditor"
 import { LoadState, SettingsSubLayout } from "~/features/profile/components/SettingsSubLayout"
 import { usePatchProfile, useProfile, useSaveBodyMetric } from "~/features/profile/api/useProfile"
@@ -20,7 +21,16 @@ export default function ProfileScreen() {
   if (!profile.data) {
     return (
       <SettingsSubLayout title="Hồ sơ">
-        <LoadState error={profile.error} />
+        <LoadState
+          error={profile.error}
+          skeleton={
+            <View className="mt-5 gap-2">
+              {Array.from({ length: 6 }, (_, i) => (
+                <Skeleton key={i} className="h-14" />
+              ))}
+            </View>
+          }
+        />
       </SettingsSubLayout>
     )
   }

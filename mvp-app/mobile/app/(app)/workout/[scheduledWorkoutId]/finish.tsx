@@ -9,6 +9,7 @@ import { Kicker } from "~/components/Kicker"
 import { Screen } from "~/components/Screen"
 import { Button } from "~/components/ui/Button"
 import { Card } from "~/components/ui/Card"
+import { Skeleton } from "~/components/ui/Skeleton"
 import { useSchedule } from "~/features/schedule/api/useSchedule"
 import { useFinishSession, useWorkoutSession } from "~/features/workout/api/useWorkoutSession"
 
@@ -42,11 +43,7 @@ export default function FinishSessionScreen() {
   const workout = schedule.data?.workouts.find((w) => w.id === scheduledWorkoutId)
 
   if (schedule.isLoading || session.isLoading) {
-    return (
-      <Screen>
-        <Text className="text-sm text-text-muted">Đang tổng kết buổi tập…</Text>
-      </Screen>
-    )
+    return <FinishSkeleton />
   }
   if (session.isError || !workout) {
     return (
@@ -187,4 +184,31 @@ function summarise(sets: SetLogResponse[], exercises: { exerciseId: string; targ
       .length,
     avgRpe: rpes.length === 0 ? null : Math.round((rpes.reduce((a, b) => a + b, 0) / rpes.length) * 10) / 10,
   }
+}
+
+/** Cùng khung với màn kết buổi: ngày, tiêu đề, lưới 4 số, hai khối hỏi RPE và đau, nút cuối. */
+function FinishSkeleton() {
+  return (
+    <Screen>
+      <View accessible accessibilityLabel="Đang tải" className="flex-1">
+        <Skeleton className="h-3 w-16" />
+        <Skeleton className="mt-3 h-8 w-56" />
+        <View className="mt-4 gap-2">
+          <View className="flex-row gap-2">
+            <Skeleton className="h-20 flex-1" />
+            <Skeleton className="h-20 flex-1" />
+          </View>
+          <View className="flex-row gap-2">
+            <Skeleton className="h-20 flex-1" />
+            <Skeleton className="h-20 flex-1" />
+          </View>
+        </View>
+        <Skeleton className="mt-6 h-5 w-44" />
+        <Skeleton className="mt-3 h-11" />
+        <Skeleton className="mt-6 h-5 w-40" />
+        <Skeleton className="mt-3 h-56" />
+        <Skeleton className="mt-auto h-12" />
+      </View>
+    </Screen>
+  )
 }

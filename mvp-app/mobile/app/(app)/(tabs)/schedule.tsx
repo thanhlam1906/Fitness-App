@@ -19,6 +19,7 @@ import { Kicker } from "~/components/Kicker"
 import { Screen } from "~/components/Screen"
 import { Button } from "~/components/ui/Button"
 import { Card } from "~/components/ui/Card"
+import { Skeleton } from "~/components/ui/Skeleton"
 import { DayCard } from "~/features/schedule/components/DayCard"
 import { useNewDayOnResume, useRefreshOnFocus } from "~/lib/focus"
 import { useSchedule } from "~/features/schedule/api/useSchedule"
@@ -257,16 +258,18 @@ function Legend() {
 function MonthSkeleton() {
   return (
     <Screen>
-      <View className="h-3 w-40 rounded bg-surface-2" />
-      <View className="mt-3.5 h-8 w-24 rounded bg-surface-2" />
-      <View className="mt-6 flex-row flex-wrap">
-        {Array.from({ length: 35 }, (_, i) => (
-          <View key={i} style={CELL} className="items-center py-1">
-            <View className="size-8 rounded-full bg-surface" />
-          </View>
-        ))}
+      <View accessible accessibilityLabel="Đang tải">
+        <Skeleton className="h-3 w-40 rounded" />
+        <Skeleton className="mt-3.5 h-8 w-24 rounded" />
+        <View className="mt-6 flex-row flex-wrap">
+          {Array.from({ length: 35 }, (_, i) => (
+            <View key={i} style={CELL} className="items-center py-1">
+              <Skeleton className="size-8 rounded-full" />
+            </View>
+          ))}
+        </View>
+        <Skeleton className="mt-4 h-40 rounded-2xl" />
       </View>
-      <View className="mt-4 h-40 rounded-2xl bg-surface" />
     </Screen>
   )
 }

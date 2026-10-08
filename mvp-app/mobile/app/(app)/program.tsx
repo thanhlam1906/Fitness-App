@@ -15,6 +15,7 @@ import { Card } from "~/components/ui/Card"
 import { Input } from "~/components/ui/Input"
 import { Label } from "~/components/ui/Label"
 import { PickerField } from "~/components/ui/Picker"
+import { Skeleton } from "~/components/ui/Skeleton"
 import { loadableExercises, useCandidates, type TemplateCandidate } from "~/features/program/api/useCandidates"
 import { useCreateProgram } from "~/features/program/api/useCreateProgram"
 import { useProfile } from "~/features/profile/api/useProfile"
@@ -46,11 +47,7 @@ export default function ProgramScreen() {
   const loadable = selected ? loadableExercises(selected) : []
 
   if (candidates.isLoading) {
-    return (
-      <Screen>
-        <Text className="text-sm text-text-muted">Đang tải đề xuất…</Text>
-      </Screen>
-    )
+    return <ProgramSkeleton />
   }
 
   if (candidates.isError) {
@@ -343,6 +340,23 @@ function EmptyState({ message, action }: { message: string; action: { to: string
           </Button>
         </View>
       </Card>
+    </Screen>
+  )
+}
+
+/** Cùng khung với màn chọn: kicker, tiêu đề, các thẻ đề xuất, nút tự thiết kế lịch. */
+function ProgramSkeleton() {
+  return (
+    <Screen>
+      <View accessible accessibilityLabel="Đang tải">
+        <Skeleton className="h-3 w-52" />
+        <Skeleton className="mt-3 h-8 w-64" />
+        <View className="mt-5 gap-3">
+          <Skeleton className="h-40 rounded-xl" />
+          <Skeleton className="h-40 rounded-xl" />
+        </View>
+        <Skeleton className="mt-3 h-11" />
+      </View>
     </Screen>
   )
 }

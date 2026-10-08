@@ -10,6 +10,7 @@ import { cn } from "@/lib/cn"
 import { formatKg, formatNumber } from "@/lib/format"
 import { LoadDeltaBadge } from "~/components/LoadDeltaBadge"
 import { Button } from "~/components/ui/Button"
+import { Skeleton } from "~/components/ui/Skeleton"
 import { WrongFeedbackButton } from "~/features/feedback/components/WrongFeedbackButton"
 import { useSessionOfDay } from "~/features/schedule/api/useSchedule"
 import { WorkoutEditSheet } from "~/features/schedule/components/WorkoutEditor"
@@ -80,7 +81,18 @@ function DoneCard({ cell, workout, totalWeeks }: { cell: MonthCell; workout: Sch
   const session = useSessionOfDay(workout.id)
   let body: ReactNode
   if (session.isLoading) {
-    body = <Text className="mt-3 text-sm text-text-muted">Đang tải buổi đã tập…</Text>
+    // Khung của thẻ đã tập: lưới 3 số rồi các dòng bài.
+    body = (
+      <View accessible accessibilityLabel="Đang tải">
+        <View className="mt-3 flex-row gap-2">
+          <Skeleton className="h-16 flex-1" />
+          <Skeleton className="h-16 flex-1" />
+          <Skeleton className="h-16 flex-1" />
+        </View>
+        <Skeleton className="mt-3 h-12" />
+        <Skeleton className="mt-2 h-12" />
+      </View>
+    )
   } else if (session.isError) {
     body = (
       <View className="mt-3 gap-2">

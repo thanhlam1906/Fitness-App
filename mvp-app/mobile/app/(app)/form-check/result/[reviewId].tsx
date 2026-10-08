@@ -8,6 +8,7 @@ import { BackLink } from "~/components/BackLink"
 import { Screen } from "~/components/Screen"
 import { Button } from "~/components/ui/Button"
 import { Card } from "~/components/ui/Card"
+import { Skeleton } from "~/components/ui/Skeleton"
 import { VerdictChip } from "~/features/review/components/VerdictChip"
 import { WrongFeedbackButton } from "~/features/feedback/components/WrongFeedbackButton"
 import { useReview } from "~/features/review/api/useReviews"
@@ -25,11 +26,7 @@ export default function ReviewResultScreen() {
   const review = useReview(reviewId)
 
   if (review.isLoading) {
-    return (
-      <Screen>
-        <Text className="text-sm text-text-muted">Đang tải…</Text>
-      </Screen>
-    )
+    return <ResultSkeleton />
   }
   if (review.isError) {
     return (
@@ -173,5 +170,25 @@ function RejectedCard({ review }: { review: Review }) {
       {review.error && <Text className="text-sm text-text-muted">{review.error}</Text>}
       <Text className="text-sm text-text-muted">Xem lại hướng dẫn quay và thử lại trên bản web.</Text>
     </Card>
+  )
+}
+
+/** Cùng khung với kết quả đã chấm: nút quay lại, tiêu đề, tên bài, nhãn kết luận, thẻ lỗi chính, các mục. */
+function ResultSkeleton() {
+  return (
+    <Screen>
+      <View accessible accessibilityLabel="Đang tải">
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="mt-3 h-8 w-64" />
+        <Skeleton className="mt-1.5 h-3 w-48" />
+        <Skeleton className="mt-4 h-11" />
+        <Skeleton className="mt-5 h-8 w-32 rounded-full" />
+        <Skeleton className="mt-4 h-40 rounded-xl" />
+        <View className="mt-4 gap-2">
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+        </View>
+      </View>
+    </Screen>
   )
 }
