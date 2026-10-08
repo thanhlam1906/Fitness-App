@@ -112,7 +112,7 @@ function DropZone() {
         {upload.isPending ? "Đang gửi…" : "hoặc bấm để chọn · nhiều file cùng lúc · tối đa 60 MB mỗi file"}
       </div>
       {errors.map((m) => (
-        <IconText key={m} className="mt-2 text-xs">
+        <IconText key={m} className="mt-2 justify-center text-xs">
           {m}
         </IconText>
       ))}

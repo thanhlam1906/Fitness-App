@@ -74,6 +74,7 @@ export function FormCheckListPage() {
           </Section>
         )}
 
+        {reviews.isError && <IconText>{reviews.error.message}</IconText>}
         {reviews.data && reviews.data.length > 0 && (
           <Section title="Lần gửi gần đây" meta={String(reviews.data.length)}>
             <div className="flex flex-col gap-1.5">

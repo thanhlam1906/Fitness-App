@@ -8,7 +8,7 @@ import { UserActionsCard } from "@/features/admin/components/UserActionsCard"
 import { ROLE_LABEL, STATUS_LABEL } from "@/features/admin/utils/userLabels"
 import { useAuth } from "@/features/auth/components/AuthContext"
 import { Card } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Skeleton, TableSkeleton } from "@/components/ui/skeleton"
 import { EQUIPMENT_OPTIONS, EXPERIENCE_LEVELS, GOALS, labelOf } from "@/features/profile/types"
 import { formatDate } from "@/lib/format"
 
@@ -103,6 +103,8 @@ export function UserDetailPage() {
       <UserActionsCard user={d.user} isSelf={d.user.id === myId} />
 
       <h2 className="pt-2 text-sm font-semibold">Lịch sử quản trị</h2>
+      {audit.isLoading && <TableSkeleton rows={3} />}
+      {audit.isError && <IconText>{audit.error.message}</IconText>}
       {audit.data && <AuditLogTable page={audit.data} showTarget={false} onPage={setAuditPage} />}
 
       <p className="text-xs text-[var(--color-text-muted)]">

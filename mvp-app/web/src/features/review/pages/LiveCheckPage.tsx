@@ -23,6 +23,7 @@ import {
   type Session,
 } from "@/features/review/utils/livePose"
 import { VIEW_NAME } from "@/lib/formMeasures"
+import { download } from "@/features/review/utils/download"
 import { useExercise, useSubmitLive } from "@/features/review/api/useReviews"
 
 const WASM_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
@@ -56,19 +57,23 @@ export function LiveCheckPage() {
   const raf = useRef(0)
   const lastVideoTime = useRef(-1)
   const session = useRef<Session>(newSession())
+  // Huỷ khi rời trang. Tạo trong effect: StrictMode chạy effect hai lần, huỷ ở lần dọn đầu thì lần sau phải có cái mới.
+  const alive = useRef<AbortController | null>(null)
   const [screen, setScreen] = useState<Screen>("consent")
   const [optIn, setOptIn] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [progress, setProgress] = useState(0)
 
   // Rời trang giữa chừng thì tắt camera, không để đèn camera còn sáng.
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    const controller = new AbortController()
+    alive.current = controller
+    return () => {
+      controller.abort()
       cancelAnimationFrame(raf.current)
       stream.current?.getTracks().forEach((t) => t.stop())
-    },
-    [],
-  )
+    }
+  }, [])
 
   function stopCamera() {
     cancelAnimationFrame(raf.current)
@@ -81,13 +86,17 @@ export function LiveCheckPage() {
     setError(null)
     // Bật lại lần hai: bộ nhận dạng đã có sẵn, chỉ còn chờ camera.
     setProgress(landmarker.current ? 1 : 0)
+    const signal = alive.current!.signal
     try {
-      landmarker.current ??= await createLandmarker(setProgress)
+      landmarker.current ??= await createLandmarker(setProgress, signal)
       setProgress(1)
+      // Đã rời trang lúc đang tải: không bật hộp xin quyền camera ở màn khác.
+      if (signal.aborted) return
       stream.current = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false,
       })
+      if (signal.aborted) return stopCamera()
       const v = video.current!
       v.srcObject = stream.current
       await v.play()
@@ -101,6 +110,7 @@ export function LiveCheckPage() {
       loop()
     } catch (e) {
       stopCamera()
+      if (signal.aborted) return
       setError(cameraError(e))
       setScreen("consent")
     }
@@ -160,6 +170,7 @@ export function LiveCheckPage() {
         Đặt máy cách 2–3 m, cả người trong khung. Làm {REPS_PER_VIEW} rep mỗi góc:{" "}
         {views.map((v) => VIEW_NAME[v]).join(" → ")}.
       </p>
+      {exercise.isError && <IconText className="mt-3">{exercise.error.message}</IconText>}
       {exercise.data && views.length === 0 && (
         <Notice icon={Ban} tone="danger" className="mt-3">
           Bài này chưa chấm form được.
@@ -339,7 +350,7 @@ function drawHud(ctx: CanvasRenderingContext2D, t: HudTheme, s: Session, pose: P
   }
 }
 
-async function createLandmarker(onProgress: (fraction: number) => void): Promise<PoseLandmarker> {
+async function createLandmarker(onProgress: (fraction: number) => void, signal: AbortSignal): Promise<PoseLandmarker> {
   // Nạp thư viện lúc bấm nút, không nằm trong bundle chính: phần lớn người dùng không mở màn này.
   const mp = await import("@mediapipe/tasks-vision")
   const files = await mp.FilesetResolver.forVisionTasks(WASM_URL)
@@ -347,8 +358,9 @@ async function createLandmarker(onProgress: (fraction: number) => void): Promise
   // 90% thanh: dựng wasm và GPU sau đó còn mất vài giây trên điện thoại yếu, thanh đầy sớm trông như treo.
   const got = { wasm: 0, model: 0 }
   const report = () => onProgress((0.9 * (got.wasm + got.model)) / (WASM_BYTES + MODEL_BYTES))
-  // Một file hỏng thì huỷ file kia: không tốn thêm 9 MB và không đẩy thanh của lần bấm sau.
+  // Một file hỏng thì huỷ file kia: không tốn thêm 9 MB và không đẩy thanh của lần bấm sau. Rời trang cũng huỷ.
   const abort = new AbortController()
+  signal.addEventListener("abort", () => abort.abort())
   const [wasm, model] = await Promise.all([
     download(files.wasmBinaryPath, abort.signal, (n) => {
       got.wasm = Math.min(n, WASM_BYTES)
@@ -380,30 +392,6 @@ async function createLandmarker(onProgress: (fraction: number) => void): Promise
   }
 }
 
-/** Tải một file, báo số byte đã nhận sau mỗi gói. */
-async function download(
-  url: string,
-  signal: AbortSignal,
-  onBytes: (received: number) => void,
-): Promise<Uint8Array<ArrayBuffer>> {
-  const res = await fetch(url, { signal })
-  if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`)
-  const reader = res.body.getReader()
-  const chunks: Uint8Array[] = []
-  let received = 0
-  for (let part = await reader.read(); !part.done; part = await reader.read()) {
-    chunks.push(part.value)
-    received += part.value.length
-    onBytes(received)
-  }
-  const all = new Uint8Array(received)
-  let at = 0
-  for (const chunk of chunks) {
-    all.set(chunk, at)
-    at += chunk.length
-  }
-  return all
-}
 
 function cameraError(e: unknown): string {
   if (!window.isSecureContext) return "Trình duyệt chỉ cho dùng camera trên HTTPS hoặc localhost."

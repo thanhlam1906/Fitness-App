@@ -247,7 +247,9 @@ export function TemplateEditor({
               ) : exercises.isError ? (
                 <IconText>{exercises.error.message}</IconText>
               ) : (
-                <Skeleton className="h-48" />
+                <div role="status" aria-label="Đang tải">
+                  <Skeleton className="h-48" />
+                </div>
               )}
             </div>
 
@@ -256,7 +258,7 @@ export function TemplateEditor({
               {ready ? (
                 <IncrementEditor slugs={slugs} nameOf={nameOf} />
               ) : (
-                <Skeleton className="h-24" />
+                !exercises.isError && <Skeleton className="h-24" />
               )}
             </div>
 
@@ -266,11 +268,9 @@ export function TemplateEditor({
             {renderPreview && (
               <>
                 {section("Thử quy tắc", "sim")}
-                {ready ? (
-                  renderPreview(setHit, nameOf, needsLoad)
-                ) : (
-                  <Skeleton className="mt-2 h-32" />
-                )}
+                {ready
+                  ? renderPreview(setHit, nameOf, needsLoad)
+                  : !exercises.isError && <Skeleton className="mt-2 h-32" />}
               </>
             )}
 
