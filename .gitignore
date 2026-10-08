@@ -4,7 +4,8 @@
 !.env.example
 
 # internal tooling and planning docs — not for the public repo
-.claude/
+.claude/*
+!.claude/skills/
 doc/
 
 # Python (analyzer, analyzer-demo)
