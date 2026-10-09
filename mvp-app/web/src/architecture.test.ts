@@ -47,7 +47,6 @@ describe("chuẩn cấu trúc", () => {
     const wrong = files.filter(
       (f) =>
         !isTest(f) &&
-        !WAITING_FOR_DASHBOARD.has(f) &&
         WAIT_TEXT.test(readFileSync(path.join(SRC, f), "utf8").replaceAll('aria-label="Đang tải"', "")),
     )
     expect(wrong).toEqual([])
@@ -55,10 +54,3 @@ describe("chuẩn cấu trúc", () => {
 })
 
 const WAIT_TEXT = /Đang (tải|tìm|tính|chuẩn bị|tổng kết)/
-
-// Hai trang có thay đổi dở của việc Tổng quan admin ở thư mục chính, chưa commit; người dùng chọn sửa sau khi
-// phần đó commit (10-08). Sửa xong thì xoá khỏi đây.
-const WAITING_FOR_DASHBOARD = new Set([
-  "features/admin/pages/WorkoutInsightsPage.tsx",
-  "features/admin/pages/DashboardPage.tsx",
-])

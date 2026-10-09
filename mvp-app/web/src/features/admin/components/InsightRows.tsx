@@ -1,9 +1,15 @@
 import type { ReactNode } from "react"
+import { ChartNoAxesColumn } from "lucide-react"
 import { Link } from "react-router"
+import { IconText } from "@/components/StatusViews"
 import { percent } from "@/features/admin/utils/workoutInsights"
 import { cn } from "@/lib/cn"
 
-const EMPTY = <p className="py-3 text-sm text-[var(--color-text-muted)]">Chưa có dữ liệu trong khoảng này.</p>
+const EMPTY = (
+  <IconText icon={ChartNoAxesColumn} tone="muted" className="py-3">
+    Chưa có dữ liệu trong khoảng này
+  </IconText>
+)
 
 /**
  * Một dòng của khối cột: tên + dòng phụ, phần đồ hoạ, giá trị bên phải. Có `to` thì cả dòng là link

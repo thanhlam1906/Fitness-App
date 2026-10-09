@@ -1,5 +1,7 @@
 import { CalendarCheck, Dumbbell, Flame, HeartPulse, Repeat, SkipForward, TrendingDown } from "lucide-react"
 import { useSearchParams } from "react-router"
+import { IconText } from "@/components/StatusViews"
+import { Skeleton } from "@/components/ui/skeleton"
 import { AdminHeader } from "@/features/admin/components/AdminShell"
 import { DaysToggle } from "@/features/admin/components/DaysToggle"
 import { DonutChart } from "@/features/admin/components/DonutChart"
@@ -56,11 +58,35 @@ export function WorkoutInsightsPage() {
       </AdminHeader>
 
       <div className="overflow-auto px-7 py-5.5">
-        {insights.isLoading && <p className="text-sm text-[var(--color-text-muted)]">Đang tải…</p>}
-        {insights.isError && <p className="text-sm text-[var(--color-danger)]">{insights.error.message}</p>}
+        {insights.isLoading && <InsightsSkeleton />}
+        {insights.isError && <IconText>{insights.error.message}</IconText>}
         {insights.data && <InsightsBody data={insights.data} />}
       </div>
     </>
+  )
+}
+
+/** Cùng lưới với InsightsBody: 4 ô tổng, 3 khối tròn, 4 khối danh sách, 1 khối rộng. */
+function InsightsSkeleton() {
+  return (
+    <div role="status" aria-label="Đang tải" className="flex flex-col gap-4">
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        {Array.from({ length: 4 }, (_, i) => (
+          <Skeleton key={i} className="h-[104px]" />
+        ))}
+      </div>
+      <div className="grid gap-4 xl:grid-cols-3">
+        {Array.from({ length: 3 }, (_, i) => (
+          <Skeleton key={i} className="h-[280px]" />
+        ))}
+      </div>
+      <div className="grid gap-4 xl:grid-cols-2">
+        {Array.from({ length: 4 }, (_, i) => (
+          <Skeleton key={i} className="h-[260px]" />
+        ))}
+        <Skeleton className="h-[260px] xl:col-span-2" />
+      </div>
+    </div>
   )
 }
 
@@ -99,7 +125,7 @@ function InsightsBody({ data }: { data: WorkoutInsights }) {
           label="Báo đau"
           value={String(s.painReports)}
           unit="lần"
-          detail={`${s.painUsers} người · mức TB ${s.avgPainSeverity.toFixed(1)}`}
+          detail={s.painUsers === 0 ? "Chưa ai báo đau" : `${s.painUsers} người · mức TB ${s.avgPainSeverity.toFixed(1)}`}
         />
         <StatTile
           icon={CalendarCheck}

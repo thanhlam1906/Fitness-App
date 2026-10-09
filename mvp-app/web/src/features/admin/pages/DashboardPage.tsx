@@ -1,5 +1,7 @@
 import { CalendarCheck, ClipboardList, Dumbbell, Users } from "lucide-react"
 import { useSearchParams } from "react-router"
+import { IconText } from "@/components/StatusViews"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useAdminDashboard } from "@/features/admin/api/useAdminDashboard"
 import { useAdminOverview } from "@/features/admin/api/useAdminUsers"
 import { useTemplates } from "@/features/admin/api/useTemplates"
@@ -68,8 +70,14 @@ export function DashboardPage() {
             />
           </div>
 
-          {dashboard.isLoading && <p className="text-sm text-[var(--color-text-muted)]">Đang tải…</p>}
-          {dashboard.isError && <p className="text-sm text-[var(--color-danger)]">{dashboard.error.message}</p>}
+          {dashboard.isLoading && (
+            // Khung của hai khối: biểu đồ tròn mục tiêu, thanh hoàn thành theo chương trình.
+            <div role="status" aria-label="Đang tải" className="grid gap-4 xl:grid-cols-2">
+              <Skeleton className="h-[280px]" />
+              <Skeleton className="h-[280px]" />
+            </div>
+          )}
+          {dashboard.isError && <IconText>{dashboard.error.message}</IconText>}
           {data && (
             <div className="grid gap-4 xl:grid-cols-2">
               <section className="rounded-[var(--radius-md)] bg-[var(--color-surface)] p-4">

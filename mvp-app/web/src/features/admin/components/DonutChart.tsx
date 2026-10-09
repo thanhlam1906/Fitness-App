@@ -1,3 +1,5 @@
+import { ChartPie } from "lucide-react"
+import { IconText } from "@/components/StatusViews"
 import { donutArcs, type Slice } from "@/features/admin/utils/workoutInsights"
 
 const R = 52
@@ -57,7 +59,9 @@ export function DonutChart({
         </text>
       </svg>
       {total === 0 ? (
-        <p className="text-center text-xs text-[var(--color-text-muted)]">{emptyText}</p>
+        <IconText icon={ChartPie} tone="muted" className="justify-center text-xs">
+          {emptyText}
+        </IconText>
       ) : (
         <ul className="flex flex-col gap-1.5">
           {slices.map((s) => (
