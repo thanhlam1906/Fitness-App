@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
-import { CalendarDays, Camera, MessageCircle, Settings } from "lucide-react"
+import { CalendarDays, Camera, Settings } from "lucide-react"
+import { AssistantTabIcon } from "@/components/AssistantMark"
 import { NavLink, useLocation } from "react-router"
 import { cn } from "@/lib/cn"
 
@@ -11,7 +12,7 @@ import { cn } from "@/lib/cn"
 // nhận diện, chữ chỉ để khỏi phải đoán icon.
 const TABS = [
   { to: "/schedule", label: "Lịch", Icon: CalendarDays },
-  { to: "/assistant", label: "Trợ lý", Icon: MessageCircle },
+  { to: "/assistant", label: "Trợ lý", Icon: AssistantTabIcon },
   { to: "/form-check", label: "Chấm form", Icon: Camera },
   { to: "/settings", label: "Cài đặt", Icon: Settings },
 ]
