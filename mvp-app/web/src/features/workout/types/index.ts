@@ -66,5 +66,15 @@ export const BODY_AREAS = [
   { value: "HIP", label: "Hông" },
   { value: "ELBOW", label: "Khuỷu tay" },
   { value: "WRIST", label: "Cổ tay" },
+  // 10-08: thêm để chỗ nào trên hình cơ bắp cũng bấm được. Engine chỉ xem buổi có báo đau hay
+  // không, nên thêm vùng không đổi gì ở phía tăng giảm tải.
+  { value: "HEAD", label: "Đầu" },
+  { value: "NECK", label: "Cổ" },
+  { value: "CHEST", label: "Ngực" },
+  { value: "ABS", label: "Bụng" },
+  { value: "ARM", label: "Bắp tay" },
+  { value: "THIGH", label: "Đùi" },
+  { value: "SHIN", label: "Cẳng chân" },
+  { value: "FOOT", label: "Cổ chân, bàn chân" },
   { value: "OTHER", label: "Chỗ khác" },
 ] as const
