@@ -31,7 +31,8 @@ public final class DashboardStats {
 	 */
 	public static AdminDashboardResponse compute(
 			int days, List<TemplateRow> templates, Map<UUID, Long> usersByTemplate,
-			List<UUID> sessionTemplateIds, List<UUID> missedTemplateIds, Map<String, Long> usersByGoal) {
+			List<UUID> sessionTemplateIds, List<UUID> missedTemplateIds, Map<String, Long> usersByGoal,
+			DashboardActivity.Result activity) {
 		// Map.of ném NPE khi get(null) nên chép sang HashMap, nơi null là khoá hợp lệ.
 		Map<UUID, Long> users = new HashMap<>(usersByTemplate);
 		List<ProgramStatResponse> programs = new ArrayList<>();
@@ -49,7 +50,9 @@ public final class DashboardStats {
 		List<GoalCountResponse> goals = GOALS.stream()
 				.map(g -> new GoalCountResponse(g, usersByGoal.getOrDefault(g, 0L).intValue()))
 				.toList();
-		return new AdminDashboardResponse(days, sessionTemplateIds.size(), missedTemplateIds.size(), goals, programs);
+		return new AdminDashboardResponse(days, sessionTemplateIds.size(), missedTemplateIds.size(), goals, programs,
+				activity.formCheckTotal(), activity.topFormChecks(), activity.timelineUnit(), activity.timeline(),
+				activity.assistantAskers());
 	}
 
 	private static ProgramStatResponse row(

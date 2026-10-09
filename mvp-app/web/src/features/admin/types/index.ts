@@ -237,4 +237,21 @@ export type AdminDashboard = {
   missedWorkouts: number
   goals: { goal: string; users: number }[]
   programs: { templateId: string | null; name: string; users: number; done: number; missed: number }[]
+  /** Lượt chấm form xong của mọi bài trong khoảng; topFormChecks tối đa 5 bài. */
+  formCheckTotal: number
+  topFormChecks: { exerciseId: string; name: string; checks: number; users: number }[]
+  /** 7, 30 ngày: mỗi điểm một ngày; 90 ngày: mỗi điểm một tuần. start = "yyyy-mm-dd", ngày đầu của điểm. */
+  timelineUnit: "DAY" | "WEEK"
+  timeline: TimelinePoint[]
+  /** Số người khác nhau đã hỏi trợ lý trong cả khoảng (không phải tổng askers các điểm). */
+  assistantAskers: number
+}
+
+export type TimelinePoint = {
+  start: string
+  wrongForm: number
+  wrongLoad: number
+  wrongAssistant: number
+  questions: number
+  askers: number
 }
