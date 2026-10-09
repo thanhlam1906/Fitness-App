@@ -229,3 +229,12 @@ export type WorkoutInsights = {
   /** key = templateId khi lọc "Tất cả" (null = lịch tự thiết kế), exerciseId khi lọc một template. */
   loadDecisions: { key: string | null; name: string; up: number; hold: number; down: number; topDownRule: string | null }[]
 }
+
+/** GET /admin/dashboard. goals luôn đủ 5 mã (NONE = chưa chọn); templateId null = lịch tự thiết kế. */
+export type AdminDashboard = {
+  days: number
+  sessions: number
+  missedWorkouts: number
+  goals: { goal: string; users: number }[]
+  programs: { templateId: string | null; name: string; users: number; done: number; missed: number }[]
+}

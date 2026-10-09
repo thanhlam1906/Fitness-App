@@ -22,7 +22,7 @@ type Item = {
  *
  * "Góp ý bị báo sai" đã có số thật từ `GET /admin/overview`, nhưng chưa có màn
  * riêng để mở nên vẫn để tắt: badge cho HLV biết có việc cần xử lý, còn trang
- * xử lý là việc của đợt sau. "Tổng quan" thì chưa có cả số lẫn màn.
+ * xử lý là việc của đợt sau.
  * Không có mục hàng đợi phân tích: chấm theo ngưỡng xong trong vài giây nên
  * hàng đợi gần như luôn rỗng, admin không có gì để xử lý ở đó.
  * Nhật ký quản trị: doc/design-quan-ly-user-v1.md §6.7.
@@ -37,7 +37,7 @@ function useGroups(): { title: string; items: Item[] }[] {
     {
       title: "Theo dõi",
       items: [
-        { label: "Tổng quan" },
+        { label: "Tổng quan", to: "/admin" },
         { label: "Người dùng", to: "/admin/users", count: overview.data?.statusCounts.ALL },
         { label: "Nhật ký quản trị", to: "/admin/audit" },
         { label: "Buổi tập", to: "/admin/sessions" },
@@ -163,6 +163,8 @@ function NavItem({ item }: { item: Item }) {
   return (
     <NavLink
       to={item.to}
+      // "/admin" là tiền tố của mọi trang admin: không `end` thì Tổng quan sáng mãi.
+      end={item.to === "/admin"}
       className={({ isActive }) =>
         cn(
           base,

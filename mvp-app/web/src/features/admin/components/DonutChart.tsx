@@ -7,7 +7,17 @@ const C = 2 * Math.PI * R
  * Vòng tròn chia phần, số tổng ở giữa, chú thích số + % bên dưới. Rê chuột lên phần hay dòng chú thích
  * hiện chi tiết (thẻ title). Vẽ tay bằng SVG để không thêm thư viện biểu đồ.
  */
-export function DonutChart({ slices, center, centerLabel }: { slices: Slice[]; center: string; centerLabel: string }) {
+export function DonutChart({
+  slices,
+  center,
+  centerLabel,
+  emptyText = "Chưa có dữ liệu trong khoảng này.",
+}: {
+  slices: Slice[]
+  center: string
+  centerLabel: string
+  emptyText?: string
+}) {
   const total = slices.reduce((a, s) => a + s.value, 0)
   const arcs = donutArcs(
     slices.map((s) => s.value),
@@ -47,7 +57,7 @@ export function DonutChart({ slices, center, centerLabel }: { slices: Slice[]; c
         </text>
       </svg>
       {total === 0 ? (
-        <p className="text-center text-xs text-[var(--color-text-muted)]">Chưa có dữ liệu trong khoảng này.</p>
+        <p className="text-center text-xs text-[var(--color-text-muted)]">{emptyText}</p>
       ) : (
         <ul className="flex flex-col gap-1.5">
           {slices.map((s) => (

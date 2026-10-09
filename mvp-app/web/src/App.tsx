@@ -1,11 +1,14 @@
 import { Navigate, Route, Routes } from "react-router"
 import { AppShell } from "@/components/AppShell"
+import { DashboardPage } from "@/features/admin/pages/DashboardPage"
+import { useAuth } from "@/features/auth/components/AuthContext"
 import { RequireAdmin } from "@/features/auth/components/RequireAdmin"
 import { RequireAuth } from "@/features/auth/components/RequireAuth"
 import { RequireOnboarding } from "@/features/auth/components/RequireOnboarding"
 import { ChangePasswordPage } from "@/features/auth/pages/ChangePasswordPage"
 import { LoginPage } from "@/features/auth/pages/LoginPage"
 import { RegisterPage } from "@/features/auth/pages/RegisterPage"
+import { homePath } from "@/features/auth/utils/homePath"
 import { AssistantPage } from "@/features/assistant/pages/AssistantPage"
 import { OnboardingPage } from "@/features/onboarding/pages/OnboardingPage"
 import { ProgramSelectionPage } from "@/features/program/pages/ProgramSelectionPage"
@@ -34,6 +37,11 @@ import { SchedulePage } from "@/features/schedule/pages/SchedulePage"
 import { FinishSessionPage } from "@/features/workout/pages/FinishSessionPage"
 import { WorkoutPage } from "@/features/workout/pages/WorkoutPage"
 
+function HomeRedirect() {
+  const { role } = useAuth()
+  return <Navigate to={homePath(role)} replace />
+}
+
 /** 12 màn của concept-frontend-v1.md §4. Một app React, phân quyền theo role (P6). */
 export function App() {
   return (
@@ -47,8 +55,16 @@ export function App() {
             <RequireOnboarding>
               <AppShell>
                 <Routes>
-                  {/* Lịch tuần là màn chính, nguồn sự thật — vào app là thấy nó trước. */}
-                  <Route path="/" element={<Navigate to="/schedule" replace />} />
+                  {/* Lịch tuần là màn chính của người tập, Tổng quan là màn chính của admin. */}
+                  <Route path="/" element={<HomeRedirect />} />
+                  <Route
+                    path="/admin"
+                    element={
+                      <RequireAdmin>
+                        <DashboardPage />
+                      </RequireAdmin>
+                    }
+                  />
                   <Route path="/onboarding" element={<OnboardingPage />} />
                   <Route path="/program" element={<ProgramSelectionPage />} />
                   <Route path="/schedule" element={<SchedulePage />} />
@@ -167,7 +183,7 @@ export function App() {
                       </RequireAdmin>
                     }
                   />
-                  <Route path="*" element={<Navigate to="/schedule" replace />} />
+                  <Route path="*" element={<HomeRedirect />} />
                 </Routes>
               </AppShell>
             </RequireOnboarding>

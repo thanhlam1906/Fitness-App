@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { AuthField, AuthLayout, OrDivider, PasswordInput, SocialButtons } from "@/features/auth/components/AuthLayout"
 import { useAuth } from "@/features/auth/components/AuthContext"
+import { landingPath } from "@/features/auth/utils/homePath"
+import { getStoredSession } from "@/features/auth/utils/tokenStorage"
 import {
   isPasswordChangeRequired,
   newPasswordSchema,
@@ -35,8 +37,9 @@ export function LoginPage() {
   } = useForm<LoginValues>({ resolver: zodResolver(loginSchema) })
 
   function goIn() {
-    const from = (location.state as { from?: string } | null)?.from ?? "/schedule"
-    navigate(from, { replace: true })
+    // Đọc role từ kho vì `login` vừa ghi xong mà state của context chưa kịp render lại trong hàm này.
+    const from = (location.state as { from?: string } | null)?.from
+    navigate(landingPath(from, getStoredSession()?.role ?? null), { replace: true })
   }
 
   async function onSubmit(values: LoginValues) {

@@ -1,6 +1,7 @@
 import { CalendarCheck, Dumbbell, Flame, HeartPulse, Repeat, SkipForward, TrendingDown } from "lucide-react"
 import { useSearchParams } from "react-router"
 import { AdminHeader } from "@/features/admin/components/AdminShell"
+import { DaysToggle } from "@/features/admin/components/DaysToggle"
 import { DonutChart } from "@/features/admin/components/DonutChart"
 import { InsightCard, StatTile } from "@/features/admin/components/InsightCard"
 import { BarList, StackedList } from "@/features/admin/components/InsightRows"
@@ -8,7 +9,6 @@ import { useTemplates } from "@/features/admin/api/useTemplates"
 import { useWorkoutInsights } from "@/features/admin/api/useWorkoutInsights"
 import type { WorkoutInsights } from "@/features/admin/types"
 import {
-  INSIGHT_DAYS,
   painSlices,
   percent,
   readInsightsFilter,
@@ -19,7 +19,6 @@ import {
   writeInsightsFilter,
   type InsightsFilter,
 } from "@/features/admin/utils/workoutInsights"
-import { cn } from "@/lib/cn"
 
 /**
  * Trang "Buổi tập" của admin (doc/design-trang-buoi-tap-v1.md): người tập đang vấp ở đâu để HLV
@@ -53,25 +52,7 @@ export function WorkoutInsightsPage() {
             </option>
           ))}
         </select>
-        <div role="group" aria-label="Khoảng thời gian" className="flex overflow-hidden rounded-lg border border-[var(--color-border)]">
-          {INSIGHT_DAYS.map((d, i) => (
-            <button
-              key={d}
-              type="button"
-              aria-pressed={filter.days === d}
-              onClick={() => update({ days: d })}
-              className={cn(
-                "num px-4 py-2 text-[13px] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--color-accent)]",
-                i > 0 && "border-l border-[var(--color-border)]",
-                filter.days === d
-                  ? "bg-[var(--color-accent)] font-bold text-[var(--color-accent-fg)]"
-                  : "text-[var(--color-text-muted)] hover:text-[var(--color-text)]",
-              )}
-            >
-              {d} ngày
-            </button>
-          ))}
-        </div>
+        <DaysToggle value={filter.days} onChange={(days) => update({ days })} />
       </AdminHeader>
 
       <div className="overflow-auto px-7 py-5.5">

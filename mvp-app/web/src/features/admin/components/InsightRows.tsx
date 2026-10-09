@@ -15,26 +15,41 @@ function InsightRow({
   to,
   graphic,
   value,
+  below = false,
 }: {
   name: string
   sub: string
   to?: string
   graphic: ReactNode
   value: ReactNode
+  /** Thanh nằm dưới tên, chạy hết chiều ngang: dùng khi thẻ hẹp. */
+  below?: boolean
 }) {
-  const body = (
+  const label = (
+    <span className="min-w-0 text-[13px] leading-tight">
+      {name}
+      {to && <span className="ml-1.5 text-[11px] text-[var(--color-accent)]">sửa ›</span>}
+      <span className="mt-0.5 block truncate text-[11px] text-[var(--color-text-muted)]">{sub}</span>
+    </span>
+  )
+  const number = <span className="num text-right text-[13px] font-bold">{value}</span>
+  const body = below ? (
     <>
-      <span className="min-w-0 text-[13px] leading-tight">
-        {name}
-        {to && <span className="ml-1.5 text-[11px] text-[var(--color-accent)]">sửa ›</span>}
-        <span className="mt-0.5 block truncate text-[11px] text-[var(--color-text-muted)]">{sub}</span>
-      </span>
+      {label}
+      {number}
+      <span className="col-span-2">{graphic}</span>
+    </>
+  ) : (
+    <>
+      {label}
       {graphic}
-      <span className="num text-right text-[13px] font-bold">{value}</span>
+      {number}
     </>
   )
-  const cls =
-    "-mx-1 grid grid-cols-[minmax(0,13rem)_1fr_3.5rem] items-center gap-2.5 rounded-lg px-1 py-0.5 hover:bg-[var(--color-surface-2)]"
+  const cls = cn(
+    "-mx-1 grid gap-2.5 rounded-lg px-1 py-0.5 hover:bg-[var(--color-surface-2)]",
+    below ? "grid-cols-[minmax(0,1fr)_auto] items-end gap-y-1.5" : "grid-cols-[minmax(0,13rem)_1fr_3.5rem] items-center",
+  )
   return (
     <li title={`${name}: ${sub}`}>
       {to ? (
@@ -54,10 +69,20 @@ function InsightRow({
   )
 }
 
-export type BarRow = { key: string; name: string; sub: string; value: number; label: string; to?: string }
+export type BarRow = { key: string; name: string; sub: string; value: number; label: string; to?: string; color?: string }
 
-/** Cột ngang top 5: thanh dài theo `value / max` (tỉ lệ thì max = 1), số ở đầu thanh. */
-export function BarList({ rows, color, max = 1 }: { rows: BarRow[]; color: string; max?: number }) {
+/** Cột ngang top 5: thanh dài theo `value / max` (tỉ lệ thì max = 1), số ở đầu thanh. `row.color` đè màu chung. */
+export function BarList({
+  rows,
+  color,
+  max = 1,
+  below = false,
+}: {
+  rows: BarRow[]
+  color: string
+  max?: number
+  below?: boolean
+}) {
   if (rows.length === 0) return EMPTY
   return (
     <ul className="flex flex-col gap-2.5">
@@ -68,11 +93,12 @@ export function BarList({ rows, color, max = 1 }: { rows: BarRow[]; color: strin
           sub={r.sub}
           to={r.to}
           value={r.label}
+          below={below}
           graphic={
             <span className="h-3.5 rounded-r-[4px] bg-[var(--color-surface-2)]">
               <span
                 className="block h-full rounded-r-[4px]"
-                style={{ width: `${max === 0 ? 0 : (r.value / max) * 100}%`, background: color }}
+                style={{ width: `${max === 0 ? 0 : (r.value / max) * 100}%`, background: r.color ?? color }}
               />
             </span>
           }
