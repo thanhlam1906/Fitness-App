@@ -26,8 +26,10 @@ export default function PrivacyScreen() {
   return (
     <SettingsSubLayout title="Dữ liệu & quyền riêng tư">
       <View className="mt-4 gap-2.5">
-        <Card Icon={Camera} title="Camera chấm form">
-          Chỉ gửi <Text className="font-semibold text-text">toạ độ các khớp</Text>, không gửi hình hay video của bạn.
+        {/* Khác web: mobile không có màn camera nhận dạng trên máy, chấm form là gửi clip quay sẵn. */}
+        <Card Icon={Camera} title="Chấm form">
+          Clip chỉ gửi đi khi bạn <Text className="font-semibold text-text">tích đồng ý</Text> ở màn quay clip. Máy
+          phân tích, không ai xem clip.
         </Card>
         <Card Icon={Trash2} title="Clip bạn gửi">
           Clip bị <Text className="font-semibold text-text">xoá ngay sau khi chấm</Text>, kể cả khi chấm lỗi. Không ai
