@@ -13,6 +13,7 @@ import { Kicker } from "~/components/Kicker"
 import { Screen } from "~/components/Screen"
 import { Button } from "~/components/ui/Button"
 import { Card } from "~/components/ui/Card"
+import { Skeleton } from "~/components/ui/Skeleton"
 import { useCurrentProgram } from "~/features/program/api/useCurrentProgram"
 import { ExerciseGuideSheet } from "~/features/schedule/components/ExerciseGuideSheet"
 import { TrainingDaysSheet } from "~/features/schedule/components/TrainingDaysSheet"
@@ -45,11 +46,7 @@ export default function MyProgramScreen() {
   const [guide, setGuide] = useState<ScheduledExerciseView | null>(null)
 
   if (schedule.isLoading || program.isLoading) {
-    return (
-      <Screen>
-        <Text className="text-sm text-text-muted">Đang tải…</Text>
-      </Screen>
-    )
+    return <MyProgramSkeleton />
   }
   if ([schedule.error, program.error].some((e) => e instanceof ApiError && e.status === 404)) {
     return (
@@ -245,5 +242,32 @@ function ProgramDayCard({
         ))}
       </View>
     </View>
+  )
+}
+
+/** Cùng khung với màn: nút Lịch, tiêu đề chương trình, 7 ô ngày, các thẻ buổi, hai lối đổi chương trình. */
+function MyProgramSkeleton() {
+  return (
+    <Screen>
+      <View accessible accessibilityLabel="Đang tải">
+        <Skeleton className="h-5 w-12" />
+        <Skeleton className="mt-3.5 h-3 w-36" />
+        <Skeleton className="mt-2 h-8 w-64" />
+        <Skeleton className="mt-2 h-4 w-48" />
+        <Skeleton className="mt-2.5 h-5 w-32 rounded-full" />
+        <Skeleton className="mb-2.5 mt-6 h-3 w-40" />
+        <View className="flex-row gap-1.5">
+          {Array.from({ length: 7 }, (_, i) => (
+            <Skeleton key={i} className="h-9 flex-1" />
+          ))}
+        </View>
+        <Skeleton className="mb-2.5 mt-6 h-3 w-48" />
+        <Skeleton className="mt-2.5 h-44 rounded-[14px]" />
+        <Skeleton className="mt-2.5 h-44 rounded-[14px]" />
+        <Skeleton className="mb-2.5 mt-6 h-3 w-40" />
+        <Skeleton className="mt-2.5 h-[72px] rounded-[14px]" />
+        <Skeleton className="mt-2.5 h-[72px] rounded-[14px]" />
+      </View>
+    </Screen>
   )
 }

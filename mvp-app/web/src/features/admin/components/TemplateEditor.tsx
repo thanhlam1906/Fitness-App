@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from "react"
+import { CircleAlert } from "lucide-react"
+import { IconText } from "@/components/StatusViews"
 import { useNavigate } from "react-router"
 import { FormProvider, useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { cn } from "@/lib/cn"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import { AdminHeader } from "@/features/admin/components/AdminShell"
 import { HelpButton, HelpText, useHelp } from "@/features/admin/components/HelpButton"
 import { TemplateDaysEditor } from "@/features/admin/components/TemplateDaysEditor"
@@ -138,11 +141,14 @@ export function TemplateEditor({
         </AdminHeader>
 
         {(blocked || invalid || save.isError || duplicate.isError) && (
-          <div role="alert" className="space-y-1 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-7 py-2.5 text-sm text-[var(--color-danger)]">
-            {blocked && <p>{blocked}</p>}
-            {invalid && <p>Còn ô chưa hợp lệ, xem các dòng báo đỏ bên dưới.</p>}
-            {save.isError && <p>{save.error.message}</p>}
-            {duplicate.isError && <p>{duplicate.error.message}</p>}
+          <div role="alert" className="flex items-start gap-2 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-7 py-2.5 text-sm text-[var(--color-danger)]">
+            <CircleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
+            <div className="space-y-1">
+              {blocked && <p>{blocked}</p>}
+              {invalid && <p>Còn ô chưa hợp lệ, xem các dòng báo đỏ bên dưới.</p>}
+              {save.isError && <p>{save.error.message}</p>}
+              {duplicate.isError && <p>{duplicate.error.message}</p>}
+            </div>
           </div>
         )}
 
@@ -239,9 +245,11 @@ export function TemplateEditor({
               {ready ? (
                 <TemplateDaysEditor catalog={catalog} />
               ) : exercises.isError ? (
-                <p className="text-sm text-[var(--color-danger)]">{exercises.error.message}</p>
+                <IconText>{exercises.error.message}</IconText>
               ) : (
-                <p className="text-sm text-[var(--color-text-muted)]">Đang tải danh sách bài…</p>
+                <div role="status" aria-label="Đang tải">
+                  <Skeleton className="h-48" />
+                </div>
               )}
             </div>
 
@@ -250,7 +258,7 @@ export function TemplateEditor({
               {ready ? (
                 <IncrementEditor slugs={slugs} nameOf={nameOf} />
               ) : (
-                <p className="text-sm text-[var(--color-text-muted)]">Đang tải danh sách bài…</p>
+                !exercises.isError && <Skeleton className="h-24" />
               )}
             </div>
 
@@ -260,11 +268,9 @@ export function TemplateEditor({
             {renderPreview && (
               <>
                 {section("Thử quy tắc", "sim")}
-                {ready ? (
-                  renderPreview(setHit, nameOf, needsLoad)
-                ) : (
-                  <p className="mt-2 text-sm text-[var(--color-text-muted)]">Đang tải danh sách bài…</p>
-                )}
+                {ready
+                  ? renderPreview(setHit, nameOf, needsLoad)
+                  : !exercises.isError && <Skeleton className="mt-2 h-32" />}
               </>
             )}
 

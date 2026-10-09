@@ -1,8 +1,10 @@
 import { Link, useParams, useSearchParams } from "react-router"
+import { CircleCheckBig, CloudOff, SearchX } from "lucide-react"
 import { ApiError } from "@/api/client"
 import { SegmentBar, type Segment } from "@/features/workout/components/SegmentBar"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+import { StatusBlock } from "@/components/StatusViews"
+import { Skeleton } from "@/components/ui/skeleton"
 import { FlowScreen } from "@/components/UserShell"
 import { useSchedule } from "@/features/schedule/api/useSchedule"
 import { ExerciseLogger } from "@/features/workout/components/ExerciseLogger"
@@ -26,34 +28,34 @@ export function WorkoutPage() {
   const workout = schedule.data?.workouts.find((w) => w.id === scheduledWorkoutId)
 
   if (schedule.isLoading || session.isLoading) {
-    return <p className="text-sm text-[var(--color-text-muted)]">Đang chuẩn bị buổi tập…</p>
+    return <WorkoutSkeleton />
   }
   if (session.isError && session.error instanceof ApiError && session.error.status === 409) {
     // Ngày đã tập xong (mở lại từ lịch sử trình duyệt): xem lại ở màn Lịch, không tạo buổi mới.
     return (
-      <Card className="space-y-3">
-        <p className="text-sm text-[var(--color-text-muted)]">Buổi này đã tập xong.</p>
+      <StatusBlock icon={CircleCheckBig} tone="success" title="Buổi này đã tập xong">
         <Link to={workout ? `/schedule?ngay=${workout.scheduledOn}` : "/schedule"}>
           <Button variant="secondary">Xem lại ở Lịch</Button>
         </Link>
-      </Card>
+      </StatusBlock>
     )
   }
   if (session.isError) {
     return (
-      <Card className="space-y-3">
-        <p className="text-sm text-[var(--color-danger)]">
-          Không mở được buổi tập: {session.error.message}
-        </p>
+      <StatusBlock icon={CloudOff} tone="danger" title="Không mở được buổi tập" detail={session.error.message}>
         <Button variant="secondary" onClick={() => session.refetch()}>
           Thử lại
         </Button>
-      </Card>
+      </StatusBlock>
     )
   }
   if (!workout) {
     return (
-      <p className="text-sm text-[var(--color-danger)]">Không tìm thấy buổi tập này trong lịch.</p>
+      <StatusBlock icon={SearchX} tone="danger" title="Không tìm thấy buổi tập">
+        <Link to="/schedule">
+          <Button variant="secondary">Về lịch</Button>
+        </Link>
+      </StatusBlock>
     )
   }
 
@@ -122,6 +124,34 @@ export function WorkoutPage() {
         >
           Kết buổi
         </Link>
+      </div>
+    </FlowScreen>
+  )
+}
+
+/** Cùng khung với màn buổi tập: kicker + thanh đốt, tên bài, số tải lớn, các dòng set, hàng điều hướng. */
+function WorkoutSkeleton() {
+  return (
+    <FlowScreen>
+      <div role="status" aria-label="Đang tải" className="flex flex-1 flex-col">
+        <div className="flex justify-between">
+          <Skeleton className="h-3 w-20" />
+          <Skeleton className="h-3 w-16" />
+        </div>
+        <Skeleton className="mt-2.5 h-1.5 w-full" />
+        <Skeleton className="mt-5 h-7 w-56" />
+        <Skeleton className="mt-4 h-14 w-full" />
+        <Skeleton className="mt-3 h-20 w-48" />
+        <div className="mt-6 flex flex-col gap-2">
+          <Skeleton className="h-14 w-full" />
+          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-14 w-full" />
+        </div>
+        <div className="flex-1" />
+        <div className="mt-6 flex items-center justify-between gap-3">
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-4 w-16" />
+        </div>
       </div>
     </FlowScreen>
   )

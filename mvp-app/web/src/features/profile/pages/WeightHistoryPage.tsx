@@ -1,8 +1,11 @@
 import { useState } from "react"
+import { Scale } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { IconText, StatusBlock } from "@/components/StatusViews"
 import { formatDate, formatDayMonth, formatKg } from "@/lib/format"
 import { weightSeries } from "@/features/profile/utils/charts"
 import { MetricEditor } from "./ProfilePage"
+import { Skeleton } from "@/components/ui/skeleton"
 import { LoadState, SettingsSubLayout } from "@/features/profile/components/SettingsSubLayout"
 import { WEIGHT_KG } from "@/features/profile/types"
 import { useBodyMetrics, useSaveBodyMetric } from "@/features/profile/api/useProfile"
@@ -26,7 +29,16 @@ export function WeightHistoryPage() {
   if (!metrics.data) {
     return (
       <SettingsSubLayout title="Lịch sử cân nặng">
-        <LoadState error={metrics.error} />
+        <LoadState
+          error={metrics.error}
+          skeleton={
+            <>
+              <Skeleton className="mt-4 h-10 w-44" />
+              <Skeleton className="mt-2 h-5 w-32 rounded-full" />
+              <Skeleton className="mt-3.5 h-[190px]" />
+            </>
+          }
+        />
       </SettingsSubLayout>
     )
   }
@@ -101,7 +113,12 @@ export function WeightHistoryPage() {
           </ul>
         </>
       ) : (
-        <p className="mt-5 text-sm text-[var(--color-text-muted)]">Chưa có lần đo nào. Cập nhật cân nặng để bắt đầu theo dõi.</p>
+        <StatusBlock
+          icon={Scale}
+          title="Chưa có lần đo"
+          detail="Cập nhật cân nặng để bắt đầu theo dõi."
+          className="mt-5"
+        />
       )}
 
       <div className="mt-4">
@@ -119,7 +136,7 @@ export function WeightHistoryPage() {
             Cập nhật cân nặng hôm nay
           </Button>
         )}
-        {save.isError && <p className="mt-2 text-sm text-[var(--color-danger)]">Lưu thất bại: {save.error.message}</p>}
+        {save.isError && <IconText className="mt-2">Lưu thất bại: {save.error.message}</IconText>}
       </div>
     </SettingsSubLayout>
   )

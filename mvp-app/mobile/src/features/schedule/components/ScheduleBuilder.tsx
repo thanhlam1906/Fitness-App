@@ -17,6 +17,7 @@ import { Button } from "~/components/ui/Button"
 import { Input } from "~/components/ui/Input"
 import { Label } from "~/components/ui/Label"
 import { PickerField } from "~/components/ui/Picker"
+import { Skeleton } from "~/components/ui/Skeleton"
 import { isoDay, START_OFFSETS, startLabel } from "~/lib/dates"
 import { cleanDecimal } from "~/lib/number"
 import { useCreateCustomProgram } from "~/features/schedule/api/useCustomProgram"
@@ -61,7 +62,23 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
   }
 
   if (exercises.isLoading) {
-    return <Text className="text-sm text-text-muted">Đang tải danh sách bài tập…</Text>
+    // Khung của form: kicker + 7 nút thứ, hàng ngày bắt đầu/số tuần, cảnh báo, nút tạo.
+    return (
+      <View accessible accessibilityLabel="Đang tải">
+        <Skeleton className="h-3 w-40" />
+        <View className="mt-2.5 flex-row gap-1.5">
+          {Array.from({ length: 7 }, (_, i) => (
+            <Skeleton key={i} className="h-[42px] flex-1 rounded-lg" />
+          ))}
+        </View>
+        <View className="mt-5 flex-row gap-3">
+          <Skeleton className="h-14 flex-1" />
+          <Skeleton className="h-14 w-28" />
+        </View>
+        <Skeleton className="mt-4 h-10" />
+        <Skeleton className="mt-4 h-11" />
+      </View>
+    )
   }
 
   return (

@@ -1,10 +1,12 @@
 import { useNavigate, useParams, useSearchParams } from "react-router"
+import { IconText } from "@/components/StatusViews"
 import { useForm } from "react-hook-form"
 import { AdminHeader } from "@/features/admin/components/AdminShell"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/cn"
 import { ExerciseListPanel } from "@/features/admin/components/ExerciseListPanel"
@@ -77,7 +79,9 @@ export function ExerciseFormPage() {
 
   const title = isNew
     ? "Bài tập mới"
-    : (existing.data?.nameVi ?? existing.data?.nameEn ?? "Đang tải…")
+    : existing.isError
+      ? "Không tải được bài"
+      : (existing.data?.nameVi ?? existing.data?.nameEn ?? <Skeleton className="h-6 w-56" />)
 
   return (
     <div className="flex min-h-0 flex-1">
@@ -107,14 +111,30 @@ export function ExerciseFormPage() {
         )}
 
         <div className="min-h-0 flex-1 overflow-auto p-6">
-          {!isNew && existing.isLoading && (
-            <p className="text-sm text-[var(--color-text-muted)]">Đang tải…</p>
+          {/* Tab "Cách chấm form" tự có khung tải trong FormCheckEditor. */}
+          {!isNew && tab === "info" && existing.isLoading && (
+            // Khung của form "Thông tin bài": cặp tên, cặp nhóm cơ/thiết bị, mô tả, hướng dẫn quay.
+            <div role="status" aria-label="Đang tải" className="max-w-3xl space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <Skeleton className="h-[62px]" />
+                <Skeleton className="h-[62px]" />
+                <Skeleton className="h-[62px]" />
+                <Skeleton className="h-[62px]" />
+              </div>
+              <Skeleton className="h-[86px]" />
+              <Skeleton className="h-[130px]" />
+              <Skeleton className="h-8 w-40" />
+            </div>
+          )}
+          {!isNew && existing.isError && (
+            <IconText>{existing.error.message}</IconText>
           )}
 
           {/* key={id}: đổi bài thì dựng lại trình sửa để bản nháp của bài trước không lưu nhầm sang bài này. */}
           {tab === "checks" && !isNew && id && <FormCheckEditor key={id} exerciseId={id} />}
 
-          {tab === "info" && (
+          {/* Form trống hiện song song với khung chờ thì vẫn bấm Lưu được: chờ có dữ liệu mới hiện. */}
+          {tab === "info" && (isNew || existing.data) && (
             <form onSubmit={handleSubmit(onSubmit)} className="max-w-3xl space-y-4">
               {isNew && (
                 <div className="space-y-1.5">
@@ -174,7 +194,7 @@ export function ExerciseFormPage() {
               </div>
 
               {save.isError && (
-                <p className="text-sm text-[var(--color-danger)]">{save.error.message}</p>
+                <IconText>{save.error.message}</IconText>
               )}
 
               <div className="flex gap-2.5">

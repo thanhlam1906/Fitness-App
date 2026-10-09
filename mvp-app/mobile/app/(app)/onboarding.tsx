@@ -30,6 +30,7 @@ import { Button } from "~/components/ui/Button"
 import { Checkbox } from "~/components/ui/Checkbox"
 import { Label } from "~/components/ui/Label"
 import { PickerField } from "~/components/ui/Picker"
+import { Skeleton } from "~/components/ui/Skeleton"
 import { BarbellRackIcon, BenchIcon, KettlebellIcon } from "~/features/onboarding/components/icons"
 import { usePatchProfile, useProfile, useSaveBodyMetric } from "~/features/profile/api/useProfile"
 import { colors } from "~/theme"
@@ -122,11 +123,7 @@ export default function OnboardingScreen() {
   }
 
   if (profile.isLoading) {
-    return (
-      <Screen>
-        <Text className="text-sm text-text-muted">Đang tải hồ sơ…</Text>
-      </Screen>
-    )
+    return <OnboardingSkeleton />
   }
   if (profile.isError) {
     return (
@@ -576,5 +573,21 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <Label>{label}</Label>
       {children}
     </View>
+  )
+}
+
+/** Cùng khung với mọi bước: stepper, ô icon, tiêu đề, gợi ý, vùng nội dung và nút cuối. */
+function OnboardingSkeleton() {
+  return (
+    <Screen>
+      <View accessible accessibilityLabel="Đang tải" className="flex-1">
+        <Skeleton className="h-1.5" />
+        <Skeleton className="mt-6 size-[52px] rounded-[14px]" />
+        <Skeleton className="mt-3.5 h-8 w-56" />
+        <Skeleton className="mt-2.5 h-4 w-64" />
+        <Skeleton className="mt-5 h-48" />
+        <Skeleton className="mt-auto h-12" />
+      </View>
+    </Screen>
   )
 }

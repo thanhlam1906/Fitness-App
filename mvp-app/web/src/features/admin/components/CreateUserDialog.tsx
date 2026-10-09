@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react"
+import { IconText } from "@/components/StatusViews"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ApiError } from "@/api/client"
@@ -70,9 +71,7 @@ export function CreateUserDialog({ onClose }: { onClose: () => void }) {
           </select>
         </Field>
         {error && (
-          <p role="alert" className="text-sm text-[var(--color-danger)]">
-            {error}
-          </p>
+          <IconText>{error}</IconText>
         )}
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="secondary" disabled={isSubmitting} onClick={() => ref.current?.close()}>

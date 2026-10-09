@@ -1,10 +1,12 @@
 import { useState, type ReactNode } from "react"
-import { Pencil } from "lucide-react"
+import { BedDouble, CalendarMinus, Minus, Pencil } from "lucide-react"
 import { Link } from "react-router"
 import { LoadDeltaBadge } from "@/components/LoadDeltaBadge"
 import { WrongFeedbackButton } from "@/features/feedback/components/WrongFeedbackButton"
 import { Button } from "@/components/ui/button"
 import { SHEET_FOCUS } from "@/components/ui/sheet"
+import { Skeleton } from "@/components/ui/skeleton"
+import { IconCircle, IconText } from "@/components/StatusViews"
 import { SKIP_REASONS } from "@/features/workout/types"
 import { cn } from "@/lib/cn"
 import { formatKg, formatNumber } from "@/lib/format"
@@ -78,18 +80,33 @@ function DoneCard({ cell, workout, totalWeeks }: { cell: MonthCell; workout: Sch
   const session = useSessionOfDay(workout.id)
   let body: ReactNode
   if (session.isLoading) {
-    body = <p className="mt-3 text-sm text-[var(--color-text-muted)]">Đang tải buổi đã tập…</p>
+    // Khung của thẻ đã tập: lưới 3 số rồi các dòng bài.
+    body = (
+      <div role="status" aria-label="Đang tải">
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          <Skeleton className="h-16" />
+          <Skeleton className="h-16" />
+          <Skeleton className="h-16" />
+        </div>
+        <Skeleton className="mt-3 h-12 w-full" />
+        <Skeleton className="mt-2 h-12 w-full" />
+      </div>
+    )
   } else if (session.isError) {
     body = (
       <div className="mt-3 space-y-2">
-        <p className="text-sm text-[var(--color-danger)]">Không tải được buổi này: {session.error.message}</p>
+        <IconText>Không tải được buổi này: {session.error.message}</IconText>
         <Button variant="secondary" size="sm" onClick={() => session.refetch()}>
           Thử lại
         </Button>
       </div>
     )
   } else if (!session.data) {
-    body = <p className="mt-3 text-sm text-[var(--color-text-muted)]">Không có dữ liệu set của buổi này.</p>
+    body = (
+      <IconText icon={Minus} tone="muted" className="mt-3">
+        Không có dữ liệu set của buổi này.
+      </IconText>
+    )
   } else {
     const summary = summarizeSession(session.data, workout.exercises)
     body = (
@@ -112,7 +129,11 @@ function DoneCard({ cell, workout, totalWeeks }: { cell: MonthCell; workout: Sch
                 <span className="num mr-auto text-[11px] text-[var(--color-text-muted)]">
                   Mục tiêu {exercise.targetSets}×{exercise.targetReps}
                 </span>
-                {sets.length === 0 && <span className="text-[11px] text-[var(--color-text-muted)]">Không log set nào</span>}
+                {sets.length === 0 && (
+                  <IconText icon={Minus} tone="muted" className="text-[11px]">
+                    Không log set nào
+                  </IconText>
+                )}
                 {sets.map((s) =>
                   s.skipped ? (
                     <span
@@ -156,12 +177,16 @@ function NoWorkoutCard({ cell, workouts }: { cell: MonthCell; workouts: Schedule
   const inProgram = cell.date >= dates[0] && cell.date <= dates[dates.length - 1]
   const next = inProgram ? nextPlannedAfter(workouts, cell.date) : null
   return (
-    <div className="mt-3.5 rounded-2xl bg-[var(--color-surface)] p-4.5 text-center text-sm leading-relaxed text-[var(--color-text-muted)]">
-      <div className="font-semibold text-[var(--color-text)]">
+    <div className="mt-3.5 flex flex-col items-center rounded-2xl bg-[var(--color-surface)] p-5 text-center text-sm leading-relaxed text-[var(--color-text-muted)]">
+      <IconCircle
+        icon={inProgram && cell.isRestDay ? BedDouble : CalendarMinus}
+        className="size-12 [&>svg]:size-5.5"
+      />
+      <div className="mt-2.5 text-[15px] font-semibold text-[var(--color-text)]">
         {dayTitle(cell.date)}
         {inProgram && (cell.isRestDay ? " · Ngày nghỉ" : " · Không có buổi")}
       </div>
-      {!inProgram && <div>Không có buổi nào trong chương trình</div>}
+      {!inProgram && <div>Ngoài thời gian chương trình</div>}
       {next && (
         <div className="num">
           Buổi tới: {WEEKDAY_SHORT[parseIso(next.scheduledOn).getDay()]} {dayTitle(next.scheduledOn).split(" ").pop()} · Buổi{" "}

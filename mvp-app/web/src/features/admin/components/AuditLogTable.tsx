@@ -1,4 +1,6 @@
 import { Link } from "react-router"
+import { History } from "lucide-react"
+import { TableEmpty } from "./TableEmpty"
 import { Button } from "@/components/ui/button"
 import type { AdminAuditEntry, AdminPage } from "@/features/admin/types"
 import { ACTION_LABEL, ROLE_LABEL } from "@/features/admin/utils/userLabels"
@@ -58,11 +60,9 @@ export function AuditLogTable({
               </tr>
             ))}
             {page.items.length === 0 && (
-              <tr>
-                <td colSpan={showTarget ? 5 : 4} className="px-4 py-6 text-center text-[var(--color-text-muted)]">
-                  Chưa có thao tác nào.
-                </td>
-              </tr>
+              <TableEmpty icon={History} colSpan={showTarget ? 5 : 4}>
+                Chưa có thao tác nào
+              </TableEmpty>
             )}
           </tbody>
         </table>

@@ -1,8 +1,11 @@
 import { Link } from "react-router"
+import { Dumbbell } from "lucide-react"
 import { ExerciseImage } from "@/components/ExerciseImage"
 import { Section } from "@/features/review/components/Section"
 import { StatusBadge } from "@/features/review/components/StatusBadge"
 import { Stepper } from "@/components/Stepper"
+import { Skeleton } from "@/components/ui/skeleton"
+import { IconText, StatusBlock } from "@/components/StatusViews"
 import { formatDayMonth } from "@/lib/format"
 import { useExercises } from "@/features/exercise/api/useExercises"
 import { useReviews } from "@/features/review/api/useReviews"
@@ -28,8 +31,18 @@ export function FormCheckListPage() {
       </p>
 
       <div className="mt-6 flex flex-col gap-3">
-        {exercises.isLoading && <p className="text-sm text-[var(--color-text-muted)]">Đang tải…</p>}
-        {exercises.isError && <p className="text-sm text-[var(--color-danger)]">{exercises.error.message}</p>}
+        {exercises.isLoading && (
+          // Khung của thẻ "Chọn bài để chấm": dòng tiêu đề rồi các dòng bài.
+          <div role="status" aria-label="Đang tải" className="rounded-[var(--radius-lg)] bg-[var(--color-surface)] px-3.5 pb-3">
+            <Skeleton className="my-4.5 h-4 w-40" />
+            <div className="flex flex-col gap-1.5">
+              {Array.from({ length: 4 }, (_, i) => (
+                <Skeleton key={i} className="h-[68px]" />
+              ))}
+            </div>
+          </div>
+        )}
+        {exercises.isError && <IconText>{exercises.error.message}</IconText>}
 
         {/* Thẻ gập thay cho một danh sách dài: thẻ chọn bài mở sẵn vì đó là việc người dùng đến đây để
             làm; lịch sử ít khi cần nên nằm sau một lần bấm. */}
@@ -37,9 +50,12 @@ export function FormCheckListPage() {
           <Section title="Chọn bài để chấm" meta={String(analyzable.length)} open>
             <div className="flex flex-col gap-1.5">
               {analyzable.length === 0 && (
-                <p className="text-sm text-[var(--color-text-muted)]">
-                  Chưa có bài nào chấm form được. Quản trị viên cần thêm khớp cần kiểm cho bài.
-                </p>
+                <StatusBlock
+                  icon={Dumbbell}
+                  title="Chưa có bài chấm form được"
+                  detail="Quản trị viên cần thêm khớp cần kiểm cho bài."
+                  className="py-5"
+                />
               )}
               {analyzable.map((exercise) => (
                 <Link
@@ -58,6 +74,7 @@ export function FormCheckListPage() {
           </Section>
         )}
 
+        {reviews.isError && <IconText>{reviews.error.message}</IconText>}
         {reviews.data && reviews.data.length > 0 && (
           <Section title="Lần gửi gần đây" meta={String(reviews.data.length)}>
             <div className="flex flex-col gap-1.5">

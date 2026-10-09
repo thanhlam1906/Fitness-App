@@ -8,6 +8,7 @@ import { formatKg } from "@/lib/format"
 import { useAuth } from "~/features/auth/components/AuthContext"
 import { Kicker } from "~/components/Kicker"
 import { Screen } from "~/components/Screen"
+import { Skeleton } from "~/components/ui/Skeleton"
 import { useCurrentProgram } from "~/features/program/api/useCurrentProgram"
 import { useBodyMetrics, useProfile, useProgress } from "~/features/profile/api/useProfile"
 import { useRefreshOnFocus } from "~/lib/focus"
@@ -50,19 +51,23 @@ export default function SettingsScreen() {
           <Text className="text-base font-bold text-text" numberOfLines={1}>
             {data?.fullName || "Tài khoản của bạn"}
           </Text>
-          <Text className="mt-0.5 text-xs text-text-muted" numberOfLines={1} style={NUM}>
-            {data
-              ? [
-                  data.goal && labelOf(GOALS, data.goal),
-                  data.sessionsPerWeek != null && `${data.sessionsPerWeek} buổi/tuần`,
-                  weight != null && formatKg(weight),
-                ]
-                  .filter(Boolean)
-                  .join(" · ") || "Chưa khai hồ sơ"
-              : profile.isError
-                ? "Không tải được hồ sơ"
-                : "Đang tải…"}
-          </Text>
+          {data || profile.isError ? (
+            <Text className="mt-0.5 text-xs text-text-muted" numberOfLines={1} style={NUM}>
+              {data
+                ? [
+                    data.goal && labelOf(GOALS, data.goal),
+                    data.sessionsPerWeek != null && `${data.sessionsPerWeek} buổi/tuần`,
+                    weight != null && formatKg(weight),
+                  ]
+                    .filter(Boolean)
+                    .join(" · ") || "Chưa khai hồ sơ"
+                : "Không tải được hồ sơ"}
+            </Text>
+          ) : (
+            <View accessible accessibilityLabel="Đang tải">
+              <Skeleton className="mt-1 h-3 w-40" />
+            </View>
+          )}
         </View>
       </View>
 
@@ -76,7 +81,7 @@ export default function SettingsScreen() {
             program.data
               ? [program.data.templateName, restDaysLabel(program.data.restDays)].filter(Boolean).join(" · ")
               : program.isLoading
-                ? "Đang tải…"
+                ? null
                 : "Chưa có chương trình"
           }
         />
@@ -138,7 +143,8 @@ function Row({
   to: Href
   Icon: ComponentType<{ color: string; size?: number }>
   title: string
-  sub: string
+  /** null = đang chờ số liệu, hiện khối mảnh thay chữ. */
+  sub: string | null
   accent?: boolean
 }) {
   const router = useRouter()
@@ -154,9 +160,15 @@ function Row({
       </View>
       <View className="flex-1">
         <Text className="text-[15px] font-semibold text-text">{title}</Text>
-        <Text className="text-xs text-text-muted" numberOfLines={1} style={NUM}>
-          {sub}
-        </Text>
+        {sub === null ? (
+          <View accessible accessibilityLabel="Đang tải">
+            <Skeleton className="mt-1 h-3 w-32" />
+          </View>
+        ) : (
+          <Text className="text-xs text-text-muted" numberOfLines={1} style={NUM}>
+            {sub}
+          </Text>
+        )}
       </View>
       <ChevronRight size={16} color={colors["text-muted"]} />
     </Pressable>

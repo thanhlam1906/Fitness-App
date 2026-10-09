@@ -1,9 +1,10 @@
-import { ChevronLeft, ChevronRight, List } from "lucide-react"
+import { CalendarOff, ChevronLeft, ChevronRight, CloudOff, List } from "lucide-react"
 import { Link, useSearchParams } from "react-router"
 import { ApiError } from "@/api/client"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import { SHEET_FOCUS } from "@/components/ui/sheet"
+import { Skeleton } from "@/components/ui/skeleton"
+import { StatusBlock } from "@/components/StatusViews"
 import { cn } from "@/lib/cn"
 import { DayCard } from "@/features/schedule/components/DayCard"
 import type { ScheduledWorkoutView } from "@/features/schedule/types"
@@ -29,33 +30,30 @@ export function SchedulePage() {
   if (schedule.isError) {
     if (schedule.error instanceof ApiError && schedule.error.status === 404) {
       return (
-        <Card className="space-y-3 text-center">
-          <p className="text-sm text-[var(--color-text-muted)]">Chưa có chương trình đang chạy.</p>
+        <StatusBlock icon={CalendarOff} title="Chưa có chương trình">
           <Link to="/program">
             <Button>Chọn chương trình</Button>
           </Link>
-        </Card>
+        </StatusBlock>
       )
     }
     return (
-      <Card className="space-y-3">
-        <p className="text-sm text-[var(--color-danger)]">Không tải được lịch: {schedule.error.message}</p>
+      <StatusBlock icon={CloudOff} tone="danger" title="Không tải được lịch" detail={schedule.error.message}>
         <Button variant="secondary" onClick={() => schedule.refetch()}>
           Thử lại
         </Button>
-      </Card>
+      </StatusBlock>
     )
   }
 
   const { workouts, restDays } = schedule.data!
   if (workouts.length === 0) {
     return (
-      <Card className="space-y-3 text-center">
-        <p className="text-sm text-[var(--color-text-muted)]">Lịch chưa có buổi nào.</p>
+      <StatusBlock icon={CalendarOff} title="Lịch chưa có buổi nào">
         <Link to="/program">
           <Button>Chọn chương trình</Button>
         </Link>
-      </Card>
+      </StatusBlock>
     )
   }
 
@@ -240,15 +238,15 @@ function Legend() {
 /** §5.3 — skeleton đúng hình lưới tháng, không phải spinner giữa màn. */
 function MonthSkeleton() {
   return (
-    <div>
-      <div className="h-3 w-40 rounded bg-[var(--color-surface-2)]" />
-      <div className="mt-3.5 h-8 w-24 rounded bg-[var(--color-surface-2)]" />
+    <div role="status" aria-label="Đang tải">
+      <Skeleton className="h-3 w-40 rounded" />
+      <Skeleton className="mt-3.5 h-8 w-24 rounded" />
       <div className="mt-6 grid grid-cols-7 gap-1.5">
         {Array.from({ length: 35 }, (_, i) => (
-          <div key={i} className="mx-auto size-8 rounded-full bg-[var(--color-surface)]" />
+          <Skeleton key={i} className="mx-auto size-8 rounded-full" />
         ))}
       </div>
-      <div className="mt-4 h-40 rounded-2xl bg-[var(--color-surface)]" />
+      <Skeleton className="mt-4 h-40 rounded-2xl" />
     </div>
   )
 }

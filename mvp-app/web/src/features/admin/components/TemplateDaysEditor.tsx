@@ -1,4 +1,6 @@
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form"
+import { TriangleAlert } from "lucide-react"
+import { Notice } from "@/components/StatusViews"
 import { cn } from "@/lib/cn"
 import type { ProgramTemplateInput } from "@/features/admin/types"
 import type { Exercise } from "@/features/exercise/types"
@@ -141,7 +143,9 @@ function DayCard({
         )
       })}
       {rows.fields.length === 0 && (
-        <p className="mt-2 text-[13px] text-[var(--color-warn)]">Buổi chưa có bài nào. Không lưu được.</p>
+        <Notice icon={TriangleAlert} tone="warn" className="mt-2">
+          Buổi chưa có bài nào. Không lưu được.
+        </Notice>
       )}
       <button
         type="button"

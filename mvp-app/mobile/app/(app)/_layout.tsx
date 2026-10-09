@@ -3,6 +3,7 @@ import { Text, View } from "react-native"
 import { shouldResumeOnboarding } from "@/features/auth/utils/onboardingGate"
 import { useAuth } from "~/features/auth/components/AuthContext"
 import { Button } from "~/components/ui/Button"
+import { Skeleton } from "~/components/ui/Skeleton"
 import { useProfile } from "~/features/profile/api/useProfile"
 import { colors } from "~/theme"
 
@@ -26,8 +27,11 @@ export default function AppLayout() {
     )
   if (profile.isLoading)
     return (
-      <View className="flex-1 bg-bg p-5 pt-20">
-        <Text className="text-sm text-text-muted">Đang tải…</Text>
+      <View accessible accessibilityLabel="Đang tải" className="flex-1 gap-4 bg-bg p-5 pt-20">
+        <Skeleton className="h-7 w-48" />
+        <Skeleton className="h-24" />
+        <Skeleton className="h-24" />
+        <Skeleton className="h-24" />
       </View>
     )
   if (shouldResumeOnboarding(role, profile.data?.onboardingStep, pathname)) {

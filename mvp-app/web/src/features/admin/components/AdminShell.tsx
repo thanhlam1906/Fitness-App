@@ -121,7 +121,7 @@ export function AdminHeader({
   children,
 }: {
   group: string
-  title: string
+  title: ReactNode
   children?: ReactNode
 }) {
   return (

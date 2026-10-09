@@ -2,6 +2,8 @@ import { useState, type Dispatch, type ReactNode, type SetStateAction } from "re
 import { X } from "lucide-react"
 import { Sheet, SHEET_FOCUS, SheetHeader } from "@/components/ui/sheet"
 import { useExercises } from "@/features/exercise/api/useExercises"
+import { IconText } from "@/components/StatusViews"
+import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/cn"
 import { formatDayMonth } from "@/lib/format"
 import { diffDraft, nudge, toDraft, type DraftRow } from "@/features/schedule/utils/editDraft"
@@ -243,6 +245,12 @@ function EditBody({
             </div>
           ))}
 
+        {exercises.isLoading && (
+          <div role="status" aria-label="Đang tải">
+            <Skeleton className="mt-3 h-12 rounded-[var(--radius-lg)]" />
+          </div>
+        )}
+        {exercises.isError && <IconText className="mt-3">{exercises.error.message}</IconText>}
         {active.length > 0 && (
           <select
             aria-label={addLabel}
@@ -282,7 +290,7 @@ function EditBody({
 
         <p className="mt-3 text-xs text-[var(--color-text-muted)]">Tạ mỗi lần bấm đổi 2,5 kg.</p>
         {note && <p className="mt-1.5 text-xs text-[var(--color-text-muted)]">{note}</p>}
-        {error && <p className="mt-2 text-sm text-[var(--color-danger)]">Lưu thất bại: {error}</p>}
+        {error && <IconText className="mt-2">Lưu thất bại: {error}</IconText>}
       </div>
     </>
   )

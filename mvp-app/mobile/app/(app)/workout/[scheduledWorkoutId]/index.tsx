@@ -6,6 +6,7 @@ import { Screen } from "~/components/Screen"
 import { SegmentBar, type Segment } from "~/features/workout/components/SegmentBar"
 import { Button } from "~/components/ui/Button"
 import { Card } from "~/components/ui/Card"
+import { Skeleton } from "~/components/ui/Skeleton"
 import { useSchedule } from "~/features/schedule/api/useSchedule"
 import { ExerciseLogger } from "~/features/workout/components/ExerciseLogger"
 import { useWorkoutSession } from "~/features/workout/api/useWorkoutSession"
@@ -25,11 +26,7 @@ export default function WorkoutScreen() {
   const workout = schedule.data?.workouts.find((w) => w.id === scheduledWorkoutId)
 
   if (schedule.isLoading || session.isLoading) {
-    return (
-      <Screen>
-        <Text className="text-sm text-text-muted">Đang chuẩn bị buổi tập…</Text>
-      </Screen>
-    )
+    return <WorkoutSkeleton />
   }
   const finished =
     (session.isError && session.error instanceof ApiError && session.error.status === 409) ||
@@ -136,4 +133,31 @@ export default function WorkoutScreen() {
 function clamp(value: number, min: number, max: number): number {
   if (Number.isNaN(value)) return min
   return Math.min(Math.max(value, min), max)
+}
+
+/** Cùng khung với màn buổi tập: kicker + thanh đốt, tên bài, số tải lớn, các dòng set, hàng điều hướng. */
+function WorkoutSkeleton() {
+  return (
+    <Screen>
+      <View accessible accessibilityLabel="Đang tải" className="flex-1">
+        <View className="flex-row justify-between">
+          <Skeleton className="h-3 w-20" />
+          <Skeleton className="h-3 w-16" />
+        </View>
+        <Skeleton className="mt-2.5 h-1.5" />
+        <Skeleton className="mt-5 h-7 w-56" />
+        <Skeleton className="mt-4 h-14" />
+        <Skeleton className="mt-3 h-20 w-48" />
+        <View className="mt-6 gap-2">
+          <Skeleton className="h-14" />
+          <Skeleton className="h-40" />
+          <Skeleton className="h-14" />
+        </View>
+        <View className="mt-auto flex-row justify-between gap-3 pt-6">
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-4 w-16" />
+        </View>
+      </View>
+    </Screen>
+  )
 }

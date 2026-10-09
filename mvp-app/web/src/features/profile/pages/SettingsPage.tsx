@@ -3,6 +3,7 @@ import { ChevronRight, Info, KeyRound, ListChecks, Scale, ShieldCheck, TrendingU
 import { Link } from "react-router"
 import { useAuth } from "@/features/auth/components/AuthContext"
 import { SHEET_FOCUS } from "@/components/ui/sheet"
+import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/cn"
 import { formatKg } from "@/lib/format"
 import { useCurrentProgram } from "@/features/program/api/useCurrentProgram"
@@ -49,7 +50,7 @@ export function SettingsPage() {
                   .join(" · ") || "Chưa khai hồ sơ"
               : profile.isError
                 ? "Không tải được hồ sơ"
-                : "Đang tải…"}
+                : <span role="status" aria-label="Đang tải" className="block"><Skeleton className="mt-1 h-3 w-40" /></span>}
           </p>
         </div>
       </div>
@@ -64,7 +65,7 @@ export function SettingsPage() {
             program.data
               ? [program.data.templateName, restDaysLabel(program.data.restDays)].filter(Boolean).join(" · ")
               : program.isLoading
-                ? "Đang tải…"
+                ? <span role="status" aria-label="Đang tải" className="block"><Skeleton className="mt-1 h-3 w-32" /></span>
                 : "Chưa có chương trình"
           }
         />
@@ -131,7 +132,7 @@ function Row({
   to: string
   Icon: ComponentType<{ className?: string }>
   title: string
-  sub: string
+  sub: ReactNode
   accent?: boolean
 }) {
   return (

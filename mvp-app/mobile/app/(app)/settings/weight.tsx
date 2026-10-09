@@ -6,6 +6,7 @@ import { WEIGHT_KG } from "@/features/profile/types"
 import { cn } from "@/lib/cn"
 import { formatDate, formatDayMonth, formatKg } from "@/lib/format"
 import { Button } from "~/components/ui/Button"
+import { Skeleton } from "~/components/ui/Skeleton"
 import { MetricEditor } from "~/features/profile/components/MetricEditor"
 import { LoadState, SettingsSubLayout } from "~/features/profile/components/SettingsSubLayout"
 import { useBodyMetrics, useSaveBodyMetric } from "~/features/profile/api/useProfile"
@@ -35,7 +36,16 @@ export default function WeightHistoryScreen() {
   if (!metrics.data) {
     return (
       <SettingsSubLayout title="Lịch sử cân nặng">
-        <LoadState error={metrics.error} />
+        <LoadState
+          error={metrics.error}
+          skeleton={
+            <>
+              <Skeleton className="mt-4 h-10 w-44" />
+              <Skeleton className="mt-2 h-5 w-32 rounded-full" />
+              <Skeleton className="mt-3.5 h-[190px]" />
+            </>
+          }
+        />
       </SettingsSubLayout>
     )
   }

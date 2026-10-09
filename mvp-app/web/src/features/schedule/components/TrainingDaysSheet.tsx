@@ -1,5 +1,7 @@
 import { useState } from "react"
+import { TriangleAlert } from "lucide-react"
 import { Sheet, SHEET_FOCUS, SheetHeader } from "@/components/ui/sheet"
+import { IconText, Notice } from "@/components/StatusViews"
 import { cn } from "@/lib/cn"
 import { previewDates, shortDayTitle } from "@/features/schedule/utils/programDays"
 import type { ScheduledWorkoutView } from "@/features/schedule/types"
@@ -87,11 +89,11 @@ function Body({
             )
           })}
         </div>
-        {days.length === 0 && <p className="mt-2 text-xs text-[var(--color-danger)]">Chọn ít nhất một ngày tập.</p>}
+        {days.length === 0 && <IconText className="mt-2 text-xs">Chọn ít nhất một ngày tập.</IconText>}
         {outOfRange && (
-          <p className="mt-3 rounded-[var(--radius-md)] border border-[color-mix(in_srgb,var(--color-warn)_30%,transparent)] bg-[var(--color-warn-tint)] px-3 py-2.5 text-xs text-[var(--color-warn)]">
+          <Notice icon={TriangleAlert} tone="warn" className="mt-3 border border-[color-mix(in_srgb,var(--color-warn)_30%,transparent)] text-xs">
             Chương trình này soạn cho {range} buổi/tuần.
-          </p>
+          </Notice>
         )}
         {preview.length > 0 && (
           <>
@@ -106,7 +108,7 @@ function Body({
             </div>
           </>
         )}
-        {change.isError && <p className="mt-3 text-sm text-[var(--color-danger)]">Lưu thất bại: {change.error.message}</p>}
+        {change.isError && <IconText className="mt-3">Lưu thất bại: {change.error.message}</IconText>}
       </div>
     </>
   )

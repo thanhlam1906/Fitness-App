@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react"
+import { Shuffle } from "lucide-react"
 import { ExerciseImage } from "@/components/ExerciseImage"
 import { LoadDeltaBadge } from "@/components/LoadDeltaBadge"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
+import { IconText } from "@/components/StatusViews"
 import { cn } from "@/lib/cn"
 import { formatKg } from "@/lib/format"
 import type { ScheduledExerciseView } from "@/features/schedule/types"
@@ -263,7 +266,7 @@ function ActiveSet({
         </span>
       </div>
       {logSet.isError && (
-        <p className="mt-2 text-xs text-[var(--color-danger)]">{logSet.error.message}</p>
+        <IconText className="mt-2 text-xs">{logSet.error.message}</IconText>
       )}
     </div>
   )
@@ -401,11 +404,18 @@ function SubstitutePanel({ exercise }: { exercise: ScheduledExerciseView }) {
       <p className="text-xs leading-relaxed text-[var(--color-text-muted)]">
         Bài cùng nhóm cơ, lọc theo thiết bị bạn đang có. Set và rep giữ nguyên; tải cần nhập lại.
       </p>
-      {suggestions.isLoading && <p className="text-xs text-[var(--color-text-muted)]">Đang tìm…</p>}
+      {suggestions.isLoading && (
+        // Khung của hàng nút bài gợi ý.
+        <div role="status" aria-label="Đang tải" className="flex flex-wrap gap-2">
+          <Skeleton className="h-8 w-28" />
+          <Skeleton className="h-8 w-36" />
+          <Skeleton className="h-8 w-24" />
+        </div>
+      )}
       {suggestions.data?.length === 0 && (
-        <p className="text-xs text-[var(--color-text-muted)]">
-          Không có bài thay thế nào khớp thiết bị đã khai ở hồ sơ.
-        </p>
+        <IconText icon={Shuffle} tone="muted" className="text-xs">
+          Không có bài thay thế hợp thiết bị của bạn
+        </IconText>
       )}
       <div className="flex flex-wrap gap-2">
         {suggestions.data?.map((s) => (
@@ -433,7 +443,7 @@ function SubstitutePanel({ exercise }: { exercise: ScheduledExerciseView }) {
         Huỷ
       </button>
       {substitute.isError && (
-        <p className="text-xs text-[var(--color-danger)]">{substitute.error.message}</p>
+        <IconText className="text-xs">{substitute.error.message}</IconText>
       )}
     </div>
   )

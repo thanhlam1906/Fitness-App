@@ -1,11 +1,13 @@
 import { useState } from "react"
+import { CircleAlert, TriangleAlert } from "lucide-react"
+import { IconText, Notice } from "@/components/StatusViews"
 import { useNavigate } from "react-router"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { formatDate } from "@/lib/format"
-import { ChunkList } from "./ChunkList"
+import { ChunkList, CorpusDetailSkeleton } from "./ChunkList"
 import { defaultTitle } from "@/features/admin/utils/corpusFiles"
 import { useDiscardUpload, usePublishUpload, useUpload } from "@/features/admin/api/useCorpus"
 
@@ -18,8 +20,8 @@ export function UploadDetail({ id }: { id: string }) {
   // null = admin chưa sửa, dùng tên mặc định từ tên file.
   const [title, setTitle] = useState<string | null>(null)
 
-  if (upload.isLoading) return <p className="text-sm text-[var(--color-text-muted)]">Đang tải…</p>
-  if (upload.isError) return <p className="text-sm text-[var(--color-danger)]">{upload.error.message}</p>
+  if (upload.isLoading) return <CorpusDetailSkeleton />
+  if (upload.isError) return <IconText>{upload.error.message}</IconText>
   const u = upload.data
   if (!u) return null
 
@@ -52,9 +54,9 @@ export function UploadDetail({ id }: { id: string }) {
       <>
         {heading("Lỗi")}
         <Card className="mt-4.5 max-w-2xl space-y-3">
-          <p className="rounded-[var(--radius-md)] bg-[var(--color-danger-tint)] px-3 py-2.5 text-sm text-[var(--color-danger)]">
+          <Notice icon={CircleAlert} tone="danger" className="text-sm">
             {u.error}
-          </p>
+          </Notice>
           <p className="text-sm text-[var(--color-text-muted)]">File PDF đã xoá khỏi máy chủ. Sửa xong thì thả lại.</p>
           <Button variant="secondary" size="sm" onClick={onDiscard} disabled={discard.isPending}>
             Bỏ
@@ -86,12 +88,12 @@ export function UploadDetail({ id }: { id: string }) {
           </p>
         </div>
         {u.replaces && (
-          <p className="rounded-[var(--radius-md)] bg-[var(--color-warn-tint)] px-3 py-2.5 text-sm text-[var(--color-warn)]">
+          <Notice icon={TriangleAlert} tone="warn" className="text-sm">
             Sẽ <b>thay</b> bản đang có cùng tên file (“{u.replaces.title}”, nạp {formatDate(u.replaces.ingestedAt)},{" "}
             <span className="num">{u.replaces.chunkCount}</span> đoạn).
-          </p>
+          </Notice>
         )}
-        {publish.isError && <p className="text-sm text-[var(--color-danger)]">{publish.error.message}</p>}
+        {publish.isError && <IconText>{publish.error.message}</IconText>}
         <div className="flex gap-2.5">
           <Button
             size="sm"

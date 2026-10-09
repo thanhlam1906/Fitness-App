@@ -1,5 +1,7 @@
 import { useState } from "react"
+import { IconText } from "@/components/StatusViews"
 import { Link } from "react-router"
+import { ListRowsSkeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/cn"
 import { formatEditedAt } from "@/lib/format"
 import { useExercises } from "@/features/exercise/api/useExercises"
@@ -55,11 +57,9 @@ export function ExerciseListPanel({ activeId }: { activeId?: string }) {
       </div>
 
       <div className="min-h-0 flex-1 overflow-auto">
-        {exercises.isLoading && (
-          <p className="p-4 text-sm text-[var(--color-text-muted)]">Đang tải…</p>
-        )}
+        {exercises.isLoading && <ListRowsSkeleton count={8} />}
         {exercises.isError && (
-          <p className="p-4 text-sm text-[var(--color-danger)]">{exercises.error.message}</p>
+          <IconText className="p-4">{exercises.error.message}</IconText>
         )}
         {visible.map((ex) => {
           const active = ex.id === activeId

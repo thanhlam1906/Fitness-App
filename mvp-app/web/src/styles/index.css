@@ -72,3 +72,44 @@ body {
   text-transform: uppercase;
   color: var(--color-text-muted);
 }
+
+/* Khung chờ (components/ui/skeleton.tsx): vệt sáng lướt ngang khối xám, doc/mockup-khung-cho.
+   Nằm trong layer components để class Tailwind truyền vào (bg-…) vẫn đè được. */
+@layer components {
+  .skeleton {
+    background: linear-gradient(
+        100deg,
+        var(--color-surface-2) 30%,
+        var(--color-border) 50%,
+        var(--color-surface-2) 70%
+      )
+      0 0 / 300% 100%;
+    animation: skeleton-shine 1.5s linear infinite;
+  }
+}
+@keyframes skeleton-shine {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+/* Vạch quét lên xuống trong biểu tượng "Đang phân tích" (doc/mockup-bieu-tuong kiểu 3). */
+@keyframes status-scan {
+  0%,
+  100% {
+    top: 25%;
+  }
+  50% {
+    top: 70%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  @layer components {
+    .skeleton {
+      animation: none;
+      background: var(--color-surface-2);
+    }
+  }
+}

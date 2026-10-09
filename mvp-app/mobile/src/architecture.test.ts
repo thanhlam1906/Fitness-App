@@ -37,4 +37,17 @@ describe("chuẩn cấu trúc", () => {
     )
     expect(wrong).toEqual([])
   })
+
+  // Chờ dữ liệu thì hiện khung xám (src/components/ui/Skeleton.tsx), không hiện chữ — người dùng chốt 10-08.
+  // accessibilityLabel="Đang tải" thì được: chỉ VoiceOver đọc, mắt không thấy.
+  it("không hiện chữ chờ kiểu Đang tải", () => {
+    const wrong = files.filter(
+      (f) =>
+        !isTest(f) &&
+        /Đang (tải|tìm|tính|chuẩn bị|tổng kết)/.test(
+          readFileSync(path.join(MOBILE, f), "utf8").replaceAll('accessibilityLabel="Đang tải"', ""),
+        ),
+    )
+    expect(wrong).toEqual([])
+  })
 })

@@ -1,9 +1,12 @@
 import { useState } from "react"
+import { TriangleAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useExercises } from "@/features/exercise/api/useExercises"
 import { WEEKDAYS } from "@/features/program/types/schema"
+import { IconText, Notice } from "@/components/StatusViews"
 import { cn } from "@/lib/cn"
 import {
   draftError,
@@ -50,7 +53,23 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
   }
 
   if (exercises.isLoading) {
-    return <p className="text-sm text-[var(--color-text-muted)]">Đang tải danh sách bài tập…</p>
+    // Khung của form: kicker + 7 nút thứ, hàng ngày bắt đầu/số tuần, cảnh báo, nút tạo.
+    return (
+      <div role="status" aria-label="Đang tải">
+        <Skeleton className="h-3 w-40" />
+        <div className="mt-2.5 flex gap-1.5">
+          {Array.from({ length: 7 }, (_, i) => (
+            <Skeleton key={i} className="h-[42px] flex-1 rounded-lg" />
+          ))}
+        </div>
+        <div className="mt-5 flex gap-3">
+          <Skeleton className="h-14 flex-1" />
+          <Skeleton className="h-14 w-28" />
+        </div>
+        <Skeleton className="mt-4 h-10 w-full" />
+        <Skeleton className="mt-4 h-11 w-full" />
+      </div>
+    )
   }
 
   return (
@@ -171,17 +190,15 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
         </div>
       </div>
 
-      {error && <p className="mt-3 text-xs text-[var(--color-danger)]">{error}</p>}
+      {error && <IconText className="mt-3 text-xs">{error}</IconText>}
       {createProgram.isError && (
-        <p className="mt-3 text-sm text-[var(--color-danger)]">
-          Tạo lịch thất bại: {createProgram.error.message}
-        </p>
+        <IconText className="mt-3">Tạo lịch thất bại: {createProgram.error.message}</IconText>
       )}
 
       {/* Người dùng chốt viết ngắn (09-26): chỉ hai điều cần biết trước khi bấm. */}
-      <p className="mt-4 rounded-[var(--radius-md)] border border-[color-mix(in_srgb,var(--color-warn)_30%,transparent)] bg-[var(--color-warn-tint)] px-3 py-2.5 text-xs text-[var(--color-warn)]">
+      <Notice icon={TriangleAlert} tone="warn" className="mt-4 border border-[color-mix(in_srgb,var(--color-warn)_30%,transparent)] text-xs">
         Chương trình đang dùng sẽ dừng. Lịch này không tự tăng tải.
-      </p>
+      </Notice>
 
       <Button
         className="mt-4 w-full"

@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { SHEET_FOCUS } from "@/components/ui/sheet"
+import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/cn"
 import { formatDayMonth, formatNumber } from "@/lib/format"
 import { barHeights } from "@/features/profile/utils/charts"
@@ -42,7 +43,16 @@ export function ProgressPage() {
       </div>
 
       {!p ? (
-        <LoadState error={progress.error} />
+        <LoadState
+          error={progress.error}
+          skeleton={
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Skeleton className="h-[102px]" />
+              <Skeleton className="h-[102px]" />
+              <Skeleton className="col-span-2 h-[222px]" />
+            </div>
+          }
+        />
       ) : (
         <>
           <div className="mt-3 grid grid-cols-2 gap-2">

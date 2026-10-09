@@ -4,6 +4,7 @@ import {
   BicepsFlexed,
   CalendarDays,
   ChevronLeft,
+  CloudOff,
   Dumbbell,
   Flame,
   HeartPulse,
@@ -21,8 +22,10 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { DisclaimerText } from "@/components/DisclaimerText"
 import { Label } from "@/components/ui/label"
 import { PickerField } from "@/components/ui/picker"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Stepper } from "@/components/Stepper"
 import { FlowScreen } from "@/components/UserShell"
+import { IconText, StatusBlock } from "@/components/StatusViews"
 import { cn } from "@/lib/cn"
 import { formatKg, formatNumber } from "@/lib/format"
 import { joinTenths, range, splitTenths } from "@/lib/wheel"
@@ -125,10 +128,10 @@ export function OnboardingPage() {
   }
 
   if (profile.isLoading) {
-    return <p className="text-sm text-[var(--color-text-muted)]">Đang tải hồ sơ…</p>
+    return <OnboardingSkeleton />
   }
   if (profile.isError) {
-    return <p className="text-sm text-[var(--color-danger)]">{profile.error.message}</p>
+    return <StatusBlock icon={CloudOff} tone="danger" title="Không tải được hồ sơ" detail={profile.error.message} />
   }
 
   const heading = HEADINGS[current]
@@ -219,6 +222,23 @@ export function OnboardingPage() {
   )
 }
 
+/** Cùng khung với mọi bước: stepper, ô icon, tiêu đề, gợi ý, vùng nội dung và nút cuối. */
+function OnboardingSkeleton() {
+  return (
+    <FlowScreen>
+      <div role="status" aria-label="Đang tải" className="flex flex-1 flex-col">
+        <Skeleton className="h-1.5 w-full" />
+        <Skeleton className="mt-6 size-13 rounded-[var(--radius-lg)]" />
+        <Skeleton className="mt-3.5 h-8 w-56" />
+        <Skeleton className="mt-2.5 h-4 w-64" />
+        <Skeleton className="mt-5 h-48 w-full" />
+        <div className="flex-1" />
+        <Skeleton className="mt-6 h-12 w-full" />
+      </div>
+    </FlowScreen>
+  )
+}
+
 function StepFooter({
   nav,
   label,
@@ -235,7 +255,7 @@ function StepFooter({
   return (
     <div className="mt-auto pt-6">
       {nav.error && (
-        <p className="mb-3 text-sm text-[var(--color-danger)]">Lưu thất bại: {nav.error}</p>
+        <IconText className="mb-3">Lưu thất bại: {nav.error}</IconText>
       )}
       <div className="flex gap-2.5">
         {nav.onBack && (

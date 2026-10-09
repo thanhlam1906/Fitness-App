@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { SHEET_FOCUS } from "@/components/ui/sheet"
+import { Skeleton } from "@/components/ui/skeleton"
+import { IconText } from "@/components/StatusViews"
 import { cn } from "@/lib/cn"
 import { formatKg } from "@/lib/format"
 import { LoadState, SettingsSubLayout } from "@/features/profile/components/SettingsSubLayout"
@@ -25,7 +27,16 @@ export function ProfilePage() {
   if (!profile.data) {
     return (
       <SettingsSubLayout title="Hồ sơ">
-        <LoadState error={profile.error} />
+        <LoadState
+          error={profile.error}
+          skeleton={
+            <div className="mt-5 flex flex-col gap-2">
+              {Array.from({ length: 6 }, (_, i) => (
+                <Skeleton key={i} className="h-14" />
+              ))}
+            </div>
+          }
+        />
       </SettingsSubLayout>
     )
   }
@@ -130,10 +141,10 @@ export function ProfilePage() {
       </div>
 
       {patch.isError && (
-        <p className="mt-4 text-sm text-[var(--color-danger)]">Lưu thất bại: {patch.error.message}</p>
+        <IconText className="mt-4">Lưu thất bại: {patch.error.message}</IconText>
       )}
       {saveBodyMetric.isError && (
-        <p className="mt-4 text-sm text-[var(--color-danger)]">Lưu thất bại: {saveBodyMetric.error.message}</p>
+        <IconText className="mt-4">Lưu thất bại: {saveBodyMetric.error.message}</IconText>
       )}
     </SettingsSubLayout>
   )
