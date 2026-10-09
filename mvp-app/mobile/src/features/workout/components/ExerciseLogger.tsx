@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { Image, Pressable, Text, TextInput, View } from "react-native"
+import { Shuffle } from "lucide-react-native"
 import type { ScheduledExerciseView } from "@/features/schedule/types"
 import { SKIP_REASONS, type SetLogResponse } from "@/features/workout/types"
 import { cn } from "@/lib/cn"
@@ -8,6 +9,7 @@ import { ExerciseImage } from "~/components/ExerciseImage"
 import { LoadDeltaBadge } from "~/components/LoadDeltaBadge"
 import { Button } from "~/components/ui/Button"
 import { Skeleton } from "~/components/ui/Skeleton"
+import { IconText } from "~/components/StatusViews"
 import { Kicker } from "~/components/Kicker"
 import { WrongFeedbackButton } from "~/features/feedback/components/WrongFeedbackButton"
 import { useLogSet, useSubstitute, useSubstitutes } from "~/features/workout/api/useWorkoutSession"
@@ -239,7 +241,11 @@ function ActiveSet({
         </Pressable>
         <Text className="text-[11px] text-text-muted">lưu lên server sau mỗi set</Text>
       </View>
-      {logSet.isError && <Text className="mt-2 text-xs text-danger">{logSet.error.message}</Text>}
+      {logSet.isError && (
+        <IconText small className="mt-2">
+          {logSet.error.message}
+        </IconText>
+      )}
     </View>
   )
 }
@@ -393,7 +399,9 @@ function SubstitutePanel({ exercise }: { exercise: ScheduledExerciseView }) {
         </View>
       )}
       {suggestions.data?.length === 0 && (
-        <Text className="text-xs text-text-muted">Không có bài thay thế nào khớp thiết bị đã khai ở hồ sơ.</Text>
+        <IconText icon={Shuffle} tone="muted" small>
+          Không có bài thay thế hợp thiết bị của bạn
+        </IconText>
       )}
       <View className="flex-row flex-wrap gap-2">
         {suggestions.data?.map((s) => (
@@ -413,7 +421,7 @@ function SubstitutePanel({ exercise }: { exercise: ScheduledExerciseView }) {
       <Pressable accessibilityRole="button" onPress={() => setOpen(false)} className="self-start" hitSlop={8}>
         <Text className="text-xs text-text-muted">Huỷ</Text>
       </Pressable>
-      {substitute.isError && <Text className="text-xs text-danger">{substitute.error.message}</Text>}
+      {substitute.isError && <IconText small>{substitute.error.message}</IconText>}
     </View>
   )
 }

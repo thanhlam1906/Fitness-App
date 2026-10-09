@@ -15,6 +15,8 @@ import {
 } from "~/features/schedule/api/useEditSchedule"
 import { useExercises } from "~/features/exercise/api/useExercises"
 import { colors } from "~/theme"
+import { IconText } from "~/components/StatusViews"
+import { Skeleton } from "~/components/ui/Skeleton"
 
 type SaveFn = (changes: ReturnType<typeof diffDraft>, setRows: Dispatch<SetStateAction<DraftRow[]>>) => Promise<void>
 
@@ -236,6 +238,12 @@ function EditBody({
             ))}
         </View>
 
+        {exercises.isLoading && (
+          <View accessible accessibilityLabel="Đang tải">
+            <Skeleton className="mt-3 h-12 rounded-lg" />
+          </View>
+        )}
+        {exercises.isError && <IconText className="mt-3">{exercises.error.message}</IconText>}
         {active.length > 0 && (
           <Pressable
             accessibilityRole="button"
@@ -280,7 +288,7 @@ function EditBody({
 
         <Text className="mt-3 text-xs text-text-muted">Tạ mỗi lần bấm đổi 2,5 kg.</Text>
         {note && <Text className="mt-1.5 text-xs text-text-muted">{note}</Text>}
-        {error && <Text className="mt-2 text-sm text-danger">Lưu thất bại: {error}</Text>}
+        {error && <IconText className="mt-2">Lưu thất bại: {error}</IconText>}
       </ScrollView>
     </>
   )

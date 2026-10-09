@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react"
 import { Pressable, Text, View } from "react-native"
 import { useRouter } from "expo-router"
-import { Pencil } from "lucide-react-native"
+import { BedDouble, CalendarMinus, Minus, Pencil } from "lucide-react-native"
 import { summarizeSession } from "@/features/schedule/utils/sessionSummary"
 import type { ScheduledWorkoutView } from "@/features/schedule/types"
 import { dayTitle, nextPlannedAfter, parseIso, type MonthCell } from "@/features/schedule/utils/weeks"
@@ -11,6 +11,7 @@ import { formatKg, formatNumber } from "@/lib/format"
 import { LoadDeltaBadge } from "~/components/LoadDeltaBadge"
 import { Button } from "~/components/ui/Button"
 import { Skeleton } from "~/components/ui/Skeleton"
+import { IconCircle, IconText } from "~/components/StatusViews"
 import { WrongFeedbackButton } from "~/features/feedback/components/WrongFeedbackButton"
 import { useSessionOfDay } from "~/features/schedule/api/useSchedule"
 import { WorkoutEditSheet } from "~/features/schedule/components/WorkoutEditor"
@@ -96,14 +97,18 @@ function DoneCard({ cell, workout, totalWeeks }: { cell: MonthCell; workout: Sch
   } else if (session.isError) {
     body = (
       <View className="mt-3 gap-2">
-        <Text className="text-sm text-danger">Không tải được buổi này: {session.error.message}</Text>
+        <IconText>Không tải được buổi này: {session.error.message}</IconText>
         <Button variant="secondary" size="sm" className="self-start" onPress={() => session.refetch()}>
           Thử lại
         </Button>
       </View>
     )
   } else if (!session.data) {
-    body = <Text className="mt-3 text-sm text-text-muted">Không có dữ liệu set của buổi này.</Text>
+    body = (
+      <IconText icon={Minus} tone="muted" className="mt-3">
+        Không có dữ liệu set của buổi này.
+      </IconText>
+    )
   } else {
     const summary = summarizeSession(session.data, workout.exercises)
     body = (
@@ -126,7 +131,11 @@ function DoneCard({ cell, workout, totalWeeks }: { cell: MonthCell; workout: Sch
                 <Text className="mr-auto text-[11px] text-text-muted" style={NUM}>
                   Mục tiêu {exercise.targetSets}×{exercise.targetReps}
                 </Text>
-                {sets.length === 0 && <Text className="text-[11px] text-text-muted">Không log set nào</Text>}
+                {sets.length === 0 && (
+                  <IconText icon={Minus} tone="muted" small>
+                    Không log set nào
+                  </IconText>
+                )}
                 {sets.map((s) =>
                   s.skipped ? (
                     <View key={s.setIndex} className="rounded-sm bg-surface-2 px-1.5 py-1">
@@ -167,12 +176,13 @@ function NoWorkoutCard({ cell, workouts }: { cell: MonthCell; workouts: Schedule
   const inProgram = cell.date >= dates[0] && cell.date <= dates[dates.length - 1]
   const next = inProgram ? nextPlannedAfter(workouts, cell.date) : null
   return (
-    <View className="mt-3.5 items-center rounded-2xl bg-surface p-[18px]">
-      <Text className="text-center text-sm font-semibold text-text">
+    <View className="mt-3.5 items-center rounded-2xl bg-surface p-5">
+      <IconCircle icon={inProgram && cell.isRestDay ? BedDouble : CalendarMinus} size={48} iconSize={22} />
+      <Text className="mt-2.5 text-center text-[15px] font-semibold text-text">
         {dayTitle(cell.date)}
         {inProgram && (cell.isRestDay ? " · Ngày nghỉ" : " · Không có buổi")}
       </Text>
-      {!inProgram && <Text className="text-center text-sm text-text-muted">Không có buổi nào trong chương trình</Text>}
+      {!inProgram && <Text className="text-center text-sm text-text-muted">Ngoài thời gian chương trình</Text>}
       {next && (
         <Text className="text-center text-sm text-text-muted" style={NUM}>
           Buổi tới: {WEEKDAY_SHORT[parseIso(next.scheduledOn).getDay()]} {dayTitle(next.scheduledOn).split(" ").pop()} ·

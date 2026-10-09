@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Pressable, Text, View } from "react-native"
-import { ChevronDown } from "lucide-react-native"
+import { ChevronDown, TriangleAlert } from "lucide-react-native"
 import { WEEKDAYS } from "@/features/program/types/schema"
 import {
   draftError,
@@ -23,6 +23,7 @@ import { cleanDecimal } from "~/lib/number"
 import { useCreateCustomProgram } from "~/features/schedule/api/useCustomProgram"
 import { useExercises } from "~/features/exercise/api/useExercises"
 import { colors } from "~/theme"
+import { IconText, Notice } from "~/components/StatusViews"
 
 const WEEKS = range(1, 12)
 
@@ -181,15 +182,19 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
         </View>
       </View>
 
-      {error && <Text className="mt-3 text-xs text-danger">{error}</Text>}
+      {error && (
+        <IconText small className="mt-3">
+          {error}
+        </IconText>
+      )}
       {createProgram.isError && (
-        <Text className="mt-3 text-sm text-danger">Tạo lịch thất bại: {createProgram.error.message}</Text>
+        <IconText className="mt-3">Tạo lịch thất bại: {createProgram.error.message}</IconText>
       )}
 
       {/* Người dùng chốt viết ngắn (09-26): chỉ hai điều cần biết trước khi bấm. */}
-      <View className="mt-4 rounded-md border border-warn/30 bg-warn-tint px-3 py-2.5">
-        <Text className="text-xs text-warn">Chương trình đang dùng sẽ dừng. Lịch này không tự tăng tải.</Text>
-      </View>
+      <Notice icon={TriangleAlert} tone="warn" className="mt-4 border border-warn/30" textClassName="text-xs">
+        Chương trình đang dùng sẽ dừng. Lịch này không tự tăng tải.
+      </Notice>
 
       <Button
         className="mt-4 w-full"

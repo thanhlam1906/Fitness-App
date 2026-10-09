@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Text, View } from "react-native"
+import { Scale } from "lucide-react-native"
 import Svg, { Circle, G, Path, Text as SvgText } from "react-native-svg"
 import { weightSeries } from "@/features/profile/utils/charts"
 import { WEIGHT_KG } from "@/features/profile/types"
@@ -11,6 +12,7 @@ import { MetricEditor } from "~/features/profile/components/MetricEditor"
 import { LoadState, SettingsSubLayout } from "~/features/profile/components/SettingsSubLayout"
 import { useBodyMetrics, useSaveBodyMetric } from "~/features/profile/api/useProfile"
 import { colors } from "~/theme"
+import { IconText, StatusBlock } from "~/components/StatusViews"
 
 const NUM = { fontVariant: ["tabular-nums" as const] }
 const W = 350
@@ -125,7 +127,12 @@ export default function WeightHistoryScreen() {
           </View>
         </>
       ) : (
-        <Text className="mt-5 text-sm text-text-muted">Chưa có lần đo nào. Cập nhật cân nặng để bắt đầu theo dõi.</Text>
+        <StatusBlock
+          icon={Scale}
+          title="Chưa có lần đo"
+          detail="Cập nhật cân nặng để bắt đầu theo dõi."
+          className="mt-5"
+        />
       )}
 
       <View className="mt-4">
@@ -143,7 +150,7 @@ export default function WeightHistoryScreen() {
             Cập nhật cân nặng hôm nay
           </Button>
         )}
-        {save.isError && <Text className="mt-2 text-sm text-danger">Lưu thất bại: {save.error.message}</Text>}
+        {save.isError && <IconText className="mt-2">Lưu thất bại: {save.error.message}</IconText>}
       </View>
     </SettingsSubLayout>
   )

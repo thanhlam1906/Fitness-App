@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react"
 import { Pressable, Text, View } from "react-native"
 import { useRouter } from "expo-router"
-import { ChevronDown, ChevronRight } from "lucide-react-native"
+import { ChevronDown, ChevronRight, CloudOff, ListX, UserRound, type LucideIcon } from "lucide-react-native"
 import { cn } from "@/lib/cn"
 import { EQUIPMENT_OPTIONS } from "@/features/profile/types"
 import { defaultTrainingDays, WEEKDAYS } from "@/features/program/types/schema"
@@ -11,11 +11,11 @@ import { cleanDecimal, parseDecimal } from "~/lib/number"
 import { Kicker } from "~/components/Kicker"
 import { Screen } from "~/components/Screen"
 import { Button } from "~/components/ui/Button"
-import { Card } from "~/components/ui/Card"
 import { Input } from "~/components/ui/Input"
 import { Label } from "~/components/ui/Label"
 import { PickerField } from "~/components/ui/Picker"
 import { Skeleton } from "~/components/ui/Skeleton"
+import { IconText, StatusBlock, type Tone } from "~/components/StatusViews"
 import { loadableExercises, useCandidates, type TemplateCandidate } from "~/features/program/api/useCandidates"
 import { useCreateProgram } from "~/features/program/api/useCreateProgram"
 import { useProfile } from "~/features/profile/api/useProfile"
@@ -54,11 +54,9 @@ export default function ProgramScreen() {
     const needsOnboarding = candidates.error instanceof ApiError && candidates.error.status === 404
     return (
       <EmptyState
-        message={
-          needsOnboarding
-            ? "Cần hoàn tất hồ sơ trước khi đề xuất chương trình."
-            : `Không tải được đề xuất: ${candidates.error.message}`
-        }
+        {...(needsOnboarding
+          ? { icon: UserRound, title: "Cần hoàn tất hồ sơ trước" }
+          : { icon: CloudOff, tone: "danger" as const, title: "Không tải được đề xuất", detail: candidates.error.message })}
         action={{ to: "/onboarding", label: needsOnboarding ? "Hoàn tất hồ sơ" : "Về onboarding" }}
       />
     )
@@ -67,7 +65,8 @@ export default function ProgramScreen() {
   if (candidates.data!.length === 0) {
     return (
       <EmptyState
-        message="Chưa có chương trình nào hợp thiết bị bạn đã khai. Tự thiết kế lịch, hoặc chỉnh thiết bị ở Hồ sơ."
+        icon={ListX}
+        title="Chưa có chương trình hợp thiết bị"
         action={{ to: "/settings/profile", label: "Mở hồ sơ" }}
       />
     )
@@ -178,7 +177,11 @@ export default function ProgramScreen() {
             })}
           </View>
           <Text className="mt-2 text-[11px] text-text-muted">Đổi được sau, không mất tiến độ.</Text>
-          {trainingDays.length === 0 && <Text className="mt-2 text-xs text-danger">Chọn ít nhất một ngày tập.</Text>}
+          {trainingDays.length === 0 && (
+            <IconText small className="mt-2">
+              Chọn ít nhất một ngày tập.
+            </IconText>
+          )}
 
           <View className="mt-5 gap-1.5">
             <Label>Ngày bắt đầu</Label>
@@ -221,7 +224,7 @@ export default function ProgramScreen() {
           )}
 
           {createProgram.isError && (
-            <Text className="mt-3 text-sm text-danger">Tạo chương trình thất bại: {createProgram.error.message}</Text>
+            <IconText className="mt-3">Tạo chương trình thất bại: {createProgram.error.message}</IconText>
           )}
 
           <Button
@@ -326,20 +329,29 @@ function Tag({ selected, children }: { selected: boolean; children: ReactNode })
   )
 }
 
-function EmptyState({ message, action }: { message: string; action: { to: string; label: string } }) {
+function EmptyState({
+  icon,
+  tone,
+  title,
+  detail,
+  action,
+}: {
+  icon: LucideIcon
+  tone?: Tone
+  title: string
+  detail?: string
+  action: { to: string; label: string }
+}) {
   const router = useRouter()
   return (
     <Screen>
-      <Card className="gap-3">
-        <Text className="text-sm text-text-muted">{message}</Text>
+      <StatusBlock icon={icon} tone={tone} title={title} detail={detail}>
+        <Button onPress={() => router.push(action.to)}>{action.label}</Button>
         {/* Lịch tự thiết kế không cần hồ sơ hay template: lối ra này luôn phải có. */}
-        <View className="flex-row flex-wrap gap-2">
-          <Button onPress={() => router.push(action.to)}>{action.label}</Button>
-          <Button variant="secondary" onPress={() => router.push("/my-schedule")}>
-            Tự thiết kế lịch riêng
-          </Button>
-        </View>
-      </Card>
+        <Button variant="secondary" onPress={() => router.push("/my-schedule")}>
+          Tự thiết kế lịch riêng
+        </Button>
+      </StatusBlock>
     </Screen>
   )
 }

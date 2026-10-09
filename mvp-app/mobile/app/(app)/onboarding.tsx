@@ -5,6 +5,7 @@ import {
   BicepsFlexed,
   CalendarDays,
   ChevronLeft,
+  CloudOff,
   Dumbbell,
   Flame,
   HeartPulse,
@@ -25,12 +26,13 @@ import { DisclaimerText } from "~/components/DisclaimerText"
 import { FadedImage } from "~/components/FadedImage"
 import { Kicker } from "~/components/Kicker"
 import { Screen } from "~/components/Screen"
-import { Stepper } from "~/features/onboarding/components/Stepper"
+import { Stepper } from "~/components/Stepper"
 import { Button } from "~/components/ui/Button"
 import { Checkbox } from "~/components/ui/Checkbox"
 import { Label } from "~/components/ui/Label"
 import { PickerField } from "~/components/ui/Picker"
 import { Skeleton } from "~/components/ui/Skeleton"
+import { IconText, StatusBlock } from "~/components/StatusViews"
 import { BarbellRackIcon, BenchIcon, KettlebellIcon } from "~/features/onboarding/components/icons"
 import { usePatchProfile, useProfile, useSaveBodyMetric } from "~/features/profile/api/useProfile"
 import { colors } from "~/theme"
@@ -128,7 +130,7 @@ export default function OnboardingScreen() {
   if (profile.isError) {
     return (
       <Screen>
-        <Text className="text-sm text-danger">{profile.error.message}</Text>
+        <StatusBlock icon={CloudOff} tone="danger" title="Không tải được hồ sơ" detail={profile.error.message} />
       </Screen>
     )
   }
@@ -222,7 +224,7 @@ function StepFooter({
 }) {
   return (
     <View className="mt-auto pt-6">
-      {nav.error && <Text className="mb-3 text-sm text-danger">Lưu thất bại: {nav.error}</Text>}
+      {nav.error && <IconText className="mb-3">Lưu thất bại: {nav.error}</IconText>}
       <View className="flex-row gap-2.5">
         {nav.onBack && (
           <Button variant="secondary" className="w-[52px] px-0" accessibilityLabel="Quay lại" onPress={nav.onBack}>

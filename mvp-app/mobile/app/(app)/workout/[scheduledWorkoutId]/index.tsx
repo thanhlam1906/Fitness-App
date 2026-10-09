@@ -1,12 +1,13 @@
 import { Pressable, Text, View } from "react-native"
 import { useLocalSearchParams, useRouter } from "expo-router"
+import { CircleCheckBig, CloudOff, SearchX } from "lucide-react-native"
 import { ApiError } from "~/api/client"
 import { Kicker } from "~/components/Kicker"
 import { Screen } from "~/components/Screen"
 import { SegmentBar, type Segment } from "~/features/workout/components/SegmentBar"
 import { Button } from "~/components/ui/Button"
-import { Card } from "~/components/ui/Card"
 import { Skeleton } from "~/components/ui/Skeleton"
+import { StatusBlock } from "~/components/StatusViews"
 import { useSchedule } from "~/features/schedule/api/useSchedule"
 import { ExerciseLogger } from "~/features/workout/components/ExerciseLogger"
 import { useWorkoutSession } from "~/features/workout/api/useWorkoutSession"
@@ -35,34 +36,36 @@ export default function WorkoutScreen() {
     // Ngày đã tập xong (409 khi mở lại, hoặc vừa kết buổi xong): xem lại ở màn Lịch, không tạo buổi mới.
     return (
       <Screen>
-        <Card className="gap-3">
-          <Text className="text-sm text-text-muted">Buổi này đã tập xong.</Text>
+        <StatusBlock icon={CircleCheckBig} tone="success" title="Buổi này đã tập xong">
           <Button
             variant="secondary"
             onPress={() => router.dismissTo(workout ? `/schedule?ngay=${workout.scheduledOn}` : "/schedule")}
           >
             Xem lại ở Lịch
           </Button>
-        </Card>
+        </StatusBlock>
       </Screen>
     )
   }
   if (session.isError) {
     return (
       <Screen>
-        <Card className="gap-3">
-          <Text className="text-sm text-danger">Không mở được buổi tập: {session.error.message}</Text>
+        <StatusBlock icon={CloudOff} tone="danger" title="Không mở được buổi tập" detail={session.error.message}>
           <Button variant="secondary" onPress={() => session.refetch()}>
             Thử lại
           </Button>
-        </Card>
+        </StatusBlock>
       </Screen>
     )
   }
   if (!workout) {
     return (
       <Screen>
-        <Text className="text-sm text-danger">Không tìm thấy buổi tập này trong lịch.</Text>
+        <StatusBlock icon={SearchX} tone="danger" title="Không tìm thấy buổi tập">
+          <Button variant="secondary" onPress={() => router.dismissTo("/schedule")}>
+            Về lịch
+          </Button>
+        </StatusBlock>
       </Screen>
     )
   }
