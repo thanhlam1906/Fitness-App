@@ -10,9 +10,10 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/cn"
 import { ExerciseListPanel } from "@/features/admin/components/ExerciseListPanel"
+import { FilmingGuideFields } from "@/features/admin/components/FilmingGuideFields"
 import { FormCheckEditor } from "@/features/admin/components/FormCheckEditor"
 import { HelpButton, HelpText, useHelp } from "@/features/admin/components/HelpButton"
-import type { ExerciseInput } from "@/features/exercise/types"
+import { formToGuide, guideToForm, type ExerciseFormValues } from "@/features/admin/utils/filmingGuideForm"
 import { useExercise, useSaveExercise } from "@/features/exercise/api/useExercises"
 
 type Tab = "checks" | "info"
@@ -40,9 +41,9 @@ export function ExerciseFormPage() {
 
   const tab: Tab = isNew ? "info" : searchParams.get("tab") === "info" ? "info" : "checks"
 
-  const { register, handleSubmit, reset } = useForm<
-    ExerciseInput & { muscleGroupsText: string; equipmentText: string }
-  >({
+  const { register, handleSubmit, reset } = useForm<ExerciseFormValues>({
+    // Bài mới: ô hướng dẫn quay phải có chuỗi rỗng sẵn, không thì formToGuide gặp undefined.
+    defaultValues: { guide: guideToForm(null) },
     values: existing.data
       ? {
           slug: existing.data.slug,
@@ -54,20 +55,26 @@ export function ExerciseFormPage() {
           equipment: existing.data.equipment,
           description: existing.data.description ?? "",
           filmingGuide: existing.data.filmingGuide ?? "",
+          guide: guideToForm(existing.data.filmingGuide),
           active: existing.data.active,
         }
       : undefined,
   })
 
-  function onSubmit(values: ExerciseInput & { muscleGroupsText: string; equipmentText: string }) {
-    const { muscleGroupsText, equipmentText, ...rest } = values
+  function onSubmit(values: ExerciseFormValues) {
+    const { muscleGroupsText, equipmentText, guide, ...rest } = values
     const toList = (s: string) =>
       s
         .split(",")
         .map((v) => v.trim())
         .filter(Boolean)
     save.mutate(
-      { ...rest, muscleGroups: toList(muscleGroupsText), equipment: toList(equipmentText) },
+      {
+        ...rest,
+        filmingGuide: formToGuide(guide),
+        muscleGroups: toList(muscleGroupsText),
+        equipment: toList(equipmentText),
+      },
       {
         onSuccess: (result) => {
           if (isNew) navigate(`/admin/exercises/${result.id}`, { replace: true })
@@ -176,17 +183,7 @@ export function ExerciseFormPage() {
                 <Label htmlFor="description">Mô tả</Label>
                 <Textarea id="description" rows={2} {...register("description")} />
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="filmingGuide">
-                  Hướng dẫn quay — JSON, hiện ở màn gửi clip. Bỏ trống nếu chưa có
-                </Label>
-                <Textarea
-                  id="filmingGuide"
-                  rows={4}
-                  placeholder='{"angles":[{"code":"SAGITTAL","label":"Ngang","why":"..."}],"distance":"...","lighting":"...","duration":"..."}'
-                  {...register("filmingGuide")}
-                />
-              </div>
+              <FilmingGuideFields register={register} checkViews={existing.data?.checkViews ?? []} />
               <div className="flex gap-4">
                 <label className="flex items-center gap-2 text-sm">
                   <Checkbox {...register("active")} /> Đang hoạt động
