@@ -1,3 +1,4 @@
+import type { ExerciseImageKind } from "@/lib/exerciseImage"
 import type { MeasureKey, Moment, ViewCode } from "@/lib/formMeasures"
 
 export type Exercise = {
@@ -13,6 +14,8 @@ export type Exercise = {
   active: boolean
   formCheckCount: number
   checkViews: ViewCode[] // các góc có khớp đang bật, thứ tự camera hướng dẫn
+  hasStillImage: boolean // cột trái màn 12 ghi "chưa có ảnh" khi false
+  hasAnimatedImage: boolean
   updatedAt: string
 }
 
@@ -43,3 +46,7 @@ export type FormCheck = {
 }
 
 export type FormCheckInput = Omit<FormCheck, "id" | "exerciseId" | "priority">
+
+/** Bản nháp một ô ảnh trong form admin: file mới chọn, "remove" = xoá ảnh đã lưu, null = không đổi. */
+export type ImageDraft = File | "remove" | null
+export type ImageDrafts = Record<ExerciseImageKind, ImageDraft>

@@ -1,5 +1,7 @@
-import { useNavigate, useParams, useSearchParams } from "react-router"
-import { IconText } from "@/components/StatusViews"
+import { useState } from "react"
+import { TriangleAlert } from "lucide-react"
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router"
+import { IconText, Notice } from "@/components/StatusViews"
 import { useForm } from "react-hook-form"
 import { AdminHeader } from "@/features/admin/components/AdminShell"
 import { Button } from "@/components/ui/button"
@@ -13,10 +15,15 @@ import { ExerciseListPanel } from "@/features/admin/components/ExerciseListPanel
 import { FilmingGuideFields } from "@/features/admin/components/FilmingGuideFields"
 import { FormCheckEditor } from "@/features/admin/components/FormCheckEditor"
 import { HelpButton, HelpText, useHelp } from "@/features/admin/components/HelpButton"
+import { ImageSlot } from "@/features/admin/components/ImageSlot"
 import { formToGuide, guideToForm, type ExerciseFormValues } from "@/features/admin/utils/filmingGuideForm"
-import { useExercise, useSaveExercise } from "@/features/exercise/api/useExercises"
+import { useExercise, useSaveExercise, useSaveExerciseImages } from "@/features/exercise/api/useExercises"
+import type { ImageDraft, ImageDrafts } from "@/features/exercise/types"
+import { exerciseImageUrl } from "@/lib/exerciseImage"
 
 type Tab = "checks" | "info"
+
+const NO_DRAFTS: ImageDrafts = { still: null, animated: null }
 
 /**
  * Màn 12 concept-frontend-v1.md — "màn HLV dùng nhiều nhất". slug bất biến sau
@@ -38,6 +45,20 @@ export function ExerciseFormPage() {
   const existing = useExercise(isNew ? "" : id!)
   const save = useSaveExercise(isNew ? undefined : id)
   const help = useHelp()
+  const images = useSaveExerciseImages()
+  const location = useLocation()
+  // Bản nháp ảnh gắn với id bài: bấm sang bài khác trong cột trái (cùng component, chỉ đổi :id) thì
+  // bài đó bắt đầu sạch, không mang ảnh nháp của bài trước.
+  const [draftState, setDraftState] = useState<{ id: string | undefined; drafts: ImageDrafts }>({
+    id,
+    drafts: NO_DRAFTS,
+  })
+  const drafts = draftState.id === id ? draftState.drafts : NO_DRAFTS
+  const setDraft = (kind: keyof ImageDrafts, draft: ImageDraft) =>
+    setDraftState({ id, drafts: { ...drafts, [kind]: draft } })
+  const clearDrafts = () => setDraftState({ id, drafts: NO_DRAFTS })
+  // Tạo bài xong mà ảnh lỗi: trang này mở lại ở bài vừa tạo, kèm cờ trong state điều hướng.
+  const imageFailedOnCreate = (location.state as { imageFailed?: boolean } | null)?.imageFailed === true
 
   const tab: Tab = isNew ? "info" : searchParams.get("tab") === "info" ? "info" : "checks"
 
@@ -68,20 +89,38 @@ export function ExerciseFormPage() {
         .split(",")
         .map((v) => v.trim())
         .filter(Boolean)
+    const hasDrafts = drafts.still !== null || drafts.animated !== null
+    const done = (result: { id: string }) => {
+      clearDrafts()
+      if (isNew) navigate(`/admin/exercises/${result.id}`, { replace: true })
+      else reset()
+    }
     save.mutate(
-      {
-        ...rest,
-        filmingGuide: formToGuide(guide),
-        muscleGroups: toList(muscleGroupsText),
-        equipment: toList(equipmentText),
-      },
+      { ...rest, filmingGuide: formToGuide(guide), muscleGroups: toList(muscleGroupsText), equipment: toList(equipmentText) },
       {
         onSuccess: (result) => {
-          if (isNew) navigate(`/admin/exercises/${result.id}`, { replace: true })
-          else reset()
+          if (!hasDrafts) return done(result)
+          images.mutate(
+            { id: result.id, drafts },
+            {
+              onSuccess: () => done(result),
+              // Bài đã tạo: mở trang sửa bài đó để bấm Lưu lần nữa là SỬA, không tạo bài trùng.
+              onError: () => {
+                if (isNew) navigate(`/admin/exercises/${result.id}?tab=info`, { replace: true, state: { imageFailed: true } })
+              },
+            },
+          )
         },
       },
     )
+  }
+
+  // ?v=updatedAt: trình duyệt giữ ảnh cùng URL trong trang, thay ảnh xong phải thấy ảnh mới ngay.
+  const savedImageUrl = (kind: "still" | "animated") => {
+    const ex = existing.data
+    if (isNew || !ex) return null
+    const has = kind === "still" ? ex.hasStillImage : ex.hasAnimatedImage
+    return has ? exerciseImageUrl(ex.slug, kind, ex.updatedAt) : null
   }
 
   const title = isNew
@@ -143,6 +182,11 @@ export function ExerciseFormPage() {
           {/* Form trống hiện song song với khung chờ thì vẫn bấm Lưu được: chờ có dữ liệu mới hiện. */}
           {tab === "info" && (isNew || existing.data) && (
             <form onSubmit={handleSubmit(onSubmit)} className="max-w-3xl space-y-4">
+              {imageFailedOnCreate && !images.isSuccess && (
+                <Notice icon={TriangleAlert} tone="danger">
+                  Bài đã được tạo nhưng ảnh chưa tải lên được. Chọn lại ảnh rồi bấm Lưu.
+                </Notice>
+              )}
               {isNew && (
                 <div className="space-y-1.5">
                   <Label htmlFor="slug">slug</Label>
@@ -183,6 +227,31 @@ export function ExerciseFormPage() {
                 <Label htmlFor="description">Mô tả</Label>
                 <Textarea id="description" rows={2} {...register("description")} />
               </div>
+              <section className="space-y-3 border-t border-[var(--color-border)] pt-4.5">
+                <div>
+                  <h2 className="text-[15px] font-bold">Ảnh minh hoạ</h2>
+                  <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                    Người tập thấy ảnh ở ô nhỏ cạnh tên bài trong buổi tập, và ở khung lớn khi bấm xem chi tiết bài.
+                  </p>
+                </div>
+                {/* key theo id: báo lỗi chọn file của bài trước không theo sang bài khác. */}
+                <div className="grid grid-cols-2 gap-3">
+                  <ImageSlot
+                    key={`still-${id}`}
+                    kind="still"
+                    savedUrl={savedImageUrl("still")}
+                    draft={drafts.still}
+                    onDraft={(d) => setDraft("still", d)}
+                  />
+                  <ImageSlot
+                    key={`animated-${id}`}
+                    kind="animated"
+                    savedUrl={savedImageUrl("animated")}
+                    draft={drafts.animated}
+                    onDraft={(d) => setDraft("animated", d)}
+                  />
+                </div>
+              </section>
               <FilmingGuideFields register={register} checkViews={existing.data?.checkViews ?? []} />
               <div className="flex gap-4">
                 <label className="flex items-center gap-2 text-sm">
@@ -193,13 +262,22 @@ export function ExerciseFormPage() {
               {save.isError && (
                 <IconText>{save.error.message}</IconText>
               )}
+              {images.isError && <IconText>Ảnh chưa lưu được: {images.error.message}</IconText>}
 
               <div className="flex gap-2.5">
-                <Button type="submit" size="sm" disabled={save.isPending}>
-                  {save.isPending ? "Đang lưu…" : "Lưu thay đổi"}
+                <Button type="submit" size="sm" disabled={save.isPending || images.isPending}>
+                  {save.isPending || images.isPending ? "Đang lưu…" : isNew ? "Tạo bài" : "Lưu thay đổi"}
                 </Button>
                 {!isNew && (
-                  <Button type="button" size="sm" variant="secondary" onClick={() => reset()}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      reset()
+                      clearDrafts()
+                    }}
+                  >
                     Hoàn tác
                   </Button>
                 )}
