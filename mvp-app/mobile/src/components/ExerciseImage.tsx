@@ -1,5 +1,6 @@
 import { useState } from "react"
-import { Image, Pressable, Text, View } from "react-native"
+import { Image, View } from "react-native"
+import { exerciseImageUrl } from "@/lib/exerciseImage"
 import { assetUrl } from "~/lib/config"
 
 type Props = { slug: string; alt: string; variant: "thumb" | "large" }
@@ -7,24 +8,22 @@ type Props = { slug: string; alt: string; variant: "thumb" | "large" }
 /**
  * Ảnh minh hoạ động tác — bản mobile của web/src/components/ExerciseImage.tsx.
  *
- * `thumb` (danh sách bài) là ảnh chụp tĩnh `<slug>-0.jpg`. `large` chỉ dùng ở chỗ xem chi tiết bài
- * nên là ảnh động `<slug>.gif` của ExerciseDB (người dùng chốt 09-27: ảnh động chỉ khi xem chi
- * tiết). Chưa có GIF thì quay về 2 khung ảnh chụp. Thứ tự khung ảnh chụp không nhất quán giữa các
- * bài nên chỉ mời chạm xem khung còn lại bằng chữ trung tính. Bài không có ảnh nào thì ẩn hẳn.
+ * Ảnh do admin chọn, backend phát (doc/design-anh-bai-tap-v1.md). `thumb` là ảnh tĩnh. `large` chỉ
+ * dùng ở chỗ xem chi tiết bài nên là ảnh động (người dùng chốt 09-27); không có ảnh động thì quay về
+ * ảnh tĩnh. Bài không có ảnh nào thì ẩn hẳn.
  */
 export function ExerciseImage(props: Props) {
-  // key theo slug: thay bài giữa buổi tập thì trạng thái khung/ảnh hỏng của bài cũ không rơi sang bài mới.
+  // key theo slug: thay bài giữa buổi tập thì trạng thái ảnh hỏng của bài cũ không rơi sang bài mới.
   return <ExerciseImageBody key={props.slug} {...props} />
 }
 
 function ExerciseImageBody({ slug, alt, variant }: Props) {
-  const [frame, setFrame] = useState<0 | 1>(0)
-  const [gifBroken, setGifBroken] = useState(false)
+  const [animatedBroken, setAnimatedBroken] = useState(false)
   const [broken, setBroken] = useState(false)
 
   if (broken) return null
 
-  const still = { uri: assetUrl(`/exercises/${slug}-${frame}.jpg`) }
+  const still = { uri: assetUrl(exerciseImageUrl(slug, "still")) }
 
   if (variant === "thumb") {
     return (
@@ -38,31 +37,29 @@ function ExerciseImageBody({ slug, alt, variant }: Props) {
     )
   }
 
-  if (!gifBroken) {
-    // GIF gốc 180×180 nền trắng: giữ nền trắng trong khung bo góc thay vì kéo giãn. iOS tự chạy GIF.
+  if (!animatedBroken) {
+    // Ảnh động cũ là GIF 180×180 nền trắng: giữ nền trắng trong khung bo góc. iOS tự chạy GIF.
     return (
       <View className="items-center rounded-md bg-white py-2.5">
         <Image
-          source={{ uri: assetUrl(`/exercises/${slug}.gif`) }}
+          source={{ uri: assetUrl(exerciseImageUrl(slug, "animated")) }}
           accessibilityLabel={alt}
-          onError={() => setGifBroken(true)}
+          onError={() => setAnimatedBroken(true)}
           className="size-60"
+          resizeMode="contain"
         />
-        <Text className="absolute bottom-2 right-2.5 text-[10px] text-text-muted">ExerciseDB</Text>
       </View>
     )
   }
 
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={alt} onPress={() => setFrame((f) => (f === 0 ? 1 : 0))}>
-      <Image
-        source={still}
-        onError={() => setBroken(true)}
-        className="w-full rounded-md"
-        style={{ aspectRatio: 3 / 2 }}
-        resizeMode="cover"
-      />
-      <Text className="mt-1.5 text-[11px] text-text-muted">Chạm để xem tư thế còn lại</Text>
-    </Pressable>
+    <Image
+      source={still}
+      accessibilityLabel={alt}
+      onError={() => setBroken(true)}
+      className="w-full rounded-md"
+      style={{ aspectRatio: 3 / 2 }}
+      resizeMode="cover"
+    />
   )
 }

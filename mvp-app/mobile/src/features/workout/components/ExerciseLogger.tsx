@@ -4,6 +4,7 @@ import { Shuffle } from "lucide-react-native"
 import type { ScheduledExerciseView } from "@/features/schedule/types"
 import { SKIP_REASONS, type SetLogResponse } from "@/features/workout/types"
 import { cn } from "@/lib/cn"
+import { exerciseImageUrl } from "@/lib/exerciseImage"
 import { formatKg } from "@/lib/format"
 import { ExerciseImage } from "~/components/ExerciseImage"
 import { LoadDeltaBadge } from "~/components/LoadDeltaBadge"
@@ -346,7 +347,7 @@ function CoachingPanel({ exercise }: { exercise: ScheduledExerciseView }) {
 
   useEffect(() => {
     let alive = true
-    Image.prefetch(assetUrl(`/exercises/${exercise.exerciseSlug}-0.jpg`))
+    Image.prefetch(assetUrl(exerciseImageUrl(exercise.exerciseSlug, "still")))
       .then((ok) => alive && setHasImage(ok))
       .catch(() => alive && setHasImage(false))
     return () => {
