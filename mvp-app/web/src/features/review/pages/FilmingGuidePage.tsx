@@ -18,7 +18,10 @@ import { useExercise, useSubmitReview } from "@/features/review/api/useReviews"
 
 const MAX_CLIPS = 3
 
-/** Dặn chung khi bài chưa có `filming_guide`; cách đặt máy nằm trong thẻ từng góc. */
+/**
+ * Câu dặn mặc định, thứ tự khoảng cách, ánh sáng, độ dài: ô nào admin bỏ trống thì điền câu của đúng ô đó.
+ * Cách đặt máy nằm trong thẻ từng góc.
+ */
 const DEFAULT_TIPS = [
   "Cách 2–3 m, cả người trong khung suốt set.",
   "Ánh sáng từ phía trước, tránh ngược sáng.",
@@ -75,7 +78,7 @@ export function FilmingGuidePage() {
 
   const name = exercise.data!.nameVi ?? exercise.data!.nameEn
   const guide = parseFilmingGuide(exercise.data!.filmingGuide)
-  const tips = [guide?.distance, guide?.lighting, guide?.duration].filter((s): s is string => !!s)
+  const tips = [guide?.distance, guide?.lighting, guide?.duration].map((s, i) => s?.trim() || DEFAULT_TIPS[i])
   const views = exercise.data!.checkViews
   const missing = files.length > 0 ? missingViews(views, viewpoints) : []
   const quotaExceeded = submit.error instanceof ApiError && submit.error.status === 429
@@ -140,7 +143,7 @@ export function FilmingGuidePage() {
       </div>
 
       <ul className="mt-3 flex flex-col gap-1.5">
-        {(tips.length > 0 ? tips : DEFAULT_TIPS).map((tip) => (
+        {tips.map((tip) => (
           <li
             key={tip}
             className="rounded-[var(--radius-md)] bg-[var(--color-surface)] px-3.5 py-2.5 text-[13px] leading-snug text-[var(--color-text-muted)]"

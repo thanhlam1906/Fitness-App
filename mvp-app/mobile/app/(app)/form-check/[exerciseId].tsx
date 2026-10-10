@@ -31,7 +31,10 @@ const MAX_MB = 60
 const LIBRARY_EXPORT = ImagePicker.VideoExportPreset.H264_1920x1080
 const CAMERA_QUALITY = ImagePicker.UIImagePickerControllerQualityType.IFrame1280x720
 
-/** Dặn chung khi bài chưa có `filming_guide`; cách đặt máy nằm trong thẻ từng góc. */
+/**
+ * Câu dặn mặc định, thứ tự khoảng cách, ánh sáng, độ dài: ô nào admin bỏ trống thì điền câu của đúng ô đó.
+ * Cách đặt máy nằm trong thẻ từng góc.
+ */
 const DEFAULT_TIPS = [
   "Cách 2–3 m, cả người trong khung suốt set.",
   "Ánh sáng từ phía trước, tránh ngược sáng.",
@@ -96,7 +99,7 @@ export default function FilmingGuideScreen() {
   const data = exercise.data!
   const name = data.nameVi ?? data.nameEn
   const guide = parseFilmingGuide(data.filmingGuide)
-  const tips = [guide?.distance, guide?.lighting, guide?.duration].filter((s): s is string => !!s)
+  const tips = [guide?.distance, guide?.lighting, guide?.duration].map((s, i) => s?.trim() || DEFAULT_TIPS[i])
   const views = data.checkViews
   const missing = clips.length > 0 ? missingViews(views, viewpoints) : []
   const tooLong = clips.some((c) => c.seconds !== null && c.seconds > MAX_SECONDS)
@@ -206,7 +209,7 @@ export default function FilmingGuideScreen() {
       </View>
 
       <View className="mt-3 gap-1.5">
-        {(tips.length > 0 ? tips : DEFAULT_TIPS).map((tip) => (
+        {tips.map((tip) => (
           <Text key={tip} className="rounded-md bg-surface px-3.5 py-2.5 text-[13px] leading-[18px] text-text-muted">
             {tip}
           </Text>
