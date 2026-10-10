@@ -56,7 +56,7 @@ export function ExerciseListPanel({ activeId }: { activeId?: string }) {
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto">
+      <div className="min-h-0 flex-1 overflow-auto [scrollbar-width:none]">
         {exercises.isLoading && <ListRowsSkeleton count={8} />}
         {exercises.isError && (
           <IconText className="p-4">{exercises.error.message}</IconText>
