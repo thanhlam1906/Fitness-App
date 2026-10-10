@@ -47,12 +47,13 @@ export function ExerciseFormPage() {
   const help = useHelp()
   const images = useSaveExerciseImages()
   const location = useLocation()
-  // Bản nháp ảnh gắn với id bài: bấm sang bài khác trong cột trái (cùng component, chỉ đổi :id) thì
-  // bài đó bắt đầu sạch, không mang ảnh nháp của bài trước.
+  // Bấm sang bài khác trong cột trái chỉ đổi :id, component vẫn là một. Đổi bài (kể cả quay lại bài cũ, hay từ
+  // "new" sang bài vừa tạo) thì bắt đầu sạch: chữ của bài được nạp lại từ server, ảnh nháp cũng phải bỏ.
   const [draftState, setDraftState] = useState<{ id: string | undefined; drafts: ImageDrafts }>({
     id,
     drafts: NO_DRAFTS,
   })
+  if (draftState.id !== id) setDraftState({ id, drafts: NO_DRAFTS })
   const drafts = draftState.id === id ? draftState.drafts : NO_DRAFTS
   const setDraft = (kind: keyof ImageDrafts, draft: ImageDraft) =>
     setDraftState({ id, drafts: { ...drafts, [kind]: draft } })
