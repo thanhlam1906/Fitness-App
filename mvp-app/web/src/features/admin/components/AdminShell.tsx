@@ -71,7 +71,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
   return (
     // Khung cao đúng một màn hình: sidebar, cột danh sách và nội dung mỗi phần
     // tự cuộn trong vùng của nó. Cao theo nội dung thì cả trang cuộn chung.
-    <div className="flex h-screen overflow-hidden bg-[var(--color-bg)]">
+    // Thanh cuộn ẩn ở mọi vùng bên trong (người dùng yêu cầu), vẫn cuộn bằng chuột.
+    <div className="flex h-screen overflow-hidden bg-[var(--color-bg)] [&_*]:[scrollbar-width:none]">
       <nav className="flex w-[248px] flex-none flex-col overflow-y-auto border-r border-[var(--color-border)] bg-[var(--color-surface)] py-5.5">
         <div className="border-b border-[var(--color-border)] px-5 pb-5">
           <Logo />
