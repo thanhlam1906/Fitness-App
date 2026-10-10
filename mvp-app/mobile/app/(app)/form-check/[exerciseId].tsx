@@ -41,7 +41,7 @@ const DEFAULT_TIPS = [
   "Quay 3–5 rep là đủ, tối đa 30 giây.",
 ]
 
-/** Cách đặt máy cho từng góc, ảnh minh hoạ lấy từ web/public/form-check như ảnh bài tập. */
+/** Cách đặt máy cho từng góc, ảnh minh hoạ lấy từ web/public/form-check. */
 const ANGLE_GUIDE: Record<ViewCode, { title: string; image: string; alt: string; steps: string[] }> = {
   SAGITTAL: {
     title: "Góc ngang",

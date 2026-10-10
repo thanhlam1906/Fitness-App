@@ -27,6 +27,7 @@ import org.springframework.util.MultiValueMap;
 class ExerciseImageIntegrationTest extends PostgresIntegrationTest {
 
 	private static final byte[] PNG = {(byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A, 1, 2, 3};
+	private static final byte[] JPG = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0, 4, 5, 6};
 	private static final byte[] GIF = "GIF89a-anh-dong".getBytes(StandardCharsets.ISO_8859_1);
 
 	@Autowired
@@ -89,6 +90,22 @@ class ExerciseImageIntegrationTest extends PostgresIntegrationTest {
 		var again = rest.exchange("/api/v1/exercise-images/" + ex.slug() + "/animated", HttpMethod.GET,
 				new HttpEntity<>(conditional), byte[].class);
 		assertThat(again.getStatusCode()).isEqualTo(HttpStatus.NOT_MODIFIED);
+	}
+
+	@Test
+	void thayAnhDaCo_xemRaAnhMoi_etagDoi() {
+		HttpHeaders admin = newAuthedUser(Role.ADMIN).headers();
+		ExerciseResponse ex = createExercise(admin);
+		upload(admin, ex.id(), "still", "anh.png", PNG);
+		ResponseEntity<byte[]> before = view(ex.slug(), "still");
+
+		assertThat(upload(admin, ex.id(), "still", "anh.jpg", JPG).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+
+		ResponseEntity<byte[]> after = view(ex.slug(), "still");
+		assertThat(after.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(after.getHeaders().getContentType()).isEqualTo(MediaType.IMAGE_JPEG);
+		assertThat(after.getBody()).isEqualTo(JPG);
+		assertThat(after.getHeaders().getETag()).isNotNull().isNotEqualTo(before.getHeaders().getETag());
 	}
 
 	@Test

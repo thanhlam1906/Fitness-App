@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { TriangleAlert } from "lucide-react"
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router"
 import { IconText, Notice } from "@/components/StatusViews"
@@ -47,6 +47,23 @@ export function ExerciseFormPage() {
   const help = useHelp()
   const images = useSaveExerciseImages()
   const location = useLocation()
+  // Upload ảnh mất vài giây mà cột danh sách bên trái vẫn bấm được: callback lưu xong chạy khi admin đã sang bài khác.
+  // Callback đóng quanh `id` lúc bấm Lưu nên cần ref để biết trang đang mở bài nào. Cập nhật ở layout effect, không
+  // ghi ref lúc render, để ngay sau khi bài mới lên màn hình ref đã đúng.
+  const currentId = useRef(id)
+  useLayoutEffect(() => {
+    currentId.current = id
+  }, [id])
+  // Hai mutation thuộc cả trang chứ không thuộc từng bài: đổi bài mà không reset thì bài mới hiện nhầm "Đã lưu",
+  // lỗi ảnh, hay nút "Đang lưu…" bị khoá của bài trước. Riêng trang bài vừa tạo xong (save.data.id === id) giữ lại:
+  // đó là kết quả của chính lần lưu này, "Đã lưu" và lý do ảnh lỗi vẫn phải hiện. Chỉ đổi theo `id` nên không đưa
+  // save, images vào deps.
+  useEffect(() => {
+    if (save.data?.id === id) return
+    save.reset()
+    images.reset()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ chạy khi đổi bài; save, images đổi theo trạng thái lưu, đưa vào deps thì vừa lưu xong đã bị reset
+  }, [id])
   // Bấm sang bài khác trong cột trái chỉ đổi :id, component vẫn là một. Đổi bài (kể cả quay lại bài cũ, hay từ
   // "new" sang bài vừa tạo) thì bắt đầu sạch: chữ của bài được nạp lại từ server, ảnh nháp cũng phải bỏ.
   const [draftState, setDraftState] = useState<{ id: string | undefined; drafts: ImageDrafts }>({
@@ -91,7 +108,12 @@ export function ExerciseFormPage() {
         .map((v) => v.trim())
         .filter(Boolean)
     const hasDrafts = drafts.still !== null || drafts.animated !== null
+    const startedOn = id
+    // Admin đã sang bài khác thì kết quả lưu này không được đụng tới trang đang mở: clearDrafts sẽ xoá nháp ảnh và
+    // reset() trả form về giá trị server của bài đó, mất chữ vừa gõ; navigate kéo admin quay lại bài cũ.
+    const isStale = () => currentId.current !== startedOn
     const done = (result: { id: string }) => {
+      if (isStale()) return
       clearDrafts()
       if (isNew) navigate(`/admin/exercises/${result.id}`, { replace: true })
       else reset()
@@ -107,6 +129,7 @@ export function ExerciseFormPage() {
               onSuccess: () => done(result),
               // Bài đã tạo: mở trang sửa bài đó để bấm Lưu lần nữa là SỬA, không tạo bài trùng.
               onError: () => {
+                if (isStale()) return
                 if (isNew) navigate(`/admin/exercises/${result.id}?tab=info`, { replace: true, state: { imageFailed: true } })
               },
             },
@@ -115,6 +138,9 @@ export function ExerciseFormPage() {
       },
     )
   }
+
+  // oxlint-disable-next-line react/refs -- onSubmit chỉ đọc ref lúc submit, không phải lúc render
+  const submit = handleSubmit(onSubmit)
 
   // ?v=updatedAt: trình duyệt giữ ảnh cùng URL trong trang, thay ảnh xong phải thấy ảnh mới ngay.
   const savedImageUrl = (kind: "still" | "animated") => {
@@ -136,7 +162,8 @@ export function ExerciseFormPage() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <AdminHeader group="Bài tập và ngưỡng" title={title}>
-          {save.isSuccess && (
+          {/* Phần ảnh của lần lưu chưa xong hoặc hỏng thì chưa được nói "đã lưu". */}
+          {save.isSuccess && !images.isPending && !images.isError && (
             <span className="text-xs whitespace-nowrap text-[var(--color-text-muted)]">
               Đã lưu — không cần tải lại
             </span>
@@ -182,7 +209,7 @@ export function ExerciseFormPage() {
 
           {/* Form trống hiện song song với khung chờ thì vẫn bấm Lưu được: chờ có dữ liệu mới hiện. */}
           {tab === "info" && (isNew || existing.data) && (
-            <form onSubmit={handleSubmit(onSubmit)} className="max-w-3xl space-y-4">
+            <form onSubmit={submit} className="max-w-3xl space-y-4">
               {imageFailedOnCreate && !images.isSuccess && (
                 <Notice icon={TriangleAlert} tone="danger">
                   Bài đã được tạo nhưng ảnh chưa tải lên được. Chọn lại ảnh rồi bấm Lưu.

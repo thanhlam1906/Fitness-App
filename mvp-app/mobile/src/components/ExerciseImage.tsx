@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Image, View } from "react-native"
 import { exerciseImageUrl } from "@/lib/exerciseImage"
-import { assetUrl } from "~/lib/config"
+import { API_URL } from "~/lib/config"
 
 type Props = { slug: string; alt: string; variant: "thumb" | "large" }
 
@@ -23,7 +23,7 @@ function ExerciseImageBody({ slug, alt, variant }: Props) {
 
   if (broken) return null
 
-  const still = { uri: assetUrl(exerciseImageUrl(slug, "still")) }
+  const still = { uri: `${API_URL}${exerciseImageUrl(slug, "still")}` }
 
   if (variant === "thumb") {
     return (
@@ -42,7 +42,7 @@ function ExerciseImageBody({ slug, alt, variant }: Props) {
     return (
       <View className="items-center rounded-md bg-white py-2.5">
         <Image
-          source={{ uri: assetUrl(exerciseImageUrl(slug, "animated")) }}
+          source={{ uri: `${API_URL}${exerciseImageUrl(slug, "animated")}` }}
           accessibilityLabel={alt}
           onError={() => setAnimatedBroken(true)}
           className="size-60"

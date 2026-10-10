@@ -14,7 +14,7 @@ import { IconText } from "~/components/StatusViews"
 import { Kicker } from "~/components/Kicker"
 import { WrongFeedbackButton } from "~/features/feedback/components/WrongFeedbackButton"
 import { useLogSet, useSubstitute, useSubstitutes } from "~/features/workout/api/useWorkoutSession"
-import { assetUrl } from "~/lib/config"
+import { API_URL } from "~/lib/config"
 import { cleanDecimal, parseDecimal } from "~/lib/number"
 import { colors } from "~/theme"
 
@@ -347,7 +347,7 @@ function CoachingPanel({ exercise }: { exercise: ScheduledExerciseView }) {
 
   useEffect(() => {
     let alive = true
-    Image.prefetch(assetUrl(exerciseImageUrl(exercise.exerciseSlug, "still")))
+    Image.prefetch(`${API_URL}${exerciseImageUrl(exercise.exerciseSlug, "still")}`)
       .then((ok) => alive && setHasImage(ok))
       .catch(() => alive && setHasImage(false))
     return () => {
