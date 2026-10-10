@@ -31,20 +31,23 @@ public class ExerciseService {
 	private final FormCheckRepository formChecks;
 	private final ProfileRepository profiles;
 	private final ObjectMapper objectMapper;
+	private final ExerciseImageService images;
 
 	public ExerciseService(
 			ExerciseRepository exercises, FormCheckRepository formChecks, ProfileRepository profiles,
-			ObjectMapper objectMapper) {
+			ObjectMapper objectMapper, ExerciseImageService images) {
 		this.exercises = exercises;
 		this.formChecks = formChecks;
 		this.profiles = profiles;
 		this.objectMapper = objectMapper;
+		this.images = images;
 	}
 
 	public List<ExerciseResponse> list() {
 		Map<UUID, List<FormCheck>> checks = activeChecks();
+		Map<String, Set<String>> imageKinds = images.kindsBySlug();
 		return exercises.findAll().stream()
-				.map(e -> toResponse(e, checks.getOrDefault(e.getId(), List.of())))
+				.map(e -> toResponse(e, checks.getOrDefault(e.getId(), List.of()), imageKinds))
 				.toList();
 	}
 
@@ -111,6 +114,7 @@ public class ExerciseService {
 		String primaryMuscle = targetMuscles[0];
 		Set<String> allMuscles = Set.of(targetMuscles);
 		Map<UUID, List<FormCheck>> checks = activeChecks();
+		Map<String, Set<String>> imageKinds = images.kindsBySlug();
 
 		return exercises.findAll().stream()
 				.filter(Exercise::isActive)
@@ -118,7 +122,7 @@ public class ExerciseService {
 				.filter(e -> List.of(e.getMuscleGroups()).contains(primaryMuscle))
 				.filter(e -> userEquipment.containsAll(List.of(e.getEquipment())))
 				.sorted(Comparator.comparingLong((Exercise e) -> overlap(e, allMuscles)).reversed())
-				.map(e -> toResponse(e, checks.getOrDefault(e.getId(), List.of())))
+				.map(e -> toResponse(e, checks.getOrDefault(e.getId(), List.of()), imageKinds))
 				.toList();
 	}
 
@@ -127,15 +131,18 @@ public class ExerciseService {
 	}
 
 	private ExerciseResponse withCount(Exercise exercise) {
-		return toResponse(exercise, formChecks.findByExerciseIdAndActiveTrueOrderByPriority(exercise.getId()));
+		return toResponse(exercise, formChecks.findByExerciseIdAndActiveTrueOrderByPriority(exercise.getId()),
+				images.kindsBySlug());
 	}
 
 	/** checkViews theo thứ tự camera hướng dẫn: Ngang → Chính diện → Chéo. */
-	private static ExerciseResponse toResponse(Exercise exercise, List<FormCheck> checks) {
+	private static ExerciseResponse toResponse(
+			Exercise exercise, List<FormCheck> checks, Map<String, Set<String>> imageKinds) {
 		List<String> views = FormMeasures.VIEW_ORDER.stream()
 				.filter(v -> checks.stream().anyMatch(c -> v.equals(c.getView())))
 				.toList();
-		return ExerciseResponse.from(exercise, checks.size(), views);
+		return ExerciseResponse.from(exercise, checks.size(), views,
+				imageKinds.getOrDefault(exercise.getSlug(), Set.of()));
 	}
 
 	private Exercise findOrThrow(UUID id) {

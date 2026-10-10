@@ -11,9 +11,8 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 /**
- * Bảng exercises, V1__init.sql. filming_guide giữ raw JSON text, admin sửa
- * bằng textarea như các cột jsonb khác (F4 concept-frontend-v1.md). Hình minh
- * hoạ khung người (F2) vẫn treo — cần chụp/vẽ, không code được.
+ * Bảng exercises, V1__init.sql. filming_guide giữ raw JSON text; form admin ghép JSON từ các ô
+ * (doc/design-anh-bai-tap-v1.md §5). Ảnh minh hoạ ở bảng exercise_images, khoá theo slug.
  */
 @Entity
 @Table(name = "exercises")
@@ -100,6 +99,11 @@ public class Exercise {
 	/** FormCheckService gọi mỗi khi khớp cần kiểm đổi: bài chấm được khi còn khớp đang bật. */
 	public void markAnalyzable(boolean analyzable) {
 		this.analyzable = analyzable;
+		this.updatedAt = Instant.now();
+	}
+
+	/** Đổi ảnh minh hoạ (ExerciseImageService) cũng tính là sửa bài. */
+	public void touch() {
 		this.updatedAt = Instant.now();
 	}
 
