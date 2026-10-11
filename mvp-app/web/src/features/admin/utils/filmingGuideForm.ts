@@ -10,8 +10,8 @@ export type GuideForm = {
   notes: Record<ViewCode, string>
 }
 
-/** Giá trị của form "Thông tin bài": ô chữ nhóm cơ/thiết bị và ô hướng dẫn quay được ghép lại lúc lưu. */
-export type ExerciseFormValues = ExerciseInput & { muscleGroupsText: string; equipmentText: string; guide: GuideForm }
+/** Giá trị của form "Thông tin bài": ô hướng dẫn quay được ghép lại thành filmingGuide lúc lưu. */
+export type ExerciseFormValues = ExerciseInput & { guide: GuideForm }
 
 const TIPS = ["distance", "lighting", "duration"] as const
 

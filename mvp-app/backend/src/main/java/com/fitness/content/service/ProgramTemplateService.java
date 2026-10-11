@@ -44,8 +44,6 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class ProgramTemplateService {
 
-	// Trùng EQUIPMENT_OPTIONS ở web (features/profile/types) — người tập khai đúng 4 loại này.
-	private static final Set<String> EQUIPMENT = Set.of("BARBELL_RACK", "DUMBBELL", "KETTLEBELL", "BENCH");
 	private static final BigDecimal MAX_INCREMENT_KG = new BigDecimal("20");
 	private static final String ACTIVE = "ACTIVE";
 
@@ -161,7 +159,7 @@ public class ProgramTemplateService {
 		if (r.sessionsMin() > r.sessionsMax()) {
 			throw badRequest("Số buổi/tuần: số đầu không được lớn hơn số sau");
 		}
-		List<String> badEquipment = r.requiredEquipment().stream().filter(e -> !EQUIPMENT.contains(e)).toList();
+		List<String> badEquipment = r.requiredEquipment().stream().filter(e -> e == null || !ContentCodes.EQUIPMENT.contains(e)).toList();
 		if (!badEquipment.isEmpty()) {
 			throw badRequest("Thiết bị không hợp lệ: " + String.join(", ", badEquipment));
 		}

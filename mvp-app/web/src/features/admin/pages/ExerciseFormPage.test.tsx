@@ -24,7 +24,7 @@ const exercise = (id: string): Exercise => ({
   slug: id,
   nameEn: `Bài ${id}`,
   nameVi: null,
-  muscleGroups: [],
+  muscleGroups: ["QUADS"], // form bắt buộc có cơ chính
   equipment: [],
   description: null,
   filmingGuide: null,
@@ -94,10 +94,40 @@ describe("ExerciseFormPage: tạo bài mới", () => {
     renderAt("/admin/exercises/new")
     fireEvent.change(await screen.findByLabelText("slug"), { target: { value: "c" } })
     fireEvent.change(screen.getByLabelText("Tên (EN)"), { target: { value: "Bài c" } })
+    fireEvent.click(screen.getByRole("radio", { name: "Đùi trước" }))
     fireEvent.click(screen.getByRole("button", { name: "Tạo bài" }))
 
     // Header đã đổi sang tên bài vừa tạo (trang /admin/exercises/c) mà chữ Đã lưu không bị xoá theo.
     expect(await screen.findByText("Bài c")).toBeInTheDocument()
     expect(screen.getByText("Đã lưu — không cần tải lại")).toBeInTheDocument()
+  })
+
+  it("chưa chọn cơ chính thì không gửi, báo ngay dưới hàng nút", async () => {
+    renderAt("/admin/exercises/new")
+    fireEvent.change(await screen.findByLabelText("slug"), { target: { value: "d" } })
+    fireEvent.change(screen.getByLabelText("Tên (EN)"), { target: { value: "Bài d" } })
+    fireEvent.click(screen.getByRole("button", { name: "Tạo bài" }))
+
+    expect(await screen.findByText("Chọn cơ chính.")).toBeInTheDocument()
+    expect(api.post).not.toHaveBeenCalled()
+  })
+
+  it("gửi cơ chính đứng đầu, cơ phụ và thiết bị theo thứ tự nút", async () => {
+    api.post.mockResolvedValue(exercise("e"))
+    renderAt("/admin/exercises/new")
+    fireEvent.change(await screen.findByLabelText("slug"), { target: { value: "e" } })
+    fireEvent.change(screen.getByLabelText("Tên (EN)"), { target: { value: "Bài e" } })
+    fireEvent.click(screen.getByRole("radio", { name: "Mông" }))
+    fireEvent.click(screen.getByRole("button", { name: "Bụng", pressed: false }))
+    fireEvent.click(screen.getByRole("button", { name: "Đùi trước", pressed: false }))
+    fireEvent.click(screen.getByRole("button", { name: "Ghế" }))
+    fireEvent.click(screen.getByRole("button", { name: "Tạ đơn" }))
+    fireEvent.click(screen.getByRole("button", { name: "Tạo bài" }))
+
+    await waitFor(() => expect(api.post).toHaveBeenCalled())
+    expect(api.post.mock.calls[0][1]).toMatchObject({
+      muscleGroups: ["GLUTES", "QUADS", "CORE"],
+      equipment: ["DUMBBELL", "BENCH"],
+    })
   })
 })

@@ -62,6 +62,7 @@ public class ExerciseService {
 		if (exercises.findBySlug(request.slug()).isPresent()) {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "slug đã tồn tại");
 		}
+		requireValidCodes(request);
 		JsonText.requireValidOrNull(objectMapper, "filmingGuide", request.filmingGuide());
 		Exercise exercise = new Exercise(
 				request.slug(), request.nameEn(), request.nameVi(),
@@ -72,6 +73,7 @@ public class ExerciseService {
 	}
 
 	public ExerciseResponse update(UUID id, ExerciseRequest request) {
+		requireValidCodes(request);
 		JsonText.requireValidOrNull(objectMapper, "filmingGuide", request.filmingGuide());
 		Exercise exercise = findOrThrow(id);
 		exercise.update(
@@ -152,6 +154,26 @@ public class ExerciseService {
 
 	private static long overlap(Exercise exercise, Set<String> muscles) {
 		return Arrays.stream(exercise.getMuscleGroups()).filter(muscles::contains).count();
+	}
+
+	/**
+	 * Phần tử đầu của muscleGroups là cơ chính: màn người tập tô nổi, gợi ý bài thay thế tìm theo nó
+	 * (substitutes) — nên bắt buộc có. Mã lạ thì chặn, không lưu nhãn mà không màn nào hiểu.
+	 */
+	private static void requireValidCodes(ExerciseRequest request) {
+		List<String> muscles = request.muscleGroups() == null ? List.of() : request.muscleGroups();
+		if (muscles.isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Chọn cơ chính cho bài.");
+		}
+		List<String> badMuscles = muscles.stream().filter(m -> m == null || !ContentCodes.MUSCLES.contains(m)).toList();
+		if (!badMuscles.isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nhóm cơ không hợp lệ: " + String.join(", ", badMuscles));
+		}
+		List<String> equipment = request.equipment() == null ? List.of() : request.equipment();
+		List<String> badEquipment = equipment.stream().filter(e -> e == null || !ContentCodes.EQUIPMENT.contains(e)).toList();
+		if (!badEquipment.isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiết bị không hợp lệ: " + String.join(", ", badEquipment));
+		}
 	}
 
 	/** Textarea rỗng gửi lên là "" — cột jsonb không nhận chuỗi rỗng, đổi thành NULL. */

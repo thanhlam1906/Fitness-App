@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/cn"
 import { ExerciseListPanel } from "@/features/admin/components/ExerciseListPanel"
 import { FilmingGuideFields } from "@/features/admin/components/FilmingGuideFields"
+import { MuscleEquipmentFields } from "@/features/admin/components/MuscleEquipmentFields"
 import { FormCheckEditor } from "@/features/admin/components/FormCheckEditor"
 import { HelpButton, HelpText, useHelp } from "@/features/admin/components/HelpButton"
 import { ImageSlot } from "@/features/admin/components/ImageSlot"
@@ -80,16 +81,15 @@ export function ExerciseFormPage() {
 
   const tab: Tab = isNew ? "info" : searchParams.get("tab") === "info" ? "info" : "checks"
 
-  const { register, handleSubmit, reset } = useForm<ExerciseFormValues>({
-    // Bài mới: ô hướng dẫn quay phải có chuỗi rỗng sẵn, không thì formToGuide gặp undefined.
-    defaultValues: { guide: guideToForm(null) },
+  const { register, handleSubmit, reset, control } = useForm<ExerciseFormValues>({
+    // Bài mới: ô hướng dẫn quay phải có chuỗi rỗng sẵn, không thì formToGuide gặp undefined; nhóm cơ,
+    // thiết bị là mảng rỗng để nút bấm có giá trị mà bật/tắt.
+    defaultValues: { guide: guideToForm(null), muscleGroups: [], equipment: [] },
     values: existing.data
       ? {
           slug: existing.data.slug,
           nameEn: existing.data.nameEn,
           nameVi: existing.data.nameVi ?? "",
-          muscleGroupsText: existing.data.muscleGroups.join(", "),
-          equipmentText: existing.data.equipment.join(", "),
           muscleGroups: existing.data.muscleGroups,
           equipment: existing.data.equipment,
           description: existing.data.description ?? "",
@@ -101,12 +101,7 @@ export function ExerciseFormPage() {
   })
 
   function onSubmit(values: ExerciseFormValues) {
-    const { muscleGroupsText, equipmentText, guide, ...rest } = values
-    const toList = (s: string) =>
-      s
-        .split(",")
-        .map((v) => v.trim())
-        .filter(Boolean)
+    const { guide, ...rest } = values
     const hasDrafts = drafts.still !== null || drafts.animated !== null
     const startedOn = id
     // Admin đã sang bài khác thì kết quả lưu này không được đụng tới trang đang mở: clearDrafts sẽ xoá nháp ảnh và
@@ -119,7 +114,7 @@ export function ExerciseFormPage() {
       else reset()
     }
     save.mutate(
-      { ...rest, filmingGuide: formToGuide(guide), muscleGroups: toList(muscleGroupsText), equipment: toList(equipmentText) },
+      { ...rest, filmingGuide: formToGuide(guide) },
       {
         onSuccess: (result) => {
           if (!hasDrafts) return done(result)
@@ -234,23 +229,8 @@ export function ExerciseFormPage() {
                   <Input id="nameVi" {...register("nameVi")} />
                   {help.isOpen("name") && <HelpText id="name" />}
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="muscleGroupsText">Nhóm cơ (phẩy)</Label>
-                  <Input
-                    id="muscleGroupsText"
-                    placeholder="QUADS, GLUTES"
-                    {...register("muscleGroupsText")}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="equipmentText">Thiết bị (phẩy, rỗng = bodyweight)</Label>
-                  <Input
-                    id="equipmentText"
-                    placeholder="BARBELL_RACK"
-                    {...register("equipmentText")}
-                  />
-                </div>
               </div>
+              <MuscleEquipmentFields control={control} />
               <div className="space-y-1.5">
                 <Label htmlFor="description">Mô tả</Label>
                 <Textarea id="description" rows={2} {...register("description")} />
