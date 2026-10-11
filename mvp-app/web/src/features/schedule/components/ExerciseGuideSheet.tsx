@@ -1,23 +1,9 @@
 import { ExerciseImage } from "@/components/ExerciseImage"
 import { Sheet, SheetHeader } from "@/components/ui/sheet"
 import { cn } from "@/lib/cn"
+import { MUSCLE_VI } from "@/lib/muscles"
 import { formatTarget, type ProgramDay } from "@/features/schedule/utils/programDays"
 import type { ScheduledExerciseView } from "@/features/schedule/types"
-
-// Mã nhóm cơ trong bảng exercises (muscle_groups) → chữ hiện cho người dùng.
-const MUSCLE_VI: Record<string, string> = {
-  QUADS: "Đùi trước",
-  HAMSTRINGS: "Đùi sau",
-  GLUTES: "Mông",
-  CORE: "Bụng",
-  LOWER_BACK: "Lưng dưới",
-  UPPER_BACK: "Lưng trên",
-  LATS: "Xô",
-  CHEST: "Ngực",
-  SHOULDERS: "Vai",
-  TRICEPS: "Tay sau",
-  BICEPS: "Tay trước",
-}
 
 /** Bấm một bài ở màn Chương trình (spec §3.3): ảnh động, cơ chính, cách tập, lỗi hay gặp (doc/design-anh-dong-v1.md). */
 export function ExerciseGuideSheet({

@@ -106,6 +106,41 @@ class AdminContentIntegrationTest extends PostgresIntegrationTest {
 	}
 
 	@Test
+	void nhomCoThietBiLa_hoacThieuCoChinh_400() {
+		HttpHeaders admin = adminHeaders();
+		String slug = "code-ex-" + UUID.randomUUID();
+		var thieuCoChinh = new ExerciseRequest(slug, "Code Test", "Bài thử mã", List.of(), List.of(), null, null, true);
+		var coLa = new ExerciseRequest(slug, "Code Test", "Bài thử mã", List.of("QUADS", "NECK"), List.of(), null, null, true);
+		var thietBiLa = new ExerciseRequest(slug, "Code Test", "Bài thử mã", List.of("QUADS"), List.of("TREADMILL"), null, null, true);
+
+		var r1 = rest.exchange("/api/v1/exercises", HttpMethod.POST, new HttpEntity<>(thieuCoChinh, admin), String.class);
+		var r2 = rest.exchange("/api/v1/exercises", HttpMethod.POST, new HttpEntity<>(coLa, admin), String.class);
+		var r3 = rest.exchange("/api/v1/exercises", HttpMethod.POST, new HttpEntity<>(thietBiLa, admin), String.class);
+
+		assertThat(r1.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		assertThat(r1.getBody()).contains("cơ chính");
+		assertThat(r2.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		assertThat(r2.getBody()).contains("NECK");
+		assertThat(r3.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		assertThat(r3.getBody()).contains("TREADMILL");
+
+		// Phần tử null (gọi API thẳng) là mã sai như mọi mã khác, không phải lỗi 500.
+		var coNull = new ExerciseRequest(slug, "Code Test", "Bài thử mã", Arrays.asList("QUADS", null), List.of(), null, null, true);
+		var thietBiNull = new ExerciseRequest(slug, "Code Test", "Bài thử mã", List.of("QUADS"), Arrays.asList((String) null), null, null, true);
+		assertThat(rest.exchange("/api/v1/exercises", HttpMethod.POST, new HttpEntity<>(coNull, admin), String.class)
+				.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		assertThat(rest.exchange("/api/v1/exercises", HttpMethod.POST, new HttpEntity<>(thietBiNull, admin), String.class)
+				.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+
+		// Sửa bài cũng kiểm như tạo: form cũ gõ tay từng lưu được mã sai.
+		var created = rest.exchange("/api/v1/exercises", HttpMethod.POST,
+				new HttpEntity<>(exerciseRequest("code-upd-" + UUID.randomUUID(), true), admin), ExerciseResponse.class)
+				.getBody();
+		var sua = rest.exchange("/api/v1/exercises/" + created.id(), HttpMethod.PUT, new HttpEntity<>(coLa, admin), String.class);
+		assertThat(sua.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+	}
+
+	@Test
 	void deactivateExercise_setsActiveFalse() {
 		HttpHeaders admin = adminHeaders();
 		var created = rest.exchange("/api/v1/exercises", HttpMethod.POST,

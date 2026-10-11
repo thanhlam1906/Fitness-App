@@ -31,20 +31,23 @@ public class ExerciseService {
 	private final FormCheckRepository formChecks;
 	private final ProfileRepository profiles;
 	private final ObjectMapper objectMapper;
+	private final ExerciseImageService images;
 
 	public ExerciseService(
 			ExerciseRepository exercises, FormCheckRepository formChecks, ProfileRepository profiles,
-			ObjectMapper objectMapper) {
+			ObjectMapper objectMapper, ExerciseImageService images) {
 		this.exercises = exercises;
 		this.formChecks = formChecks;
 		this.profiles = profiles;
 		this.objectMapper = objectMapper;
+		this.images = images;
 	}
 
 	public List<ExerciseResponse> list() {
 		Map<UUID, List<FormCheck>> checks = activeChecks();
+		Map<String, Set<String>> imageKinds = images.kindsBySlug();
 		return exercises.findAll().stream()
-				.map(e -> toResponse(e, checks.getOrDefault(e.getId(), List.of())))
+				.map(e -> toResponse(e, checks.getOrDefault(e.getId(), List.of()), imageKinds))
 				.toList();
 	}
 
@@ -59,6 +62,7 @@ public class ExerciseService {
 		if (exercises.findBySlug(request.slug()).isPresent()) {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "slug đã tồn tại");
 		}
+		requireValidCodes(request);
 		JsonText.requireValidOrNull(objectMapper, "filmingGuide", request.filmingGuide());
 		Exercise exercise = new Exercise(
 				request.slug(), request.nameEn(), request.nameVi(),
@@ -69,6 +73,7 @@ public class ExerciseService {
 	}
 
 	public ExerciseResponse update(UUID id, ExerciseRequest request) {
+		requireValidCodes(request);
 		JsonText.requireValidOrNull(objectMapper, "filmingGuide", request.filmingGuide());
 		Exercise exercise = findOrThrow(id);
 		exercise.update(
@@ -111,6 +116,7 @@ public class ExerciseService {
 		String primaryMuscle = targetMuscles[0];
 		Set<String> allMuscles = Set.of(targetMuscles);
 		Map<UUID, List<FormCheck>> checks = activeChecks();
+		Map<String, Set<String>> imageKinds = images.kindsBySlug();
 
 		return exercises.findAll().stream()
 				.filter(Exercise::isActive)
@@ -118,7 +124,7 @@ public class ExerciseService {
 				.filter(e -> List.of(e.getMuscleGroups()).contains(primaryMuscle))
 				.filter(e -> userEquipment.containsAll(List.of(e.getEquipment())))
 				.sorted(Comparator.comparingLong((Exercise e) -> overlap(e, allMuscles)).reversed())
-				.map(e -> toResponse(e, checks.getOrDefault(e.getId(), List.of())))
+				.map(e -> toResponse(e, checks.getOrDefault(e.getId(), List.of()), imageKinds))
 				.toList();
 	}
 
@@ -127,15 +133,18 @@ public class ExerciseService {
 	}
 
 	private ExerciseResponse withCount(Exercise exercise) {
-		return toResponse(exercise, formChecks.findByExerciseIdAndActiveTrueOrderByPriority(exercise.getId()));
+		return toResponse(exercise, formChecks.findByExerciseIdAndActiveTrueOrderByPriority(exercise.getId()),
+				images.kindsBySlug());
 	}
 
 	/** checkViews theo thứ tự camera hướng dẫn: Ngang → Chính diện → Chéo. */
-	private static ExerciseResponse toResponse(Exercise exercise, List<FormCheck> checks) {
+	private static ExerciseResponse toResponse(
+			Exercise exercise, List<FormCheck> checks, Map<String, Set<String>> imageKinds) {
 		List<String> views = FormMeasures.VIEW_ORDER.stream()
 				.filter(v -> checks.stream().anyMatch(c -> v.equals(c.getView())))
 				.toList();
-		return ExerciseResponse.from(exercise, checks.size(), views);
+		return ExerciseResponse.from(exercise, checks.size(), views,
+				imageKinds.getOrDefault(exercise.getSlug(), Set.of()));
 	}
 
 	private Exercise findOrThrow(UUID id) {
@@ -145,6 +154,26 @@ public class ExerciseService {
 
 	private static long overlap(Exercise exercise, Set<String> muscles) {
 		return Arrays.stream(exercise.getMuscleGroups()).filter(muscles::contains).count();
+	}
+
+	/**
+	 * Phần tử đầu của muscleGroups là cơ chính: màn người tập tô nổi, gợi ý bài thay thế tìm theo nó
+	 * (substitutes) — nên bắt buộc có. Mã lạ thì chặn, không lưu nhãn mà không màn nào hiểu.
+	 */
+	private static void requireValidCodes(ExerciseRequest request) {
+		List<String> muscles = request.muscleGroups() == null ? List.of() : request.muscleGroups();
+		if (muscles.isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Chọn cơ chính cho bài.");
+		}
+		List<String> badMuscles = muscles.stream().filter(m -> m == null || !ContentCodes.MUSCLES.contains(m)).toList();
+		if (!badMuscles.isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nhóm cơ không hợp lệ: " + String.join(", ", badMuscles));
+		}
+		List<String> equipment = request.equipment() == null ? List.of() : request.equipment();
+		List<String> badEquipment = equipment.stream().filter(e -> e == null || !ContentCodes.EQUIPMENT.contains(e)).toList();
+		if (!badEquipment.isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiết bị không hợp lệ: " + String.join(", ", badEquipment));
+		}
 	}
 
 	/** Textarea rỗng gửi lên là "" — cột jsonb không nhận chuỗi rỗng, đổi thành NULL. */
