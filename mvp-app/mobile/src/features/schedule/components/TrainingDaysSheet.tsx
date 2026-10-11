@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Pressable, ScrollView, Text, View } from "react-native"
+import { TriangleAlert } from "lucide-react-native"
 import { previewDates, shortDayTitle } from "@/features/schedule/utils/programDays"
 import type { ScheduledWorkoutView } from "@/features/schedule/types"
 import { toIso, WEEKDAY_LABELS } from "@/features/schedule/utils/weeks"
@@ -7,6 +8,7 @@ import { cn } from "@/lib/cn"
 import { Kicker } from "~/components/Kicker"
 import { Sheet, SheetHeader } from "~/components/ui/Sheet"
 import { useChangeTrainingDays } from "~/features/schedule/api/useEditSchedule"
+import { IconText, Notice } from "~/components/StatusViews"
 
 type Props = {
   open: boolean
@@ -84,11 +86,15 @@ function Body({
             )
           })}
         </View>
-        {days.length === 0 && <Text className="mt-2 text-xs text-danger">Chọn ít nhất một ngày tập.</Text>}
+        {days.length === 0 && (
+          <IconText small className="mt-2">
+            Chọn ít nhất một ngày tập.
+          </IconText>
+        )}
         {outOfRange && (
-          <View className="mt-3 rounded-md border border-warn/30 bg-warn-tint px-3 py-2.5">
-            <Text className="text-xs text-warn">Chương trình này soạn cho {range} buổi/tuần.</Text>
-          </View>
+          <Notice icon={TriangleAlert} tone="warn" className="mt-3 border border-warn/30" textClassName="text-xs">
+            Chương trình này soạn cho {range} buổi/tuần.
+          </Notice>
         )}
         {preview.length > 0 && (
           <>
@@ -105,7 +111,7 @@ function Body({
             </View>
           </>
         )}
-        {change.isError && <Text className="mt-3 text-sm text-danger">Lưu thất bại: {change.error.message}</Text>}
+        {change.isError && <IconText className="mt-3">Lưu thất bại: {change.error.message}</IconText>}
       </ScrollView>
     </>
   )

@@ -3,6 +3,7 @@ import { Pressable, Text, View } from "react-native"
 import type { FeedbackSource } from "@/features/feedback/types"
 import { Input } from "~/components/ui/Input"
 import { useReportWrong } from "~/features/feedback/api/useReportWrong"
+import { IconText } from "~/components/StatusViews"
 
 /**
  * Nút "góp ý này sai" ở MỌI góp ý do máy sinh ra (bất biến sản phẩm) — kết quả chấm form, quyết
@@ -51,7 +52,7 @@ export function WrongFeedbackButton({ source, hint }: { source: FeedbackSource; 
         <Pressable accessibilityRole="button" onPress={() => setOpen(false)} hitSlop={8}>
           <Text className="text-xs text-text-muted">Huỷ</Text>
         </Pressable>
-        {send.isError && <Text className="text-xs text-danger">Gửi thất bại.</Text>}
+        {send.isError && <IconText small>Gửi thất bại.</IconText>}
       </View>
     </View>
   )

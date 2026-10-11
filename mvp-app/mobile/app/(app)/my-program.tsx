@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react"
 import { Pressable, Text, View } from "react-native"
 import { useRouter, type Href } from "expo-router"
-import { ChevronRight, LayoutTemplate, Pencil, PencilRuler } from "lucide-react-native"
+import { CalendarOff, ChevronRight, CloudOff, LayoutTemplate, Pencil, PencilRuler } from "lucide-react-native"
 import { formatTarget, programDays, shortDayTitle, type ProgramDay } from "@/features/schedule/utils/programDays"
 import type { ScheduledExerciseView } from "@/features/schedule/types"
 import { parseIso, toIso, WEEKDAY_LABELS, weekProgress } from "@/features/schedule/utils/weeks"
@@ -12,8 +12,8 @@ import { ExerciseImage } from "~/components/ExerciseImage"
 import { Kicker } from "~/components/Kicker"
 import { Screen } from "~/components/Screen"
 import { Button } from "~/components/ui/Button"
-import { Card } from "~/components/ui/Card"
 import { Skeleton } from "~/components/ui/Skeleton"
+import { StatusBlock } from "~/components/StatusViews"
 import { useCurrentProgram } from "~/features/program/api/useCurrentProgram"
 import { ExerciseGuideSheet } from "~/features/schedule/components/ExerciseGuideSheet"
 import { TrainingDaysSheet } from "~/features/schedule/components/TrainingDaysSheet"
@@ -51,18 +51,16 @@ export default function MyProgramScreen() {
   if ([schedule.error, program.error].some((e) => e instanceof ApiError && e.status === 404)) {
     return (
       <Screen>
-        <Card className="items-center gap-3">
-          <Text className="text-center text-sm text-text-muted">Chưa có chương trình đang chạy.</Text>
+        <StatusBlock icon={CalendarOff} title="Chưa có chương trình">
           <Button onPress={() => router.push("/program")}>Chọn chương trình</Button>
-        </Card>
+        </StatusBlock>
       </Screen>
     )
   }
   if (schedule.isError || program.isError) {
     return (
       <Screen>
-        <Card className="gap-3">
-          <Text className="text-sm text-danger">Không tải được chương trình.</Text>
+        <StatusBlock icon={CloudOff} tone="danger" title="Không tải được chương trình">
           <Button
             variant="secondary"
             onPress={() => {
@@ -72,7 +70,7 @@ export default function MyProgramScreen() {
           >
             Thử lại
           </Button>
-        </Card>
+        </StatusBlock>
       </Screen>
     )
   }

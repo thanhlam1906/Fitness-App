@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { IconText } from "@/components/StatusViews"
 import { cn } from "@/lib/cn"
+import { exerciseImageUrl } from "@/lib/exerciseImage"
 import { formatKg } from "@/lib/format"
 import type { ScheduledExerciseView } from "@/features/schedule/types"
 import { SKIP_REASONS, type SetLogResponse } from "@/features/workout/types"
@@ -353,7 +354,7 @@ function CoachingPanel({ exercise }: { exercise: ScheduledExerciseView }) {
     const probe = new Image()
     probe.onload = () => setHasImage(true)
     probe.onerror = () => setHasImage(false)
-    probe.src = `/exercises/${exercise.exerciseSlug}-0.jpg`
+    probe.src = exerciseImageUrl(exercise.exerciseSlug, "still")
   }, [exercise.exerciseSlug])
 
   if (!hasDescription && !hasImage) return null

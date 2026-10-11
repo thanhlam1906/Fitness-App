@@ -28,7 +28,8 @@ class DashboardStatsTest {
 
 	private static AdminDashboardResponse compute(
 			Map<UUID, Long> users, List<UUID> sessions, List<UUID> missed, Map<String, Long> goals) {
-		return DashboardStats.compute(30, TEMPLATES, users, sessions, missed, goals);
+		return DashboardStats.compute(30, TEMPLATES, users, sessions, missed, goals,
+				new DashboardActivity.Result(0, List.of(), "DAY", List.of(), 0));
 	}
 
 	@Test

@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Pressable, Text, View } from "react-native"
 import { useLocalSearchParams, useRouter } from "expo-router"
+import { CloudOff, SearchX } from "lucide-react-native"
 import type { SetLogResponse } from "@/features/workout/types"
 import { cn } from "@/lib/cn"
 import { formatDayMonth, formatNumber } from "@/lib/format"
@@ -8,8 +9,8 @@ import { BodyMap } from "~/features/workout/components/BodyMap"
 import { Kicker } from "~/components/Kicker"
 import { Screen } from "~/components/Screen"
 import { Button } from "~/components/ui/Button"
-import { Card } from "~/components/ui/Card"
 import { Skeleton } from "~/components/ui/Skeleton"
+import { IconText, StatusBlock } from "~/components/StatusViews"
 import { useSchedule } from "~/features/schedule/api/useSchedule"
 import { useFinishSession, useWorkoutSession } from "~/features/workout/api/useWorkoutSession"
 
@@ -48,14 +49,16 @@ export default function FinishSessionScreen() {
   if (session.isError || !workout) {
     return (
       <Screen>
-        <Card className="gap-3">
-          <Text className="text-sm text-danger">
-            {session.isError ? session.error.message : "Không tìm thấy buổi tập này trong lịch."}
-          </Text>
+        <StatusBlock
+          icon={session.isError ? CloudOff : SearchX}
+          tone="danger"
+          title={session.isError ? "Không tải được buổi tập" : "Không tìm thấy buổi tập"}
+          detail={session.isError ? session.error.message : undefined}
+        >
           <Button variant="secondary" onPress={() => router.dismissTo("/schedule")}>
             Về lịch tuần
           </Button>
-        </Card>
+        </StatusBlock>
       </Screen>
     )
   }
@@ -138,7 +141,7 @@ export default function FinishSessionScreen() {
         )}
       </View>
 
-      {finish.isError && <Text className="mt-3 text-sm text-danger">{finish.error.message}</Text>}
+      {finish.isError && <IconText className="mt-3">{finish.error.message}</IconText>}
 
       <Button
         className="mt-auto w-full"

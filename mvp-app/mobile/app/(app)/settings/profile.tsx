@@ -8,6 +8,7 @@ import { Skeleton } from "~/components/ui/Skeleton"
 import { MetricEditor } from "~/features/profile/components/MetricEditor"
 import { LoadState, SettingsSubLayout } from "~/features/profile/components/SettingsSubLayout"
 import { usePatchProfile, useProfile, useSaveBodyMetric } from "~/features/profile/api/useProfile"
+import { IconText } from "~/components/StatusViews"
 
 /**
  * Cài đặt › Hồ sơ — bản mobile của ProfilePage web. Danh sách dòng CHỈ ĐỌC, bấm "Sửa" mở ô nhập tại
@@ -124,8 +125,10 @@ export default function ProfileScreen() {
         </EditableRow>
       </View>
 
-      {patch.isError && <Text className="mt-4 text-sm text-danger">Lưu thất bại: {patch.error.message}</Text>}
-      {saveBodyMetric.isError && <Text className="mt-4 text-sm text-danger">Lưu thất bại: {saveBodyMetric.error.message}</Text>}
+      {patch.isError && <IconText className="mt-4">Lưu thất bại: {patch.error.message}</IconText>}
+      {saveBodyMetric.isError && (
+        <IconText className="mt-4">Lưu thất bại: {saveBodyMetric.error.message}</IconText>
+      )}
     </SettingsSubLayout>
   )
 }

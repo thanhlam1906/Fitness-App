@@ -1,14 +1,22 @@
 package com.fitness.admin.service;
 
 import com.fitness.admin.dto.AdminDashboardResponse;
+import com.fitness.admin.service.insights.DashboardActivity;
+import com.fitness.admin.service.insights.DashboardActivity.FeedbackDay;
+import com.fitness.admin.service.insights.DashboardActivity.FormCheckCount;
+import com.fitness.admin.service.insights.DashboardActivity.QuestionDay;
 import com.fitness.admin.service.insights.DashboardStats;
 import com.fitness.admin.service.insights.DashboardStats.TemplateRow;
+import com.fitness.assistant.repository.AssistantMessageRepository;
 import com.fitness.content.repository.ProgramTemplateRepository;
+import com.fitness.feedback.repository.CueFeedbackRepository;
 import com.fitness.program.repository.ProgramRepository;
 import com.fitness.program.repository.ScheduledWorkoutRepository;
+import com.fitness.review.repository.VideoReviewRequestRepository;
 import com.fitness.workout.repository.WorkoutSessionRepository;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
@@ -27,19 +35,29 @@ import org.springframework.web.server.ResponseStatusException;
 public class AdminDashboardService {
 
 	private static final Set<Integer> DAYS = Set.of(7, 30, 90);
+	/** Gom theo ngày người dùng thấy. Trùng múi JVM đặt ở FitnessApplication, nhưng ghi rõ để SQL dùng cùng. */
+	private static final ZoneId ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
 	private final WorkoutSessionRepository workoutSessions;
 	private final ScheduledWorkoutRepository scheduledWorkouts;
 	private final ProgramRepository programs;
 	private final ProgramTemplateRepository templates;
+	private final VideoReviewRequestRepository reviewRequests;
+	private final CueFeedbackRepository feedback;
+	private final AssistantMessageRepository assistantMessages;
 
 	public AdminDashboardService(
 			WorkoutSessionRepository workoutSessions, ScheduledWorkoutRepository scheduledWorkouts,
-			ProgramRepository programs, ProgramTemplateRepository templates) {
+			ProgramRepository programs, ProgramTemplateRepository templates,
+			VideoReviewRequestRepository reviewRequests, CueFeedbackRepository feedback,
+			AssistantMessageRepository assistantMessages) {
 		this.workoutSessions = workoutSessions;
 		this.scheduledWorkouts = scheduledWorkouts;
 		this.programs = programs;
 		this.templates = templates;
+		this.reviewRequests = reviewRequests;
+		this.feedback = feedback;
+		this.assistantMessages = assistantMessages;
 	}
 
 	public AdminDashboardResponse get(int days) {
@@ -64,6 +82,33 @@ public class AdminDashboardService {
 						.map(r -> (UUID) r[1])
 						.toList(),
 				scheduledWorkouts.missedTemplateIdsBetween(today.minusDays(days), today),
-				usersByGoal);
+				usersByGoal,
+				activity(days));
+	}
+
+	/** doc/design-tong-quan-v2-v1.md §3: `days` ngày lịch giờ VN, kết thúc hôm nay. */
+	private DashboardActivity.Result activity(int days) {
+		LocalDate today = LocalDate.now(ZONE);
+		Instant since = today.minusDays(days - 1L).atStartOfDay(ZONE).toInstant();
+		String zone = ZONE.getId();
+		return DashboardActivity.compute(today, days,
+				reviewRequests.doneCountsByExerciseSince(since).stream()
+						.map(r -> new FormCheckCount((UUID) r[0], (String) r[1], count(r[2]), count(r[3])))
+						.toList(),
+				feedback.wrongByDayAndSourceSince(since, zone).stream()
+						.map(r -> new FeedbackDay(day(r[0]), (String) r[1], count(r[2])))
+						.toList(),
+				assistantMessages.questionsByDayAndUserSince(since, zone).stream()
+						.map(r -> new QuestionDay(day(r[0]), (UUID) r[1], count(r[2])))
+						.toList());
+	}
+
+	private static long count(Object o) {
+		return ((Number) o).longValue();
+	}
+
+	/** Hibernate trả cột date của truy vấn native là java.sql.Date hay LocalDate tuỳ bản; nhận cả hai. */
+	private static LocalDate day(Object o) {
+		return o instanceof LocalDate d ? d : ((java.sql.Date) o).toLocalDate();
 	}
 }

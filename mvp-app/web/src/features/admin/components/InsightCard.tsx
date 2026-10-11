@@ -23,6 +23,7 @@ export function InsightCard({
   tone,
   title,
   hint,
+  aside,
   className,
   children,
 }: {
@@ -30,6 +31,8 @@ export function InsightCard({
   tone: string
   title: string
   hint: string
+  /** Số lớn ở góc phải tiêu đề, như tổng của khối. */
+  aside?: ReactNode
   className?: string
   children: ReactNode
 }) {
@@ -37,7 +40,8 @@ export function InsightCard({
     <section className={cn("rounded-[var(--radius-md)] bg-[var(--color-surface)] p-4", className)}>
       <div className="flex items-center gap-2.5">
         <IconChip icon={icon} tone={tone} />
-        <h2 className="text-[15px] font-bold">{title}</h2>
+        <h2 className="flex-1 text-[15px] font-bold">{title}</h2>
+        {aside !== undefined && <span className="num text-[22px] leading-none font-bold">{aside}</span>}
       </div>
       <p className="mt-1.5 mb-3 text-xs text-[var(--color-text-muted)]">{hint}</p>
       {children}

@@ -64,15 +64,12 @@ export function checkDetails(c: CheckResult): string[] {
 }
 
 /**
- * Dòng "Để kiểm" của một góc quay, lấy từ hướng dẫn admin nhập. Seed viết "Ngang (bên hông) — kiểm
- * tra …" mà thẻ đã ghi tên góc rồi, nên bỏ phần trước dấu gạch cho khỏi lặp.
+ * Lưu ý admin ghi cho một góc quay. Form admin lưu đúng câu admin gõ (doc/design-anh-bai-tap-v1.md §5),
+ * nên không cắt gì: cắt ở dấu " — " từng làm mất nửa câu khi admin tự gõ dấu đó.
  */
 export function angleNote(guide: FilmingGuide | null, view: ViewCode): string | null {
-  const why = guide?.angles?.find((a) => a.code === view)?.why
-  if (!why) return null
-  // Chỉ cắt ở dấu gạch đầu: phần sau có thể chứa dấu gạch của chính câu admin viết.
-  const i = why.indexOf(" — ")
-  return (i >= 0 ? why.slice(i + 3) : why).trim()
+  const why = guide?.angles?.find((a) => a.code === view)?.why?.trim()
+  return why ? why : null
 }
 
 /** Góc bài cần mà chưa clip nào được gắn: khớp cần kiểm ở góc đó sẽ không chấm được. */

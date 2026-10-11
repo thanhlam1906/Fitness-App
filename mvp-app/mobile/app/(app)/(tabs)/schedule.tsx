@@ -1,7 +1,7 @@
 import type { ReactNode } from "react"
 import { Pressable, Text, View } from "react-native"
 import { useLocalSearchParams, useRouter } from "expo-router"
-import { ChevronLeft, ChevronRight, List } from "lucide-react-native"
+import { CalendarOff, ChevronLeft, ChevronRight, CloudOff, List } from "lucide-react-native"
 import type { ScheduledWorkoutView } from "@/features/schedule/types"
 import {
   dayTitle,
@@ -18,8 +18,8 @@ import { ApiError } from "~/api/client"
 import { Kicker } from "~/components/Kicker"
 import { Screen } from "~/components/Screen"
 import { Button } from "~/components/ui/Button"
-import { Card } from "~/components/ui/Card"
 import { Skeleton } from "~/components/ui/Skeleton"
+import { StatusBlock } from "~/components/StatusViews"
 import { DayCard } from "~/features/schedule/components/DayCard"
 import { useNewDayOnResume, useRefreshOnFocus } from "~/lib/focus"
 import { useSchedule } from "~/features/schedule/api/useSchedule"
@@ -46,22 +46,21 @@ export default function ScheduleScreen() {
 
   if (schedule.isError) {
     if (schedule.error instanceof ApiError && schedule.error.status === 404) {
-      return <NoProgram message="Chưa có chương trình đang chạy." />
+      return <NoProgram title="Chưa có chương trình" />
     }
     return (
       <Screen>
-        <Card className="gap-3">
-          <Text className="text-sm text-danger">Không tải được lịch: {schedule.error.message}</Text>
+        <StatusBlock icon={CloudOff} tone="danger" title="Không tải được lịch" detail={schedule.error.message}>
           <Button variant="secondary" onPress={() => schedule.refetch()}>
             Thử lại
           </Button>
-        </Card>
+        </StatusBlock>
       </Screen>
     )
   }
 
   const { workouts, restDays } = schedule.data!
-  if (workouts.length === 0) return <NoProgram message="Lịch chưa có buổi nào." />
+  if (workouts.length === 0) return <NoProgram title="Lịch chưa có buổi nào" />
 
   const todayIso = toIso(new Date())
   const asked = params.ngay
@@ -148,14 +147,13 @@ export default function ScheduleScreen() {
   )
 }
 
-function NoProgram({ message }: { message: string }) {
+function NoProgram({ title }: { title: string }) {
   const router = useRouter()
   return (
     <Screen>
-      <Card className="items-center gap-3">
-        <Text className="text-center text-sm text-text-muted">{message}</Text>
+      <StatusBlock icon={CalendarOff} title={title}>
         <Button onPress={() => router.push("/program")}>Chọn chương trình</Button>
-      </Card>
+      </StatusBlock>
     </Screen>
   )
 }

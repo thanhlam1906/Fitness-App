@@ -71,7 +71,7 @@ cd mvp-app/mobile && npm install && REACT_NATIVE_PACKAGER_HOSTNAME=<IP> npx expo
 5. Trên iPhone mở Safari, vào `exp://<IP>:8081` rồi chọn mở bằng Expo Go. App tự gọi backend
    ở `http://<IP>:8080`; đặt `EXPO_PUBLIC_API_URL` nếu backend nằm chỗ khác.
 
-Bản mobile có đủ màn người dùng của web trừ chấm form mới bằng camera (chỉ xem kết quả đã chấm).
+Bản mobile có đủ màn người dùng của web. Chấm form trên mobile là quay hoặc chọn video rồi gửi lên chấm; màn camera nhận dạng trực tiếp chỉ có trên web.
 Trang quản trị chỉ có trên web.
 
 ## Test
@@ -107,4 +107,4 @@ trả về clip — kể cả cho admin. Web admin xem được hồ sơ ngườ
   trước khi tin kết quả — xem `mvp-app/analyzer/README.md`.
 - Chỉ squat có `form_checks`. 4 bài còn lại thêm metric mới, không đổi kiến trúc.
 - Nội dung mới là seed giả lập (5 bài, 2 template), chưa phải bộ ~40 bài phát hành.
-- Chưa có đo lường (PostHog/Sentry). App mobile mới có bản iPhone qua Expo Go, chưa có camera chấm form.
+- Chưa có đo lường (PostHog/Sentry). App mobile mới có bản iPhone qua Expo Go, chấm form bằng video quay sẵn, chưa có camera nhận dạng trực tiếp.

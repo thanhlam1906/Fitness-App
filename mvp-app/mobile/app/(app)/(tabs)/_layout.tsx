@@ -1,5 +1,6 @@
 import { Tabs } from "expo-router"
-import { CalendarDays, Camera, MessageCircle, Settings } from "lucide-react-native"
+import { CalendarDays, Camera, Settings } from "lucide-react-native"
+import { AssistantTabIcon } from "~/components/AssistantMark"
 import { colors } from "~/theme"
 
 // Cùng thứ tự, nhãn, icon với UserShell của web. Nhãn tối đa 2 chữ để 4 tab vừa một hàng;
@@ -22,7 +23,7 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="assistant"
-        options={{ title: "Trợ lý", tabBarIcon: ({ color, size }) => <MessageCircle color={color} size={size} /> }}
+        options={{ title: "Trợ lý", tabBarIcon: ({ color, size }) => <AssistantTabIcon color={color} size={size} /> }}
       />
       <Tabs.Screen
         name="form-check"

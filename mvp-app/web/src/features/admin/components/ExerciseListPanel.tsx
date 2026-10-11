@@ -85,6 +85,7 @@ export function ExerciseListPanel({ activeId }: { activeId?: string }) {
               <div className="num mt-px truncate text-[11px] text-[var(--color-text-muted)]">
                 {ex.formCheckCount > 0 ? `${ex.formCheckCount} khớp cần kiểm` : "chưa chấm form"}
                 {` · sửa ${formatEditedAt(ex.updatedAt)}`}
+                {!ex.hasStillImage && <span className="text-[var(--color-warn)]"> · chưa có ảnh</span>}
                 {!ex.active && " · đã tắt"}
               </div>
             </Link>
