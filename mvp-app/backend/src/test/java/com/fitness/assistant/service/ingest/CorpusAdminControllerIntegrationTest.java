@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.fitness.assistant.dto.ChunkPreviewResponse;
@@ -87,9 +88,48 @@ class CorpusAdminControllerIntegrationTest extends PostgresIntegrationTest {
 		var resp = post(admin(), name, "hello".getBytes(StandardCharsets.UTF_8));
 
 		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-		assertThat(resp.getBody()).contains("không phải PDF");
+		assertThat(resp.getBody()).contains("chỉ nhận file PDF hoặc Markdown");
 		assertThat(jdbc.queryForObject("SELECT count(*) FROM corpus_uploads WHERE file_name = ?", Integer.class, name))
 				.isZero();
+	}
+
+	@Test
+	void markdown_readyAtOnce_withoutExtractor_bomStripped() {
+		HttpHeaders admin = admin();
+		// BOM như Notepad lưu: không bỏ thì "## Giấc ngủ" đầu file không thành tiêu đề.
+		byte[] bytes = ((char) 0xFEFF + MARKDOWN.substring(MARKDOWN.indexOf("## "))).getBytes(StandardCharsets.UTF_8);
+
+		var resp = rest.exchange(BASE, HttpMethod.POST, multipart(admin, unique("bai-5.MD"), bytes),
+				UploadRowResponse.class);
+
+		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.ACCEPTED);
+		assertThat(resp.getBody().status()).isEqualTo("READY");
+		var detail = rest.exchange(BASE + "/" + resp.getBody().id(), HttpMethod.GET, new HttpEntity<>(admin),
+				UploadDetailResponse.class).getBody();
+		assertThat(detail.chunks()).extracting(ChunkPreviewResponse::heading)
+				.containsExactly("Giấc ngủ", "Tuần giảm tải");
+		verifyNoInteractions(extractor);
+	}
+
+	@Test
+	void markdown_notUtf8_orNul_orBlank_is400_andNothingSaved() {
+		HttpHeaders admin = admin();
+		String latin1 = unique("latin1.md");
+		String utf16 = unique("utf16.md");
+		String blank = unique("trong.md");
+
+		var notUtf8 = post(admin, latin1, "## Bài tập".getBytes(StandardCharsets.ISO_8859_1));
+		var withNul = post(admin, utf16, "## Sleep".getBytes(StandardCharsets.UTF_16LE));
+		var empty = post(admin, blank, " \n\n".getBytes(StandardCharsets.UTF_8));
+
+		assertThat(notUtf8.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		assertThat(notUtf8.getBody()).contains("UTF-8");
+		assertThat(withNul.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		assertThat(withNul.getBody()).contains("UTF-8");
+		assertThat(empty.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		assertThat(empty.getBody()).contains(CorpusUploadService.EMPTY_MARKDOWN);
+		assertThat(jdbc.queryForObject("SELECT count(*) FROM corpus_uploads WHERE file_name IN (?, ?, ?)",
+				Integer.class, latin1, utf16, blank)).isZero();
 	}
 
 	@Test

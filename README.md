@@ -40,7 +40,7 @@ cd mvp-app/web     && npm install && npm run dev # http://localhost:5173
 # TN2 (chấm video) — chỉ cần khi thử luồng gửi clip
 cd mvp-app && docker compose --profile tn2 up -d analyzer
 
-# Kho kiến thức trợ lý — chỉ cần khi thả PDF ở màn admin "Kho kiến thức"
+# Kho kiến thức trợ lý — chỉ cần khi thả PDF ở màn admin "Kho kiến thức" (file .md không cần)
 docker compose -f mvp-app/docker-compose.yml --profile corpus up -d pdf-hybrid
 ```
 

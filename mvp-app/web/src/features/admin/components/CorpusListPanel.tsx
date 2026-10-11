@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router"
 import { ListRowsSkeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/cn"
 import { formatDate } from "@/lib/format"
-import { splitPdfs } from "@/features/admin/utils/corpusFiles"
+import { splitFiles } from "@/features/admin/utils/corpusFiles"
 import type { UploadStatus } from "@/features/admin/types"
 import { useDocuments, useUploadPdf, useUploads } from "@/features/admin/api/useCorpus"
 
@@ -63,9 +63,9 @@ function DropZone() {
 
   // Gửi lần lượt từng file: backend cũng trích lần lượt, gửi song song không nhanh hơn.
   async function add(files: File[]) {
-    const { pdfs, rejected } = splitPdfs(files)
+    const { accepted, rejected } = splitFiles(files)
     const failed: string[] = []
-    for (const file of pdfs) {
+    for (const file of accepted) {
       try {
         const row = await upload.mutateAsync(file)
         navigate(`/admin/corpus/uploads/${row.id}`)
@@ -80,7 +80,7 @@ function DropZone() {
     <div
       role="button"
       tabIndex={0}
-      aria-label="Thả file PDF vào đây hoặc bấm để chọn"
+      aria-label="Thả file PDF hoặc Markdown vào đây hoặc bấm để chọn"
       onClick={(e) => {
         if (e.target !== input.current) input.current?.click()
       }}
@@ -107,7 +107,7 @@ function DropZone() {
           : "border-[var(--color-border)] hover:border-[var(--color-accent)] hover:bg-[var(--color-accent-tint)]",
       )}
     >
-      <div className="text-sm font-bold">Thả file PDF vào đây</div>
+      <div className="text-sm font-bold">Thả file PDF hoặc Markdown (.md) vào đây</div>
       <div className="mt-1 text-xs text-[var(--color-text-muted)]">
         {upload.isPending ? "Đang gửi…" : "hoặc bấm để chọn · nhiều file cùng lúc · tối đa 60 MB mỗi file"}
       </div>
@@ -119,7 +119,7 @@ function DropZone() {
       <input
         ref={input}
         type="file"
-        accept="application/pdf"
+        accept=".pdf,.md"
         multiple
         hidden
         onChange={(e) => {

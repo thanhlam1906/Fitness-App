@@ -10,6 +10,8 @@ import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,6 +20,7 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -32,7 +35,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * Thả PDF → trích nền → chờ duyệt → vào kho (doc/design-nap-tai-lieu-v1.md §3, §5).
+ * Thả PDF → trích nền → chờ duyệt → vào kho (doc/design-nap-tai-lieu-v1.md §3, §5). File .md bỏ qua bước trích.
  * corpus_uploads chỉ giữ file CHƯA vào kho: duyệt hoặc bỏ thì xoá dòng.
  */
 @Service
@@ -40,6 +43,8 @@ public class CorpusUploadService {
 
 	static final String INTERRUPTED = "Bị gián đoạn khi máy chủ khởi động lại. Thả lại file.";
 	static final String NO_TEXT = "Không trích được chữ nào từ file này.";
+	static final String EMPTY_MARKDOWN = "file trống, không có chữ nào.";
+	static final String NOT_UTF8 = "không đọc được chữ, lưu lại file dạng UTF-8 rồi thả lại.";
 	private static final byte[] PDF_MAGIC = "%PDF-".getBytes(StandardCharsets.US_ASCII);
 	private static final Logger log = LoggerFactory.getLogger(CorpusUploadService.class);
 	private static final String SELECT_ROW = """
@@ -68,7 +73,10 @@ public class CorpusUploadService {
 		if (fileName.isEmpty()) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu tên file.");
 		}
-		Path pdf = saveIfPdf(file, fileName);
+		if (fileName.toLowerCase(Locale.ROOT).endsWith(".md")) {
+			return acceptMarkdown(file, fileName);
+		}
+		Path pdf = saveIfPdf(file);
 		try {
 			UUID id = jdbc.queryForObject(
 					"INSERT INTO corpus_uploads (file_name, status) VALUES (?, 'PROCESSING') RETURNING id",
@@ -82,6 +90,20 @@ public class CorpusUploadService {
 			deleteQuietly(pdf);
 			throw e;
 		}
+	}
+
+	// Markdown đã là chữ nên không qua máy trích: PDF đổi font giữa chữ thì Docling chèn dấu cách ("T ổ ng").
+	// Vào thẳng Chờ duyệt, vẫn phải duyệt như PDF.
+	private UploadRowResponse acceptMarkdown(MultipartFile file, String fileName) {
+		// Câu lỗi không kèm tên file: web tự ghép "tên file: " vào trước.
+		String markdown = readUtf8(file);
+		if (CorpusLoader.chunk(markdown).isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, EMPTY_MARKDOWN);
+		}
+		UUID id = jdbc.queryForObject(
+				"INSERT INTO corpus_uploads (file_name, status, markdown) VALUES (?, 'READY', ?) RETURNING id",
+				UUID.class, fileName, markdown);
+		return row(id);
 	}
 
 	void process(UUID id, Path pdf) {
@@ -163,7 +185,7 @@ public class CorpusUploadService {
 				stopping ? INTERRUPTED : error, id);
 	}
 
-	private static Path saveIfPdf(MultipartFile file, String fileName) {
+	private static Path saveIfPdf(MultipartFile file) {
 		Path pdf = null;
 		try {
 			// Tên file tạm ngẫu nhiên, không lấy tên người gửi: tên đó chỉ để hiện và làm source. Còn vì
@@ -176,13 +198,32 @@ public class CorpusUploadService {
 			}
 			if (!Arrays.equals(head, PDF_MAGIC)) {
 				deleteQuietly(pdf);
-				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, fileName + ": không phải PDF, chỉ nhận file PDF.");
+				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "chỉ nhận file PDF hoặc Markdown (.md).");
 			}
 			return pdf;
 		} catch (IOException e) {
 			deleteQuietly(pdf);
 			throw new UncheckedIOException(e);
 		}
+	}
+
+	private static String readUtf8(MultipartFile file) {
+		String text;
+		try {
+			text = StandardCharsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(file.getBytes())).toString();
+		} catch (CharacterCodingException e) {
+			text = null;
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+		// Ký tự NUL: file lưu UTF-16 vẫn giải mã được, nhưng Postgres không nhận NUL trong cột text (lỗi 500).
+		if (text == null || text.indexOf(0) >= 0) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, NOT_UTF8);
+		}
+		// Notepad lưu UTF-8 kèm BOM: để nguyên thì tiêu đề dòng đầu không khớp "^#", mất một mục.
+		// CRLF về LF: bộ cắt tách mục dài theo dòng trống "\n\n", CRLF thì thành cắt từng dòng.
+		String lf = text.replace("\r\n", "\n");
+		return !lf.isEmpty() && lf.charAt(0) == 0xFEFF ? lf.substring(1) : lf;
 	}
 
 	private static void deleteQuietly(Path pdf) {

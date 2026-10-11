@@ -19,7 +19,7 @@ export function DocumentDetail({ id }: { id: string }) {
   const flagged = new Set(d.wrongAnswers.flatMap((w) => w.chunkOrds))
   const onRemove = () => {
     const ok = window.confirm(
-      `Gỡ “${d.title}” khỏi trợ lý?\n\nTrợ lý thôi dùng ${d.chunkCount} đoạn này từ câu hỏi tiếp theo. Muốn dùng lại phải thả lại PDF.`,
+      `Gỡ “${d.title}” khỏi trợ lý?\n\nTrợ lý thôi dùng ${d.chunkCount} đoạn này từ câu hỏi tiếp theo. Muốn dùng lại phải thả lại file.`,
     )
     if (ok) remove.mutate(id, { onSuccess: () => navigate("/admin/corpus") })
   }
