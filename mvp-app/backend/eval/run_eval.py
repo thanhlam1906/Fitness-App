@@ -8,6 +8,7 @@ Dùng: python run_eval.py <base_url> <email> <password> <eval_file> <out_file>
 import io
 import json
 import sys
+import time
 import urllib.request
 
 
@@ -36,6 +37,9 @@ def main():
         except Exception as e:
             res = {"answer": f"LỖI: {e}", "blocked": None, "sourceTitles": [], "toolsCalled": [], "guardResult": "ERROR"}
         by_category.setdefault(case["category"], []).append((case, res))
+        # Backend giới hạn 10 câu hỏi/phút mỗi người (doc/design-chiu-loi-v1.md §5): gửi dồn thì câu thứ 11
+        # trở đi nhận 429 và thành dòng "LỖI" trong báo cáo. 6,5 s/câu giữ dưới 10 câu/phút.
+        time.sleep(6.5)
 
     for category, items in by_category.items():
         out.write(f"\n## {category} ({len(items)} câu)\n\n")

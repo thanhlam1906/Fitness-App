@@ -10,6 +10,8 @@
 python run_eval.py http://localhost:8080 <email> <password> assistant-eval-v1.jsonl report-vN.md
 ```
 
+Script nghỉ 6,5 s giữa các câu cho khớp giới hạn 10 câu/phút mỗi người của backend, nên một lượt 44 câu chạy lâu thêm khoảng 5 phút.
+
 Ghi kết quả ra file mới mỗi lần (không đè `report-v1.md`) — so sánh được giữa
 các lần đổi retrieval/prompt, giống bộ clip regression của analyzer.
 
