@@ -115,6 +115,10 @@ app:
 # doc/design-chiu-loi-v1.md §5. Đếm MỌI lần gọi (cả đúng mật khẩu): người thật không đăng nhập 5 lần một phút.
 resilience4j:
   ratelimiter:
+    # Mỗi khoá (email + IP, IP, người dùng) là một bộ đếm riêng; metrics thêm 2 gauge gắn tên khoá cho từng bộ.
+    # Bị gửi email bịa thì RAM phình nhanh gấp ~3 lần và email lộ vào metrics. Breaker, bulkhead giữ metrics.
+    metrics:
+      enabled: false
     configs:
       login:
         limit-for-period: 5
