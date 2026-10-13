@@ -4,7 +4,11 @@ import com.fitness.auth.entity.Role;
 import com.fitness.auth.entity.User;
 import com.fitness.auth.repository.UserRepository;
 import com.fitness.auth.service.JwtIssuer;
+import com.fitness.common.RateLimits;
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpEntity;
@@ -40,6 +44,20 @@ public abstract class PostgresIntegrationTest {
 	private UserRepository userRepository;
 	@Autowired
 	private JwtIssuer jwtIssuer;
+	@Autowired
+	private RateLimits rateLimits;
+	@Autowired
+	private CircuitBreakerRegistry circuitBreakers;
+
+	/**
+	 * Bộ đếm và breaker sống suốt context Spring, mà context dùng chung giữa các test class (cả bộ test gọi
+	 * /auth/register ~27 lần từ cùng 127.0.0.1): mỗi test bắt đầu sạch, không nới giới hạn cho test.
+	 */
+	@BeforeEach
+	void resetResilience() {
+		rateLimits.clearAll();
+		circuitBreakers.getAllCircuitBreakers().forEach(CircuitBreaker::reset);
+	}
 
 	@DynamicPropertySource
 	static void datasourceProperties(DynamicPropertyRegistry registry) {

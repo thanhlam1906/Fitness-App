@@ -103,3 +103,20 @@ app:
   # Giới hạn mỗi lần gọi server hybrid (một lần tối đa 50 trang). Đo 10-02 trên CPU: trang khó
   # 17–50 s, lô 50 trang của sách 288 trang mất ~27 phút → 60 phút còn dư.
   pdf-hybrid-timeout: ${PDF_HYBRID_TIMEOUT:PT60M}
+
+# doc/design-chiu-loi-v1.md §5. Đếm MỌI lần gọi (cả đúng mật khẩu): người thật không đăng nhập 5 lần một phút.
+resilience4j:
+  ratelimiter:
+    configs:
+      login:
+        limit-for-period: 5
+        limit-refresh-period: 1m
+        timeout-duration: 0
+      register:
+        limit-for-period: 30
+        limit-refresh-period: 1h
+        timeout-duration: 0
+      assistant:
+        limit-for-period: 10
+        limit-refresh-period: 1m
+        timeout-duration: 0
