@@ -133,9 +133,10 @@ resilience4j:
         limit-refresh-period: 1m
         timeout-duration: 0
   circuitbreaker:
-    instances:
-      # Chung cho chat và embedding: cùng nhà cung cấp, cùng sập (doc/design-chiu-loi-v1.md §4.2).
-      openai:
+    configs:
+      # Cấu hình mẫu chung cho hai breaker bên dưới (doc/design-chiu-loi-v1.md §4.2). Tên khác tên instance:
+      # resilience4j 2.4.0 báo "Circular reference" nếu instance `openai` kế thừa config cũng tên `openai`.
+      openai-shared:
         sliding-window-type: COUNT_BASED
         sliding-window-size: 10
         # Mặc định 100: ít người dùng thì breaker không bao giờ đủ số lần gọi để mở.
@@ -149,6 +150,13 @@ resilience4j:
         register-health-indicator: true
         # OpenAI sập mà health DOWN thì hệ thống báo sập khởi động lại backend vô ích.
         allow-health-indicator-to-fail: false
+    instances:
+      # Tách chat và embedding: embedding hỏng hay admin duyệt lỗi không được làm chat 503 với mọi người,
+      # trợ lý vẫn trả lời bằng FTS. OpenAI sập hẳn thì cả hai cùng mở.
+      openai:
+        base-config: openai-shared
+      openai-embedding:
+        base-config: openai-shared
   bulkhead:
     instances:
       # Tomcat có 200 luồng: OpenAI treo thì tối đa 20 luồng kẹt ở trợ lý, còn 180 cho đăng nhập, Lịch.

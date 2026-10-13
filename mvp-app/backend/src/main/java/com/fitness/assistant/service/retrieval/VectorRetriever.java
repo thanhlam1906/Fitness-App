@@ -34,7 +34,7 @@ public class VectorRetriever {
 	public VectorRetriever(JdbcTemplate jdbc, EmbeddingModel embeddingModel, CircuitBreakerRegistry circuitBreakers) {
 		this.jdbc = jdbc;
 		this.embeddingModel = embeddingModel;
-		this.openAi = circuitBreakers.circuitBreaker("openai");
+		this.openAi = circuitBreakers.circuitBreaker("openai-embedding");
 	}
 
 	public List<FtsRetriever.Chunk> search(String question, int limit) {

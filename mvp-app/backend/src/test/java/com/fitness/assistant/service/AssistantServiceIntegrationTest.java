@@ -159,6 +159,23 @@ class AssistantServiceIntegrationTest extends PostgresIntegrationTest {
 		assertThat(answer.sourceTitles()).contains("Tài liệu kiểm thử FTS dự phòng");
 	}
 
+	/** Tìm theo nghĩa hỏng hẳn mà chat vẫn chạy: trợ lý phải trả lời tiếp bằng FTS, không 503 sau vài câu. */
+	@Test
+	void embeddingHongHan_chatVanChay_vanTraLoiMoiCau() {
+		when(embeddingModel.embed(anyString())).thenThrow(new TransientAiException("HTTP 503 - giả"));
+		UUID userId = newAuthedUser(Role.USER).userId();
+		asUser(userId);
+		stubModelReply("Giữ lưng thẳng khi đứng lên, không cong người.");
+
+		for (int i = 0; i < 6; i++) {
+			assertThat(assistantService.ask(userId, UUID.randomUUID(), "squat đúng kỹ thuật là thế nào").guardResult())
+					.isEqualTo("OK");
+		}
+
+		assertThat(circuitBreakers.circuitBreaker("openai-embedding").getState()).isEqualTo(CircuitBreaker.State.OPEN);
+		assertThat(circuitBreakers.circuitBreaker("openai").getState()).isEqualTo(CircuitBreaker.State.CLOSED);
+	}
+
 	@Test
 	void cauThu11TrongMotPhut_bi429_khongLuuCauHoi() {
 		UUID userId = newAuthedUser(Role.USER).userId();

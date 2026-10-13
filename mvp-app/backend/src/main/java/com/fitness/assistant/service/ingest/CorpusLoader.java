@@ -40,7 +40,7 @@ public class CorpusLoader {
 	public CorpusLoader(JdbcTemplate jdbc, EmbeddingModel embeddingModel, CircuitBreakerRegistry circuitBreakers) {
 		this.jdbc = jdbc;
 		this.embeddingModel = embeddingModel;
-		this.openAi = circuitBreakers.circuitBreaker("openai");
+		this.openAi = circuitBreakers.circuitBreaker("openai-embedding");
 	}
 
 	/**
@@ -59,7 +59,8 @@ public class CorpusLoader {
 			for (int from = 0; from < chunks.size(); from += EMBED_BATCH) {
 				List<String> batch = chunks.subList(from, Math.min(chunks.size(), from + EMBED_BATCH)).stream()
 						.map(c -> c[1]).toList();
-				// Qua breaker: OpenAI đang sập thì báo lỗi ngay (khối catch dưới), không chờ timeout từng lô.
+				// Qua breaker "openai-embedding": OpenAI đang sập thì báo lỗi ngay (khối catch dưới), không chờ
+				// timeout từng lô. Chỉ mở breaker embedding, trợ lý vẫn trả lời bằng FTS.
 				openAi.executeSupplier(() -> embeddingModel.embedForResponse(batch))
 						.getResults().forEach(r -> vectors.add(r.getOutput()));
 			}

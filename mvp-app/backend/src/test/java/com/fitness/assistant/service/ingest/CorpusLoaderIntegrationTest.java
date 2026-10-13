@@ -131,7 +131,7 @@ class CorpusLoaderIntegrationTest extends PostgresIntegrationTest {
 
 	@Test
 	void publish_breakerOpenAiDangMo_bao502_khongGoiOpenAi() {
-		circuitBreakers.circuitBreaker("openai").transitionToOpenState();
+		circuitBreakers.circuitBreaker("openai-embedding").transitionToOpenState();
 		clearInvocations(embeddingModel);
 
 		assertThatThrownBy(() -> loader.publish(UUID.randomUUID() + "-bai-test.pdf", "Bài kiểm thử", MARKDOWN))

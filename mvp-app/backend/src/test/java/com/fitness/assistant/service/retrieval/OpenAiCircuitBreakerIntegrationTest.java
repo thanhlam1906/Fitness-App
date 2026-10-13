@@ -20,7 +20,7 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-/** Breaker "openai" (doc/design-chiu-loi-v1.md §4): mở sau chuỗi lỗi, chặn gọi tiếp, không kéo health xuống DOWN. */
+/** Breaker "openai-embedding" và "openai" (doc/design-chiu-loi-v1.md §4): mở sau chuỗi lỗi, chặn gọi tiếp, không kéo health xuống DOWN. */
 class OpenAiCircuitBreakerIntegrationTest extends PostgresIntegrationTest {
 
 	@Autowired
@@ -38,7 +38,9 @@ class OpenAiCircuitBreakerIntegrationTest extends PostgresIntegrationTest {
 		for (int i = 0; i < 5; i++) {
 			assertThatThrownBy(() -> vectorRetriever.search("câu hỏi", 5)).isInstanceOf(TransientAiException.class);
 		}
-		assertThat(circuitBreakers.circuitBreaker("openai").getState()).isEqualTo(CircuitBreaker.State.OPEN);
+		assertThat(circuitBreakers.circuitBreaker("openai-embedding").getState()).isEqualTo(CircuitBreaker.State.OPEN);
+		// Embedding hỏng không được kéo chat theo: hai breaker độc lập.
+		assertThat(circuitBreakers.circuitBreaker("openai").getState()).isEqualTo(CircuitBreaker.State.CLOSED);
 		clearInvocations(embeddingModel);
 
 		assertThatThrownBy(() -> vectorRetriever.search("câu hỏi", 5)).isInstanceOf(CallNotPermittedException.class);
@@ -49,6 +51,7 @@ class OpenAiCircuitBreakerIntegrationTest extends PostgresIntegrationTest {
 	@Test
 	void breakerMo_healthVanUp() {
 		circuitBreakers.circuitBreaker("openai").transitionToOpenState();
+		circuitBreakers.circuitBreaker("openai-embedding").transitionToOpenState();
 
 		var resp = rest.getForEntity("/actuator/health", java.util.Map.class);
 
