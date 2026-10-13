@@ -4,12 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fitness.assistant.dto.PublishResponse;
 import com.fitness.support.FakeEmbeddings;
 import com.fitness.support.PostgresIntegrationTest;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,6 +51,8 @@ class CorpusLoaderIntegrationTest extends PostgresIntegrationTest {
 	private CorpusLoader loader;
 	@Autowired
 	private JdbcTemplate jdbc;
+	@Autowired
+	private CircuitBreakerRegistry circuitBreakers;
 	@MockitoBean
 	private EmbeddingModel embeddingModel;
 
@@ -122,5 +127,16 @@ class CorpusLoaderIntegrationTest extends PostgresIntegrationTest {
 						e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_GATEWAY));
 		assertThat(jdbc.queryForList("SELECT title FROM documents WHERE source = ?", String.class, source))
 				.containsExactly("Bản đang dùng");
+	}
+
+	@Test
+	void publish_breakerOpenAiDangMo_bao502_khongGoiOpenAi() {
+		circuitBreakers.circuitBreaker("openai").transitionToOpenState();
+		clearInvocations(embeddingModel);
+
+		assertThatThrownBy(() -> loader.publish(UUID.randomUUID() + "-bai-test.pdf", "Bài kiểm thử", MARKDOWN))
+				.isInstanceOfSatisfying(ResponseStatusException.class,
+						e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_GATEWAY));
+		verify(embeddingModel, never()).embedForResponse(anyList());
 	}
 }

@@ -2,6 +2,8 @@ package com.fitness.assistant.service.ingest;
 
 import com.fitness.assistant.dto.PublishResponse;
 import com.fitness.assistant.service.retrieval.EmbeddingFormat;
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -33,10 +35,12 @@ public class CorpusLoader {
 
 	private final JdbcTemplate jdbc;
 	private final EmbeddingModel embeddingModel;
+	private final CircuitBreaker openAi;
 
-	public CorpusLoader(JdbcTemplate jdbc, EmbeddingModel embeddingModel) {
+	public CorpusLoader(JdbcTemplate jdbc, EmbeddingModel embeddingModel, CircuitBreakerRegistry circuitBreakers) {
 		this.jdbc = jdbc;
 		this.embeddingModel = embeddingModel;
+		this.openAi = circuitBreakers.circuitBreaker("openai");
 	}
 
 	/**
@@ -55,7 +59,9 @@ public class CorpusLoader {
 			for (int from = 0; from < chunks.size(); from += EMBED_BATCH) {
 				List<String> batch = chunks.subList(from, Math.min(chunks.size(), from + EMBED_BATCH)).stream()
 						.map(c -> c[1]).toList();
-				embeddingModel.embedForResponse(batch).getResults().forEach(r -> vectors.add(r.getOutput()));
+				// Qua breaker: OpenAI đang sập thì báo lỗi ngay (khối catch dưới), không chờ timeout từng lô.
+				openAi.executeSupplier(() -> embeddingModel.embedForResponse(batch))
+						.getResults().forEach(r -> vectors.add(r.getOutput()));
 			}
 		} catch (RuntimeException e) {
 			throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,

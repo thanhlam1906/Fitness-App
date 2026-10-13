@@ -19,6 +19,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.retry.TransientAiException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -121,6 +122,27 @@ class AssistantServiceIntegrationTest extends PostgresIntegrationTest {
 
 		AssistantMessage saved = messages.findByUserIdAndThreadIdOrderByCreatedAtAsc(userId, threadId).get(1);
 		assertThat(saved.getChunkIds()).contains(chunkId);
+	}
+
+	@Test
+	void embeddingLoi_vanTraLoiBangTaiLieuTimTheoTuKhoa() {
+		String content = "Giãn cơ tĩnh sau buổi tập giúp cơ thả lỏng, nhất là sau những bài squat nặng "
+				+ "và bài kéo lưng làm cơ đùi sau căng cứng suốt buổi.";
+		UUID docId = jdbc.queryForObject(
+				"INSERT INTO documents (title, source, license) VALUES (?, ?, 'unknown') RETURNING id",
+				UUID.class, "Tài liệu kiểm thử FTS dự phòng", "test-" + UUID.randomUUID());
+		jdbc.update("INSERT INTO doc_chunks (document_id, ord, heading_path, content) VALUES (?, 0, 'Giãn cơ', ?)",
+				docId, content);
+		when(embeddingModel.embed(anyString())).thenThrow(new TransientAiException("HTTP 503 - giả"));
+		UUID userId = newAuthedUser(Role.USER).userId();
+		asUser(userId);
+		stubModelReply("Giãn cơ tĩnh sau buổi tập giúp cơ thả lỏng, nhất là sau những bài squat nặng.");
+
+		// Hỏi không dấu, cùng lý do như ask_answerCitingChunk_persistsThatChunkId.
+		AssistantService.Answer answer = assistantService.ask(userId, UUID.randomUUID(), "gian co tinh sau buoi tap");
+
+		assertThat(answer.guardResult()).isEqualTo("OK");
+		assertThat(answer.sourceTitles()).contains("Tài liệu kiểm thử FTS dự phòng");
 	}
 
 	private void stubModelReply(String text) {

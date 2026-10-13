@@ -83,6 +83,10 @@ management:
     health:
       # bật chi tiết (gồm trạng thái DB) khi gọi có xác thực — an toàn hơn "always"
       show-details: when-authorized
+  health:
+    # Breaker hiện trong health nhưng không làm backend DOWN (allow-health-indicator-to-fail bên dưới).
+    circuitbreakers:
+      enabled: true
 
 app:
   # concept-backend-v1.md §9: tối thiểu 32 byte. Default chỉ để dev local chạy được
@@ -124,3 +128,20 @@ resilience4j:
         limit-for-period: 10
         limit-refresh-period: 1m
         timeout-duration: 0
+  circuitbreaker:
+    instances:
+      # Chung cho chat và embedding: cùng nhà cung cấp, cùng sập (doc/design-chiu-loi-v1.md §4.2).
+      openai:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        # Mặc định 100: ít người dùng thì breaker không bao giờ đủ số lần gọi để mở.
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        # Gọi chậm cũng tính: đây là phần "giới hạn thời gian" ở mức dịch vụ, không đổi luồng như TimeLimiter.
+        slow-call-duration-threshold: 15s
+        slow-call-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 2
+        register-health-indicator: true
+        # OpenAI sập mà health DOWN thì hệ thống báo sập khởi động lại backend vô ích.
+        allow-health-indicator-to-fail: false
