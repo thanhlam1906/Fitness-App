@@ -8,6 +8,13 @@ import com.fitness.assistant.service.retrieval.FtsRetriever;
 import com.fitness.assistant.service.retrieval.HybridRetriever;
 import com.fitness.assistant.service.tools.AssistantTools;
 import com.fitness.assistant.service.tools.ToolCallLog;
+import com.fitness.common.RateLimits;
+import io.github.resilience4j.bulkhead.Bulkhead;
+import io.github.resilience4j.bulkhead.BulkheadFullException;
+import io.github.resilience4j.bulkhead.BulkheadRegistry;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
@@ -17,8 +24,14 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.retry.TransientAiException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Điều phối trợ lý — concept-chatbot-v1.md §4:
@@ -58,23 +71,34 @@ public class AssistantService {
 			"Mình chưa đủ tự tin về số liệu ở câu trả lời này nên không đưa ra để tránh sai. "
 			+ "Bạn hỏi lại cụ thể hơn được không?";
 
+	static final String UNAVAILABLE_MESSAGE = "Trợ lý đang gián đoạn, bạn thử lại sau ít phút.";
+
+	private static final Logger log = LoggerFactory.getLogger(AssistantService.class);
+
 	private final ChatClient chatClient;
 	private final SafetyGate safetyGate;
 	private final HybridRetriever retriever;
 	private final ToolCallLog toolCallLog;
 	private final NumberGuard numberGuard;
 	private final AssistantMessageRepository messages;
+	private final RateLimits rateLimits;
+	private final Bulkhead bulkhead;
+	private final CircuitBreaker openAi;
 
 	public AssistantService(
 			ChatClient.Builder chatClientBuilder, SafetyGate safetyGate, HybridRetriever retriever,
 			AssistantTools assistantTools, ToolCallLog toolCallLog, NumberGuard numberGuard,
-			AssistantMessageRepository messages) {
+			AssistantMessageRepository messages, RateLimits rateLimits, BulkheadRegistry bulkheads,
+			CircuitBreakerRegistry circuitBreakers) {
 		this.chatClient = chatClientBuilder.defaultSystem(SYSTEM_PROMPT).defaultTools(assistantTools).build();
 		this.safetyGate = safetyGate;
 		this.retriever = retriever;
 		this.toolCallLog = toolCallLog;
 		this.numberGuard = numberGuard;
 		this.messages = messages;
+		this.rateLimits = rateLimits;
+		this.bulkhead = bulkheads.bulkhead("assistant");
+		this.openAi = circuitBreakers.circuitBreaker("openai");
 	}
 
 	/** messageId: dòng ASSISTANT đã lưu — web gắn nút "cái này sai" vào đúng câu trả lời này. */
@@ -85,6 +109,8 @@ public class AssistantService {
 
 	/** Chưa có threadId = cuộc trò chuyện mới; web gửi lại threadId cũ để nối tiếp. */
 	public AskResponse ask(UUID userId, AskRequest request) {
+		// Trước khi lưu câu hỏi: câu bị chặn vì hỏi quá nhanh không vào lịch sử trò chuyện.
+		rateLimits.check("assistant", userId.toString());
 		UUID threadId = request.threadId() != null ? request.threadId() : UUID.randomUUID();
 		Answer answer = ask(userId, threadId, request.question());
 		return new AskResponse(
@@ -104,6 +130,17 @@ public class AssistantService {
 					List.of(), List.of(), "BLOCKED_D");
 		}
 
+		try {
+			// Bulkhead: OpenAI treo thì chỉ tối đa 20 luồng kẹt ở đây, phần còn lại của app vẫn có luồng.
+			return bulkhead.executeSupplier(() -> answerWithModel(userId, threadId, question));
+		} catch (BulkheadFullException | CallNotPermittedException | TransientAiException | ResourceAccessException e) {
+			// Lỗi tạm (đã thử lại) hoặc đang tự bảo vệ. Lỗi 4xx (sai key, hết quota) KHÔNG bắt: lỗi cấu hình phải lộ ra.
+			log.warn("Trợ lý không gọi được OpenAI: {}", e.toString());
+			throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, UNAVAILABLE_MESSAGE, e);
+		}
+	}
+
+	private Answer answerWithModel(UUID userId, UUID threadId, String question) {
 		toolCallLog.clear();
 		try {
 			List<FtsRetriever.Chunk> chunks = retriever.search(question, 5);
@@ -127,7 +164,7 @@ public class AssistantService {
 					: "\n\n---\nTài liệu tham khảo (chỉ dùng đúng nội dung này, trích nguồn nếu trả lời "
 							+ "dựa vào đây):\n" + knowledgeContext);
 
-			String answer = chatClient.prompt().user(userPrompt).call().content();
+			String answer = openAi.executeSupplier(() -> chatClient.prompt().user(userPrompt).call().content());
 			if (answer == null) {
 				answer = "";
 			}
