@@ -224,6 +224,22 @@ class AuthControllerIntegrationTest extends PostgresIntegrationTest {
 				.isEqualTo(HttpStatus.CREATED);
 	}
 
+	/** Một máy gửi email bịa liên tục: chặn theo IP trước khi mỗi email kịp thành một bộ đếm mới. */
+	@Test
+	void dangNhap61EmailKhacCungIp_bi429_ipKhacVanVao() {
+		for (int i = 0; i < 60; i++) {
+			assertThat(loginFrom("203.0.113.9", new LoginRequest(uniqueEmail(), "wrong-password")).getStatusCode())
+					.isEqualTo(HttpStatus.UNAUTHORIZED);
+		}
+
+		var blocked = loginFrom("203.0.113.9", new LoginRequest(uniqueEmail(), "wrong-password"));
+		assertThat(blocked.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+		assertThat(blocked.getBody().get("message")).isEqualTo("Bạn thử quá nhiều lần, chờ 1 phút rồi thử lại.");
+
+		assertThat(loginFrom("203.0.113.10", new LoginRequest(uniqueEmail(), "wrong-password")).getStatusCode())
+				.isEqualTo(HttpStatus.UNAUTHORIZED);
+	}
+
 	/** Email thành tên bộ đếm giữ trong RAM tới lượt xoá mỗi giờ: chuỗi dài phải bị chặn từ @Valid. */
 	@Test
 	void dangNhapEmailQua254KyTu_bi400_khongTaoBoDem() {
@@ -231,6 +247,14 @@ class AuthControllerIntegrationTest extends PostgresIntegrationTest {
 				new LoginRequest("a".repeat(250) + "@x.com", "correct-password"), java.util.Map.class);
 
 		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+	}
+
+	@SuppressWarnings("rawtypes")
+	private org.springframework.http.ResponseEntity<java.util.Map> loginFrom(String ip, LoginRequest request) {
+		HttpHeaders headers = new HttpHeaders();
+		headers.set("X-Forwarded-For", ip);
+		return rest.exchange("/api/v1/auth/login", org.springframework.http.HttpMethod.POST,
+				new HttpEntity<>(request, headers), java.util.Map.class);
 	}
 
 	@SuppressWarnings("rawtypes")

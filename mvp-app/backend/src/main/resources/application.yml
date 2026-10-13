@@ -124,6 +124,11 @@ resilience4j:
         limit-for-period: 5
         limit-refresh-period: 1m
         timeout-duration: 0
+      # Kiểm TRƯỚC bộ đếm email + IP: một IP chỉ tạo được tối đa 60 bộ đếm email mỗi phút.
+      login-ip:
+        limit-for-period: 60
+        limit-refresh-period: 1m
+        timeout-duration: 0
       register:
         limit-for-period: 30
         limit-refresh-period: 1h

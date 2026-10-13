@@ -16,6 +16,7 @@ public class RateLimits {
 
 	private static final Map<String, String> MESSAGES = Map.of(
 			"login", "Bạn thử quá nhiều lần, chờ 1 phút rồi thử lại.",
+			"login-ip", "Bạn thử quá nhiều lần, chờ 1 phút rồi thử lại.",
 			"register", "Mạng này đăng ký quá nhiều lần, thử lại sau.",
 			"assistant", "Bạn hỏi nhanh quá, chờ một chút rồi hỏi tiếp.");
 

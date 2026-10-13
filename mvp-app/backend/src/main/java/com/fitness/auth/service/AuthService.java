@@ -80,6 +80,7 @@ public class AuthService {
 	}
 
 	public TokenResponse login(String email, String password, String clientIp) {
+		rateLimits.check("login-ip", clientIp);
 		rateLimits.check("login", loginKey(email, clientIp));
 		User user = users.findByEmail(email)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sai email hoặc mật khẩu"));
@@ -135,6 +136,7 @@ public class AuthService {
 
 	@Transactional
 	public TokenResponse changePasswordAtLogin(FirstLoginPasswordRequest request, String clientIp) {
+		rateLimits.check("login-ip", clientIp);
 		rateLimits.check("login", loginKey(request.email(), clientIp));
 		User user = users.findByEmail(request.email())
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sai email hoặc mật khẩu"));
