@@ -151,6 +151,8 @@ public class AuthService {
 
 	@Transactional
 	public TokenResponse changePassword(UUID userId, ChangePasswordRequest request) {
+		// Cùng mức với đăng nhập, đếm theo người: ai cầm được máy đang đăng nhập không đoán mật khẩu liên tục được.
+		rateLimits.check("login", "user:" + userId);
 		User user = users.findById(userId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không tìm thấy người dùng"));
 		if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {

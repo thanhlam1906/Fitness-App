@@ -83,6 +83,23 @@ class PasswordChangeIntegrationTest extends PostgresIntegrationTest {
 		assertThat(resp.getBody().get("message")).isEqualTo("Mật khẩu hiện tại không đúng");
 	}
 
+	/** Ai cầm được máy đang đăng nhập không được đoán mật khẩu hiện tại liên tục ở màn Đổi mật khẩu. */
+	@Test
+	void doiMatKhauTrongCaiDat_lan6TrongMotPhut_bi429() {
+		Registered r = register();
+		for (int i = 0; i < 5; i++) {
+			assertThat(rest.exchange("/api/v1/me/password", HttpMethod.PUT,
+					new HttpEntity<>(new ChangePasswordRequest("wrong-password", NEW), bearer(r.tokens().accessToken())),
+					Map.class).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		}
+
+		var resp = rest.exchange("/api/v1/me/password", HttpMethod.PUT,
+				new HttpEntity<>(new ChangePasswordRequest(OLD, NEW), bearer(r.tokens().accessToken())), Map.class);
+
+		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+		assertThat(resp.getBody().get("message")).isEqualTo("Bạn thử quá nhiều lần, chờ 1 phút rồi thử lại.");
+	}
+
 	@Test
 	void tuDoi_trungMatKhauCu_400() {
 		Registered r = register();
