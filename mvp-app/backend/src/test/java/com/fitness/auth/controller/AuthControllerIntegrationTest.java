@@ -224,6 +224,15 @@ class AuthControllerIntegrationTest extends PostgresIntegrationTest {
 				.isEqualTo(HttpStatus.CREATED);
 	}
 
+	/** Email thành tên bộ đếm giữ trong RAM tới lượt xoá mỗi giờ: chuỗi dài phải bị chặn từ @Valid. */
+	@Test
+	void dangNhapEmailQua254KyTu_bi400_khongTaoBoDem() {
+		var resp = rest.postForEntity("/api/v1/auth/login",
+				new LoginRequest("a".repeat(250) + "@x.com", "correct-password"), java.util.Map.class);
+
+		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+	}
+
 	@SuppressWarnings("rawtypes")
 	private org.springframework.http.ResponseEntity<java.util.Map> registerFrom(String ip, RegisterRequest request) {
 		HttpHeaders headers = new HttpHeaders();
