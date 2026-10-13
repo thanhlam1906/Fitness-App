@@ -65,6 +65,10 @@ spring:
 
 server:
   port: ${SERVER_PORT:8080}
+  # Sau Caddy, getRemoteAddr() là IP của Caddy: rate limit theo IP sẽ chặn chung mọi người. "native" bật
+  # RemoteIpValve của Tomcat, chỉ tin X-Forwarded-For khi request tới từ dải nội bộ (mạng Docker,
+  # 10.x/172.16–31.x/192.168.x/127.x), nên người ngoài gửi header giả không có tác dụng.
+  forward-headers-strategy: native
   error:
     # Admin editor cần thấy lý do lỗi thật (vd "thresholds không phải JSON hợp lệ") — mặc định
     # Spring ẩn message, chỉ trả {status, error, path}. API nội bộ, không expose ra người dùng cuối.

@@ -130,4 +130,18 @@ class PasswordChangeIntegrationTest extends PostgresIntegrationTest {
 				new FirstLoginPasswordRequest(r.email(), OLD, NEW), Map.class).getStatusCode())
 				.isEqualTo(HttpStatus.FORBIDDEN);
 	}
+
+	/** Đổi mật khẩu tạm cũng kiểm mật khẩu: chung bộ đếm với đăng nhập để kẻ dò không chuyển sang đây. */
+	@Test
+	void doiMatKhauTam_chungBoDemVoiDangNhap_bi429() {
+		Registered r = register();
+		for (int i = 0; i < 5; i++) {
+			rest.postForEntity("/api/v1/auth/login", new LoginRequest(r.email(), "wrong-password"), Map.class);
+		}
+
+		var resp = rest.postForEntity("/api/v1/auth/change-password",
+				new FirstLoginPasswordRequest(r.email(), OLD, NEW), Map.class);
+
+		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+	}
 }

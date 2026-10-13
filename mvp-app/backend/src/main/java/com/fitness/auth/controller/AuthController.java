@@ -6,6 +6,7 @@ import com.fitness.auth.dto.RefreshRequest;
 import com.fitness.auth.dto.RegisterRequest;
 import com.fitness.auth.dto.TokenResponse;
 import com.fitness.auth.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,20 +25,22 @@ public class AuthController {
 		this.authService = authService;
 	}
 
+	/** IP lấy từ Tomcat: sau Caddy vẫn là IP người dùng nhờ server.forward-headers-strategy (application.yml). */
 	@PostMapping("/register")
 	@ResponseStatus(HttpStatus.CREATED)
-	public TokenResponse register(@Valid @RequestBody RegisterRequest request) {
-		return authService.register(request);
+	public TokenResponse register(@Valid @RequestBody RegisterRequest request, HttpServletRequest http) {
+		return authService.register(request, http.getRemoteAddr());
 	}
 
 	@PostMapping("/login")
-	public TokenResponse login(@Valid @RequestBody LoginRequest request) {
-		return authService.login(request.email(), request.password());
+	public TokenResponse login(@Valid @RequestBody LoginRequest request, HttpServletRequest http) {
+		return authService.login(request.email(), request.password(), http.getRemoteAddr());
 	}
 
 	@PostMapping("/change-password")
-	public TokenResponse changePasswordAtLogin(@Valid @RequestBody FirstLoginPasswordRequest request) {
-		return authService.changePasswordAtLogin(request);
+	public TokenResponse changePasswordAtLogin(
+			@Valid @RequestBody FirstLoginPasswordRequest request, HttpServletRequest http) {
+		return authService.changePasswordAtLogin(request, http.getRemoteAddr());
 	}
 
 	@PostMapping("/refresh")
