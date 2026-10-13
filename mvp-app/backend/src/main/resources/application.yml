@@ -24,6 +24,12 @@ spring:
       # Clip TN2: vài rep, ~10–20 MB mỗi clip, tối đa 3 clip mỗi lần gửi.
       max-file-size: 60MB
       max-request-size: 200MB
+  # RestClient của Boot, Spring AI OpenAI dùng chính builder này. Mặc định không giới hạn thời gian đọc:
+  # OpenAI treo là luồng treo theo. gpt-4o-mini trả lời ngắn thường dưới 10 giây.
+  http:
+    client:
+      connect-timeout: 5s
+      read-timeout: 20s
 
   ai:
     model:
@@ -48,6 +54,14 @@ spring:
         options:
           model: text-embedding-3-small
           dimensions: 512
+    # doc/design-chiu-loi-v1.md §4.2. Mặc định Spring AI 1.1.8: thử 10 lần, chờ 2s ×5 tới trần 3 phút
+    # (~19 phút một câu), giữ luồng Tomcat suốt thời gian đó. 2 lần, chờ 1s là đủ cho lỗi thoáng qua.
+    retry:
+      max-attempts: 2
+      backoff:
+        initial-interval: 1s
+        multiplier: 2
+        max-interval: 2s
 
 server:
   port: ${SERVER_PORT:8080}
