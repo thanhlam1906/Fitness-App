@@ -60,6 +60,16 @@ class HybridRetrieverTest {
 		assertThat(result).hasSize(2);
 	}
 
+	@Test
+	void vectorLoi_vanTraKetQuaFts() {
+		// OpenAI sập hoặc breaker đang mở: trợ lý vẫn có tài liệu tìm theo từ khoá để trả lời.
+		Chunk byKeyword = chunk("tìm theo từ khoá");
+		when(fts.search(anyString(), anyInt())).thenReturn(List.of(byKeyword));
+		when(vector.search(anyString(), anyInt())).thenThrow(new RuntimeException("OpenAI sập"));
+
+		assertThat(hybrid.search("câu hỏi", 5)).containsExactly(byKeyword);
+	}
+
 	private static Chunk chunk(String heading) {
 		return new Chunk(UUID.randomUUID(), "Tài liệu", heading, "nội dung");
 	}

@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Size;
  * xác minh bằng email + mật khẩu tạm như lúc đăng nhập.
  */
 public record FirstLoginPasswordRequest(
-		@NotBlank String email,
+		@NotBlank @Size(max = 254) String email,
 		@NotBlank String currentPassword,
 		@NotBlank @Size(min = 8) String newPassword) {
 }

@@ -9,6 +9,7 @@ import com.fitness.auth.entity.Role;
 import com.fitness.auth.entity.User;
 import com.fitness.auth.repository.RefreshTokenRepository;
 import com.fitness.auth.repository.UserRepository;
+import com.fitness.common.RateLimits;
 import com.fitness.profile.service.ProfileService;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -17,6 +18,7 @@ import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.Locale;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -43,16 +45,18 @@ public class AuthService {
 	private final RefreshTokenRepository refreshTokens;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtIssuer jwtIssuer;
+	private final RateLimits rateLimits;
 	private final SecureRandom random = new SecureRandom();
 
 	public AuthService(
 			UserRepository users, ProfileService profileService, RefreshTokenRepository refreshTokens,
-			PasswordEncoder passwordEncoder, JwtIssuer jwtIssuer) {
+			PasswordEncoder passwordEncoder, JwtIssuer jwtIssuer, RateLimits rateLimits) {
 		this.users = users;
 		this.profileService = profileService;
 		this.refreshTokens = refreshTokens;
 		this.passwordEncoder = passwordEncoder;
 		this.jwtIssuer = jwtIssuer;
+		this.rateLimits = rateLimits;
 	}
 
 	/**
@@ -60,7 +64,8 @@ public class AuthService {
 	 * tài khoản thiếu thông tin đăng ký.
 	 */
 	@Transactional
-	public TokenResponse register(RegisterRequest request) {
+	public TokenResponse register(RegisterRequest request, String clientIp) {
+		rateLimits.check("register", clientIp);
 		// @Size kiểm trước khi bỏ khoảng trắng, nên " a" lọt qua annotation — kiểm lại sau strip.
 		String fullName = request.fullName().strip();
 		if (fullName.length() < 2) {
@@ -74,7 +79,9 @@ public class AuthService {
 		return issueTokens(user);
 	}
 
-	public TokenResponse login(String email, String password) {
+	public TokenResponse login(String email, String password, String clientIp) {
+		rateLimits.check("login-ip", clientIp);
+		rateLimits.check("login", loginKey(email, clientIp));
 		User user = users.findByEmail(email)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sai email hoặc mật khẩu"));
 		if (!passwordEncoder.matches(password, user.getPasswordHash())) {
@@ -128,7 +135,9 @@ public class AuthService {
 	}
 
 	@Transactional
-	public TokenResponse changePasswordAtLogin(FirstLoginPasswordRequest request) {
+	public TokenResponse changePasswordAtLogin(FirstLoginPasswordRequest request, String clientIp) {
+		rateLimits.check("login-ip", clientIp);
+		rateLimits.check("login", loginKey(request.email(), clientIp));
 		User user = users.findByEmail(request.email())
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sai email hoặc mật khẩu"));
 		if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
@@ -142,6 +151,8 @@ public class AuthService {
 
 	@Transactional
 	public TokenResponse changePassword(UUID userId, ChangePasswordRequest request) {
+		// Cùng mức với đăng nhập, đếm theo người: ai cầm được máy đang đăng nhập không đoán mật khẩu liên tục được.
+		rateLimits.check("login", "user:" + userId);
 		User user = users.findById(userId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không tìm thấy người dùng"));
 		if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
@@ -158,6 +169,14 @@ public class AuthService {
 		user.setPassword(passwordEncoder.encode(newPassword), false);
 		revokeSessions(user);
 		return issueTokens(user);
+	}
+
+	/**
+	 * Chung cho đăng nhập và đổi mật khẩu tạm: cả hai kiểm mật khẩu, tách bộ đếm thì kẻ dò chuyển sang
+	 * đường kia. Chữ thường để "A@x.com" và "a@x.com" không thành hai bộ đếm.
+	 */
+	private static String loginKey(String email, String clientIp) {
+		return email.toLowerCase(Locale.ROOT) + "|" + clientIp;
 	}
 
 	private TokenResponse issueTokens(User user) {

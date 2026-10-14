@@ -183,4 +183,85 @@ class AuthControllerIntegrationTest extends PostgresIntegrationTest {
 
 		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
 	}
+
+	@Test
+	void dangNhapLan6CungEmailIp_bi429_keCaKhiDoiChuHoa_emailKhacVanVao() {
+		String email = uniqueEmail();
+		rest.postForEntity("/api/v1/auth/register", registerRequest(email, "correct-password"), TokenResponse.class);
+		for (int i = 0; i < 5; i++) {
+			assertThat(rest.postForEntity("/api/v1/auth/login", new LoginRequest(email, "wrong-password"),
+					java.util.Map.class).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+		}
+
+		// Đổi chữ hoa không lách được bộ đếm, kể cả khi gõ đúng mật khẩu.
+		var blocked = rest.postForEntity("/api/v1/auth/login",
+				new LoginRequest(email.toUpperCase(java.util.Locale.ROOT), "correct-password"), java.util.Map.class);
+		assertThat(blocked.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+		assertThat(blocked.getBody().get("message")).isEqualTo("Bạn thử quá nhiều lần, chờ 1 phút rồi thử lại.");
+
+		String other = uniqueEmail();
+		rest.postForEntity("/api/v1/auth/register", registerRequest(other, "correct-password"), TokenResponse.class);
+		assertThat(rest.postForEntity("/api/v1/auth/login", new LoginRequest(other, "correct-password"),
+				TokenResponse.class).getStatusCode()).isEqualTo(HttpStatus.OK);
+	}
+
+	/** Sau Caddy mọi request tới từ IP của Caddy: phải đếm theo X-Forwarded-For, không thì chặn một người là chặn cả. */
+	@Test
+	void dangKyLan31CungIp_bi429_ipKhacVanDangKyDuoc() {
+		for (int i = 0; i < 30; i++) {
+			// Tên chỉ còn 1 chữ sau khi bỏ khoảng trắng: qua @Valid, service đếm rồi mới từ chối (400),
+			// khỏi tốn 30 lần băm mật khẩu.
+			assertThat(registerFrom("203.0.113.7",
+					new RegisterRequest(uniqueEmail(), "correct-password", " a", "0912345678")).getStatusCode())
+					.isEqualTo(HttpStatus.BAD_REQUEST);
+		}
+
+		var blocked = registerFrom("203.0.113.7", registerRequest(uniqueEmail(), "correct-password"));
+		assertThat(blocked.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+		assertThat(blocked.getBody().get("message")).isEqualTo("Mạng này đăng ký quá nhiều lần, thử lại sau.");
+
+		assertThat(registerFrom("203.0.113.8", registerRequest(uniqueEmail(), "correct-password")).getStatusCode())
+				.isEqualTo(HttpStatus.CREATED);
+	}
+
+	/** Một máy gửi email bịa liên tục: chặn theo IP trước khi mỗi email kịp thành một bộ đếm mới. */
+	@Test
+	void dangNhap61EmailKhacCungIp_bi429_ipKhacVanVao() {
+		for (int i = 0; i < 60; i++) {
+			assertThat(loginFrom("203.0.113.9", new LoginRequest(uniqueEmail(), "wrong-password")).getStatusCode())
+					.isEqualTo(HttpStatus.UNAUTHORIZED);
+		}
+
+		var blocked = loginFrom("203.0.113.9", new LoginRequest(uniqueEmail(), "wrong-password"));
+		assertThat(blocked.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+		assertThat(blocked.getBody().get("message")).isEqualTo("Bạn thử quá nhiều lần, chờ 1 phút rồi thử lại.");
+
+		assertThat(loginFrom("203.0.113.10", new LoginRequest(uniqueEmail(), "wrong-password")).getStatusCode())
+				.isEqualTo(HttpStatus.UNAUTHORIZED);
+	}
+
+	/** Email thành tên bộ đếm giữ trong RAM tới lượt xoá mỗi giờ: chuỗi dài phải bị chặn từ @Valid. */
+	@Test
+	void dangNhapEmailQua254KyTu_bi400_khongTaoBoDem() {
+		var resp = rest.postForEntity("/api/v1/auth/login",
+				new LoginRequest("a".repeat(250) + "@x.com", "correct-password"), java.util.Map.class);
+
+		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+	}
+
+	@SuppressWarnings("rawtypes")
+	private org.springframework.http.ResponseEntity<java.util.Map> loginFrom(String ip, LoginRequest request) {
+		HttpHeaders headers = new HttpHeaders();
+		headers.set("X-Forwarded-For", ip);
+		return rest.exchange("/api/v1/auth/login", org.springframework.http.HttpMethod.POST,
+				new HttpEntity<>(request, headers), java.util.Map.class);
+	}
+
+	@SuppressWarnings("rawtypes")
+	private org.springframework.http.ResponseEntity<java.util.Map> registerFrom(String ip, RegisterRequest request) {
+		HttpHeaders headers = new HttpHeaders();
+		headers.set("X-Forwarded-For", ip);
+		return rest.exchange("/api/v1/auth/register", org.springframework.http.HttpMethod.POST,
+				new HttpEntity<>(request, headers), java.util.Map.class);
+	}
 }

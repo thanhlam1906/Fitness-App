@@ -5,6 +5,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 /**
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class HybridRetriever {
 
+	private static final Logger log = LoggerFactory.getLogger(HybridRetriever.class);
 	private static final int RRF_K = 60;
 
 	private final FtsRetriever fts;
@@ -30,7 +33,14 @@ public class HybridRetriever {
 
 	public List<FtsRetriever.Chunk> search(String question, int limit) {
 		List<FtsRetriever.Chunk> ftsResults = fts.search(question, limit * 2);
-		List<FtsRetriever.Chunk> vectorResults = vector.search(question, limit * 2);
+		List<FtsRetriever.Chunk> vectorResults;
+		try {
+			vectorResults = vector.search(question, limit * 2);
+		} catch (RuntimeException e) {
+			// OpenAI lỗi hay breaker "openai" đang mở: vẫn trả lời bằng tài liệu tìm theo từ khoá.
+			log.warn("Tìm theo nghĩa lỗi, chỉ dùng FTS: {}", e.toString());
+			vectorResults = List.of();
+		}
 
 		Map<UUID, FtsRetriever.Chunk> byId = new LinkedHashMap<>();
 		Map<UUID, Double> scores = new LinkedHashMap<>();

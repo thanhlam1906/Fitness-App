@@ -56,6 +56,10 @@ dependencies {
 	// Trích PDF cho kho kiến thức trợ lý, chế độ hybrid — doc/design-nap-tai-lieu-v1.md §6.
 	implementation("org.opendataloader:opendataloader-pdf-core:2.5.12")
 
+	// Lớp chịu lỗi (doc/design-chiu-loi-v1.md): breaker, bulkhead, rate limiter. Gọi bằng code, không
+	// annotation nên không cần spring-boot-starter-aop.
+	implementation("io.github.resilience4j:resilience4j-spring-boot3:2.4.0")
+
 	// test — concept-backend-v1.md §10: Testcontainers Postgres, không H2
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	// TestRestTemplate mac dinh dung HttpURLConnection, khong gui duoc PATCH

@@ -1,5 +1,7 @@
 package com.fitness.assistant.service.retrieval;
 
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -27,14 +29,16 @@ public class VectorRetriever {
 
 	private final JdbcTemplate jdbc;
 	private final EmbeddingModel embeddingModel;
+	private final CircuitBreaker openAi;
 
-	public VectorRetriever(JdbcTemplate jdbc, EmbeddingModel embeddingModel) {
+	public VectorRetriever(JdbcTemplate jdbc, EmbeddingModel embeddingModel, CircuitBreakerRegistry circuitBreakers) {
 		this.jdbc = jdbc;
 		this.embeddingModel = embeddingModel;
+		this.openAi = circuitBreakers.circuitBreaker("openai-embedding");
 	}
 
 	public List<FtsRetriever.Chunk> search(String question, int limit) {
-		String queryVector = EmbeddingFormat.toVectorLiteral(embeddingModel.embed(question));
+		String queryVector = EmbeddingFormat.toVectorLiteral(openAi.executeSupplier(() -> embeddingModel.embed(question)));
 
 		return jdbc.query("""
 				SELECT c.id, d.title, c.heading_path, c.content
