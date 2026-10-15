@@ -12,11 +12,13 @@ export function DaysToggle({ value, onChange }: { value: InsightDays; onChange: 
           aria-pressed={value === d}
           onClick={() => onChange(d)}
           className={cn(
-            "num px-4 py-2 text-[13px] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--color-accent)]",
+            "num px-4 py-2 text-[13px] focus-visible:outline-2 focus-visible:-outline-offset-2",
             i > 0 && "border-l border-[var(--color-border)]",
+            // Viền focus nằm trong nút (khung overflow-hidden cắt viền ngoài), nên nút đang chọn nền lime
+            // dùng viền tối, viền lime sẽ chìm vào nền.
             value === d
-              ? "bg-[var(--color-accent)] font-bold text-[var(--color-accent-fg)]"
-              : "text-[var(--color-text-muted)] hover:text-[var(--color-text)]",
+              ? "bg-[var(--color-accent)] font-bold text-[var(--color-accent-fg)] focus-visible:outline-[var(--color-accent-fg)]"
+              : "text-[var(--color-text-muted)] hover:text-[var(--color-text)] focus-visible:outline-[var(--color-accent)]",
           )}
         >
           {d} ngày

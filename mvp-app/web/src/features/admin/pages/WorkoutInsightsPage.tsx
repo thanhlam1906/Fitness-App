@@ -34,8 +34,11 @@ export function WorkoutInsightsPage() {
   const templates = useTemplates()
   const insights = useWorkoutInsights(filter.templateId, filter.days)
 
+  // Gộp với URL thật, không với `filter`: BrowserRouter cập nhật vị trí trong startTransition, nên đổi
+  // bộ lọc thứ hai trước khi transition render xong thì `filter` còn là bộ lọc cũ, ghi đè bộ lọc vừa chọn.
   function update(next: Partial<InsightsFilter>) {
-    setParams(writeInsightsFilter({ ...filter, ...next }), { replace: true })
+    const current = readInsightsFilter(new URLSearchParams(window.location.search))
+    setParams(writeInsightsFilter({ ...current, ...next }), { replace: true })
   }
 
   return (
