@@ -60,8 +60,10 @@ export function UserListPage() {
     setQuery(params.q)
   }
 
+  // Gộp với URL thật, không với `prev`: `prev` là searchParams của lần render trước, mà BrowserRouter
+  // render vị trí mới trong startTransition, nên đổi hai bộ lọc liền nhau thì lần sau mất bộ lọc vừa chọn.
   function update(patch: Partial<UserListParams>, replace = false) {
-    setSearchParams((prev) => applyListPatch(prev, patch), { replace })
+    setSearchParams(applyListPatch(new URLSearchParams(window.location.search), patch), { replace })
   }
 
   // Gõ tìm kiếm: chờ 300ms ngừng gõ mới gọi server. replace để mỗi từ khoá không thêm một mục lịch sử.
@@ -69,7 +71,7 @@ export function UserListPage() {
     if (query === params.q) return
     const t = setTimeout(() => update({ q: query }, true), 300)
     return () => clearTimeout(t)
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- chạy lại khi chữ gõ hoặc URL đổi; URL đổi thì timer cũ (giữ setSearchParams cũ) bị huỷ và dựng lại với setter mới nhất, nên không ghi đè tab/vai trò vừa chọn
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- chạy lại khi chữ gõ hoặc URL đổi để so query với params.q mới nhất; update tự đọc URL thật nên timer cũ không ghi đè tab/vai trò vừa chọn
   }, [query, searchParams.toString()])
 
   const page = users.data
