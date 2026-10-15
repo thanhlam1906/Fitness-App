@@ -6,6 +6,7 @@
 # internal tooling and planning docs — not for the public repo
 .claude/
 doc/
+docs/superpowers/
 
 # Python (analyzer, analyzer-demo)
 .venv/
