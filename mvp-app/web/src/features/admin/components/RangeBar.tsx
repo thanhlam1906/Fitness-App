@@ -35,7 +35,7 @@ export function RangeBar({ range, max, mini = false }: { range: Range; max: numb
           </div>
           <div className="mt-0.5 flex gap-3.5 text-xs text-[var(--color-text-muted)]">
             <Legend color="var(--color-success)">Đạt</Legend>
-            <Legend color="var(--color-warn)">Sát ngưỡng</Legend>
+            <Legend color="var(--color-warn)">Sát quy chuẩn</Legend>
             <Legend color="var(--color-danger)">Không đạt</Legend>
           </div>
         </>

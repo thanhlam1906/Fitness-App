@@ -26,7 +26,7 @@ export const HELP: Record<HelpKey, string[]> = {
     "Chưa biết điền số nào? Tự tập trước camera, xem số đo trên màn kết quả rồi điền.",
   ],
   warn: [
-    "Vùng vàng giữa đúng và sai: người tập chỉ bị nhắc nhẹ. Ví dụ đạt đến 100°, sát ngưỡng 15° thì 100°–115° nhắc nhẹ, trên 115° mới tính là sai. Để 0 nếu không cần.",
+    "Vùng vàng giữa đúng và sai: người tập chỉ bị nhắc nhẹ. Ví dụ đạt đến 100°, sát quy chuẩn 15° thì 100°–115° nhắc nhẹ, trên 115° mới tính là sai. Để 0 nếu không cần.",
   ],
   label: ["Tên mục hiện trên màn kết quả. Ngắn, nói điều cần làm đúng. Ví dụ: Ngồi đủ sâu."],
   cue: ["Câu app nói khi người tập sai mục này: một việc cụ thể cần làm, tối đa 2 câu. Ví dụ: Hạ hông tới khi đùi song song sàn."],

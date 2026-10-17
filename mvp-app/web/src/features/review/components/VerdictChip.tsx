@@ -11,7 +11,7 @@ export type Verdict = "PASS" | "WARN" | "FAIL" | "LOW_CONFIDENCE" | "NOT_APPLICA
  */
 const STYLES: Record<Verdict, { label: string; tone: string }> = {
   PASS: { label: "Đạt ✓", tone: "text-[var(--color-success)] bg-[var(--color-success-tint)]" },
-  WARN: { label: "Sát ngưỡng", tone: "text-[var(--color-warn)] bg-[var(--color-warn-tint)]" },
+  WARN: { label: "Sát quy chuẩn", tone: "text-[var(--color-warn)] bg-[var(--color-warn-tint)]" },
   FAIL: { label: "Không đạt ✕", tone: "text-[var(--color-danger)] bg-[var(--color-danger-tint)]" },
   LOW_CONFIDENCE: {
     label: "Chưa đủ tin cậy",

@@ -94,10 +94,10 @@ export function FormCheckForm({
           </div>,
         )}
         {row(
-          "Sát ngưỡng",
+          "Sát quy chuẩn",
           "warn",
           <div className="flex items-center gap-2 text-sm">
-            lệch thêm <DegreeInput label="Sát ngưỡng" value={draft.warn} onChange={(warn) => set({ warn })} />
+            lệch thêm <DegreeInput label="Sát quy chuẩn" value={draft.warn} onChange={(warn) => set({ warn })} />
           </div>,
         )}
         <div />

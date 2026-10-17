@@ -10,9 +10,9 @@ export function ExerciseListPage() {
     <div className="flex min-h-0 flex-1">
       <ExerciseListPanel />
       <div className="flex min-w-0 flex-1 flex-col">
-        <AdminHeader group="Chấm form" title="Bài tập và ngưỡng" />
+        <AdminHeader group="Chấm form" title="Bài tập và quy chuẩn" />
         <div className="flex flex-1 items-center justify-center p-8 text-sm text-[var(--color-text-muted)]">
-          Chọn một bài ở cột trái để sửa ngưỡng chấm.
+          Chọn một bài ở cột trái để sửa quy chuẩn chấm.
         </div>
       </div>
     </div>

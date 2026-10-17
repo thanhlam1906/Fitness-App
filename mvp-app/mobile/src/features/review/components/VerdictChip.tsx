@@ -9,7 +9,7 @@ import { cn } from "@/lib/cn"
  */
 const STYLES: Record<Verdict, { label: string; box: string; text: string }> = {
   PASS: { label: "Đạt ✓", box: "bg-success-tint", text: "text-success" },
-  WARN: { label: "Sát ngưỡng", box: "bg-warn-tint", text: "text-warn" },
+  WARN: { label: "Sát quy chuẩn", box: "bg-warn-tint", text: "text-warn" },
   FAIL: { label: "Không đạt ✕", box: "bg-danger-tint", text: "text-danger" },
   LOW_CONFIDENCE: { label: "Chưa đủ tin cậy", box: "bg-warn-tint", text: "text-warn" },
   NOT_APPLICABLE: { label: "Sai góc quay", box: "bg-surface-2", text: "text-text-muted" },

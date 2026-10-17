@@ -156,7 +156,7 @@ export function ExerciseFormPage() {
       <ExerciseListPanel activeId={isNew ? undefined : id} />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <AdminHeader group="Bài tập và ngưỡng" title={title}>
+        <AdminHeader group="Bài tập và quy chuẩn" title={title}>
           {/* Phần ảnh của lần lưu chưa xong hoặc hỏng thì chưa được nói "đã lưu". */}
           {save.isSuccess && !images.isPending && !images.isError && (
             <span className="text-xs whitespace-nowrap text-[var(--color-text-muted)]">

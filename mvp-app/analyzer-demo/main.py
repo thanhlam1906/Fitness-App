@@ -38,7 +38,7 @@ MAX_SIZE = 300 * 1024 * 1024  # 300 MB
 MIN_VISIBILITY = 0.5
 MAX_FRAMES = 900
 REPS_PER_VIEW = 5
-DISCLAIMER = ("Bản demo: ngưỡng chấm là số tạm, chưa qua hiệu chỉnh của HLV. "
+DISCLAIMER = ("Bản demo: quy chuẩn chấm là số tạm, chưa qua hiệu chỉnh của HLV. "
               "Đây không phải công cụ y tế.")
 STATUS = {"PASS": "pass", "WARN": "warn", "FAIL": "fail",
           "LOW_CONFIDENCE": "low", "NOT_APPLICABLE": "na"}

@@ -18,7 +18,7 @@ describe("formCheckDraft", () => {
     expect(validateDraft({ ...filled, to: "200" }).range).toBe("Nhập số nguyên từ 0 đến 180.")
     expect(validateDraft({ ...filled, to: "12.5" }).range).toBe("Nhập số nguyên từ 0 đến 180.")
     expect(validateDraft({ ...filled, from: "120" }).range).toBe("Số đầu phải nhỏ hơn số sau.")
-    expect(validateDraft({ ...filled, warn: "-1" }).range).toBe("Sát ngưỡng phải là số nguyên từ 0 trở lên.")
+    expect(validateDraft({ ...filled, warn: "-1" }).range).toBe("Sát quy chuẩn phải là số nguyên từ 0 trở lên.")
     expect(validateDraft(filled)).toEqual({})
   })
 

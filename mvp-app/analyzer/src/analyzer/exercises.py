@@ -57,7 +57,7 @@ SQUAT = ExerciseProfile(
         Check("squat-depth", "depth", "Độ sâu — hông hạ xuống tới ~ngang gối", "hip_depth_ratio",
               [SAGITTAL], {"pass_below": 1.10, "warn_below": 1.30},
               "Độ sâu tốt: đùi đã xuống ngang sàn (song song) hoặc sâu hơn.",
-              "Sát ngưỡng — hạ hông thêm một chút nữa là chạm mức song song.",
+              "Sát quy chuẩn — hạ hông thêm một chút nữa là chạm mức song song.",
               "Chưa xuống đủ sâu. Hạ hông cho tới khi mặt trên đùi song song sàn.", 2),
         Check("squat-torso", "torso_lean", "Thân & lưng trong tư thế squat", "torso_lean_deg",
               [SAGITTAL], {"pass_between": [10, 55], "warn_between": [5, 65]},

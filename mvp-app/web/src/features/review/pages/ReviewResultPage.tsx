@@ -157,7 +157,7 @@ export function ReviewResultPage() {
           </div>
 
           <p className="mt-4 text-[11px] leading-relaxed text-[var(--color-text-muted)]">
-            Chấm theo ngưỡng huấn luyện viên đặt, dựa trên số đo góc khớp từ camera, có thể sai. Không phải đánh giá y
+            Chấm theo quy chuẩn huấn luyện viên đặt, dựa trên số đo góc khớp từ camera, có thể sai. Không phải đánh giá y
             tế. Clip đã bị xoá khỏi máy chủ, chỉ giữ số đo.
           </p>
 

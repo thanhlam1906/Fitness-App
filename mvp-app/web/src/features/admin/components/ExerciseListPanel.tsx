@@ -48,7 +48,7 @@ export function ExerciseListPanel({ activeId }: { activeId?: string }) {
             Tất cả {rows.length}
           </FilterPill>
           <FilterPill active={filter === "ANALYZABLE"} onClick={() => setFilter("ANALYZABLE")}>
-            Có ngưỡng {withChecks}
+            Có quy chuẩn {withChecks}
           </FilterPill>
           <FilterPill active={filter === "PLAIN"} onClick={() => setFilter("PLAIN")}>
             Chưa {rows.length - withChecks}

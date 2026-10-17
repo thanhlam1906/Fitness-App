@@ -163,7 +163,7 @@ export default function ReviewResultScreen() {
           </View>
 
           <Text className="mt-4 text-[11px] leading-4 text-text-muted">
-            Chấm theo ngưỡng huấn luyện viên đặt, dựa trên số đo góc khớp từ camera, có thể sai. Không phải đánh giá y
+            Chấm theo quy chuẩn huấn luyện viên đặt, dựa trên số đo góc khớp từ camera, có thể sai. Không phải đánh giá y
             tế. Clip đã bị xoá khỏi máy chủ, chỉ giữ số đo.
           </Text>
         </>

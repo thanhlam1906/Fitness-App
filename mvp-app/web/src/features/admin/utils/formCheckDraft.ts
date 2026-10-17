@@ -50,7 +50,7 @@ export function validateDraft(d: Draft): DraftErrors {
     if (from === null && to === null) e.range = "Nhập ít nhất một số."
     else if (bad(from) || bad(to)) e.range = `Nhập số nguyên từ 0 đến ${max}.`
     else if (from !== null && to !== null && from >= to) e.range = "Số đầu phải nhỏ hơn số sau."
-    else if (!Number.isInteger(warn) || warn < 0) e.range = "Sát ngưỡng phải là số nguyên từ 0 trở lên."
+    else if (!Number.isInteger(warn) || warn < 0) e.range = "Sát quy chuẩn phải là số nguyên từ 0 trở lên."
   }
   if (!d.nameVi.trim()) e.nameVi = "Cần tên mục."
   if (!d.cueFailVi.trim()) e.cueFailVi = "Cần câu nhắc khi sai."
