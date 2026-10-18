@@ -54,7 +54,12 @@ dependencies {
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5")
 
 	// Trích PDF cho kho kiến thức trợ lý, chế độ hybrid — doc/design-nap-tai-lieu-v1.md §6.
-	implementation("org.opendataloader:opendataloader-pdf-core:2.5.12")
+	implementation("org.opendataloader:opendataloader-pdf-core:2.5.12") {
+		// veraPDF (đi theo gói này) kéo com.sun.xml.bind:jaxb-impl/jaxb-core, Spring Boot nâng lên 4.0.9: đó là
+		// bản đóng gói lại đúng các lớp của org.glassfish.jaxb mà Hibernate đã kéo. Hai file cùng tên
+		// jaxb-core-4.0.9.jar làm bootJar hỏng, nên bỏ bộ com.sun, giữ bộ glassfish.
+		exclude(group = "com.sun.xml.bind")
+	}
 
 	// Lớp chịu lỗi (doc/design-chiu-loi-v1.md): breaker, bulkhead, rate limiter. Gọi bằng code, không
 	// annotation nên không cần spring-boot-starter-aop.
