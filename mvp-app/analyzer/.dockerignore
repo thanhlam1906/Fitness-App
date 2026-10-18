@@ -1,0 +1,5 @@
+# Danh sách cho phép (bẫy 1.1): image lên GHCR công khai, chỉ đưa vào đúng thứ cần để chạy.
+*
+!requirements.txt
+!src
+**/__pycache__

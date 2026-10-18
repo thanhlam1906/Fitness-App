@@ -1,6 +1,8 @@
 # concept-analyzer-v1.md §3: worker doc hang doi Postgres, KHONG nhan HTTP
 # -> khong co fastapi/uvicorn/python-multipart nhu analyzer-demo.
-psycopg[binary]>=3.2
-numpy>=1.26
-opencv-python-headless>=4.9.0
-mediapipe>=0.10.14
+# Ghim dung ban da cham thu dat 10-18 (bay 1.15): de ">=" thi moi lan CI build lai co the lay ban moi doi
+# API, cham form chet du khong ai sua code. Nang ban thi sua tay roi cham thu lai.
+psycopg[binary]==3.3.6
+numpy==2.5.4
+opencv-python-headless==5.0.0.93
+mediapipe==1.1.1

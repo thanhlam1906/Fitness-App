@@ -1,0 +1,8 @@
+# Danh sách cho phép (bẫy 1.1): image lên GHCR công khai, chỉ đưa vào đúng thứ cần để build.
+# Bỏ hết rồi mở từng mục, nên .env, build/, bin/, var/ (clip), content/ không bao giờ lọt vào.
+*
+!gradlew
+!gradle
+!settings.gradle.kts
+!build.gradle.kts
+!src
