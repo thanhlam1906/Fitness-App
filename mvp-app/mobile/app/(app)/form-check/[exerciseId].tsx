@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from "expo-router"
 import * as ImagePicker from "expo-image-picker"
 import { Ban, CloudOff, Film, TriangleAlert, X } from "lucide-react-native"
 import { parseFilmingGuide, VIEWPOINT_OPTIONS } from "@/features/review/types"
+import { clipSizeProblem, MAX_CLIP_MB, MAX_TOTAL_MB } from "@/features/review/utils/clipLimits"
 import { angleNote, missingViews } from "@/features/review/utils/reviewView"
 import { VIEW_NAME, type ViewCode } from "@/lib/formMeasures"
 import { cn } from "@/lib/cn"
@@ -22,12 +23,9 @@ import { colors } from "~/theme"
 
 const MAX_CLIPS = 3
 const MAX_SECONDS = 30
-// Khớp spring.servlet.multipart.max-file-size của backend: quá cỡ thì máy chủ cắt kết nối, người dùng
-// chỉ đọc được câu mất mạng sai lý do.
-const MAX_MB = 60
 // Video chọn từ thư viện: luôn chuyển sang H.264 1080p, vì video iPhone mặc định HEVC/4K vừa nặng vừa
-// có thể vượt MAX_MB; Passthrough (mặc định) chép nguyên file gốc. iOS bỏ qua preset này khi quay mới,
-// nên camera hạ cỡ bằng videoQuality: 720p đủ cho nhận dạng tư thế và 30 giây vẫn dưới MAX_MB.
+// có thể vượt MAX_CLIP_MB; Passthrough (mặc định) chép nguyên file gốc. iOS bỏ qua preset này khi quay mới,
+// nên camera hạ cỡ bằng videoQuality: 720p đủ cho nhận dạng tư thế và 30 giây vẫn dưới MAX_CLIP_MB.
 const LIBRARY_EXPORT = ImagePicker.VideoExportPreset.H264_1920x1080
 const CAMERA_QUALITY = ImagePicker.UIImagePickerControllerQualityType.IFrame1280x720
 
@@ -103,7 +101,8 @@ export default function FilmingGuideScreen() {
   const views = data.checkViews
   const missing = clips.length > 0 ? missingViews(views, viewpoints) : []
   const tooLong = clips.some((c) => c.seconds !== null && c.seconds > MAX_SECONDS)
-  const tooBig = clips.some((c) => c.bytes !== null && c.bytes > MAX_MB * 1024 * 1024)
+  // Quá cỡ thì máy chủ (hoặc Cloudflare, trên 100 MB) cắt kết nối, người dùng chỉ đọc được câu mất mạng sai lý do.
+  const sizeProblem = clipSizeProblem(clips.map((c) => c.bytes))
   const quotaExceeded = submit.error instanceof ApiError && submit.error.status === 429
 
   /** Thêm clip vào cuối, ô góc điền sẵn theo thứ tự thẻ hướng dẫn: quay đúng thứ tự thì không phải chỉnh. */
@@ -276,9 +275,14 @@ export default function FilmingGuideScreen() {
           Mỗi clip tối đa {MAX_SECONDS} giây. Bỏ clip dài rồi quay lại ngắn hơn.
         </Notice>
       )}
-      {tooBig && (
+      {sizeProblem === "clip" && (
         <Notice icon={TriangleAlert} tone="warn" alert className="mt-3">
-          Clip quá nặng (tối đa {MAX_MB} MB). Bỏ clip đó rồi quay lại ngắn hơn.
+          Clip quá nặng (tối đa {MAX_CLIP_MB} MB). Bỏ clip đó rồi quay lại ngắn hơn.
+        </Notice>
+      )}
+      {sizeProblem === "total" && (
+        <Notice icon={TriangleAlert} tone="warn" alert className="mt-3">
+          Các clip cộng lại quá nặng (tối đa {MAX_TOTAL_MB} MB mỗi lần gửi). Bỏ bớt clip hoặc quay lại ngắn hơn.
         </Notice>
       )}
       {pickError && <IconText className="mt-3">{pickError}</IconText>}
@@ -307,7 +311,7 @@ export default function FilmingGuideScreen() {
         ) : (
           <Button
             className="mt-2.5 w-full"
-            disabled={!optIn || views.length === 0 || missing.length > 0 || tooLong || tooBig || submit.isPending}
+            disabled={!optIn || views.length === 0 || missing.length > 0 || tooLong || sizeProblem !== null || submit.isPending}
             onPress={() =>
               submit.mutate(
                 { exerciseId, clips: clips.map(({ uri, name, type }) => ({ uri, name, type })), viewpoints },

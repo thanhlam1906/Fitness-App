@@ -34,6 +34,8 @@ const STATUS_MESSAGE_VI: Record<number, string> = {
   403: "Tài khoản này không có quyền làm việc đó.",
   404: "Không tìm thấy dữ liệu.",
   409: "Dữ liệu bị trùng với thứ đã có.",
+  // Cloudflare (trên 100 MB) hay nginx trả 413 bằng trang HTML, không có câu nào đọc được.
+  413: "Dữ liệu gửi lên quá nặng. Bỏ bớt hoặc quay clip ngắn hơn.",
   429: "Đã dùng hết lượt cho phép, thử lại sau.",
   500: "Máy chủ gặp lỗi. Thử lại sau ít phút.",
   503: "Máy chủ đang bận. Thử lại sau ít phút.",
@@ -113,7 +115,9 @@ async function request<T>(path: string, init?: RequestInit, isRetry = false): Pr
     } catch {
       // body rỗng hoặc không phải JSON — bỏ qua, dùng statusText
     }
-    throw new ApiError(res.status, detail ?? STATUS_MESSAGE_VI[res.status] ?? res.statusText, detail)
+    // 413 luôn dùng câu tiếng Việt: backend tự chặn thì body JSON mang câu tiếng Anh của Spring.
+    const message = res.status === 413 ? STATUS_MESSAGE_VI[413] : detail ?? STATUS_MESSAGE_VI[res.status] ?? res.statusText
+    throw new ApiError(res.status, message, detail)
   }
 
   if (res.status === 204) return undefined as T

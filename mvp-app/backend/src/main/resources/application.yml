@@ -23,7 +23,9 @@ spring:
     multipart:
       # Clip TN2: vài rep, ~10–20 MB mỗi clip, tối đa 3 clip mỗi lần gửi.
       max-file-size: 60MB
-      max-request-size: 200MB
+      # Cloudflare chặn request trên 100 MB; web và mobile chặn tổng 95 MB (clipLimits.ts), nginx 96m.
+      # Dev cũng để 96MB để hành vi giống production (doc/design-trien-khai-v1.md §7).
+      max-request-size: 96MB
   # RestClient của Boot, Spring AI OpenAI dùng chính builder này. Mặc định không giới hạn thời gian đọc:
   # OpenAI treo là luồng treo theo. gpt-4o-mini trả lời ngắn thường dưới 10 giây.
   http:

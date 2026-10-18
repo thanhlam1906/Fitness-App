@@ -12,6 +12,7 @@ import { IconText, Notice, StatusBlock } from "@/components/StatusViews"
 import { BackLink } from "@/features/review/components/BackLink"
 import { Section } from "@/features/review/components/Section"
 import { parseFilmingGuide, VIEWPOINT_OPTIONS } from "@/features/review/types"
+import { clipSizeProblem, MAX_CLIP_MB, MAX_TOTAL_MB } from "@/features/review/utils/clipLimits"
 import { angleNote, missingViews } from "@/features/review/utils/reviewView"
 import { VIEW_NAME, type ViewCode } from "@/lib/formMeasures"
 import { useExercise, useSubmitReview } from "@/features/review/api/useReviews"
@@ -81,6 +82,7 @@ export function FilmingGuidePage() {
   const tips = [guide?.distance, guide?.lighting, guide?.duration].map((s, i) => s?.trim() || DEFAULT_TIPS[i])
   const views = exercise.data!.checkViews
   const missing = files.length > 0 ? missingViews(views, viewpoints) : []
+  const sizeProblem = clipSizeProblem(files.map((f) => f.size))
   const quotaExceeded = submit.error instanceof ApiError && submit.error.status === 429
 
   function pickFiles(fileList: FileList | null) {
@@ -214,6 +216,17 @@ export function FilmingGuidePage() {
           {missing.map((v) => VIEW_NAME[v]).join(", ")}: chọn lại clip hoặc đổi ô Góc quay.
         </Notice>
       )}
+      {/* Chặn trước khi gửi: quá cỡ thì máy chủ cắt giữa đường, người dùng chỉ thấy lỗi khó hiểu. */}
+      {sizeProblem === "clip" && (
+        <Notice icon={TriangleAlert} tone="warn" role="alert" className="mt-3">
+          Có clip quá nặng (tối đa {MAX_CLIP_MB} MB mỗi clip). Quay lại ngắn hơn rồi chọn lại clip.
+        </Notice>
+      )}
+      {sizeProblem === "total" && (
+        <Notice icon={TriangleAlert} tone="warn" role="alert" className="mt-3">
+          Các clip cộng lại quá nặng (tối đa {MAX_TOTAL_MB} MB mỗi lần gửi). Quay lại ngắn hơn rồi chọn lại clip.
+        </Notice>
+      )}
       {quotaExceeded && (
         <IconText tone="warn" className="mt-3">
           Bạn đã dùng hết lượt chấm trong 7 ngày qua. Thử lại vào tuần sau.
@@ -245,7 +258,7 @@ export function FilmingGuidePage() {
           </label>
           <Button
             className="flex-1"
-            disabled={!optIn || views.length === 0 || missing.length > 0 || submit.isPending}
+            disabled={!optIn || views.length === 0 || missing.length > 0 || sizeProblem !== null || submit.isPending}
             onClick={() =>
               submit.mutate(
                 { exerciseId: exerciseId!, files, viewpoints },
