@@ -1,0 +1,13 @@
+# Profile prod (doc/design-trien-khai-v1.md §4): bí mật KHÔNG có giá trị mặc định. application.yml để sẵn
+# mật khẩu dev cho máy dev chạy ngay; ở đây ghi đè bằng placeholder trần để không lặng lẽ chạy bằng mật
+# khẩu dev. Placeholder trần chỉ chặn chắc ở @Value: thiếu OPENAI_API_KEY backend vẫn khởi động (bẫy 1.3).
+# Lớp chặn chính là ${VAR:?} trong docker-compose.prod.yml, nên image chỉ chạy qua compose.
+spring:
+  datasource:
+    password: ${DB_PASSWORD}
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+
+app:
+  jwt-secret: ${JWT_SECRET}
