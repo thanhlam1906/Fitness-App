@@ -1,0 +1,119 @@
+# Bộ production (doc/design-trien-khai-v1.md §4): cùng một file cho vps-staging, vps-gia và VPS thật, chỉ
+# khác nhau ở file .env cạnh nó (quyền 600). Trên máy: /opt/vfit/docker-compose.prod.yml + /opt/vfit/.env.
+# Chạy thử ở laptop (không bật cloudflared):
+#   docker compose -f mvp-app/docker-compose.prod.yml --env-file mvp-app/prod-thu.env up -d --wait web analyzer
+# Tên project riêng "vfit": không đụng stack dev "fitnessapp" và volume Postgres dev.
+name: vfit
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.6-pg16
+    environment:
+      POSTGRES_DB: fitness
+      POSTGRES_USER: fitness
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Thiếu DB_PASSWORD trong .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fitness -d fitness"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    mem_limit: 512m
+
+  backend:
+    image: ghcr.io/thanhlam1906/vfit-backend:${IMAGE_TAG:?Thiếu IMAGE_TAG trong .env}
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://postgres:5432/fitness
+      DB_PASSWORD: ${DB_PASSWORD:?Thiếu DB_PASSWORD trong .env}
+      JWT_SECRET: ${JWT_SECRET:?Thiếu JWT_SECRET trong .env}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?Thiếu OPENAI_API_KEY trong .env}
+      CLIP_STORAGE_PATH: /data
+    volumes:
+      # Thư mục clip dùng chung với analyzer: backend ghi, analyzer đọc rồi xoá ngay sau khi chấm.
+      - clips:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      # Spring Boot cần vài chục giây để lên (lần đầu còn chạy Flyway): chưa tính là hỏng trong lúc này.
+      start_period: 180s
+      start_interval: 5s
+    restart: unless-stopped
+    # Heap = 65% số này (ENTRYPOINT trong backend/Dockerfile), khoảng 500 MB (bẫy 1.2).
+    mem_limit: 768m
+
+  # Không mở cổng, không gọi backend: chỉ nói chuyện qua Postgres và thư mục clip (bất biến sản phẩm).
+  analyzer:
+    image: ghcr.io/thanhlam1906/vfit-analyzer:${IMAGE_TAG:?Thiếu IMAGE_TAG trong .env}
+    environment:
+      # Mật khẩu không nằm trong URI: ký tự như / @ : làm hỏng URI. libpq tự lấy PGPASSWORD (bẫy 1.12).
+      DB_URL: postgresql://fitness@postgres:5432/fitness
+      PGPASSWORD: ${DB_PASSWORD:?Thiếu DB_PASSWORD trong .env}
+      CLIP_STORAGE_PATH: /data
+      # Màn camera chờ kết quả ngay trên màn hình: poll 1 s thay vì 5 s mặc định.
+      POLL_INTERVAL_SEC: "1"
+    volumes:
+      - clips:/data
+    depends_on:
+      # Chờ backend chứ không chỉ postgres: bảng do Flyway trong backend tạo (bẫy 1.9).
+      backend:
+        condition: service_healthy
+    # Nhận tín hiệu dừng thì chấm xong job đang dở rồi mới thoát; deploy không cắt ngang một lượt chấm.
+    stop_grace_period: 60s
+    restart: unless-stopped
+    mem_limit: 768m
+
+  web:
+    image: ghcr.io/thanhlam1906/vfit-web:${IMAGE_TAG:?Thiếu IMAGE_TAG trong .env}
+    # Web là cửa duy nhất nối hai mạng: nhận từ cloudflared ở edge, gọi backend ở default.
+    networks: [default, edge]
+    ports:
+      # Chỉ chính máy này mở được (bẫy 0.2): để chạy thử ở laptop và để CD kiểm qua SSH (bẫy 2.2).
+      # Người ngoài vào qua Cloudflare Tunnel, không qua cổng này.
+      - "127.0.0.1:8088:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+    mem_limit: 64m
+
+  # Đường hầm ra internet (giai đoạn 2). Token chỉ ở .env, truyền bằng biến, không lên dòng lệnh (bẫy 2.1).
+  cloudflared:
+    image: cloudflare/cloudflared:2026.10.1
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+    # Chỉ ở mạng edge: đường đi của tunnel cấu hình trên trang Cloudflare, lỡ trỏ nhầm (hay bị sửa) sang
+    # backend:8080 hoặc postgres:5432 thì cũng không tới được, mọi thứ phải đi qua nginx.
+    networks: [edge]
+    depends_on:
+      - web
+    restart: unless-stopped
+    mem_limit: 128m
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 10.89.0.0/24
+  edge:
+    ipam:
+      config:
+        # Ghim dải mạng: nginx chỉ tin CF-Connecting-IP từ dải này (set_real_ip_from trong web/nginx.conf).
+        - subnet: 10.89.1.0/24
+
+volumes:
+  pgdata:
+  clips:
