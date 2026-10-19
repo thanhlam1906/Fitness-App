@@ -1,3 +1,5 @@
+// Phải đứng đầu: cấu hình zod trước khi module nào dựng schema (xem file).
+import "@/lib/zodSetup"
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import { BrowserRouter } from "react-router"

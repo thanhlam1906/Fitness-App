@@ -10,4 +10,6 @@ RUN npm run build
 
 FROM nginx:1.30.6-alpine
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Không để trong conf.d: nginx tự nạp mọi *.conf ở đó vào khối http, còn add_header phải nằm trong location.
+COPY security-headers.conf /etc/nginx/snippets/security-headers.conf
 COPY --from=build /src/dist /usr/share/nginx/html
