@@ -1,5 +1,18 @@
-import type { CheckResult, Evidence, FilmingGuide } from "@/features/review/types"
+import type { CheckResult, Evidence, FilmingGuide, Review } from "@/features/review/types"
 import { MEASURES, MOMENT_NAME, rangeText, type MeasureKey, type Moment, type ViewCode } from "@/lib/formMeasures"
+
+const IN_FLIGHT: Review["status"][] = ["PENDING", "PROCESSING"]
+const POLL_LIMIT_MS = 5 * 60_000
+
+/**
+ * Còn poll lần chấm này không. Analyzer thường chấm xong trong vài chục giây; quá 5 phút mà chưa xong thì
+ * nhiều khả năng analyzer đã chết, poll tiếp chỉ dồn tải lên backend chừng nào tab còn mở. Quay lại tab
+ * vẫn tải lại một lần (TanStack Query refetch khi tab được focus), nên kết quả đến muộn vẫn hiện.
+ * ponytail: so với đồng hồ máy người dùng, lệch giờ vài phút thì dừng sớm hoặc muộn chừng ấy.
+ */
+export function stillRunning(r: Pick<Review, "status" | "createdAt">, now = Date.now()): boolean {
+  return IN_FLIGHT.includes(r.status) && now - Date.parse(r.createdAt) < POLL_LIMIT_MS
+}
 
 /** Mục do LLM chấm có tên tiếng Việt; kết quả rule cũ (trước V11) chỉ có code. */
 export function checkLabel(c: CheckResult): string {

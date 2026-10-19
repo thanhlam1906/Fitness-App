@@ -1,17 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import type { Exercise, Review } from "@/features/review/types"
+import { stillRunning } from "@/features/review/utils/reviewView"
 import { api } from "~/api/client"
 
 // Bản mobile của web/src/features/review/api/useReviews.ts, trừ useSubmitLive: màn camera nhận dạng
 // tư thế cần thư viện native ngoài Expo Go, nên mobile chỉ gửi video quay sẵn (người dùng chốt 10-09).
-const IN_FLIGHT: Review["status"][] = ["PENDING", "PROCESSING"]
 
 export function useReviews() {
   return useQuery({
     queryKey: ["reviews"],
     queryFn: () => api.get<Review[]>("/reviews"),
     // Analyzer chấm mất vài giây tới vài chục giây: poll khi còn việc đang chạy, đứng yên khi xong.
-    refetchInterval: (query) => ((query.state.data ?? []).some((r) => IN_FLIGHT.includes(r.status)) ? 5000 : false),
+    refetchInterval: (query) => ((query.state.data ?? []).some((r) => stillRunning(r)) ? 5000 : false),
   })
 }
 
@@ -19,7 +19,7 @@ export function useReview(id: string) {
   return useQuery({
     queryKey: ["review", id],
     queryFn: () => api.get<Review>(`/reviews/${id}`),
-    refetchInterval: (query) => (query.state.data && IN_FLIGHT.includes(query.state.data.status) ? 3000 : false),
+    refetchInterval: (query) => (query.state.data && stillRunning(query.state.data) ? 3000 : false),
   })
 }
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { angleNote, checkDetails, missingViews, checkLabel, evidenceLine, evidenceOf, gradedOf, isOverallOk } from "./reviewView"
-import type { CheckResult } from "@/features/review/types"
+import { angleNote, checkDetails, missingViews, checkLabel, evidenceLine, evidenceOf, gradedOf, isOverallOk, stillRunning } from "./reviewView"
+import type { CheckResult, Review } from "@/features/review/types"
 
 const check = (over: Partial<CheckResult>): CheckResult => ({
   id: "1",
@@ -121,5 +121,29 @@ describe("missingViews", () => {
 
   it("clip góc thừa không làm thiếu góc nào", () => {
     expect(missingViews(["SAGITTAL"], ["SAGITTAL", "DIAGONAL"])).toEqual([])
+  })
+})
+
+describe("stillRunning", () => {
+  const NOW = Date.parse("2026-10-19T10:00:00Z")
+  const review = (status: Review["status"], minutesAgo: number) => ({
+    status,
+    createdAt: new Date(NOW - minutesAgo * 60_000).toISOString(),
+  })
+
+  it("đang chờ hay đang chấm, gửi chưa tới 5 phút thì còn poll", () => {
+    expect(stillRunning(review("PENDING", 0), NOW)).toBe(true)
+    expect(stillRunning(review("PROCESSING", 4.9), NOW)).toBe(true)
+  })
+
+  it("gửi đủ 5 phút mà chưa xong thì thôi poll, kể cả khi vẫn đang chờ", () => {
+    expect(stillRunning(review("PENDING", 5), NOW)).toBe(false)
+    expect(stillRunning(review("PROCESSING", 60), NOW)).toBe(false)
+  })
+
+  it("đã có kết quả thì không poll", () => {
+    for (const status of ["DONE", "FAILED", "REJECTED"] as const) {
+      expect(stillRunning(review(status, 0), NOW)).toBe(false)
+    }
   })
 })

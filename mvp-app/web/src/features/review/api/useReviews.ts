@@ -2,8 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/api/client"
 import type { CaptureView, FrameJson } from "@/features/review/utils/livePose"
 import type { Exercise, Review } from "@/features/review/types"
-
-const IN_FLIGHT: Review["status"][] = ["PENDING", "PROCESSING"]
+import { stillRunning } from "@/features/review/utils/reviewView"
 
 export function useReviews() {
   return useQuery({
@@ -11,8 +10,7 @@ export function useReviews() {
     queryFn: () => api.get<Review[]>("/reviews"),
     // Analyzer chấm mất vài giây tới vài chục giây. Poll khi còn việc đang chạy,
     // đứng yên khi xong — không có websocket, và cũng chưa cần.
-    refetchInterval: (query) =>
-      (query.state.data ?? []).some((r) => IN_FLIGHT.includes(r.status)) ? 5000 : false,
+    refetchInterval: (query) => ((query.state.data ?? []).some((r) => stillRunning(r)) ? 5000 : false),
   })
 }
 
@@ -20,8 +18,7 @@ export function useReview(id: string) {
   return useQuery({
     queryKey: ["review", id],
     queryFn: () => api.get<Review>(`/reviews/${id}`),
-    refetchInterval: (query) =>
-      query.state.data && IN_FLIGHT.includes(query.state.data.status) ? 3000 : false,
+    refetchInterval: (query) => (query.state.data && stillRunning(query.state.data) ? 3000 : false),
   })
 }
 
