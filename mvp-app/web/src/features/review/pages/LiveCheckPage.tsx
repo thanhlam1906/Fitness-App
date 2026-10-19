@@ -72,6 +72,10 @@ export function LiveCheckPage() {
       controller.abort()
       cancelAnimationFrame(raf.current)
       stream.current?.getTracks().forEach((t) => t.stop())
+      // Bộ nhận dạng giữ heap wasm và ngữ cảnh WebGL. Không đóng thì mỗi lần vào lại màn thêm một bộ,
+      // vài lần là điện thoại yếu mất GPU hoặc trình duyệt đóng tab.
+      landmarker.current?.close()
+      landmarker.current = null
     }
   }, [])
 
@@ -88,7 +92,12 @@ export function LiveCheckPage() {
     setProgress(landmarker.current ? 1 : 0)
     const signal = alive.current!.signal
     try {
-      landmarker.current ??= await createLandmarker(setProgress, signal)
+      if (!landmarker.current) {
+        const created = await createLandmarker(setProgress, signal)
+        // Rời trang lúc đang dựng: phần dọn của effect đã chạy trước khi có bộ này, phải tự đóng.
+        if (signal.aborted) return created.close()
+        landmarker.current = created
+      }
       setProgress(1)
       // Đã rời trang lúc đang tải: không bật hộp xin quyền camera ở màn khác.
       if (signal.aborted) return
@@ -100,6 +109,8 @@ export function LiveCheckPage() {
       const v = video.current!
       v.srcObject = stream.current
       await v.play()
+      // Rời trang lúc video đang khởi động: không bắt đầu vòng vẽ trên trang đã đóng.
+      if (signal.aborted) return stopCamera()
       session.current = newSession(views)
       setScreen("live")
       const theme = readTheme()
