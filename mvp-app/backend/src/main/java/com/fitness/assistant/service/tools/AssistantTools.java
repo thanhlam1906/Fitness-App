@@ -148,7 +148,7 @@ public class AssistantTools {
 		List<String> matchedExercises = filter == null ? List.of() : matching.stream()
 				.flatMap(w -> exercisesOf(w, exerciseById))
 				.filter(e -> matches(e, filter))
-				.map(AssistantTools::displayName)
+				.map(Exercise::getNameEn)
 				.distinct()
 				.toList();
 
@@ -191,10 +191,6 @@ public class AssistantTools {
 				.anyMatch(name -> name != null && name.toLowerCase(Locale.ROOT).contains(filter));
 	}
 
-	private static String displayName(Exercise e) {
-		return e.getNameVi() != null ? e.getNameVi() : e.getNameEn();
-	}
-
 	private ScheduleDay toDay(ScheduledWorkout w, LocalDate today, Map<UUID, Exercise> exerciseById) {
 		return new ScheduleDay(w.getScheduledOn(), dayVi(w.getScheduledOn()), w.getLabel(), w.displayStatus(today),
 				scheduledExercises.findByScheduledWorkoutId(w.getId()).stream()
@@ -215,7 +211,7 @@ public class AssistantTools {
 
 	private ExerciseTarget toTarget(ScheduledExercise se, Map<UUID, Exercise> exerciseById) {
 		Exercise exercise = exerciseById.get(se.getExerciseId());
-		return new ExerciseTarget(exercise == null ? "?" : displayName(exercise), se.getTargetSets(), se.getTargetReps(), se.getTargetRepsMax(),
+		return new ExerciseTarget(exercise == null ? "?" : exercise.getNameEn(), se.getTargetSets(), se.getTargetReps(), se.getTargetRepsMax(),
 				se.getTargetLoadKg());
 	}
 
@@ -238,11 +234,11 @@ public class AssistantTools {
 		Optional<LoadDecision> decision = loadDecisions
 				.findFirstByUserIdAndExerciseIdOrderByEffectiveFromDesc(currentUser.id(), exercise.get().getId());
 		if (decision.isEmpty()) {
-			return logAndReturn(new LoadChangeExplanation(true, false, exercise.get().getNameVi(), null, null,
+			return logAndReturn(new LoadChangeExplanation(true, false, exercise.get().getNameEn(), null, null,
 					"Chưa có quyết định thay đổi tải nào được ghi nhận cho bài này."));
 		}
 		LoadDecision d = decision.get();
-		return logAndReturn(new LoadChangeExplanation(true, true, exercise.get().getNameVi(), d.getDirection(),
+		return logAndReturn(new LoadChangeExplanation(true, true, exercise.get().getNameEn(), d.getDirection(),
 				d.getDeltaKg(), d.getMessageVi()));
 	}
 

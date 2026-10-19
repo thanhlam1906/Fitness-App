@@ -63,9 +63,9 @@ export function FormCheckListPage() {
                   to={`/form-check/${exercise.id}/live`}
                   className="flex items-center gap-2.5 rounded-[var(--radius-md)] bg-[var(--color-surface-2)] p-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
                 >
-                  <ExerciseImage slug={exercise.slug} alt={exercise.nameVi ?? exercise.nameEn} variant="thumb" />
+                  <ExerciseImage slug={exercise.slug} alt={exercise.nameEn} variant="thumb" />
                   <span className="min-w-0 flex-1 truncate text-base font-semibold">
-                    {exercise.nameVi ?? exercise.nameEn}
+                    {exercise.nameEn}
                   </span>
                   <span className="text-[var(--color-accent)]">→</span>
                 </Link>

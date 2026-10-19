@@ -164,7 +164,7 @@ export function LiveCheckPage() {
       {/* Bấm nhầm bài thì quay lại chọn bài khác; rời trang thì effect dọn dẹp tự tắt camera. */}
       <BackLink to="/form-check">← Chọn bài khác</BackLink>
       <h1 className="mt-2.5 text-[26px] font-extrabold tracking-[-0.02em]">
-        {exercise.data ? `Chấm form: ${exercise.data.nameVi ?? exercise.data.nameEn}` : "Chấm form"}
+        {exercise.data ? `Chấm form: ${exercise.data.nameEn}` : "Chấm form"}
       </h1>
       <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--color-text-muted)]">
         Đặt máy cách 2–3 m, cả người trong khung. Làm {REPS_PER_VIEW} rep mỗi góc:{" "}

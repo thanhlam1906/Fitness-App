@@ -149,7 +149,7 @@ export function ExerciseFormPage() {
     ? "Bài tập mới"
     : existing.isError
       ? "Không tải được bài"
-      : (existing.data?.nameVi ?? existing.data?.nameEn ?? <Skeleton className="h-6 w-56" />)
+      : (existing.data?.nameEn ?? <Skeleton className="h-6 w-56" />)
 
   return (
     <div className="flex min-h-0 flex-1">
@@ -218,16 +218,16 @@ export function ExerciseFormPage() {
               )}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="nameEn">Tên (EN)</Label>
-                  <Input id="nameEn" {...register("nameEn")} />
-                </div>
-                <div className="space-y-1.5">
                   <div className="flex items-center">
-                    <Label htmlFor="nameVi">Tên (VI)</Label>
+                    <Label htmlFor="nameEn">Tên (EN)</Label>
                     <HelpButton open={help.isOpen("name")} onClick={() => help.toggle("name")} />
                   </div>
-                  <Input id="nameVi" {...register("nameVi")} />
+                  <Input id="nameEn" {...register("nameEn")} />
                   {help.isOpen("name") && <HelpText id="name" />}
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="nameVi">Tên (VI), để tìm kiếm</Label>
+                  <Input id="nameVi" {...register("nameVi")} />
                 </div>
               </div>
               <MuscleEquipmentFields control={control} />

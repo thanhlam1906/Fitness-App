@@ -67,7 +67,7 @@ function DayCard({
   const current = useWatch({ control, name: `days.${index}.exercises` })
   const withGear = catalog.filter((e) => e.active && e.equipment.length > 0)
   const noGear = catalog.filter((e) => e.active && e.equipment.length === 0)
-  const name = (e: Exercise) => e.nameVi ?? e.nameEn
+  const name = (e: Exercise) => e.nameEn
 
   return (
     <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-3">

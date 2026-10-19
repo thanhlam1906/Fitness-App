@@ -80,7 +80,7 @@ export function ExerciseListPanel({ activeId }: { activeId?: string }) {
                   active ? "font-bold" : ex.formCheckCount > 0 ? "" : "text-[var(--color-text-muted)]",
                 )}
               >
-                {ex.nameVi ?? ex.nameEn}
+                {ex.nameEn}
               </div>
               <div className="num mt-px truncate text-[11px] text-[var(--color-text-muted)]">
                 {ex.formCheckCount > 0 ? `${ex.formCheckCount} khớp cần kiểm` : "chưa chấm form"}

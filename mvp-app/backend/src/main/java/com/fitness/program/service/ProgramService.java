@@ -128,7 +128,7 @@ public class ProgramService {
 		// Bài trong template mà chưa có trong bảng exercises: hiển thị slug và
 		// coi như cần tạ. createProgram sẽ báo lỗi rõ ràng khi người dùng xác nhận.
 		String name = exercise == null ? ex.exerciseSlug()
-				: (exercise.getNameVi() != null ? exercise.getNameVi() : exercise.getNameEn());
+				: exercise.getNameEn();
 		boolean needsLoad = exercise == null || exercise.getEquipment().length > 0;
 		return new TemplateCandidateResponse.CycleExerciseResponse(
 				ex.exerciseSlug(), name, ex.sets(), ex.repsMin(), ex.repsMax(), ex.restSec(), needsLoad);

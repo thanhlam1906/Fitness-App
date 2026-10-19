@@ -77,7 +77,7 @@ export function FilmingGuidePage() {
     return <StatusBlock icon={CloudOff} tone="danger" title="Không tải được bài tập" detail={exercise.error.message} />
   }
 
-  const name = exercise.data!.nameVi ?? exercise.data!.nameEn
+  const name = exercise.data!.nameEn
   const guide = parseFilmingGuide(exercise.data!.filmingGuide)
   const tips = [guide?.distance, guide?.lighting, guide?.duration].map((s, i) => s?.trim() || DEFAULT_TIPS[i])
   const views = exercise.data!.checkViews

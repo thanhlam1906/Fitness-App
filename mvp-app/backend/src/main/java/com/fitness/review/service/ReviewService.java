@@ -140,7 +140,7 @@ public class ReviewService {
 
 		return new ReviewResponse(
 				request.getId(), request.getExerciseId(),
-				exercise == null ? null : (exercise.getNameVi() != null ? exercise.getNameVi() : exercise.getNameEn()),
+				exercise == null ? null : exercise.getNameEn(),
 				request.getStatus(), request.getRejectReason(), request.getError(),
 				request.getCreatedAt(), request.getFinishedAt(),
 				clips.findByRequestId(request.getId()).stream().map(VideoClip::getViewpoint).toList(),

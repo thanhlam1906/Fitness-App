@@ -115,7 +115,7 @@ class AssistantToolsIntegrationTest extends PostgresIntegrationTest {
 		assertThat(r.workouts()).extracting(AssistantTools.ScheduleDay::date)
 				.containsExactly(today.plusDays(1), today.plusDays(3));
 		assertThat(r.nextWorkout().date()).isEqualTo(today.plusDays(1)); // buổi squat gần nhất, không phải buổi hôm nay
-		assertThat(r.matchedExercises()).containsExactly("Squat gánh tạ");
+		assertThat(r.matchedExercises()).containsExactly("Barbell Back Squat");
 
 		assertThat(tools.getSchedule(today.toString(), today.plusDays(6).toString(), "deadlift").matchedExercises())
 				.isEmpty();

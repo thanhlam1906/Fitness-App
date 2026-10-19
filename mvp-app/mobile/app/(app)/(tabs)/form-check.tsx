@@ -74,9 +74,9 @@ export default function FormCheckScreen() {
                   onPress={() => router.push(`/form-check/${exercise.id}`)}
                   className="flex-row items-center gap-2.5 rounded-md bg-surface-2 p-3 active:opacity-80"
                 >
-                  <ExerciseImage slug={exercise.slug} alt={exercise.nameVi ?? exercise.nameEn} variant="thumb" />
+                  <ExerciseImage slug={exercise.slug} alt={exercise.nameEn} variant="thumb" />
                   <Text className="flex-1 text-base font-semibold text-text" numberOfLines={1}>
-                    {exercise.nameVi ?? exercise.nameEn}
+                    {exercise.nameEn}
                   </Text>
                   <ChevronRight size={16} color={colors.accent} />
                 </Pressable>

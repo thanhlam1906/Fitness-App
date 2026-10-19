@@ -267,7 +267,7 @@ function EditBody({
                       key: `new-${option.id}-${prev.length}`,
                       id: null,
                       exerciseId: option.id,
-                      name: option.nameVi ?? option.nameEn,
+                      name: option.nameEn,
                       sets: 3,
                       reps: 8,
                       repsMax: 12,
@@ -280,7 +280,7 @@ function EditBody({
                 }}
                 className={i > 0 ? "border-t border-border py-3" : "py-3"}
               >
-                <Text className="text-sm text-text">{option.nameVi ?? option.nameEn}</Text>
+                <Text className="text-sm text-text">{option.nameEn}</Text>
               </Pressable>
             ))}
           </View>

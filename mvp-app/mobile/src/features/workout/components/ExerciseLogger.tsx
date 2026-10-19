@@ -415,7 +415,7 @@ function SubstitutePanel({ exercise }: { exercise: ScheduledExerciseView }) {
               substitute.mutate({ scheduledExerciseId: exercise.id, exerciseId: s.id }, { onSuccess: () => setOpen(false) })
             }
           >
-            {s.nameVi ?? s.nameEn}
+            {s.nameEn}
           </Button>
         ))}
       </View>

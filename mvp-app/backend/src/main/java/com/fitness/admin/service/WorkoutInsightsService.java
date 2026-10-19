@@ -87,7 +87,7 @@ public class WorkoutInsightsService {
 		}
 		Map<UUID, String> exerciseNames = new HashMap<>();
 		for (Exercise e : exercises.findAll()) {
-			exerciseNames.put(e.getId(), e.getNameVi() != null ? e.getNameVi() : e.getNameEn());
+			exerciseNames.put(e.getId(), e.getNameEn());
 		}
 
 		Instant from = Instant.now().minus(days, ChronoUnit.DAYS);

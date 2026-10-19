@@ -65,7 +65,7 @@ export function TemplateEditor({
   const needsLoad = (slug: string) => (bySlug.get(slug)?.equipment.length ?? 0) > 0
   const nameOf = (slug: string) => {
     const e = bySlug.get(slug)
-    return e ? (e.nameVi ?? e.nameEn) : slug
+    return e ? e.nameEn : slug
   }
   const slugs = loadedSlugs(days ?? [], needsLoad)
   const activeUsers = template?.activeUsers ?? 0

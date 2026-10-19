@@ -80,7 +80,7 @@ class SubstituteIntegrationTest extends PostgresIntegrationTest {
 
 		assertThat(swapped.getStatusCode()).isEqualTo(HttpStatus.OK);
 		assertThat(swapped.getBody().exerciseId()).isEqualTo(replacement);
-		assertThat(swapped.getBody().substitutedFromName()).isEqualTo("Squat gánh tạ");
+		assertThat(swapped.getBody().substitutedFromName()).isEqualTo("Barbell Back Squat");
 		// Set/rep giữ tương đương; tải bỏ trống vì mức tạ bài cũ không chuyển sang bài mới.
 		assertThat(swapped.getBody().targetSets()).isEqualTo(squat.targetSets());
 		assertThat(swapped.getBody().targetReps()).isEqualTo(squat.targetReps());

@@ -225,12 +225,12 @@ function ExercisePicker({
     <View>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Bài tập: ${current ? (current.nameVi ?? current.nameEn) : "chưa chọn"}`}
+        accessibilityLabel={`Bài tập: ${current ? current.nameEn : "chưa chọn"}`}
         accessibilityState={{ expanded: open }}
         onPress={() => setOpen((o) => !o)}
         className="flex-row items-center justify-between rounded-lg bg-surface-2 px-3 py-2.5"
       >
-        <Text className="flex-1 text-sm text-text">{current ? (current.nameVi ?? current.nameEn) : "Chọn bài"}</Text>
+        <Text className="flex-1 text-sm text-text">{current ? current.nameEn : "Chọn bài"}</Text>
         <ChevronDown size={16} color={colors["text-muted"]} />
       </Pressable>
       {open && (
@@ -247,7 +247,7 @@ function ExercisePicker({
               className={cn("py-2.5", i > 0 && "border-t border-border")}
             >
               <Text className={cn("text-sm", o.id === value ? "font-bold text-accent" : "text-text")}>
-                {o.nameVi ?? o.nameEn}
+                {o.nameEn}
               </Text>
             </Pressable>
           ))}

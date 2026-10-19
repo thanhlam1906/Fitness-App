@@ -109,7 +109,7 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
                 >
                   {active.map((option) => (
                     <option key={option.id} value={option.id}>
-                      {option.nameVi ?? option.nameEn}
+                      {option.nameEn}
                     </option>
                   ))}
                 </select>

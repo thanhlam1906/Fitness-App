@@ -5,7 +5,7 @@
 export type HelpKey = "name" | "form" | "view" | "measure" | "moment" | "range" | "warn" | "label" | "cue"
 
 export const HELP: Record<HelpKey, string[]> = {
-  name: ["Tên người tập thấy khi chọn bài. Dùng tên tiếng Việt quen thuộc. Ví dụ: Squat tay không."],
+  name: ["Tên người tập thấy khi chọn bài, viết tiếng Anh. Ví dụ: Bodyweight Squat. Tên tiếng Việt không hiện ra, chỉ để tìm bài và để trợ lý hiểu khi người tập gõ tiếng Việt."],
   form: [
     "Làm 2 bước: chọn góc camera ở 3 ô bên dưới, rồi bấm “+ Thêm khớp cần kiểm” và điền.",
     "Người tập sẽ được hướng dẫn quay đúng những góc có khớp. Bài chưa có khớp nào thì chưa chấm form được.",

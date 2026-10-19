@@ -95,7 +95,7 @@ export default function FilmingGuideScreen() {
   }
 
   const data = exercise.data!
-  const name = data.nameVi ?? data.nameEn
+  const name = data.nameEn
   const guide = parseFilmingGuide(data.filmingGuide)
   const tips = [guide?.distance, guide?.lighting, guide?.duration].map((s, i) => s?.trim() || DEFAULT_TIPS[i])
   const views = data.checkViews

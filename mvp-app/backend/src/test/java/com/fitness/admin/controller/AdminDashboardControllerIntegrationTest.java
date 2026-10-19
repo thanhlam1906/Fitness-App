@@ -130,7 +130,7 @@ class AdminDashboardControllerIntegrationTest extends PostgresIntegrationTest {
 
 		assertThat(after.topFormChecks()).filteredOn(c -> exercise.equals(c.exerciseId()))
 				.extracting(FormCheckStatResponse::name, FormCheckStatResponse::checks, FormCheckStatResponse::users)
-				.containsExactly(tuple("Bài tổng quan", 6, 1));
+				.containsExactly(tuple("Dashboard lift", 6, 1));
 		assertThat(after.formCheckTotal() - before.formCheckTotal()).isEqualTo(6);
 		assertThat(after.timelineUnit()).isEqualTo("DAY");
 		assertThat(after.timeline()).hasSize(7);

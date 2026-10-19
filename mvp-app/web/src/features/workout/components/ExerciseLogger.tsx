@@ -432,7 +432,7 @@ function SubstitutePanel({ exercise }: { exercise: ScheduledExerciseView }) {
               )
             }
           >
-            {s.nameVi ?? s.nameEn}
+            {s.nameEn}
           </Button>
         ))}
       </div>

@@ -264,7 +264,7 @@ function EditBody({
                   key: `new-${picked.id}-${prev.length}`,
                   id: null,
                   exerciseId: picked.id,
-                  name: picked.nameVi ?? picked.nameEn,
+                  name: picked.nameEn,
                   sets: 3,
                   reps: 8,
                   repsMax: 12,
@@ -282,7 +282,7 @@ function EditBody({
             <option value="">+ {addLabel}</option>
             {active.map((option) => (
               <option key={option.id} value={option.id}>
-                {option.nameVi ?? option.nameEn}
+                {option.nameEn}
               </option>
             ))}
           </select>

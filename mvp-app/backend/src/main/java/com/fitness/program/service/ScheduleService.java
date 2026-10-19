@@ -207,16 +207,12 @@ public class ScheduleService {
 		Exercise exercise = exerciseById.get(se.getExerciseId());
 		Exercise original = se.getSubstitutedFrom() == null ? null : exerciseById.get(se.getSubstitutedFrom());
 		return new ScheduledExerciseResponse(
-				se.getId(), se.getExerciseId(), exercise.getSlug(), displayName(exercise), exercise.getDescription(),
+				se.getId(), se.getExerciseId(), exercise.getSlug(), exercise.getNameEn(), exercise.getDescription(),
 				List.of(exercise.getMuscleGroups()), List.of(exercise.getStepsVi()), List.of(exercise.getMistakesVi()),
 				exercise.isAnalyzable(),
 				se.getOrderIndex(), se.getTargetSets(), se.getTargetReps(), se.getTargetRepsMax(),
 				se.getTargetLoadKg(), se.getRestSeconds() == null ? null : (int) se.getRestSeconds(),
-				original == null ? null : displayName(original),
+				original == null ? null : original.getNameEn(),
 				decision == null ? null : ScheduledExerciseResponse.LoadDecisionResponse.from(decision));
-	}
-
-	private String displayName(Exercise exercise) {
-		return exercise.getNameVi() != null ? exercise.getNameVi() : exercise.getNameEn();
 	}
 }

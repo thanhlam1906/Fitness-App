@@ -195,11 +195,11 @@ public class ProgramTemplateService {
 				continue;
 			}
 			if (!r.progression().incrementKg().containsKey(slug)) {
-				throw badRequest("Chưa chọn bước tăng tạ cho bài: " + nameOf(ex));
+				throw badRequest("Chưa chọn bước tăng tạ cho bài: " + ex.getNameEn());
 			}
 			BigDecimal kg = r.progression().incrementKg().get(slug);
 			if (kg != null && (kg.signum() <= 0 || kg.compareTo(MAX_INCREMENT_KG) > 0)) {
-				throw badRequest("Bước tăng tạ của " + nameOf(ex) + " phải lớn hơn 0 và không quá 20 kg");
+				throw badRequest("Bước tăng tạ của " + ex.getNameEn() + " phải lớn hơn 0 và không quá 20 kg");
 			}
 			inc.put(slug, kg);
 		}
@@ -233,10 +233,6 @@ public class ProgramTemplateService {
 		} catch (Exception e) {
 			throw new IllegalStateException("JSON của template " + t.getSlug() + " hỏng", e);
 		}
-	}
-
-	private static String nameOf(Exercise ex) {
-		return ex.getNameVi() != null ? ex.getNameVi() : ex.getNameEn();
 	}
 
 	private static ResponseStatusException badRequest(String message) {
