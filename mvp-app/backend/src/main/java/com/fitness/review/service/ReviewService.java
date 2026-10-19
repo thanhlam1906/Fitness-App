@@ -104,12 +104,11 @@ public class ReviewService {
 	}
 
 	public List<ReviewResponse> list(UUID userId) {
-		List<VideoReviewRequest> mine = requests.findByUserIdOrderByCreatedAtDesc(userId);
+		List<VideoReviewRequest> mine = requests.findTop20ByUserIdOrderByCreatedAtDesc(userId);
 		Map<UUID, Exercise> byId = exercises.findAllById(
 				mine.stream().map(VideoReviewRequest::getExerciseId).filter(Objects::nonNull).distinct().toList())
 				.stream().collect(Collectors.toMap(Exercise::getId, e -> e));
-		// HashMap của toMap trả null cho khoá null: yêu cầu cũ gửi khi LLM còn đoán bài có thể không có bài.
-		return mine.stream().map(r -> toResponse(r, byId.get(r.getExerciseId()))).toList();
+		return toResponses(mine, byId);
 	}
 
 	public ReviewResponse get(UUID userId, UUID id) {
@@ -124,26 +123,46 @@ public class ReviewService {
 	}
 
 	private ReviewResponse toResponse(VideoReviewRequest request, Exercise exercise) {
-		List<ReviewResult> rows = results.findByRequestId(request.getId());
+		return toResponses(List.of(request), exercise == null ? Map.of() : Map.of(exercise.getId(), exercise)).get(0);
+	}
+
+	/**
+	 * Kết quả, mã mục kiểm và góc quay của cả lô nạp bằng 3 query, không phải 3 query mỗi lần chấm: màn danh
+	 * sách poll mỗi 5 s khi có lần đang chấm, người chấm nhiều lần thì mỗi lần poll thành hàng chục query.
+	 */
+	private List<ReviewResponse> toResponses(List<VideoReviewRequest> batch, Map<UUID, Exercise> exerciseById) {
+		if (batch.isEmpty()) {
+			return List.of();
+		}
+		List<UUID> ids = batch.stream().map(VideoReviewRequest::getId).toList();
+		Map<UUID, List<ReviewResult>> rowsByRequest = results.findByRequestIdIn(ids).stream()
+				.collect(Collectors.groupingBy(ReviewResult::getRequestId));
 		// Kết quả rule cũ lấy code qua form_checks; mục do LLM chấm có name_vi, không gắn form_check.
-		Map<UUID, String> codeByFormCheck = request.getExerciseId() == null ? Map.of()
-				: formChecks.findByExerciseId(request.getExerciseId()).stream()
-						.collect(Collectors.toMap(FormCheck::getId, FormCheck::getCode));
+		Map<UUID, String> codeByFormCheck = formChecks.findAllById(rowsByRequest.values().stream()
+				.flatMap(List::stream).map(ReviewResult::getFormCheckId).filter(Objects::nonNull).distinct().toList())
+				.stream().collect(Collectors.toMap(FormCheck::getId, FormCheck::getCode));
+		Map<UUID, List<String>> viewpointsByRequest = clips.findByRequestIdIn(ids).stream()
+				.collect(Collectors.groupingBy(VideoClip::getRequestId,
+						Collectors.mapping(VideoClip::getViewpoint, Collectors.toList())));
 
-		List<ReviewResponse.CheckResultResponse> checks = rows.stream()
-				.map(r -> new ReviewResponse.CheckResultResponse(
-						r.getId(), r.getFormCheckId() == null ? null : codeByFormCheck.get(r.getFormCheckId()),
-						r.getNameVi(), r.getVerdict(), r.getConfidence(), r.getMeasured(), r.getCueTextVi(),
-						r.isPrimary()))
-				.sorted(CHECK_ORDER)
-				.toList();
-
-		return new ReviewResponse(
-				request.getId(), request.getExerciseId(),
-				exercise == null ? null : exercise.getNameEn(),
-				request.getStatus(), request.getRejectReason(), request.getError(),
-				request.getCreatedAt(), request.getFinishedAt(),
-				clips.findByRequestId(request.getId()).stream().map(VideoClip::getViewpoint).toList(),
-				checks);
+		return batch.stream().map(request -> {
+			List<ReviewResponse.CheckResultResponse> checks = rowsByRequest.getOrDefault(request.getId(), List.of())
+					.stream()
+					.map(r -> new ReviewResponse.CheckResultResponse(
+							r.getId(), r.getFormCheckId() == null ? null : codeByFormCheck.get(r.getFormCheckId()),
+							r.getNameVi(), r.getVerdict(), r.getConfidence(), r.getMeasured(), r.getCueTextVi(),
+							r.isPrimary()))
+					.sorted(CHECK_ORDER)
+					.toList();
+			// Yêu cầu cũ gửi khi LLM còn đoán bài có thể không có bài; Map.of() ném lỗi khi tra khoá null.
+			Exercise exercise = request.getExerciseId() == null ? null : exerciseById.get(request.getExerciseId());
+			return new ReviewResponse(
+					request.getId(), request.getExerciseId(),
+					exercise == null ? null : exercise.getNameEn(),
+					request.getStatus(), request.getRejectReason(), request.getError(),
+					request.getCreatedAt(), request.getFinishedAt(),
+					viewpointsByRequest.getOrDefault(request.getId(), List.of()),
+					checks);
+		}).toList();
 	}
 }

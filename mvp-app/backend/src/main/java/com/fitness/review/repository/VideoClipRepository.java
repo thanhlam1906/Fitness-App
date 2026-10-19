@@ -2,6 +2,7 @@ package com.fitness.review.repository;
 
 import com.fitness.review.entity.VideoClip;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,6 +11,8 @@ import org.springframework.data.jpa.repository.Query;
 public interface VideoClipRepository extends JpaRepository<VideoClip, UUID> {
 
 	List<VideoClip> findByRequestId(UUID requestId);
+
+	List<VideoClip> findByRequestIdIn(Collection<UUID> requestIds);
 
 	@Query("select c from VideoClip c where c.deletedAt is null and c.uploadedAt < :before")
 	List<VideoClip> findOrphans(Instant before);
