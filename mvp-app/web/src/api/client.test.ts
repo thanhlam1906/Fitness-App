@@ -5,6 +5,7 @@ const STATUS_TEXT: Record<number, string> = {
   401: "Unauthorized",
   403: "Forbidden",
   418: "I'm a teapot",
+  502: "Bad Gateway",
 }
 
 /**
@@ -127,5 +128,142 @@ describe("api client — thông báo lỗi", () => {
 
     expect(error.status).toBe(418)
     expect(error.message).toBeTruthy()
+  })
+})
+
+/**
+ * 500 là lỗi chưa ai bắt: Spring (include-message: always) đưa nguyên câu của exception vào body,
+ * có khi kèm câu SQL, tên bảng, cả email. Câu tiếng Việt có chủ đích ở 5xx đi bằng mã khác.
+ */
+describe("api client — lỗi máy chủ", () => {
+  it("500 không lộ câu của exception", async () => {
+    const error = await failedRequest(500, {
+      error: "Internal Server Error",
+      message: 'could not execute statement [duplicate key value violates unique constraint "users_email_key"]',
+    })
+
+    expect(error.message).toBe("Máy chủ gặp lỗi. Thử lại sau ít phút.")
+    expect(error.detail).toBeUndefined()
+  })
+
+  it("503 mang câu tiếng Việt có chủ đích thì giữ", async () => {
+    const error = await failedRequest(503, { message: "Trợ lý đang gián đoạn, bạn thử lại sau ít phút." })
+
+    expect(error.message).toBe("Trợ lý đang gián đoạn, bạn thử lại sau ít phút.")
+  })
+
+  it("502 không có body (trang HTML của nginx) nói tiếng Việt, không phải statusText", async () => {
+    const error = await failedRequest(502)
+
+    expect(error.message).toBe("Máy chủ gặp lỗi. Thử lại sau ít phút.")
+  })
+})
+
+/** localStorage ghi được, để thấy client đổi token. */
+function storeSession(access: string, refresh: string) {
+  const store: Record<string, string> = { "fitness.accessToken": access, "fitness.refreshToken": refresh }
+  vi.stubGlobal("localStorage", {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, value: string) => {
+      store[key] = value
+    },
+    removeItem: (key: string) => {
+      delete store[key]
+    },
+  })
+  return store
+}
+
+/** Mỗi lần gọi fetch lấy response kế tiếp trong danh sách. */
+function respondInOrder(...responses: { status: number; body?: unknown }[]) {
+  let i = 0
+  const fetchMock = vi.fn(async (_input: string, _init?: RequestInit) => {
+    const { status, body } = responses[i++]
+    return { ok: status >= 200 && status < 300, status, statusText: "", json: async () => body ?? {} }
+  })
+  vi.stubGlobal("fetch", fetchMock)
+  return fetchMock
+}
+
+/**
+ * Hai tab cùng hết hạn access token cùng gửi một refresh token. Tab thắng được cặp mới, tab thua
+ * nhận 401 (token đã xoay) và xoá luôn cặp mới của tab thắng: người dùng bị đăng xuất ngẫu nhiên.
+ */
+describe("api client — refresh khi mở nhiều tab", () => {
+  it("tab khác đã xoay token lúc chờ khoá: không gửi refresh token cũ, gọi lại bằng access token mới", async () => {
+    const store = storeSession("A1", "R1")
+    const fetchMock = respondInOrder({ status: 401 }, { status: 200 })
+    vi.stubGlobal("navigator", {
+      locks: {
+        request: async (_name: string, fn: () => Promise<boolean>) => {
+          // Tab kia giữ khoá và xoay xong trước khi tới lượt tab này.
+          store["fitness.accessToken"] = "A2"
+          store["fitness.refreshToken"] = "R2"
+          return fn()
+        },
+      },
+    })
+
+    await api.get("/schedule")
+
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual(["/api/v1/schedule", "/api/v1/schedule"])
+    expect(authHeaderOf(fetchMock, 1)).toBe("Bearer A2")
+    expect(store["fitness.refreshToken"]).toBe("R2")
+  })
+
+  it("trình duyệt không có Web Locks (http thường) vẫn refresh như trước", async () => {
+    const store = storeSession("A1", "R1")
+    const fetchMock = respondInOrder(
+      { status: 401 },
+      { status: 200, body: { accessToken: "A2", refreshToken: "R2" } },
+      { status: 200 },
+    )
+    vi.stubGlobal("navigator", {})
+
+    await api.get("/schedule")
+
+    expect(fetchMock.mock.calls[1][0]).toBe("/api/v1/auth/refresh")
+    expect(fetchMock.mock.calls[1][1]?.body).toBe(JSON.stringify({ refreshToken: "R1" }))
+    expect(authHeaderOf(fetchMock, 2)).toBe("Bearer A2")
+    expect(store["fitness.refreshToken"]).toBe("R2")
+  })
+
+  it("tab khác xoay token mà tab này thấy chậm: refresh 401 nhưng máy đã có cặp mới thì dùng, không đăng xuất", async () => {
+    const store = storeSession("A1", "R1")
+    const fetchMock = vi.fn(async (input: string) => {
+      if (input === "/api/v1/auth/refresh") {
+        // Thay đổi của tab kia tới nơi khi tab này đã gửi R1 (đã bị thu hồi).
+        store["fitness.accessToken"] = "A2"
+        store["fitness.refreshToken"] = "R2"
+        return { ok: false, status: 401, statusText: "", json: async () => ({}) }
+      }
+      const ok = fetchMock.mock.calls.length > 1
+      return { ok, status: ok ? 200 : 401, statusText: "", json: async () => ({}) }
+    })
+    vi.stubGlobal("fetch", fetchMock)
+    vi.stubGlobal("navigator", {})
+
+    await api.get("/schedule")
+
+    expect(authHeaderOf(fetchMock, 2)).toBe("Bearer A2")
+    expect(store["fitness.refreshToken"]).toBe("R2")
+  })
+
+  it("đăng xuất lúc đang refresh: không ghi cặp token vừa nhận vào máy", async () => {
+    const store = storeSession("A1", "R1")
+    vi.stubGlobal("fetch", vi.fn(async (input: string) => {
+      if (input === "/api/v1/auth/refresh") {
+        delete store["fitness.accessToken"]
+        delete store["fitness.refreshToken"]
+        return { ok: true, status: 200, statusText: "", json: async () => ({ accessToken: "A2", refreshToken: "R2" }) }
+      }
+      return { ok: false, status: 401, statusText: "", json: async () => ({}) }
+    }))
+    vi.stubGlobal("navigator", {})
+
+    await expect(api.get("/schedule")).rejects.toBeInstanceOf(ApiError)
+
+    expect(store["fitness.refreshToken"]).toBeUndefined()
+    expect(store["fitness.accessToken"]).toBeUndefined()
   })
 })
