@@ -12,7 +12,8 @@ public interface VideoReviewRequestRepository extends JpaRepository<VideoReviewR
 
 	Optional<VideoReviewRequest> findByIdAndUserId(UUID id, UUID userId);
 
-	List<VideoReviewRequest> findByUserIdOrderByCreatedAtDesc(UUID userId);
+	/** Màn chấm form (web, mobile) chỉ hiện các lần gửi gần đây, và poll danh sách này khi có lần đang chấm. */
+	List<VideoReviewRequest> findTop20ByUserIdOrderByCreatedAtDesc(UUID userId);
 
 	long countByUserIdAndCreatedAtAfter(UUID userId, Instant since);
 

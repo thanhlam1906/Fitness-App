@@ -8,8 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface FormCheckRepository extends JpaRepository<FormCheck, UUID> {
 
-	List<FormCheck> findByExerciseId(UUID exerciseId);
-
 	List<FormCheck> findByExerciseIdAndActiveTrueOrderByPriority(UUID exerciseId);
 
 	/** Khớp đang bật của mọi bài, một query cho danh sách ~20 bài. */

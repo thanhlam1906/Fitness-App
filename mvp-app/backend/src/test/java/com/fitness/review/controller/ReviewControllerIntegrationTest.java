@@ -7,11 +7,15 @@ import com.fitness.content.entity.Exercise;
 import com.fitness.content.repository.ExerciseRepository;
 import com.fitness.review.dto.ReviewResponse;
 import com.fitness.review.repository.VideoClipRepository;
+import com.fitness.review.service.ReviewService;
 import com.fitness.support.PostgresIntegrationTest;
+import jakarta.persistence.EntityManagerFactory;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
+import org.hibernate.SessionFactory;
+import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -42,6 +46,10 @@ class ReviewControllerIntegrationTest extends PostgresIntegrationTest {
 	private VideoClipRepository clips;
 	@Autowired
 	private JdbcTemplate jdbc;
+	@Autowired
+	private ReviewService reviewService;
+	@Autowired
+	private EntityManagerFactory emf;
 
 	@Test
 	void submit_withOptIn_queuesPendingRequestAndStoresClip() throws Exception {
@@ -139,6 +147,72 @@ class ReviewControllerIntegrationTest extends PostgresIntegrationTest {
 				new HttpEntity<>(stranger), ReviewResponse[].class);
 
 		assertThat(List.of(mine.getBody())).isEmpty();
+	}
+
+	@Test
+	void list_returnsNewest20_eachWithOwnChecksAndViewpoints() {
+		AuthedUser user = newAuthedUser(Role.USER);
+		UUID squatId = exercises.findBySlug("barbell-back-squat").orElseThrow().getId();
+		// Lần thứ i gửi cách đây i phút: lần 1 mới nhất, lần 21 cũ nhất và bị cắt.
+		List<UUID> ids = IntStream.rangeClosed(1, 21).mapToObj(i -> seedDoneReview(user.userId(), squatId, i)).toList();
+		String code = jdbc.queryForObject("SELECT code FROM form_checks WHERE id = ?", String.class, someFormCheck(squatId));
+
+		List<ReviewResponse> body = List.of(rest.exchange("/api/v1/reviews", HttpMethod.GET,
+				new HttpEntity<>(user.headers()), ReviewResponse[].class).getBody());
+
+		assertThat(body).extracting(ReviewResponse::id).containsExactlyElementsOf(ids.subList(0, 20));
+		for (int i = 0; i < 20; i++) {
+			ReviewResponse review = body.get(i);
+			// Nạp theo lô mà vẫn đúng lần nào của lần đó: mục, mã mục kiểm và góc quay không lẫn sang lần khác.
+			assertThat(review.checks()).extracting(ReviewResponse.CheckResultResponse::name)
+					.containsExactlyInAnyOrder("Mục " + (i + 1), null);
+			assertThat(review.checks()).extracting(ReviewResponse.CheckResultResponse::code)
+					.containsExactlyInAnyOrder(null, code);
+			assertThat(review.viewpoints()).containsExactly("góc " + (i + 1));
+		}
+	}
+
+	@Test
+	void list_queryCountDoesNotGrowWithReviewCount() {
+		UUID squatId = exercises.findBySlug("barbell-back-squat").orElseThrow().getId();
+		UUID oneReview = newAuthedUser(Role.USER).userId();
+		seedDoneReview(oneReview, squatId, 1);
+		UUID manyReviews = newAuthedUser(Role.USER).userId();
+		IntStream.rangeClosed(1, 10).forEach(i -> seedDoneReview(manyReviews, squatId, i));
+
+		assertThat(statementsToList(manyReviews)).isEqualTo(statementsToList(oneReview));
+	}
+
+	/** Số câu SQL Hibernate chạy cho một lần GET danh sách, gọi thẳng service để không lẫn query xác thực. */
+	private long statementsToList(UUID userId) {
+		Statistics stats = emf.unwrap(SessionFactory.class).getStatistics();
+		stats.setStatisticsEnabled(true);
+		stats.clear();
+		try {
+			reviewService.list(userId);
+			return stats.getPrepareStatementCount();
+		} finally {
+			stats.setStatisticsEnabled(false);
+		}
+	}
+
+	/** Một lần chấm xong, gửi cách đây `minutesAgo` phút: một mục LLM, một mục rule cũ gắn form_check, một clip. */
+	private UUID seedDoneReview(UUID userId, UUID exerciseId, int minutesAgo) {
+		UUID id = jdbc.queryForObject("INSERT INTO video_review_requests (user_id, exercise_id, status, created_at, "
+				+ "finished_at) VALUES (?, ?, 'DONE', now() - ? * interval '1 minute', now()) RETURNING id",
+				UUID.class, userId, exerciseId, minutesAgo);
+		jdbc.update("INSERT INTO review_results (request_id, name_vi, verdict, is_primary) VALUES (?, ?, 'PASS', true)",
+				id, "Mục " + minutesAgo);
+		jdbc.update("INSERT INTO review_results (request_id, form_check_id, verdict) VALUES (?, ?, 'WARN')",
+				id, someFormCheck(exerciseId));
+		jdbc.update("INSERT INTO video_clips (request_id, storage_key, viewpoint, deleted_at) VALUES (?, ?, ?, now())",
+				id, "test/" + id, "góc " + minutesAgo);
+		return id;
+	}
+
+	private UUID someFormCheck(UUID exerciseId) {
+		return jdbc.queryForObject("SELECT id FROM form_checks WHERE exercise_id = ? ORDER BY id LIMIT 1",
+				UUID.class, exerciseId);
 	}
 
 	/** Giả lập analyzer chấm xong bằng LLM: có features, hai mục không gắn form_check. */

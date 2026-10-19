@@ -60,6 +60,10 @@ public class ReviewResult {
 		return id;
 	}
 
+	public UUID getRequestId() {
+		return requestId;
+	}
+
 	public UUID getFormCheckId() {
 		return formCheckId;
 	}
