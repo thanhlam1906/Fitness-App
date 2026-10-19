@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { api, ApiError } from "@/api/client"
+import { api } from "@/api/client"
 import type { FinishSessionInput, SessionResponse, SetLogInput, SetLogResponse } from "@/features/workout/types"
 
 const sessionKey = (scheduledWorkoutId: string) => ["session", scheduledWorkoutId] as const
@@ -16,12 +16,18 @@ const sessionKey = (scheduledWorkoutId: string) => ["session", scheduledWorkoutI
  * đang mở", chỉ là backend cần tạo nếu chưa có. Gọi lại không sinh thêm gì.
  */
 export function useWorkoutSession(scheduledWorkoutId: string) {
+  const queryClient = useQueryClient()
   return useQuery({
     queryKey: sessionKey(scheduledWorkoutId),
-    queryFn: () => api.post<SessionResponse>("/sessions", { scheduledWorkoutId }),
+    queryFn: async () => {
+      const session = await api.post<SessionResponse>("/sessions", { scheduledWorkoutId })
+      // POST vừa tạo buổi đang dở. Màn Lịch đọc trạng thái này qua hai query dưới và giữ 30 s (staleTime ở
+      // main.tsx): không báo thì quay về vẫn thấy nút "Bắt đầu". Lịch chỉ đánh dấu cũ, tải lại khi về màn Lịch.
+      queryClient.setQueryData(["session-of-day", scheduledWorkoutId], session)
+      queryClient.invalidateQueries({ queryKey: ["schedule"], refetchType: "none" })
+      return session
+    },
     staleTime: Infinity, // cache đã được ghi lại sau mỗi log set, không cần refetch nền
-    // 409 = ngày đã tập xong: thử lại vẫn 409, chỉ làm người dùng chờ thêm.
-    retry: (count, error) => !(error instanceof ApiError && error.status === 409) && count < 3,
   })
 }
 
@@ -59,6 +65,8 @@ export function useFinishSession(sessionId: string | undefined) {
       // Thẻ ngày ở màn Lịch đọc buổi qua ["session-of-day", id]; không làm mới thì vừa kết
       // buổi xong vẫn thấy bản cũ (chưa tập / đang dở) một nhịp.
       queryClient.invalidateQueries({ queryKey: ["session-of-day"] })
+      // Tiến bộ ở màn Cài đặt tính từ các buổi đã xong.
+      queryClient.invalidateQueries({ queryKey: ["progress"] })
     },
   })
 }

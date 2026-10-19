@@ -27,7 +27,8 @@ export function useReview(id: string) {
 
 export function useExercise(id: string) {
   return useQuery({
-    queryKey: ["exercise", id],
+    // Chung key với useExercise của features/exercise: admin sửa ngưỡng, góc quay thì mutation làm mới cả màn này.
+    queryKey: ["exercises", id],
     queryFn: () => api.get<Exercise>(`/exercises/${id}`),
   })
 }

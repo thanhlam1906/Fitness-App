@@ -22,7 +22,11 @@ export function usePatchProfile() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (patch: ProfilePatch) => api.patch<Profile>("/me/profile", patch),
-    onSuccess: (profile) => queryClient.setQueryData(profileKey, profile),
+    onSuccess: (profile) => {
+      queryClient.setQueryData(profileKey, profile)
+      // Chương trình gợi ý lọc theo thiết bị và số buổi mỗi tuần trong hồ sơ.
+      queryClient.invalidateQueries({ queryKey: ["program-candidates"] })
+    },
   })
 }
 
