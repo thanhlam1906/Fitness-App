@@ -83,7 +83,7 @@ export default function ReviewResultScreen() {
           tone="warn"
           scanning
           title="Đang phân tích"
-          detail="Kết quả tự hiện khi xong, không cần đợi ở đây."
+          detail="Không cần đợi ở đây, lát quay lại là thấy kết quả."
         >
           <Button variant="secondary" onPress={() => router.dismissTo("/form-check")}>
             Quay lại

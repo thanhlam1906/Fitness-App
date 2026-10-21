@@ -68,7 +68,8 @@ export function ReviewResultPage() {
           tone="warn"
           scanning
           title="Đang phân tích"
-          detail="Kết quả tự hiện khi xong, không cần đợi ở đây."
+          // Không hứa "tự hiện": quá 5 phút thì thôi poll (stillRunning), kết quả chỉ hiện khi mở lại màn.
+          detail="Không cần đợi ở đây, lát quay lại là thấy kết quả."
         >
           <Link to="/form-check">
             <Button variant="secondary">Quay lại</Button>
