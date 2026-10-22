@@ -87,7 +87,9 @@ services:
       timeout: 3s
       retries: 3
     restart: unless-stopped
-    mem_limit: 64m
+    # nginx ghi tạm cả lần gửi video (tới 95 MB) ra file, cache của file đó tính vào trần này.
+    # 64m chạm trần và bị hãm mạng ngay ở 2 lần gửi thật (bẫy 2.9).
+    mem_limit: 256m
 
   # Đường hầm ra internet (giai đoạn 2). Token chỉ ở .env, truyền bằng biến, không lên dòng lệnh (bẫy 2.1).
   cloudflared:
