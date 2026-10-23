@@ -1,0 +1,107 @@
+# CI: chạy test 4 phần (web, backend, analyzer, mobile) cho mọi push và mọi PR.
+# Lệnh từng phần giống gate chạy ở laptop. Workflow này chỉ chạy test: không deploy, không đọc secret nào,
+# nên PR của người lạ (từ fork) có chạy cũng không lấy được gì.
+name: CI
+
+on:
+  push:
+  # pull_request chạy code của PR với token chỉ đọc và không có secret. KHÔNG dùng pull_request_target:
+  # sự kiện đó chạy bằng quyền của repo, PR lạ đọc được secret.
+  pull_request:
+
+# Khai một quyền thì mọi quyền không khai về none: token của workflow chỉ đọc được code, không ghi gì.
+permissions:
+  contents: read
+
+# Action ghim theo mã commit 40 ký tự, tên bản ghi bên cạnh: tên bản (tag) có thể bị dời sang code khác,
+# mã commit thì không. Chọn bản mới nhất đã ra ít nhất 7 ngày để tránh bản vừa phát hành bị chèn mã độc.
+# runs-on ghim ubuntu-24.04 thay vì ubuntu-latest để runner không tự đổi bản Ubuntu.
+# timeout-minutes khoảng 2–3 lần thời gian dự kiến: mặc định GitHub để job treo tới 6 giờ.
+jobs:
+  web:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: mvp-app/web
+    steps:
+      # persist-credentials: false để token không nằm lại trong .git/config, code test của PR không đọc được.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Node trùng bản trong Dockerfile web, để CI build giống image production.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.23.3
+          cache: npm
+          cache-dependency-path: mvp-app/web/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      # build gồm cả tsc -b: lỗi kiểu dữ liệu cũng làm đỏ.
+      - run: npm run build
+
+  backend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: mvp-app/backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Java 21 như image backend. cache: gradle giữ thư viện và bản Gradle giữa các lần chạy.
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+      # Git lưu gradlew không có quyền chạy (repo làm trên Windows) nên gọi qua sh.
+      # Test dựng Postgres thật bằng Testcontainers, dùng Docker có sẵn trên runner.
+      - run: sh ./gradlew test
+
+  analyzer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Python trùng bản trong Dockerfile analyzer.
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: 3.12.15
+          cache: pip
+          cache-dependency-path: mvp-app/analyzer/requirements.txt
+      - run: pip install -r mvp-app/analyzer/requirements.txt
+      # Test analyzer là script tự chạy (hỏng thì thoát mã 1), chạy như gate ở laptop, không cần pytest.
+      - run: |
+          python mvp-app/analyzer/tests/test_scoring.py
+          python mvp-app/analyzer/tests/test_pipeline.py
+          python mvp-app/analyzer/tests/test_worker.py
+
+  mobile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.23.3
+          cache: npm
+          cache-dependency-path: |
+            mvp-app/web/package-lock.json
+            mvp-app/mobile/package-lock.json
+      # Mobile import file của web qua alias @/, tsc và jest tìm thư viện của các file đó (clsx, zod…)
+      # trong web/node_modules, nên phải cài cả web.
+      - run: npm ci
+        working-directory: mvp-app/web
+      - run: npm ci
+        working-directory: mvp-app/mobile
+      - run: npx tsc --noEmit
+        working-directory: mvp-app/mobile
+      - run: npx jest --ci
+        working-directory: mvp-app/mobile
