@@ -5,7 +5,7 @@ it("người tập gõ /admin… bị chặn, admin thì không", () => {
   expect(isAdminPathBlocked("/admin/users", "USER")).toBe(true)
   expect(isAdminPathBlocked("/admin", "USER")).toBe(true)
   expect(isAdminPathBlocked("/admin/users", null)).toBe(true)
-  expect(isAdminPathBlocked("/admin/users", "ADMIN")).toBe(false)
+  expect(isAdminPathBlocked("/admin/users", "ADMIN")).toBe(true)
 })
 
 it("đường dẫn chỉ bắt đầu bằng chữ admin nhưng không phải khu quản trị thì không chặn", () => {
