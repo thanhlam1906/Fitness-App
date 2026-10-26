@@ -1,0 +1,125 @@
+# Đưa một bản (image đã build ở job build của CI/CD, tag là mã commit) lên staging hoặc production
+# (doc/design-trien-khai-v1.md §5). Hai cách chạy:
+# - CI/CD gọi sau khi push vào master: staging tự chạy, production chờ bạn duyệt.
+# - Bấm tay trên tab Actions (Run workflow): đưa một bản cũ lên lại để quay về bản trước. Production vẫn phải
+#   duyệt. Chỉ quay về được bản từng build trên master từ khi có CD (image phải có trên GHCR).
+# Máy, khoá SSH, khoá máy nằm trong secret của Environment cùng tên, không ghi trong repo công khai này.
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      moi_truong:
+        type: string
+        required: true
+      sha:
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      moi_truong:
+        description: Lên máy nào
+        type: choice
+        options: [staging, production]
+        required: true
+      sha:
+        description: Mã commit 40 ký tự trên master (bản muốn đưa lên)
+        type: string
+        required: true
+
+# Bấm tay thì dùng quyền này; được CI/CD gọi thì quyền không vượt quá job gọi.
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    # Lần kéo image đầu có thể 15+ phút (mạng của laptop); sau đó đổi bản + kiểm + tự quay về cần thêm ~11 phút
+    # và không được bị cắt giữa chừng, không thì máy kẹt ở bản hỏng mà chưa quay về.
+    timeout-minutes: 45
+    # Environment quyết định máy nào, khoá nào; production có bước chờ duyệt (bẫy 4.3, 4.4).
+    environment: ${{ inputs.moi_truong }}
+    # Mỗi máy chỉ một lượt deploy tại một lúc, lượt sau chờ; không cắt ngang lượt đang đổi container (bẫy 4.7).
+    # Chung nhóm cho cả đường merge lẫn đường bấm tay quay về.
+    concurrency:
+      group: deploy-${{ inputs.moi_truong }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      # Xin danh tính tạm của job này để vào Tailscale (workload identity federation).
+      id-token: write
+    # Giá trị nhập tay chỉ đi vào lệnh qua biến môi trường, không chèn thẳng vào run: (bẫy 3.3).
+    env:
+      MOI_TRUONG: ${{ inputs.moi_truong }}
+      SHA: ${{ inputs.sha }}
+    steps:
+      # GitHub cho đọc mọi commit của cả mạng fork qua URL repo này: mã lạ có thể là code của người khác, và
+      # deploy.sh của nó sẽ chạy trên máy chủ. Chỉ nhận commit nằm trên master (bẫy 4.16).
+      - name: Kiểm mã commit nằm trên master
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [[ "$MOI_TRUONG" =~ ^(staging|production)$ ]] || { echo "::error::Môi trường phải là staging hoặc production"; exit 1; }
+          [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::Mã commit phải đủ 40 ký tự 0-9a-f"; exit 1; }
+          trang_thai=$(gh api "repos/$GITHUB_REPOSITORY/compare/$SHA...master" --jq .status)
+          case "$trang_thai" in
+            ahead|identical) echo "$SHA nằm trên master" ;;
+            *) echo "::error::$SHA không nằm trên master ($trang_thai)"; exit 1 ;;
+          esac
+
+      # Lấy compose và deploy.sh của ĐÚNG commit sẽ chạy: đổi compose (vd. trần RAM) lên máy cùng image,
+      # quay về bản cũ thì chạy cả compose cũ (bẫy 4.13).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.sha }}
+          persist-credentials: false
+
+      # Vào mạng Tailscale bằng danh tính tạm, không có khoá Tailscale cất lâu dài trên GitHub. Máy CI mang thẻ
+      # tag:ci, chính sách chỉ cho mở cổng 22 của tag:server, và tự xoá khi job xong (bẫy 4.5).
+      # ping chờ tối đa 3 phút tới khi thấy máy: laptop tắt thì đỏ ngay ở bước này (bẫy 4.17).
+      - uses: tailscale/github-action@d1b6cd204f8dceda5b3eaad7f1f767be390056cd # v4.2.0
+        with:
+          oauth-client-id: ${{ secrets.TS_CLIENT_ID }}
+          audience: ${{ secrets.TS_AUDIENCE }}
+          tags: tag:ci
+          ping: ${{ secrets.MAY_CHU }}
+
+      # Khoá máy lấy từ secret, đã đối chiếu vân tay ở giai đoạn 0. StrictHostKeyChecking yes: không tự nhận
+      # máy lạ, khoá máy đổi là từ chối (bẫy 4.6). Khoá SSH này ngang quyền root trên máy (bẫy 0.9).
+      - name: Chuẩn bị SSH
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
+        run: |
+          umask 077
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf '%s\n' 'Host *' \
+            '  User deploy' \
+            '  IdentityFile ~/.ssh/id_ed25519' \
+            '  IdentitiesOnly yes' \
+            '  StrictHostKeyChecking yes' \
+            '  BatchMode yes' \
+            '  ConnectTimeout 20' \
+            '  ServerAliveInterval 15' > ~/.ssh/config
+
+      # Compose mới chép vào .moi: deploy.sh tự đặt vào chỗ khi đã kéo xong image, giữ bản cũ để quay về.
+      - name: Chép compose và deploy.sh lên máy
+        env:
+          MAY_CHU: ${{ secrets.MAY_CHU }}
+        run: |
+          scp mvp-app/docker-compose.prod.yml "$MAY_CHU:/opt/vfit/docker-compose.prod.yml.moi"
+          scp mvp-app/deploy.sh "$MAY_CHU:/opt/vfit/deploy.sh"
+
+      # Kéo image, (production) backup DB, đổi bản, kiểm trên máy; hỏng thì tự quay về và đỏ. Xem deploy.sh.
+      - name: Đổi bản trên máy
+        env:
+          MAY_CHU: ${{ secrets.MAY_CHU }}
+        run: ssh "$MAY_CHU" "bash /opt/vfit/deploy.sh $SHA $MOI_TRUONG" < /dev/null
+
+      # Đi đúng đường người dùng đi: internet → Cloudflare → đường hầm → nginx → backend → Postgres.
+      # Staging nằm sau Cloudflare Access nên chỉ kiểm trên máy (bẫy 2.2). Thử lại vì đường hầm có thể chậm vài giây.
+      - name: Kiểm production từ ngoài
+        if: inputs.moi_truong == 'production'
+        run: curl -fsS --retry 6 --retry-all-errors --retry-delay 10 --max-time 15 https://vfit-thanhlam.id.vn/api/health

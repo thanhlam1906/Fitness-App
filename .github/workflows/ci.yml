@@ -1,7 +1,9 @@
-# CI: chạy test 4 phần (web, backend, analyzer, mobile) cho mọi push và mọi PR.
-# Lệnh từng phần giống gate chạy ở laptop. Workflow này chỉ chạy test: không deploy, không đọc secret nào,
-# nên PR của người lạ (từ fork) có chạy cũng không lấy được gì.
-name: CI
+# CI/CD (doc/design-trien-khai-v1.md §5).
+# - Mọi push, mọi PR: test 4 phần (web, backend, analyzer, mobile), lệnh giống gate chạy ở laptop. Các job test
+#   không đọc secret nào, nên PR của người lạ (từ fork) có chạy cũng không lấy được gì.
+# - Riêng push vào master: build 3 image đẩy GHCR tag <sha>, lên staging, chờ bạn duyệt, lên production đúng
+#   tag đó (build một lần, chạy nhiều nơi). Bước lên máy nằm ở deploy.yml.
+name: CI/CD
 
 on:
   push:
@@ -10,6 +12,7 @@ on:
   pull_request:
 
 # Khai một quyền thì mọi quyền không khai về none: token của workflow chỉ đọc được code, không ghi gì.
+# Job nào cần thêm (build, staging, production) khai riêng ở job đó.
 permissions:
   contents: read
 
@@ -105,3 +108,64 @@ jobs:
         working-directory: mvp-app/mobile
       - run: npx jest --ci
         working-directory: mvp-app/mobile
+
+  # Từ đây: chỉ chạy khi push vào master. PR, nhánh khác chỉ có 4 job test ở trên.
+  # Build chạy song song với test cho nhanh; staging chờ cả test lẫn build, test đỏ thì không bản nào lên máy.
+  build:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    # Chỉ job này được ghi vào GHCR (bẫy 4.1).
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        phan: [backend, web, analyzer]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Dùng lệnh docker có sẵn trên runner, không thêm action docker/* của bên thứ ba.
+      # Mật khẩu đi qua stdin, không lên dòng lệnh. Gói đẩy bằng GITHUB_TOKEN tự nối với repo này.
+      - name: Đăng nhập GHCR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+      # Tên image khớp docker-compose.prod.yml. Tag là mã commit đầy đủ: staging và production chạy đúng bản này.
+      - name: Build và đẩy image
+        env:
+          PHAN: ${{ matrix.phan }}
+        run: |
+          image="ghcr.io/thanhlam1906/vfit-${PHAN}:${GITHUB_SHA}"
+          docker build -t "$image" "mvp-app/${PHAN}"
+          docker push "$image"
+
+  # id-token: write để job deploy xin danh tính tạm vào Tailscale (deploy.yml). Workflow được gọi không nhận
+  # quyền nào hơn job gọi nó. secrets: inherit đưa secret chung của repo (Tailscale); secret của từng máy nằm
+  # trong Environment, chỉ job đã vào Environment đó mới đọc được (bẫy 4.4).
+  staging:
+    needs: [web, backend, analyzer, mobile, build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/deploy.yml
+    with:
+      moi_truong: staging
+      sha: ${{ github.sha }}
+    secrets: inherit
+
+  # Environment production có người duyệt: job dừng ở "Waiting for review" tới khi bạn bấm Approve (bẫy 4.3).
+  # Staging đỏ thì job này không chạy, production giữ bản cũ.
+  production:
+    needs: staging
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/deploy.yml
+    with:
+      moi_truong: production
+      sha: ${{ github.sha }}
+    secrets: inherit

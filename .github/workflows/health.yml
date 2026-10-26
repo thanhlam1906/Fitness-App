@@ -1,0 +1,23 @@
+# Kiểm production từ ngoài mỗi 15 phút (doc/design-trien-khai-v1.md §5). Hỏng thì lượt chạy đỏ và GitHub gửi
+# email cho người sửa dòng cron gần nhất. Bắt được cả lúc chết cả máy, khi giám sát trên máy cũng không báo được.
+# Trong lúc production còn là máy ảo trên laptop, workflow này TẠM TẮT (Disable workflow trên tab Actions) tới
+# giai đoạn 8 hoặc trước buổi bảo vệ: laptop tắt là đỏ và gửi email mỗi lượt (bẫy 4.17).
+name: Kiểm health production
+
+on:
+  schedule:
+    # Phút lệch, không */15: đầu giờ GitHub đông, lượt theo lịch hay bị trễ hoặc bỏ (bẫy 4.11).
+    - cron: "7,22,37,52 * * * *"
+  workflow_dispatch:
+
+# Chỉ gọi một địa chỉ công khai, không cần quyền nào, không đọc secret nào.
+permissions: {}
+
+jobs:
+  health:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      # /api/health đi qua Cloudflare, đường hầm, nginx, backend và Postgres; chỉ trả {"status":"UP"}.
+      # Thử lại 3 lần cách 20 giây: lúc deploy /api gián đoạn chừng 30–60 giây, không tính là sập.
+      - run: curl -fsS --retry 3 --retry-all-errors --retry-delay 20 --max-time 15 https://vfit-thanhlam.id.vn/api/health
