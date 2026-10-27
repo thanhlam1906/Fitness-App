@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chính sách riêng tư · VFit</title>
+<!-- Trang tĩnh, không dùng app React: Google Auth Platform bắt buộc có link chính sách riêng tư thật để
+     app sao lưu (vfit-backup) được chuyển sang "In production" (doc/bay-trien-khai-v1.md giai đoạn 5). -->
+<style>
+  body { font: 16px/1.6 system-ui, sans-serif; max-width: 720px; margin: 0 auto; padding: 24px 16px; }
+  h1 { font-size: 26px; } h2 { font-size: 19px; margin-top: 28px; }
+</style>
+</head>
+<body>
+<h1>Chính sách riêng tư của VFit</h1>
+<p>VFit là ứng dụng hướng dẫn tập luyện, làm trong khuôn khổ đồ án tốt nghiệp. Trang này nói ứng dụng lưu gì,
+dùng vào việc gì và ai được xem. Cập nhật ngày 27/10/2026.</p>
+
+<h2>Dữ liệu ứng dụng lưu</h2>
+<ul>
+  <li>Tài khoản: email và mật khẩu (chỉ lưu dạng đã băm, không ai đọc được mật khẩu gốc).</li>
+  <li>Hồ sơ tập: thông tin bạn nhập lúc bắt đầu, số đo cơ thể, chương trình tập, các buổi tập và mức tạ đã ghi,
+    báo đau nếu có.</li>
+  <li>Chấm form: các số đo tư thế (góc khớp) và kết quả chấm. Video bạn gửi bị xoá ngay sau khi chấm xong,
+    kể cả khi chấm lỗi. Chế độ camera trực tiếp chỉ gửi toạ độ khớp, không gửi hình.</li>
+  <li>Trợ lý hỏi đáp: các câu bạn hỏi và câu trả lời.</li>
+</ul>
+
+<h2>Dùng vào việc gì</h2>
+<ul>
+  <li>Lập lịch tập, điều chỉnh mức tạ và chấm form cho chính bạn.</li>
+  <li>Câu hỏi gửi cho trợ lý được chuyển tới dịch vụ OpenAI để tạo câu trả lời.</li>
+  <li>Không bán, không chia sẻ dữ liệu cho bên quảng cáo hay bên thứ ba nào khác.</li>
+</ul>
+
+<h2>Sao lưu và Google Drive</h2>
+<p>Máy chủ sao lưu cơ sở dữ liệu mỗi ngày. Bản sao lưu được mã hoá trên máy chủ rồi mới cất vào Google Drive
+của người vận hành ứng dụng, giữ 7 bản gần nhất. Công cụ sao lưu chỉ xin quyền với những tệp do chính nó tạo
+(phạm vi <code>drive.file</code>), không đọc hay sửa tệp nào khác trong Drive.</p>
+
+<h2>Ai được xem</h2>
+<p>Chỉ bạn xem được dữ liệu của mình trong ứng dụng. Người quản trị xem được thông tin tài khoản để hỗ trợ và
+quản lý. Dữ liệu chạy trên máy chủ riêng, đi qua Cloudflare để có kết nối mã hoá HTTPS.</p>
+
+<h2>Xoá dữ liệu</h2>
+<p>Bạn có thể yêu cầu người quản trị xoá tài khoản. Khi đó dữ liệu bị xoá khỏi cơ sở dữ liệu; các bản sao lưu
+cũ hết hạn và tự xoá sau tối đa 7 ngày.</p>
+</body>
+</html>
