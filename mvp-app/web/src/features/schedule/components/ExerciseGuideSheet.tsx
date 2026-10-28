@@ -1,3 +1,4 @@
+import { CircleAlert } from "lucide-react"
 import { ExerciseImage } from "@/components/ExerciseImage"
 import { Sheet, SheetHeader } from "@/components/ui/sheet"
 import { cn } from "@/lib/cn"
@@ -29,7 +30,7 @@ export function ExerciseGuideSheet({
 
         {exercise.muscleGroups.length > 0 && (
           <>
-            <div className="kicker mt-5">Cơ chính</div>
+            <div className="section-title mt-5">Cơ chính</div>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {exercise.muscleGroups.map((code, i) => (
                 <span
@@ -50,7 +51,7 @@ export function ExerciseGuideSheet({
 
         {exercise.stepsVi.length > 0 && (
           <>
-            <div className="kicker mt-5">Cách tập</div>
+            <div className="section-title mt-5">Cách tập</div>
             <ol className="mt-1.5">
               {exercise.stepsVi.map((step, i) => (
                 <li key={step} className="flex gap-2.5 py-1.5 text-sm leading-relaxed">
@@ -66,20 +67,18 @@ export function ExerciseGuideSheet({
 
         {exercise.mistakesVi.length > 0 && (
           <>
-            <div className="kicker mt-5">Lỗi hay gặp</div>
+            <div className="section-title mt-5">Lỗi hay gặp</div>
             <ul className="mt-2 rounded-[var(--radius-md)] border border-[color-mix(in_srgb,var(--color-warn)_30%,transparent)] bg-[var(--color-warn-tint)] px-3 py-1">
               {exercise.mistakesVi.map((m) => (
                 <li key={m} className="flex gap-2 py-1.5 text-[13px] leading-relaxed">
-                  <span aria-hidden className="font-extrabold text-[var(--color-warn)]">
-                    !
-                  </span>
+                  <CircleAlert aria-hidden className="mt-[0.2em] size-4 flex-none text-[var(--color-warn)]" />
                   {m}
                 </li>
               ))}
             </ul>
           </>
         )}
-        <div className="kicker mt-5">Trong chương trình</div>
+        <div className="section-title mt-5">Trong chương trình</div>
         <div className="mt-2 rounded-[var(--radius-md)] bg-[var(--color-bg)] px-3">
           {usedIn.map((u) => (
             <div key={u.label} className="flex justify-between border-t border-[var(--color-border)] py-2 text-[13px] first:border-t-0">

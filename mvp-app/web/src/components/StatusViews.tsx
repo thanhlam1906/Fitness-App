@@ -63,7 +63,7 @@ export function StatusBlock({
   return (
     <div
       role={tone === "danger" ? "alert" : undefined}
-      className={cn("flex flex-col items-center rounded-2xl bg-[var(--color-surface)] px-5 py-7 text-center", className)}
+      className={cn("flex flex-col items-center rounded-[var(--radius-lg)] bg-[var(--color-surface)] px-5 py-7 text-center", className)}
     >
       <IconCircle icon={icon} tone={tone} />
       <b className="mt-3.5 text-[17px]">{title}</b>

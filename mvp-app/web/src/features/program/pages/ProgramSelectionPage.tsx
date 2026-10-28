@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Link } from "react-router"
 import { CloudOff, ListX, UserRound, type LucideIcon } from "lucide-react"
 import { ApiError } from "@/api/client"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { SHEET_FOCUS } from "@/components/ui/sheet"
@@ -57,7 +57,7 @@ export function ProgramSelectionPage() {
         {...(needsOnboarding
           ? { icon: UserRound, title: "Cần hoàn tất hồ sơ trước" }
           : { icon: CloudOff, tone: "danger" as const, title: "Không tải được đề xuất", detail: candidates.error.message })}
-        action={{ to: "/onboarding", label: needsOnboarding ? "Hoàn tất hồ sơ" : "Về onboarding" }}
+        action={{ to: "/onboarding", label: needsOnboarding ? "Hoàn tất hồ sơ" : "Sửa thông tin" }}
       />
     )
   }
@@ -92,14 +92,12 @@ export function ProgramSelectionPage() {
 
   return (
     <FlowScreen>
-      <div className="kicker">Đề xuất cho hồ sơ của bạn</div>
-      <h1 className="num mt-3 text-[28px] font-extrabold tracking-[-0.02em]">
+      <h1 className="num text-[28px] leading-tight font-extrabold tracking-[-0.02em]">
         {exact.length > 0 ? `${exact.length} chương trình phù hợp` : "Chọn chương trình gần nhất"}
       </h1>
       {exact.length === 0 && (
         <p className="mt-2 text-[13px] leading-relaxed text-[var(--color-text-muted)]">
-          Chưa có chương trình đúng số buổi/tuần bạn chọn. Các chương trình dưới đây hợp thiết bị
-          của bạn, ngày tập bạn tự chọn.
+          Chưa có chương trình đúng số buổi/tuần bạn chọn.
         </p>
       )}
 
@@ -111,22 +109,21 @@ export function ProgramSelectionPage() {
         // Nhóm đúng số buổi ít thì mở sẵn: vd người có tạ đòn tập 6 buổi chỉ khớp bài tay
         // không, các template tạ đòn nằm ở đây. Nhiều thì gập lại cho danh sách đỡ dài.
         <details className="mt-5" open={exact.length < 3}>
-          <summary className={cn("kicker cursor-pointer rounded-sm", SHEET_FOCUS)}>
+          <summary className={cn("section-title cursor-pointer rounded-sm", SHEET_FOCUS)}>
             Số buổi khác · {others.length}
           </summary>
-          <div className="mt-3 space-y-3">{others.map((template) => card(template, "Khác số buổi"))}</div>
+          {/* Không nhãn hạng: tiêu đề nhóm đã nói các chương trình này khác số buổi. */}
+          <div className="mt-3 space-y-3">{others.map((template) => card(template, ""))}</div>
         </details>
       )}
 
-      <Link to="/my-schedule" className="mt-3 block">
-        <Button variant="secondary" className="w-full">
-          Tự thiết kế lịch riêng
-        </Button>
+      <Link to="/my-schedule" className={buttonVariants({ variant: "secondary", className: "mt-3 w-full" })}>
+        Tự thiết kế lịch
       </Link>
 
       {selected && (
         <>
-          <div className="kicker mt-6">Ngày tập trong tuần</div>
+          <div className="section-title mt-6">Ngày tập trong tuần</div>
           <div className="mt-2.5 flex gap-1.5">
             {WEEKDAYS.map((d) => {
               const on = trainingDays.includes(d.value)
@@ -178,10 +175,9 @@ export function ProgramSelectionPage() {
           {/* Template tay không không có bài nào cần tạ: bỏ cả mục, không để tiêu đề trơ. */}
           {loadable.length > 0 && (
             <>
-              <div className="kicker mt-6">Mức tạ khởi điểm</div>
+              <div className="section-title mt-6">Mức tạ khởi điểm</div>
               <p className="mt-2 text-[13px] leading-relaxed text-[var(--color-text-muted)]">
-                Chọn mức bạn làm được 2 set đầu mà vẫn còn dư sức. Bỏ trống cũng được — lúc đó lịch
-                không gợi ý tải và bạn tự nhập trong buổi đầu.
+                Mức bạn làm 2 set mà còn dư sức. Bỏ trống thì lịch không gợi ý tạ.
               </p>
               <div className="mt-3 space-y-3">
                 {loadable.map((exercise) => (
@@ -242,16 +238,15 @@ export function ProgramSelectionPage() {
   )
 }
 
-/** Cùng khung với màn chọn: kicker, tiêu đề, các thẻ đề xuất, nút tự thiết kế lịch. */
+/** Cùng khung với màn chọn: tiêu đề, các thẻ đề xuất, nút tự thiết kế lịch. */
 function ProgramSkeleton() {
   return (
     <FlowScreen>
       <div role="status" aria-label="Đang tải">
-        <Skeleton className="h-3 w-52" />
-        <Skeleton className="mt-3 h-8 w-64" />
+        <Skeleton className="h-8 w-64" />
         <div className="mt-5 space-y-3">
-          <Skeleton className="h-40 rounded-xl" />
-          <Skeleton className="h-40 rounded-xl" />
+          <Skeleton className="h-40 rounded-[var(--radius-lg)]" />
+          <Skeleton className="h-40 rounded-[var(--radius-lg)]" />
         </div>
         <Skeleton className="mt-3 h-11 w-full" />
       </div>
@@ -274,7 +269,7 @@ function TemplateCard({
   return (
     <label
       className={cn(
-        "block cursor-pointer rounded-xl p-4",
+        "block cursor-pointer rounded-[var(--radius-lg)] p-4",
         selected
           ? "border border-[var(--color-accent)] bg-[var(--color-surface-2)]"
           : "border border-transparent bg-[var(--color-surface)]",
@@ -290,7 +285,7 @@ function TemplateCard({
       <div className="flex items-center justify-between">
         <span
           className={cn(
-            "text-[11px] font-bold tracking-[0.1em] uppercase",
+            "text-[13px] font-semibold",
             selected ? "text-[var(--color-accent)]" : "text-[var(--color-text-muted)]",
           )}
         >
@@ -375,12 +370,12 @@ function EmptyState({
 }) {
   return (
     <StatusBlock icon={icon} tone={tone} title={title} detail={detail}>
-      <Link to={action.to}>
-        <Button>{action.label}</Button>
+      <Link to={action.to} className={buttonVariants()}>
+        {action.label}
       </Link>
       {/* Lịch tự thiết kế không cần hồ sơ hay template: lối ra này luôn phải có. */}
-      <Link to="/my-schedule">
-        <Button variant="secondary">Tự thiết kế lịch riêng</Button>
+      <Link to="/my-schedule" className={buttonVariants({ variant: "secondary" })}>
+        Tự thiết kế lịch
       </Link>
     </StatusBlock>
   )

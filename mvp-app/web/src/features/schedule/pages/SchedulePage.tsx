@@ -1,7 +1,7 @@
 import { CalendarOff, ChevronLeft, ChevronRight, CloudOff, List } from "lucide-react"
 import { Link, useSearchParams } from "react-router"
 import { ApiError } from "@/api/client"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { SHEET_FOCUS } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import { StatusBlock } from "@/components/StatusViews"
@@ -31,8 +31,8 @@ export function SchedulePage() {
     if (schedule.error instanceof ApiError && schedule.error.status === 404) {
       return (
         <StatusBlock icon={CalendarOff} title="Chưa có chương trình">
-          <Link to="/program">
-            <Button>Chọn chương trình</Button>
+          <Link to="/program" className={buttonVariants()}>
+            Chọn chương trình
           </Link>
         </StatusBlock>
       )
@@ -50,8 +50,8 @@ export function SchedulePage() {
   if (workouts.length === 0) {
     return (
       <StatusBlock icon={CalendarOff} title="Lịch chưa có buổi nào">
-        <Link to="/program">
-          <Button>Chọn chương trình</Button>
+        <Link to="/program" className={buttonVariants()}>
+          Chọn chương trình
         </Link>
       </StatusBlock>
     )
@@ -88,7 +88,7 @@ export function SchedulePage() {
 
   return (
     <div>
-      <div className="kicker flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2 text-[13px] text-[var(--color-text-muted)]">
         <span className="num">
           {progress.weekIndex === null ? `${progress.totalWeeks} tuần` : `Tuần ${progress.weekIndex} / ${progress.totalWeeks}`}
         </span>
@@ -100,12 +100,12 @@ export function SchedulePage() {
       </div>
 
       <div className="mt-2.5 flex items-center gap-3">
-        <h1 className="flex-1 text-[30px] font-extrabold tracking-[-0.02em]">Lịch</h1>
+        <h1 className="flex-1 text-[28px] leading-tight font-extrabold tracking-[-0.02em]">Lịch</h1>
         {/* Sửa cả chương trình ở màn riêng (doc/design-chuong-trinh-v1.md); sửa một ngày ở thẻ ngày. */}
         <Link
           to="/my-program"
           className={cn(
-            "flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3.5 text-[13px] font-semibold hover:bg-[var(--color-surface)]",
+            "relative flex h-9 items-center gap-1.5 rounded-full border after:absolute after:-inset-1 border-[var(--color-border)] px-3.5 text-[13px] font-semibold hover:bg-[var(--color-surface)]",
             SHEET_FOCUS,
           )}
         >
@@ -164,7 +164,7 @@ function DayButton({ cell, selected, onSelect }: { cell: MonthCell; selected: bo
       aria-label={label}
       aria-pressed={selected}
       onClick={onSelect}
-      className={cn("grid h-11.5 place-items-center rounded-xl", selected && "bg-[var(--color-surface-2)]", SHEET_FOCUS)}
+      className={cn("grid h-11.5 place-items-center rounded-[var(--radius-md)]", selected && "bg-[var(--color-surface-2)]", SHEET_FOCUS)}
     >
       <span
         className={cn(
@@ -202,7 +202,8 @@ function MonthNav({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "grid size-8 place-items-center rounded-[var(--radius-md)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] disabled:opacity-30",
+        // Nút 32px trông gọn, vùng bấm nới ra 44px bằng after.
+        "relative grid size-8 place-items-center rounded-[var(--radius-md)] bg-[var(--color-surface)] after:absolute after:-inset-1.5 text-[var(--color-text-muted)] hover:text-[var(--color-text)] disabled:opacity-30",
         SHEET_FOCUS,
       )}
     >
@@ -246,7 +247,7 @@ function MonthSkeleton() {
           <Skeleton key={i} className="mx-auto size-8 rounded-full" />
         ))}
       </div>
-      <Skeleton className="mt-4 h-40 rounded-2xl" />
+      <Skeleton className="mt-4 h-40 rounded-[var(--radius-lg)]" />
     </div>
   )
 }

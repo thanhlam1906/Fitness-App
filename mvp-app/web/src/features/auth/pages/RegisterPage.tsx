@@ -34,9 +34,9 @@ export function RegisterPage() {
   }
 
   return (
-    <AuthLayout title="Tạo tài khoản" subtitle="Mất khoảng một phút.">
+    <AuthLayout title="Tạo tài khoản">
       <SocialButtons />
-      <OrDivider label="hoặc đăng ký bằng email" />
+      <OrDivider label="hoặc" />
       <form noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-3.5">
         <AuthField id="fullName" label="Họ và tên" error={errors.fullName?.message}>
           <Input
@@ -84,7 +84,6 @@ export function RegisterPage() {
           <PasswordInput
             id="confirmPassword"
             autoComplete="new-password"
-            placeholder="Gõ lại mật khẩu"
             aria-invalid={!!errors.confirmPassword}
             {...register("confirmPassword")}
           />

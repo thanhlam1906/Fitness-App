@@ -18,7 +18,7 @@ export function AuthLayout({
   children,
 }: {
   title: string
-  subtitle: string
+  subtitle?: string
   children: ReactNode
 }) {
   return (
@@ -33,10 +33,8 @@ export function AuthLayout({
       />
       <div className="relative mx-auto w-full max-w-[430px] px-4 pt-6 pb-10">
         <Logo className="px-1" />
-        <h1 className="mt-30 px-1 text-[30px] leading-[1.1] font-extrabold tracking-[-0.025em]">
-          {title}
-        </h1>
-        <p className="mt-1.5 px-1 text-sm text-[var(--color-text-muted)]">{subtitle}</p>
+        <h1 className="mt-30 px-1 text-[28px] leading-tight font-extrabold tracking-[-0.02em]">{title}</h1>
+        {subtitle && <p className="mt-1.5 px-1 text-sm text-[var(--color-text-muted)]">{subtitle}</p>}
         <div className="mt-5 rounded-[var(--radius-lg)] border border-[var(--color-glass-border)] bg-[var(--color-glass)] p-4 backdrop-blur-[16px]">
           {children}
         </div>
@@ -50,35 +48,27 @@ const PROVIDERS = [
   { name: "Facebook", Icon: FacebookIcon },
 ]
 
-/** Chưa nối OAuth (nối sau khi deploy). Bấm vẫn phản hồi để người dùng không tưởng app hỏng. */
+/**
+ * Chưa nối OAuth (nối sau khi deploy). Nút khoá cùng nhãn "Sắp có": nhìn là biết chưa dùng được, không
+ * cần thêm câu báo khi bấm.
+ */
 export function SocialButtons() {
-  const [notice, setNotice] = useState<string | null>(null)
   return (
-    <div>
-      <div className="grid grid-cols-2 gap-2.5">
-        {PROVIDERS.map(({ name, Icon }) => (
-          <button
-            key={name}
-            type="button"
-            onClick={() => setNotice(`Đăng nhập bằng ${name} sẽ mở sau khi app phát hành.`)}
-            className={cn(
-              "relative flex h-12 items-center justify-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-semibold hover:bg-[var(--color-surface-2)]",
-              FOCUS,
-            )}
-          >
-            <Icon />
-            {name}
-            <span className="absolute -top-2 right-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] px-1.5 text-[10px] font-bold text-[var(--color-text-muted)]">
-              Sắp có
-            </span>
-          </button>
-        ))}
-      </div>
-      {notice && (
-        <p role="status" className="mt-2.5 text-[13px] text-[var(--color-text-muted)]">
-          {notice}
-        </p>
-      )}
+    <div className="grid grid-cols-2 gap-2.5">
+      {PROVIDERS.map(({ name, Icon }) => (
+        <button
+          key={name}
+          type="button"
+          disabled
+          className="relative flex h-12 cursor-not-allowed items-center justify-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-semibold opacity-70"
+        >
+          <Icon />
+          {name}
+          <span className="absolute -top-2 right-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] px-1.5 text-[10px] font-bold text-[var(--color-text-muted)]">
+            Sắp có
+          </span>
+        </button>
+      ))}
     </div>
   )
 }

@@ -3,7 +3,7 @@ import { BedDouble, CalendarMinus, Minus, Pencil } from "lucide-react"
 import { Link } from "react-router"
 import { LoadDeltaBadge } from "@/components/LoadDeltaBadge"
 import { WrongFeedbackButton } from "@/features/feedback/components/WrongFeedbackButton"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { SHEET_FOCUS } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import { IconCircle, IconText } from "@/components/StatusViews"
@@ -42,10 +42,11 @@ export function DayCard({
       <CardShell cell={cell} workout={workout} totalWeeks={totalWeeks} pill={<Pill tone="danger">Bỏ lỡ</Pill>}>
         <PlanList workout={workout} />
         {/* Buổi bỏ lỡ vẫn tập được (backend không chặn) — người ta hay tập bù hôm sau. */}
-        <Link to={`/workout/${workout.id}`}>
-          <Button variant="secondary" className="mt-3.5 w-full">
-            Tập bù buổi này
-          </Button>
+        <Link
+          to={`/workout/${workout.id}`}
+          className={buttonVariants({ variant: "secondary", className: "mt-3.5 w-full" })}
+        >
+          Tập bù buổi này
         </Link>
       </CardShell>
     )
@@ -67,8 +68,8 @@ function TodayCard({ cell, workout, totalWeeks }: { cell: MonthCell; workout: Sc
     <CardShell cell={cell} workout={workout} totalWeeks={totalWeeks} highlight pill={<Pill tone="accent">Hôm nay</Pill>}>
       <PlanList workout={workout} />
       <Decisions workout={workout} />
-      <Link to={`/workout/${workout.id}`}>
-        <Button className="mt-3.5 w-full">{inProgress ? "Tiếp tục buổi tập" : "Bắt đầu buổi tập"}</Button>
+      <Link to={`/workout/${workout.id}`} className={buttonVariants({ className: "mt-3.5 w-full" })}>
+        {inProgress ? "Tiếp tục buổi tập" : "Bắt đầu buổi tập"}
       </Link>
       {/* Đang tập dở thì không sửa buổi: set đã log đang bám vào danh sách bài hiện tại. */}
       {!inProgress && <EditLink workout={workout} />}
@@ -177,7 +178,7 @@ function NoWorkoutCard({ cell, workouts }: { cell: MonthCell; workouts: Schedule
   const inProgram = cell.date >= dates[0] && cell.date <= dates[dates.length - 1]
   const next = inProgram ? nextPlannedAfter(workouts, cell.date) : null
   return (
-    <div className="mt-3.5 flex flex-col items-center rounded-2xl bg-[var(--color-surface)] p-5 text-center text-sm leading-relaxed text-[var(--color-text-muted)]">
+    <div className="mt-3.5 flex flex-col items-center rounded-[var(--radius-lg)] bg-[var(--color-surface)] p-5 text-center text-sm leading-relaxed text-[var(--color-text-muted)]">
       <IconCircle
         icon={inProgram && cell.isRestDay ? BedDouble : CalendarMinus}
         className="size-12 [&>svg]:size-5.5"
@@ -216,14 +217,14 @@ function CardShell({
     <section
       aria-label={dayTitle(cell.date)}
       className={cn(
-        "mt-3.5 rounded-2xl border border-[var(--color-border)] p-3.5",
+        "mt-3.5 rounded-[var(--radius-lg)] border border-[var(--color-border)] p-3.5",
         highlight ? "bg-[var(--color-surface-2)]" : "bg-[var(--color-surface)]",
       )}
     >
       <div className="flex items-center justify-between gap-2">
         <span
           className={cn(
-            "num text-[10px] font-extrabold tracking-[0.12em] uppercase",
+            "num text-[13px] font-semibold",
             highlight ? "text-[var(--color-accent)]" : "text-[var(--color-text-muted)]",
           )}
         >

@@ -47,7 +47,7 @@ export function ProfilePage() {
   return (
     <SettingsSubLayout title="Hồ sơ">
       <div className="mt-5 flex flex-col gap-2">
-        <EditableRow label="Cân nặng" value={formatKg(metric?.weightKg)} actionLabel="Cập nhật" accent>
+        <EditableRow label="Cân nặng" value={formatKg(metric?.weightKg)} accent>
           {(close) => (
             <MetricEditor
               unit="kg"
@@ -154,13 +154,11 @@ export function ProfilePage() {
 function EditableRow({
   label,
   value,
-  actionLabel = "Sửa",
   accent = false,
   children,
 }: {
   label: string
   value: string
-  actionLabel?: string
   accent?: boolean
   children: (close: () => void) => ReactNode
 }) {
@@ -176,12 +174,12 @@ function EditableRow({
           type="button"
           onClick={() => setOpen((o) => !o)}
           className={cn(
-            "flex-none rounded-[var(--radius-sm)] text-[13px]",
+            "-my-3 flex-none rounded-[var(--radius-sm)] py-3 text-[13px]",
             accent ? "text-[var(--color-accent)]" : "text-[var(--color-text-muted)]",
             SHEET_FOCUS,
           )}
         >
-          {open ? "Đóng" : actionLabel}
+          {open ? "Đóng" : "Sửa"}
         </button>
       </div>
       {open && <div className="mt-3.5">{children(() => setOpen(false))}</div>}

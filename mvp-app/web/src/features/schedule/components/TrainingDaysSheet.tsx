@@ -62,8 +62,6 @@ function Body({
       />
       <p className="flex-none px-4 pb-2.5 text-center text-xs leading-relaxed text-[var(--color-text-muted)]">
         Các buổi chưa tập dời sang ngày mới, giữ đúng thứ tự.
-        <br />
-        Buổi đã tập giữ nguyên.
       </p>
       <div className="overflow-y-auto px-4 pb-7">
         <div className="grid grid-cols-7 gap-1.5">
@@ -97,7 +95,7 @@ function Body({
         )}
         {preview.length > 0 && (
           <>
-            <div className="kicker mt-5">Các buổi tới</div>
+            <div className="section-title mt-5">Các buổi tới</div>
             <div className="mt-2 rounded-[var(--radius-md)] bg-[var(--color-bg)] px-3">
               {preview.map((p) => (
                 <div key={p.date} className="flex justify-between border-t border-[var(--color-border)] py-2 text-[13px] first:border-t-0">

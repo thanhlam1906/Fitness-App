@@ -17,7 +17,7 @@ export const registerSchema = z
       .string()
       .refine((s) => PHONE.test(normalizePhone(s)), "Số điện thoại gồm 10 số, bắt đầu bằng 0 hoặc +84"),
     password: z.string().min(8, "Tối thiểu 8 ký tự"),
-    confirmPassword: z.string().min(1, "Gõ lại mật khẩu để xác nhận"),
+    confirmPassword: z.string().min(1, "Nhập lại mật khẩu để xác nhận"),
     acceptTerms: z.boolean().refine((v) => v, "Cần đồng ý điều khoản để tạo tài khoản"),
   })
   .refine((v) => v.password === v.confirmPassword, {

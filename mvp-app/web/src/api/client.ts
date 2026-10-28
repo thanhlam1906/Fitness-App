@@ -28,7 +28,7 @@ const LOGGED_OUT_EVENT = "fitness:logged-out"
  */
 const STATUS_MESSAGE_VI: Record<number, string> = {
   400: "Dữ liệu gửi lên không hợp lệ.",
-  401: "Phiên đăng nhập đã hết hạn. Đăng nhập lại giúp mình.",
+  401: "Phiên đăng nhập đã hết hạn. Đăng nhập lại.",
   403: "Tài khoản này không có quyền làm việc đó.",
   404: "Không tìm thấy dữ liệu.",
   409: "Dữ liệu bị trùng với thứ đã có.",

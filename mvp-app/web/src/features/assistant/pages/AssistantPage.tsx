@@ -13,9 +13,9 @@ const FOCUS = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visi
 
 /** Ba câu mẫu phủ ba loại trợ lý trả lời được: lịch, tiến bộ (tool), kiến thức (tài liệu). */
 const SUGGESTIONS = [
-  { question: "Tuần này tôi tập gì?", hint: "Xem lịch của bạn", Icon: CalendarDays },
-  { question: "4 tuần qua tôi tiến bộ thế nào?", hint: "Tổng tạ, số buổi đã tập", Icon: TrendingUp },
-  { question: "RPE là gì?", hint: "Từ tài liệu của app", Icon: BookOpen },
+  { question: "Tuần này tôi tập gì?", Icon: CalendarDays },
+  { question: "4 tuần qua tôi tiến bộ thế nào?", Icon: TrendingUp },
+  { question: "RPE là gì?", Icon: BookOpen },
 ]
 
 /**
@@ -67,7 +67,7 @@ export function AssistantPage() {
           disabled={empty || pending}
           onClick={() => userId && clearConversation(userId)}
           className={cn(
-            "grid size-9 shrink-0 place-items-center rounded-[var(--radius-md)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] disabled:pointer-events-none disabled:opacity-40",
+            "relative grid size-9 shrink-0 place-items-center rounded-[var(--radius-md)] bg-[var(--color-surface)] after:absolute after:-inset-1 text-[var(--color-text-muted)] hover:text-[var(--color-text)] disabled:pointer-events-none disabled:opacity-40",
             FOCUS,
           )}
         >
@@ -78,12 +78,9 @@ export function AssistantPage() {
       {empty && !pending ? (
         <div className="flex flex-1 flex-col items-center justify-center px-2 py-8 text-center">
           <AssistantMark size={64} />
-          <h2 className="mt-4 text-2xl font-extrabold tracking-[-0.02em]">Hỏi gì về buổi tập?</h2>
-          <p className="mt-1.5 mb-5 text-sm text-[var(--color-text-muted)]">
-            Lịch tuần, mức tạ, tiến bộ của bạn, hay một khái niệm bạn chưa rõ.
-          </p>
+          <h2 className="mt-4 mb-5 text-2xl font-extrabold tracking-[-0.02em]">Hỏi gì về buổi tập?</h2>
           <div className="flex w-full flex-col gap-2">
-            {SUGGESTIONS.map(({ question, hint, Icon }) => (
+            {SUGGESTIONS.map(({ question, Icon }) => (
               <button
                 key={question}
                 type="button"
@@ -94,10 +91,7 @@ export function AssistantPage() {
                 )}
               >
                 <Icon className="size-[18px] shrink-0 text-[var(--color-accent)]" aria-hidden />
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm">{question}</span>
-                  <span className="block text-xs text-[var(--color-text-muted)]">{hint}</span>
-                </span>
+                <span className="min-w-0 flex-1 text-sm">{question}</span>
                 <ChevronRight className="size-4 shrink-0 text-[var(--color-text-muted)]" aria-hidden />
               </button>
             ))}
@@ -185,9 +179,10 @@ function MessageRow({ message }: { message: ChatMessage }) {
             {message.sourceTitles.map((title) => (
               <span
                 key={title}
-                className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-1.5 py-0.5 text-[11px] text-[var(--color-text-muted)]"
+                className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-1.5 py-0.5 text-[11px] text-[var(--color-text-muted)]"
               >
-                ↳ {title}
+                <BookOpen className="size-3 flex-none" aria-hidden />
+                {title}
               </span>
             ))}
           </div>

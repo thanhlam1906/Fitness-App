@@ -1,9 +1,10 @@
 import { useState, type ReactNode } from "react"
-import { CalendarOff, ChevronLeft, ChevronRight, CloudOff, LayoutTemplate, Pencil, PencilRuler } from "lucide-react"
+import { CalendarOff, ChevronRight, CloudOff, LayoutTemplate, Pencil, PencilRuler } from "lucide-react"
 import { Link } from "react-router"
 import { ApiError } from "@/api/client"
+import { BackLink } from "@/components/BackLink"
 import { ExerciseImage } from "@/components/ExerciseImage"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { StatusBlock } from "@/components/StatusViews"
 import { SHEET_FOCUS } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -18,8 +19,8 @@ import { parseIso, toIso, WEEKDAY_LABELS, weekProgress } from "@/features/schedu
 import { ProgramDayEditSheet } from "@/features/schedule/components/WorkoutEditor"
 
 const OPTIONS = [
-  { Icon: LayoutTemplate, title: "Đổi chương trình mẫu", desc: "Chọn từ các chương trình soạn sẵn. App tự tăng tải theo luật.", to: "/program" },
-  { Icon: PencilRuler, title: "Tự thiết kế lịch riêng", desc: "Tự chọn ngày tập, bài và con số. App không tự tăng tải.", to: "/my-schedule" },
+  { Icon: LayoutTemplate, title: "Đổi chương trình mẫu", desc: "Soạn sẵn, tự tăng tải.", to: "/program" },
+  { Icon: PencilRuler, title: "Tự thiết kế lịch", desc: "Tự chọn ngày, bài và con số. Không tự tăng tải.", to: "/my-schedule" },
 ]
 
 const dayMonth = (iso: string) => {
@@ -44,8 +45,8 @@ export function MyProgramPage() {
   if ([schedule.error, program.error].some((e) => e instanceof ApiError && e.status === 404)) {
     return (
       <StatusBlock icon={CalendarOff} title="Chưa có chương trình">
-        <Link to="/program">
-          <Button>Chọn chương trình</Button>
+        <Link to="/program" className={buttonVariants()}>
+          Chọn chương trình
         </Link>
       </StatusBlock>
     )
@@ -70,15 +71,8 @@ export function MyProgramPage() {
 
   return (
     <div>
-      <Link
-        to="/schedule"
-        className={cn("inline-flex items-center gap-0.5 rounded-[var(--radius-sm)] text-sm font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)]", SHEET_FOCUS)}
-      >
-        <ChevronLeft className="size-4" aria-hidden />
-        Lịch
-      </Link>
-      <div className="kicker mt-3.5">Chương trình đang dùng</div>
-      <h1 className="mt-2 text-[28px] leading-tight font-extrabold tracking-[-0.02em]">{current.templateName}</h1>
+      <BackLink to="/schedule">Lịch</BackLink>
+      <h1 className="mt-3 text-[28px] leading-tight font-extrabold tracking-[-0.02em]">{current.templateName}</h1>
       <p className="num mt-2 text-[13px] text-[var(--color-text-muted)]">
         {progress.weekIndex !== null && `Tuần ${progress.weekIndex}/${progress.totalWeeks} · `}
         từ <b className="font-semibold text-[var(--color-text)]">{dayMonth(startDate)}</b>
@@ -100,8 +94,8 @@ export function MyProgramPage() {
       <SectionTitle
         action={
           !isCustom && (
-            <button type="button" onClick={() => setDaysOpen(true)} className={cn("rounded-[var(--radius-sm)] px-1 text-[13px] font-bold text-[var(--color-accent)]", SHEET_FOCUS)}>
-              Đổi
+            <button type="button" onClick={() => setDaysOpen(true)} className={cn("-my-3 rounded-[var(--radius-sm)] px-1 py-3 text-[13px] font-bold text-[var(--color-accent)]", SHEET_FOCUS)}>
+              Sửa
             </button>
           )
         }
@@ -126,7 +120,7 @@ export function MyProgramPage() {
       </div>
       {isCustom && (
         <p className="mt-3 text-xs leading-relaxed text-[var(--color-text-muted)]">
-          Lịch tự thiết kế gắn bài theo thứ. Muốn đổi ngày thì thiết kế lại ở cuối trang.
+          Lịch tự thiết kế gắn bài theo thứ.
         </p>
       )}
 
@@ -177,8 +171,7 @@ function MyProgramSkeleton() {
   return (
     <div role="status" aria-label="Đang tải">
       <Skeleton className="h-5 w-12" />
-      <Skeleton className="mt-3.5 h-3 w-36" />
-      <Skeleton className="mt-2 h-8 w-64" />
+      <Skeleton className="mt-3 h-8 w-64" />
       <Skeleton className="mt-2 h-4 w-48" />
       <Skeleton className="mt-2.5 h-5 w-32 rounded-full" />
       <Skeleton className="mt-6 mb-2.5 h-3 w-40" />
@@ -200,7 +193,7 @@ function MyProgramSkeleton() {
 function SectionTitle({ children, action }: { children: ReactNode; action?: ReactNode }) {
   return (
     <div className="mt-6 mb-2.5 flex items-center justify-between">
-      <h2 className="kicker">{children}</h2>
+      <h2 className="section-title">{children}</h2>
       {action}
     </div>
   )
@@ -229,7 +222,7 @@ function ProgramDayCard({
             type="button"
             onClick={onEdit}
             aria-label={`Sửa buổi ${day.label}`}
-            className={cn("flex h-8 flex-none items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 text-[13px] font-bold", SHEET_FOCUS)}
+            className={cn("relative flex h-8 flex-none items-center gap-1.5 rounded-[var(--radius-sm)] border after:absolute after:-inset-1.5 border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 text-[13px] font-bold", SHEET_FOCUS)}
           >
             <Pencil className="size-3.5" aria-hidden />
             Sửa

@@ -50,7 +50,7 @@ export function useAssistant() {
         }))
         return res
       } catch (err) {
-        const text = err instanceof ApiError ? err.message : "Có lỗi xảy ra, thử lại giúp mình."
+        const text = err instanceof ApiError ? err.message : "Có lỗi xảy ra, thử lại."
         save((c) => ({
           ...c,
           messages: [...c.messages, { id: crypto.randomUUID(), role: "ASSISTANT", text, blocked: true }],

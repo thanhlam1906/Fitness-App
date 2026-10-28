@@ -63,7 +63,7 @@ export function ProgressPage() {
               note={p.avgSessionRpe == null ? "chưa ghi RPE buổi nào" : "mỗi buổi"}
             />
             <div className="col-span-2 rounded-[var(--radius-md)] bg-[var(--color-surface)] p-3.5">
-              <TileHead label="Tổng khối lượng đã nâng" value={`${formatNumber(p.totalTonnageKg)} kg`} note="kg × rep của mọi hiệp" />
+              <TileHead label="Tổng khối lượng đã nâng" value={`${formatNumber(p.totalTonnageKg)} kg`} note="kg × rep của mọi set" />
               <div className="mt-3 flex h-[110px] items-end gap-1.5" aria-hidden>
                 {p.weekly.map((w, i) => (
                   <div key={w.from} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1.5">
@@ -81,7 +81,7 @@ export function ProgressPage() {
             </div>
           </div>
           <p className="mt-3.5 text-xs leading-relaxed text-[var(--color-text-muted)]">
-            Chỉ tính các buổi bạn đã bắt đầu trong app. Không ước lượng, không làm tròn thêm.
+            Chỉ tính buổi đã tập trong app.
           </p>
         </>
       )}

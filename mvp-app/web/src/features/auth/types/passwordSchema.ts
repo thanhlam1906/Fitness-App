@@ -9,7 +9,7 @@ export function isPasswordChangeRequired(e: unknown): boolean {
 }
 
 const newPassword = z.string().min(8, "Tối thiểu 8 ký tự")
-const confirmPassword = z.string().min(1, "Gõ lại mật khẩu để xác nhận")
+const confirmPassword = z.string().min(1, "Nhập lại mật khẩu để xác nhận")
 const matches = (v: { newPassword: string; confirmPassword: string }) => v.newPassword === v.confirmPassword
 const mismatch = { message: "Mật khẩu nhập lại không khớp", path: ["confirmPassword"] }
 

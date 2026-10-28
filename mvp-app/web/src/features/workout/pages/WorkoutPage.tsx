@@ -1,8 +1,10 @@
 import { Link, useParams, useSearchParams } from "react-router"
-import { CircleCheckBig, CloudOff, SearchX } from "lucide-react"
+import { ChevronLeft, ChevronRight, CircleCheckBig, CloudOff, SearchX } from "lucide-react"
 import { ApiError } from "@/api/client"
 import { SegmentBar, type Segment } from "@/features/workout/components/SegmentBar"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
+import { SHEET_FOCUS } from "@/components/ui/sheet"
+import { cn } from "@/lib/cn"
 import { StatusBlock } from "@/components/StatusViews"
 import { Skeleton } from "@/components/ui/skeleton"
 import { FlowScreen } from "@/components/UserShell"
@@ -34,8 +36,11 @@ export function WorkoutPage() {
     // Ngày đã tập xong (mở lại từ lịch sử trình duyệt): xem lại ở màn Lịch, không tạo buổi mới.
     return (
       <StatusBlock icon={CircleCheckBig} tone="success" title="Buổi này đã tập xong">
-        <Link to={workout ? `/schedule?ngay=${workout.scheduledOn}` : "/schedule"}>
-          <Button variant="secondary">Xem lại ở Lịch</Button>
+        <Link
+          to={workout ? `/schedule?ngay=${workout.scheduledOn}` : "/schedule"}
+          className={buttonVariants({ variant: "secondary" })}
+        >
+          Xem lại ở Lịch
         </Link>
       </StatusBlock>
     )
@@ -52,8 +57,8 @@ export function WorkoutPage() {
   if (!workout) {
     return (
       <StatusBlock icon={SearchX} tone="danger" title="Không tìm thấy buổi tập">
-        <Link to="/schedule">
-          <Button variant="secondary">Về lịch</Button>
+        <Link to="/schedule" className={buttonVariants({ variant: "secondary" })}>
+          Về lịch
         </Link>
       </StatusBlock>
     )
@@ -71,7 +76,7 @@ export function WorkoutPage() {
 
   return (
     <FlowScreen>
-      <div className="kicker flex justify-between">
+      <div className="flex justify-between text-[13px] text-[var(--color-text-muted)]">
         <span>Buổi {workout.label ?? ""}</span>
         <span className="num">
           Bài {index + 1} / {exercises.length}
@@ -102,25 +107,37 @@ export function WorkoutPage() {
             type="button"
             aria-label="Bài trước"
             onClick={() => goTo(index - 1)}
-            className="size-8 flex-none rounded-lg bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+            className={cn(
+              "grid size-11 flex-none place-items-center rounded-[var(--radius-md)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]",
+              SHEET_FOCUS,
+            )}
           >
-            ‹
+            <ChevronLeft className="size-5" aria-hidden />
           </button>
         )}
         {next ? (
           <button
             type="button"
             onClick={() => goTo(index + 1)}
-            className="num flex-1 truncate text-left text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+            className={cn(
+              "num flex min-h-11 min-w-0 flex-1 items-center gap-0.5 rounded-[var(--radius-sm)] text-left text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)]",
+              SHEET_FOCUS,
+            )}
           >
-            Tiếp: {next.exerciseName} {next.targetSets}×{next.targetReps} ›
+            <span className="truncate">
+              Tiếp: {next.exerciseName} {next.targetSets}×{next.targetReps}
+            </span>
+            <ChevronRight className="size-3.5 flex-none" aria-hidden />
           </button>
         ) : (
           <span className="flex-1" />
         )}
         <Link
           to={`/workout/${scheduledWorkoutId}/finish`}
-          className="text-[13px] font-semibold text-[var(--color-accent)]"
+          className={cn(
+            "flex min-h-11 items-center rounded-[var(--radius-sm)] text-[13px] font-semibold text-[var(--color-accent)]",
+            SHEET_FOCUS,
+          )}
         >
           Kết buổi
         </Link>
@@ -129,7 +146,7 @@ export function WorkoutPage() {
   )
 }
 
-/** Cùng khung với màn buổi tập: kicker + thanh đốt, tên bài, số tải lớn, các dòng set, hàng điều hướng. */
+/** Cùng khung với màn buổi tập: dòng buổi + thanh đốt, tên bài, số tải lớn, các dòng set, hàng điều hướng. */
 function WorkoutSkeleton() {
   return (
     <FlowScreen>

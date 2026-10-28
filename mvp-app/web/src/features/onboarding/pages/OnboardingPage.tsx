@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router"
 import {
   BicepsFlexed,
   CalendarDays,
+  Check,
   ChevronLeft,
   CloudOff,
   Dumbbell,
@@ -49,24 +50,17 @@ const STEPS = ["DISCLAIMER", "BODY", "GOAL", "EQUIPMENT", "EXPERIENCE"] as const
 type Step = (typeof STEPS)[number]
 type Icon = ComponentType<{ className?: string }>
 
-const HEADINGS: Record<Step, { title: string; hint: string; icon: Icon }> = {
-  DISCLAIMER: { title: "Trước khi bắt đầu", hint: "Đọc và đồng ý để đi tiếp.", icon: ShieldCheck },
-  BODY: {
-    title: "Vài số về cơ thể bạn",
-    hint: "Nhập tay. Không đồng bộ từ ứng dụng sức khoẻ nào.",
-    icon: Ruler,
-  },
-  GOAL: { title: "Bạn muốn gì từ 8 tuần tới?", hint: "Chọn một. Đổi được sau ở Cài đặt › Hồ sơ.", icon: Target },
+// hint chỉ khi nói điều màn không tự cho thấy: bước nào nhìn là hiểu thì không có dòng phụ.
+const HEADINGS: Record<Step, { title: string; hint?: string; icon: Icon }> = {
+  DISCLAIMER: { title: "Trước khi bắt đầu", icon: ShieldCheck },
+  BODY: { title: "Vài số về cơ thể bạn", icon: Ruler },
+  GOAL: { title: "Bạn muốn gì từ 8 tuần tới?", hint: "Đổi được sau ở Cài đặt.", icon: Target },
   EQUIPMENT: {
     title: "Bạn tập ở đâu, có những gì?",
     hint: "Chương trình đề xuất chỉ dùng thiết bị bạn có.",
     icon: Dumbbell,
   },
-  EXPERIENCE: {
-    title: "Bạn tập được bao lâu rồi?",
-    hint: "Số buổi mỗi tuần quyết định lịch tuần trông thế nào.",
-    icon: CalendarDays,
-  },
+  EXPERIENCE: { title: "Bạn tập được bao lâu rồi?", icon: CalendarDays },
 }
 
 // Icon theo giá trị trong features/profile/types — màn Hồ sơ dùng chung danh sách nhưng không cần icon.
@@ -158,10 +152,10 @@ export function OnboardingPage() {
         <div className="mt-6 grid size-13 place-items-center rounded-[var(--radius-lg)] border border-[color-mix(in_srgb,var(--color-accent)_25%,transparent)] bg-[var(--color-accent-tint)] text-[var(--color-accent)]">
           <heading.icon className="size-6.5" />
         </div>
-        <h1 className="mt-3.5 text-[28px] leading-[1.1] font-extrabold tracking-[-0.02em]">
+        <h1 className="mt-3.5 text-[28px] leading-tight font-extrabold tracking-[-0.02em]">
           {heading.title}
         </h1>
-        <p className="mt-2.5 text-[13px] text-[var(--color-text-muted)]">{heading.hint}</p>
+        {heading.hint && <p className="mt-2.5 text-[13px] text-[var(--color-text-muted)]">{heading.hint}</p>}
 
         <div className="mt-5 flex flex-1 flex-col">
           {current === "DISCLAIMER" && (
@@ -320,7 +314,7 @@ function OptionRow({
         </span>
       )}
       <span className="flex-1">{label}</span>
-      {checked && <span className="font-bold text-[var(--color-accent)]">✓</span>}
+      {checked && <Check aria-hidden className="size-4.5 text-[var(--color-accent)]" strokeWidth={3} />}
     </label>
   )
 }
@@ -528,7 +522,6 @@ function EquipmentStep({
   return (
     <div className="flex flex-1 flex-col">
       <div className="space-y-4">
-        <div className="kicker">Thiết bị sẵn có</div>
         <div className="space-y-2">
           {EQUIPMENT_OPTIONS.map((eq) => (
             <OptionRow

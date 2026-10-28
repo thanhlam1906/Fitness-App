@@ -11,7 +11,7 @@ export function AboutPage() {
   const acceptedAt = profile.data?.disclaimerAt
 
   return (
-    <SettingsSubLayout title="Giới thiệu">
+    <SettingsSubLayout title="Giới thiệu & điều khoản">
       <div className="mt-5 flex items-center gap-3">
         <Logo />
         <span className="text-xs text-[var(--color-text-muted)]">Bản thử nghiệm</span>
@@ -24,7 +24,7 @@ export function AboutPage() {
         </p>
       )}
 
-      <h2 className="kicker mt-6">Cam kết an toàn</h2>
+      <h2 className="section-title mt-6">Cam kết an toàn</h2>
       <div className="mt-2">
         <DisclaimerText />
       </div>

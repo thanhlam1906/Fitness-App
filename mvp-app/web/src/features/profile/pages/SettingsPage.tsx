@@ -27,8 +27,7 @@ export function SettingsPage() {
 
   return (
     <div>
-      <div className="kicker">Tài khoản</div>
-      <h1 className="mt-2 text-[28px] leading-tight font-extrabold tracking-[-0.02em]">Cài đặt</h1>
+      <h1 className="text-[28px] leading-tight font-extrabold tracking-[-0.02em]">Cài đặt</h1>
 
       <div className="mt-4 flex items-center gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5">
         <span
@@ -84,8 +83,8 @@ export function SettingsPage() {
       </Group>
 
       <Group title="Khác">
-        <Row to="/settings/password" Icon={KeyRound} title="Đổi mật khẩu" sub="Đăng xuất các thiết bị khác" />
-        <Row to="/settings/privacy" Icon={ShieldCheck} title="Dữ liệu & quyền riêng tư" sub="Camera, clip, trợ lý" />
+        <Row to="/settings/password" Icon={KeyRound} title="Đổi mật khẩu" />
+        <Row to="/settings/privacy" Icon={ShieldCheck} title="Dữ liệu & quyền riêng tư" sub="Camera, video, trợ lý" />
         <Row to="/settings/about" Icon={Info} title="Giới thiệu & điều khoản" sub="Cam kết an toàn" />
       </Group>
 
@@ -114,7 +113,7 @@ function restDaysLabel(restDays: number[]): string {
 function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="mt-6">
-      <h2 className="kicker">{title}</h2>
+      <h2 className="section-title">{title}</h2>
       <div className="mt-2 divide-y divide-[var(--color-border)] overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)]">
         {children}
       </div>
@@ -132,7 +131,7 @@ function Row({
   to: string
   Icon: ComponentType<{ className?: string }>
   title: string
-  sub: ReactNode
+  sub?: ReactNode
   accent?: boolean
 }) {
   return (
@@ -145,7 +144,7 @@ function Row({
       <span
         aria-hidden
         className={cn(
-          "grid size-[34px] flex-none place-items-center rounded-[10px]",
+          "grid size-[34px] flex-none place-items-center rounded-[var(--radius-md)]",
           accent ? "bg-[var(--color-accent-tint)] text-[var(--color-accent)]" : "bg-[var(--color-surface-2)]",
         )}
       >
@@ -153,7 +152,7 @@ function Row({
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-[15px] font-semibold">{title}</span>
-        <span className="num block truncate text-xs text-[var(--color-text-muted)]">{sub}</span>
+        {sub && <span className="num block truncate text-xs text-[var(--color-text-muted)]">{sub}</span>}
       </span>
       <ChevronRight className="size-4 flex-none text-[var(--color-text-muted)]" aria-hidden />
     </Link>

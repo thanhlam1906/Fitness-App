@@ -55,7 +55,7 @@ export function FinishSessionPage() {
         detail={session.isError ? session.error.message : undefined}
       >
         <Button variant="secondary" onClick={() => navigate("/schedule")}>
-          Về lịch tuần
+          Về lịch
         </Button>
       </StatusBlock>
     )
@@ -66,20 +66,22 @@ export function FinishSessionPage() {
 
   return (
     <FlowScreen>
-      <div className="kicker num">{formatDayMonth(workout.scheduledOn)}</div>
-      <h1 className="mt-3 text-[28px] font-extrabold tracking-[-0.02em]">
+      <div className="num text-[13px] text-[var(--color-text-muted)]">{formatDayMonth(workout.scheduledOn)}</div>
+      <h1 className="mt-1 text-[28px] leading-tight font-extrabold tracking-[-0.02em]">
         Xong buổi {workout.label ?? ""}.
       </h1>
 
       <div className="mt-4.5 grid grid-cols-2 gap-2">
         <Stat value={`${stats.loggedSets}`} label="set đã ghi" />
-        <Stat value={formatNumber(stats.volumeKg)} label="kg tổng tải" />
+        <Stat value={formatNumber(stats.volumeKg)} label="kg tổng tạ" />
         <Stat value={`${stats.doneExercises} / ${workout.exercises.length}`} label="bài hoàn thành" />
         <Stat value={elapsed(session.data!.startedAt)} label="thời gian" />
       </div>
 
       <div className="mt-6">
-        <div className="text-[17px] font-bold">Buổi này nặng cỡ nào?</div>
+        <div className="text-[17px] font-bold">
+          Buổi này nặng cỡ nào? <span className="font-normal text-[var(--color-text-muted)]">(tuỳ chọn)</span>
+        </div>
         <div className="mt-1 text-xs text-[var(--color-text-muted)]">
           4 là nhẹ nhàng, 10 là không thêm được rep nào.
         </div>
@@ -101,18 +103,15 @@ export function FinishSessionPage() {
             </button>
           ))}
         </div>
-        <p className="mt-2.5 text-xs text-[var(--color-text-muted)]">
-          {sessionRpe == null
-            ? "Bỏ qua cũng được — engine vẫn chạy bằng rep và RPE từng set."
-            : `RPE trung bình các set đã ghi: ${stats.avgRpe ?? "—"}`}
-        </p>
+        {sessionRpe != null && (
+          <p className="mt-2.5 text-xs text-[var(--color-text-muted)]">RPE trung bình các set đã ghi: {stats.avgRpe ?? "—"}</p>
+        )}
       </div>
 
       <div className="mt-6">
         <div className="text-[17px] font-bold">Có đau ở đâu không?</div>
         <p className="mt-1 text-xs text-[var(--color-text-muted)]">
-          Bỏ qua nếu không đau. Báo đau làm giảm tải hoặc đổi bài ở tuần kế — đây không phải chẩn
-          đoán y tế, đau kéo dài thì đi khám.
+          Không đau thì bỏ qua. Báo đau sẽ giảm tạ hoặc đổi bài. Đau kéo dài thì đi khám.
         </p>
         <div className="mt-3">
           <BodyMap
@@ -164,7 +163,7 @@ export function FinishSessionPage() {
           )
         }
       >
-        {finish.isPending ? "Đang lưu…" : "Lưu và về lịch tuần"}
+        {finish.isPending ? "Đang lưu…" : "Lưu và về lịch"}
       </Button>
     </FlowScreen>
   )
@@ -175,8 +174,8 @@ function FinishSkeleton() {
   return (
     <FlowScreen>
       <div role="status" aria-label="Đang tải" className="flex flex-1 flex-col">
-        <Skeleton className="h-3 w-16" />
-        <Skeleton className="mt-3 h-8 w-56" />
+        <Skeleton className="h-4 w-16" />
+        <Skeleton className="mt-1 h-8 w-56" />
         <div className="mt-4.5 grid grid-cols-2 gap-2">
           {Array.from({ length: 4 }, (_, i) => (
             <Skeleton key={i} className="h-20" />

@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { ChevronLeft } from "lucide-react"
 import { Link, useLocation, useNavigate } from "react-router"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -69,7 +70,7 @@ export function LoginPage() {
   }
 
   return (
-    <AuthLayout title="Đăng nhập" subtitle="Tiếp tục lịch tập của bạn.">
+    <AuthLayout title="Đăng nhập">
       <SocialButtons />
       <OrDivider label="hoặc" />
       <form noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-3.5">
@@ -87,7 +88,6 @@ export function LoginPage() {
           <PasswordInput
             id="password"
             autoComplete="current-password"
-            placeholder="Mật khẩu của bạn"
             aria-invalid={!!errors.password}
             {...register("password")}
           />
@@ -136,7 +136,7 @@ function NewPasswordStep({
   }
 
   return (
-    <AuthLayout title="Đặt mật khẩu mới" subtitle="Tài khoản đang dùng mật khẩu tạm. Đặt mật khẩu của riêng bạn để tiếp tục.">
+    <AuthLayout title="Đặt mật khẩu mới" subtitle="Bạn đang dùng mật khẩu tạm. Đặt mật khẩu mới để tiếp tục.">
       <form noValidate onSubmit={handleSubmit(submit)} className="space-y-3.5">
         <AuthField id="newPassword" label="Mật khẩu mới" error={errors.newPassword?.message}>
           <PasswordInput id="newPassword" autoComplete="new-password" aria-invalid={!!errors.newPassword} {...register("newPassword")} />
@@ -161,9 +161,10 @@ function NewPasswordStep({
       <button
         type="button"
         onClick={onBack}
-        className="mt-4 w-full text-center text-[13px] text-[var(--color-text-muted)] hover:text-[var(--color-text)] focus-visible:underline"
+        className="mt-2 flex min-h-11 w-full items-center justify-center gap-0.5 text-[13px] text-[var(--color-text-muted)] hover:text-[var(--color-text)] focus-visible:underline"
       >
-        ← Quay lại đăng nhập
+        <ChevronLeft className="size-4" aria-hidden />
+        Quay lại đăng nhập
       </button>
     </AuthLayout>
   )

@@ -73,6 +73,14 @@ body {
   color: var(--color-text-muted);
 }
 
+/* Tiêu đề mục ở màn người tập: chữ thường. Nhãn in hoa .kicker trên mọi khối là dấu hiệu
+   giao diện máy làm (doc/design-gon-giao-dien-user-v1.md §4), giữ .kicker cho admin. */
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
 /* Khung chờ (components/ui/skeleton.tsx): vệt sáng lướt ngang khối xám, doc/mockup-khung-cho.
    Nằm trong layer components để class Tailwind truyền vào (bg-…) vẫn đè được. */
 @layer components {

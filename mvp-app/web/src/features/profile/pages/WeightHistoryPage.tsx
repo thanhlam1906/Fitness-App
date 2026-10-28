@@ -116,7 +116,6 @@ export function WeightHistoryPage() {
         <StatusBlock
           icon={Scale}
           title="Chưa có lần đo"
-          detail="Cập nhật cân nặng để bắt đầu theo dõi."
           className="mt-5"
         />
       )}

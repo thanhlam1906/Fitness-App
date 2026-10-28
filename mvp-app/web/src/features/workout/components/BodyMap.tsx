@@ -1,4 +1,5 @@
 import type { KeyboardEvent } from "react"
+import { Check } from "lucide-react"
 import { BODY_AREAS } from "@/features/workout/types"
 import { BODY_VIEWS } from "@/features/workout/utils/bodyMap"
 import { cn } from "@/lib/cn"
@@ -89,10 +90,11 @@ export function BodyMap({
         {selected ? (
           <>
             Đang chọn{" "}
-            <span className="font-semibold text-[var(--color-danger)]">{selected.label} ✓</span>
+            <span className="font-semibold text-[var(--color-danger)]">{selected.label}</span>
           </>
         ) : (
-          "Chạm vào chỗ đau trên hình"
+          // Giữ chỗ dòng trống để chọn vùng không đẩy nút bên dưới.
+          " "
         )}
       </p>
 
@@ -114,7 +116,7 @@ export function BodyMap({
               )}
             >
               {area.label}
-              {on && " ✓"}
+              {on && <Check className="ml-1 inline size-3.5 align-[-2px]" aria-hidden />}
             </button>
           )
         })}

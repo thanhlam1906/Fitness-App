@@ -27,8 +27,8 @@ export function PrivacyPage() {
         Chỉ gửi <b className="font-semibold text-[var(--color-text)]">toạ độ các khớp</b>, không gửi hình hay video
         của bạn.
       </Card>
-      <Card Icon={Trash2} title="Clip bạn gửi">
-        Clip bị <b className="font-semibold text-[var(--color-text)]">xoá ngay sau khi chấm</b>, kể cả khi chấm lỗi.
+      <Card Icon={Trash2} title="Video bạn gửi">
+        Video bị <b className="font-semibold text-[var(--color-text)]">xoá ngay sau khi chấm</b>, kể cả khi chấm lỗi.
         Không ai tải lại được, kể cả quản trị viên.
       </Card>
       <Card Icon={MessageCircle} title="Trợ lý">
@@ -43,12 +43,14 @@ export function PrivacyPage() {
             SHEET_FOCUS,
           )}
         >
-          {count === 0
-            ? "Không có cuộc trò chuyện nào trên máy"
-            : answering
-              ? "Trợ lý đang trả lời, chờ chút rồi xoá"
-              : `Xoá cuộc trò chuyện trên máy (${count} tin)`}
+          Xoá cuộc trò chuyện trên máy{count > 0 && ` (${count} tin)`}
         </button>
+        {/* Nhãn nút giữ tên việc; lý do không bấm được nằm dưới nút. */}
+        {(count === 0 || answering) && (
+          <p className="mt-1.5 text-xs">
+            {count === 0 ? "Chưa có cuộc trò chuyện nào trên máy." : "Trợ lý đang trả lời, xoá được khi trả lời xong."}
+          </p>
+        )}
       </Card>
     </SettingsSubLayout>
   )
