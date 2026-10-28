@@ -127,6 +127,7 @@ export function AssistantPage() {
       )}
 
       <div className="mt-3 flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] py-1.5 pr-1.5 pl-4 focus-within:border-[var(--color-accent)]">
+        {/* text-base (16px) như Input: nhỏ hơn thì iOS Safari phóng to trang khi bàn phím bật. */}
         <input
           aria-label="Câu hỏi"
           placeholder="Hỏi trợ lý…"
@@ -135,7 +136,7 @@ export function AssistantPage() {
           onKeyDown={(e) => {
             if (e.key === "Enter") send(input)
           }}
-          className="h-9 min-w-0 flex-1 bg-transparent text-[15px] text-[var(--color-text)] outline-none placeholder:text-[var(--color-text-muted)]"
+          className="h-9 min-w-0 flex-1 bg-transparent text-base text-[var(--color-text)] outline-none placeholder:text-[var(--color-text-muted)]"
         />
         <button
           type="button"

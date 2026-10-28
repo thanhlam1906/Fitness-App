@@ -7,7 +7,8 @@ export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputE
       ref={ref}
       className={cn(
         "h-12 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)]",
-        "px-3.5 text-[15px] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)]",
+        // 16px: iOS Safari tự phóng to cả trang khi chạm ô nhập chữ nhỏ hơn 16px và không thu lại.
+        "px-3.5 text-base text-[var(--color-text)] placeholder:text-[var(--color-text-muted)]",
         "outline-none focus:border-[var(--color-accent)] aria-invalid:border-[var(--color-danger)]",
         className,
       )}

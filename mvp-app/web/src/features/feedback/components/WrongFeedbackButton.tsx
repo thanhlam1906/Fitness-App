@@ -44,7 +44,7 @@ export function WrongFeedbackButton({ source, hint }: { source: FeedbackSource; 
         placeholder="Sai ở chỗ nào? (tuỳ chọn)"
         value={note}
         onChange={(e) => setNote(e.target.value)}
-        className="h-9 min-w-48 flex-1 text-xs"
+        className="h-9 min-w-48 flex-1"
       />
       <button
         type="button"

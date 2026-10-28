@@ -24,12 +24,14 @@ export function UserShell({ children }: { children: ReactNode }) {
   const showTabs = TABS.some((tab) => tab.to === pathname)
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)]">
+    <div className="group min-h-screen bg-[var(--color-bg)]">
       <div className={cn("mx-auto w-full max-w-[430px] px-5 pt-8", showTabs ? "pb-28" : "pb-11")}>
         {children}
       </div>
       {showTabs && (
-        <nav className="fixed inset-x-0 bottom-0 border-t border-[var(--color-border)] bg-[var(--color-surface)]">
+        // Đang gõ trên điện thoại thì ẩn thanh tab như app gốc: iOS Safari đẩy nó lên đậu trên
+        // bàn phím, chiếm chỗ của ô nhập.
+        <nav className="fixed inset-x-0 bottom-0 border-t border-[var(--color-border)] bg-[var(--color-surface)] pointer-coarse:group-has-[input:focus]:hidden">
           <div className="mx-auto flex max-w-[430px]">
             {TABS.map((tab) => (
               <NavLink
