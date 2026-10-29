@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react"
-import { Shuffle } from "lucide-react"
+import { Check, Shuffle } from "lucide-react"
 import { ExerciseImage } from "@/components/ExerciseImage"
 import { LoadDeltaBadge } from "@/components/LoadDeltaBadge"
 import { Button } from "@/components/ui/button"
+import { SHEET_FOCUS } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import { IconText } from "@/components/StatusViews"
 import { cn } from "@/lib/cn"
@@ -120,9 +121,7 @@ function SetSummaryRow({
         !done && "text-[var(--color-text-muted)]",
       )}
     >
-      <span className="w-11 text-[11px] tracking-[0.08em] text-[var(--color-text-muted)]">
-        SET {setIndex}
-      </span>
+      <span className="w-11 text-xs text-[var(--color-text-muted)]">Set {setIndex}</span>
       <span className="num flex-1">
         {logged?.skipped
           ? `bỏ set · ${SKIP_REASONS.find((r) => r.value === logged.skipReason)?.label ?? "khác"}`
@@ -130,7 +129,8 @@ function SetSummaryRow({
       </span>
       {done ? (
         <span className="num text-[var(--color-success)]">
-          {logged!.rpe != null ? `RPE ${logged!.rpe} ` : ""}✓
+          {logged!.rpe != null ? `RPE ${logged!.rpe}` : ""}
+          <Check aria-hidden className="ml-1 inline size-4 align-[-3px]" strokeWidth={3} />
         </span>
       ) : (
         <span>—</span>
@@ -179,11 +179,9 @@ function ActiveSet({
   }
 
   return (
-    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4">
+    <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4">
       <div className="flex items-baseline justify-between">
-        <span className="text-[11px] font-bold tracking-[0.1em] text-[var(--color-accent)] uppercase">
-          Set {setIndex} — đang làm
-        </span>
+        <span className="text-[15px] font-bold">Set {setIndex}</span>
         {restSeconds != null && (
           <span className="num text-xs text-[var(--color-text-muted)]">
             nghỉ {formatRest(restSeconds)}
@@ -193,12 +191,12 @@ function ActiveSet({
 
       {skipping ? (
         <div className="mt-3.5">
-          <label htmlFor={`skip-${exerciseId}-${setIndex}`} className="kicker">
+          <label htmlFor={`skip-${exerciseId}-${setIndex}`} className="text-xs font-medium text-[var(--color-text-muted)]">
             Lý do bỏ set
           </label>
           <select
             id={`skip-${exerciseId}-${setIndex}`}
-            className="mt-1.5 h-11 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm"
+            className="mt-1.5 h-11 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-base"
             value={skipReason}
             onChange={(e) => setSkipReason(e.target.value)}
           >
@@ -211,7 +209,8 @@ function ActiveSet({
         </div>
       ) : (
         <>
-          <div className="mt-3.5 flex gap-4.5">
+          {/* Mỗi ô một hàng: hai ô cạnh nhau ở màn 375px chỉ còn ~34px cho số, "62.5" bị cắt. */}
+          <div className="mt-3 flex flex-col gap-2.5">
             <NumberStepper
               label="Rep"
               id={`reps-${exerciseId}-${setIndex}`}
@@ -221,7 +220,7 @@ function ActiveSet({
               onChange={setReps}
             />
             <NumberStepper
-              label="Tải (kg)"
+              label="Tạ (kg)"
               id={`load-${exerciseId}-${setIndex}`}
               value={loadKg}
               step={2.5}
@@ -232,8 +231,8 @@ function ActiveSet({
           {isLastSet && (
             /* RPE hỏi mềm: bỏ trống được, thiếu thì bài này chỉ chạy double progression */
             <div className="mt-3.5">
-              <label htmlFor={`rpe-${exerciseId}-${setIndex}`} className="kicker">
-                RPE set cuối — bỏ qua được
+              <label htmlFor={`rpe-${exerciseId}-${setIndex}`} className="text-xs font-medium text-[var(--color-text-muted)]">
+                RPE set cuối (tuỳ chọn)
               </label>
               <input
                 id={`rpe-${exerciseId}-${setIndex}`}
@@ -254,18 +253,13 @@ function ActiveSet({
         {logSet.isPending ? "Đang lưu…" : `Lưu set ${setIndex}`}
       </Button>
 
-      <div className="mt-2.5 flex items-center justify-between">
-        <button
-          type="button"
-          onClick={() => setSkipping((s) => !s)}
-          className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
-        >
-          {skipping ? "Không bỏ nữa" : "Bỏ set này"}
-        </button>
-        <span className="text-[11px] text-[var(--color-text-muted)]">
-          lưu lên server sau mỗi set
-        </span>
-      </div>
+      <button
+        type="button"
+        onClick={() => setSkipping((s) => !s)}
+        className={cn("mt-1 min-h-11 rounded-[var(--radius-sm)] text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)]", SHEET_FOCUS)}
+      >
+        {skipping ? "Không bỏ nữa" : "Bỏ set này"}
+      </button>
       {logSet.isError && (
         <IconText className="mt-2 text-xs">{logSet.error.message}</IconText>
       )}
@@ -293,10 +287,13 @@ function NumberStepper({
   onChange: (value: number) => void
 }) {
   const button =
-    "size-11 flex-none rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] text-xl hover:border-[var(--color-text-muted)]"
+    cn(
+      "size-11 flex-none rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] text-xl hover:border-[var(--color-text-muted)]",
+      SHEET_FOCUS,
+    )
   return (
-    <div className="flex-1">
-      <label htmlFor={id} className="kicker">
+    <div>
+      <label htmlFor={id} className="text-xs font-medium text-[var(--color-text-muted)]">
         {label}
       </label>
       <div className="mt-1.5 flex items-center gap-2.5">
@@ -364,7 +361,7 @@ function CoachingPanel({ exercise }: { exercise: ScheduledExerciseView }) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+        className={cn("-my-3 min-h-11 rounded-[var(--radius-sm)] text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)]", SHEET_FOCUS)}
       >
         {open ? "Ẩn cách tập" : "Xem cách tập"}
       </button>
@@ -393,9 +390,9 @@ function SubstitutePanel({ exercise }: { exercise: ScheduledExerciseView }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-3 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+        className={cn("mt-1 min-h-11 rounded-[var(--radius-sm)] text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)]", SHEET_FOCUS)}
       >
-        Thiếu thiết bị, đổi bài khác
+        Thay bài
       </button>
     )
   }
@@ -403,7 +400,7 @@ function SubstitutePanel({ exercise }: { exercise: ScheduledExerciseView }) {
   return (
     <div className="mt-3 space-y-2 rounded-[var(--radius-md)] bg-[var(--color-surface)] p-3">
       <p className="text-xs leading-relaxed text-[var(--color-text-muted)]">
-        Bài cùng nhóm cơ, lọc theo thiết bị bạn đang có. Set và rep giữ nguyên; tải cần nhập lại.
+        Set và rep giữ nguyên, tạ nhập lại.
       </p>
       {suggestions.isLoading && (
         // Khung của hàng nút bài gợi ý.
@@ -439,7 +436,7 @@ function SubstitutePanel({ exercise }: { exercise: ScheduledExerciseView }) {
       <button
         type="button"
         onClick={() => setOpen(false)}
-        className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+        className={cn("min-h-11 rounded-[var(--radius-sm)] text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)]", SHEET_FOCUS)}
       >
         Huỷ
       </button>
