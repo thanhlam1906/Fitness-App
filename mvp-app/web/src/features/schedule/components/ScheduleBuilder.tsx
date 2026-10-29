@@ -221,6 +221,7 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
         <SheetHeader title="Chọn bài" onCancel={() => setPicking(null)} />
         <div className="overflow-y-auto px-4 pb-7">
           <ExercisePicker
+            autoFocus
             // Bỏ bài đã có trong ngày đó: set_logs khoá theo (buổi, bài, số set), hai dòng cùng bài đè set của nhau.
             exercises={active.filter(
               (e) => !picking || !draft[picking.day]?.some((x, i) => i !== picking.index && x.exerciseId === e.id),

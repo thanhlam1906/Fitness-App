@@ -1,3 +1,4 @@
+import type { Ref } from "react"
 import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { SHEET_FOCUS } from "@/components/ui/sheet"
@@ -16,8 +17,11 @@ export function ExerciseSearch({
   onMuscle,
   className,
   autoFocus,
+  inputRef,
 }: {
   autoFocus?: boolean
+  /** Để nơi gọi trả focus về ô tìm sau "Xoá bộ lọc" (nút đó biến mất ngay khi bấm). */
+  inputRef?: Ref<HTMLInputElement>
   exercises: { muscleGroups: string[] }[]
   query: string
   muscle: string | null
@@ -34,6 +38,7 @@ export function ExerciseSearch({
           className="pointer-events-none absolute top-1/2 left-3.5 size-4.5 -translate-y-1/2 text-[var(--color-text-muted)]"
         />
         <Input
+          ref={inputRef}
           type="search"
           autoFocus={autoFocus}
           aria-label="Tìm bài"

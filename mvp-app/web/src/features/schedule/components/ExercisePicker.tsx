@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { ChevronRight } from "lucide-react"
 import { ExerciseImage } from "@/components/ExerciseImage"
 import { ExerciseSearch, NoMatch } from "@/components/ExerciseSearch"
@@ -24,13 +24,14 @@ export function ExercisePicker({
 }) {
   const [query, setQuery] = useState("")
   const [muscle, setMuscle] = useState<string | null>(null)
+  const searchRef = useRef<HTMLInputElement>(null)
   const sorted = [...exercises].sort((a, b) => a.nameEn.localeCompare(b.nameEn))
   const visible = filterExercises(sorted, query, muscle)
 
   return (
     <>
       <div className="sticky top-0 z-10 bg-[var(--color-surface)] pb-2">
-        <ExerciseSearch autoFocus={autoFocus} exercises={sorted} query={query} muscle={muscle} onQuery={setQuery} onMuscle={setMuscle} />
+        <ExerciseSearch inputRef={searchRef} autoFocus={autoFocus} exercises={sorted} query={query} muscle={muscle} onQuery={setQuery} onMuscle={setMuscle} />
       </div>
       <div className="mt-1 flex flex-col gap-1.5">
         {visible.length === 0 && (
@@ -38,6 +39,7 @@ export function ExercisePicker({
             onClear={() => {
               setQuery("")
               setMuscle(null)
+              searchRef.current?.focus()
             }}
           />
         )}

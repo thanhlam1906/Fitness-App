@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { Link } from "react-router"
 import { ChevronRight, Dumbbell } from "lucide-react"
 import { ExerciseImage } from "@/components/ExerciseImage"
@@ -27,6 +27,7 @@ export function FormCheckListPage() {
   const reviews = useReviews()
   const [query, setQuery] = useState("")
   const [muscle, setMuscle] = useState<string | null>(null)
+  const searchRef = useRef<HTMLInputElement>(null)
 
   // API trả không theo thứ tự nào (findAll không ORDER BY): sắp theo tên để bài không nhảy chỗ.
   const analyzable = (exercises.data ?? [])
@@ -53,6 +54,7 @@ export function FormCheckListPage() {
 
       {searchable && (
         <ExerciseSearch
+          inputRef={searchRef}
           className="mt-5"
           exercises={analyzable}
           query={query}
@@ -68,6 +70,7 @@ export function FormCheckListPage() {
               onClear={() => {
                 setQuery("")
                 setMuscle(null)
+                searchRef.current?.focus()
               }}
             />
           )}
