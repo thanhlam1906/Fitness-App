@@ -65,6 +65,13 @@ export type Exercise = {
   updatedAt: string
 }
 
+// Web không còn dùng, nhưng màn gửi video của mobile import qua alias @/features/review/types: đừng xoá.
+export const VIEWPOINT_OPTIONS = [
+  { value: "SAGITTAL", label: "Ngang (bên hông)" },
+  { value: "FRONTAL", label: "Chính diện" },
+  { value: "DIAGONAL", label: "Chéo ~45°" },
+] as const
+
 export function parseFilmingGuide(raw: string | null): FilmingGuide | null {
   if (!raw) return null
   try {
