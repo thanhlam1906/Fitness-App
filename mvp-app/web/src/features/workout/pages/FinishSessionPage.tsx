@@ -111,7 +111,7 @@ export function FinishSessionPage() {
       <div className="mt-6">
         <div className="text-[17px] font-bold">Có đau ở đâu không?</div>
         <p className="mt-1 text-xs text-[var(--color-text-muted)]">
-          Không đau thì bỏ qua. Báo đau sẽ giảm tạ hoặc đổi bài. Đau kéo dài thì đi khám.
+          Không đau thì bỏ qua. Báo đau sẽ giảm tạ, không phải chẩn đoán y tế.
         </p>
         <div className="mt-3">
           <BodyMap

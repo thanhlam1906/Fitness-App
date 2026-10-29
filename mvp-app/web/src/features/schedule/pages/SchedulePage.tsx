@@ -141,7 +141,7 @@ export function SchedulePage() {
 
       <Legend />
 
-      <DayCard cell={cell} workouts={workouts} totalWeeks={progress.totalWeeks} />
+      <DayCard cell={cell} workouts={workouts} />
 
     </div>
   )

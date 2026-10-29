@@ -12,7 +12,16 @@ import { filterExercises } from "@/lib/exerciseFilter"
  * ô chọn của điện thoại xổ ra cả ~40 bài (doc/design-gon-giao-dien-user-v1.md §6).
  * Đặt trong vùng cuộn của khung: ô tìm dính đầu khi cuộn danh sách.
  */
-export function ExercisePicker({ exercises, onPick }: { exercises: Exercise[]; onPick: (exercise: Exercise) => void }) {
+export function ExercisePicker({
+  exercises,
+  onPick,
+  autoFocus = false,
+}: {
+  exercises: Exercise[]
+  onPick: (exercise: Exercise) => void
+  /** Mở thành trang con trong khung: đưa focus vào ô tìm, nút vừa bấm đã unmount. */
+  autoFocus?: boolean
+}) {
   const [query, setQuery] = useState("")
   const [muscle, setMuscle] = useState<string | null>(null)
   const sorted = [...exercises].sort((a, b) => a.nameEn.localeCompare(b.nameEn))
@@ -21,7 +30,7 @@ export function ExercisePicker({ exercises, onPick }: { exercises: Exercise[]; o
   return (
     <>
       <div className="sticky top-0 z-10 bg-[var(--color-surface)] pb-2">
-        <ExerciseSearch exercises={sorted} query={query} muscle={muscle} onQuery={setQuery} onMuscle={setMuscle} />
+        <ExerciseSearch autoFocus={autoFocus} exercises={sorted} query={query} muscle={muscle} onQuery={setQuery} onMuscle={setMuscle} />
       </div>
       <div className="mt-1 flex flex-col gap-1.5">
         {visible.length === 0 && (

@@ -162,6 +162,12 @@ function EditBody({
   const [error, setError] = useState<string | null>(null)
   // Trang con "Thêm bài" trong cùng khung: nháp giữ nguyên khi qua lại.
   const [picking, setPicking] = useState(false)
+  // Thân khung mount lại khi rời trang con: trả focus cho nút Thêm bài, không để rơi về body.
+  const [fromPicker, setFromPicker] = useState(false)
+  const closePicker = () => {
+    setPicking(false)
+    setFromPicker(true)
+  }
 
   const changes = diffDraft(original, rows)
   const dirty = changes.updates.length + changes.adds.length + changes.removes.length > 0
@@ -190,9 +196,10 @@ function EditBody({
   if (picking) {
     return (
       <>
-        <SheetHeader title="Thêm bài" cancelLabel="Quay lại" onCancel={() => setPicking(false)} />
+        <SheetHeader title="Thêm bài" cancelLabel="Quay lại" onCancel={closePicker} />
         <div className="overflow-y-auto px-4 pb-7">
           <ExercisePicker
+            autoFocus
             exercises={active}
             onPick={(picked) => {
               setRows((prev) => [
@@ -210,7 +217,7 @@ function EditBody({
                   removed: false,
                 },
               ])
-              setPicking(false)
+              closePicker()
             }}
           />
         </div>
@@ -275,6 +282,7 @@ function EditBody({
         {active.length > 0 && (
           <button
             type="button"
+            autoFocus={fromPicker}
             onClick={() => setPicking(true)}
             className={cn(
               "mt-3 flex h-12 w-full items-center justify-center gap-1.5 rounded-[var(--radius-lg)] border-[1.5px] border-dashed border-[var(--color-border)] text-[15px] font-bold",

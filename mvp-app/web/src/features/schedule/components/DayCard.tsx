@@ -26,20 +26,18 @@ const WEEKDAY_SHORT = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"]
 export function DayCard({
   cell,
   workouts,
-  totalWeeks,
 }: {
   cell: MonthCell
-  workouts: ScheduledWorkoutView[]
-  totalWeeks: number
+  workouts: ScheduledWorkoutView[]
 }) {
   const workout = cell.workout
   if (!workout) return <NoWorkoutCard cell={cell} workouts={workouts} />
 
   const status = workout.status
-  if (status === "DONE") return <DoneCard cell={cell} workout={workout} totalWeeks={totalWeeks} />
+  if (status === "DONE") return <DoneCard cell={cell} workout={workout} />
   if (status === "MISSED" || status === "SKIPPED") {
     return (
-      <CardShell cell={cell} workout={workout} totalWeeks={totalWeeks} pill={<Pill tone="danger">Bỏ lỡ</Pill>}>
+      <CardShell cell={cell} workout={workout} pill={<Pill tone="danger">Bỏ lỡ</Pill>}>
         <PlanList workout={workout} />
         {/* Buổi bỏ lỡ vẫn tập được (backend không chặn) — người ta hay tập bù hôm sau. */}
         <Link
@@ -51,9 +49,9 @@ export function DayCard({
       </CardShell>
     )
   }
-  if (cell.isToday) return <TodayCard cell={cell} workout={workout} totalWeeks={totalWeeks} />
+  if (cell.isToday) return <TodayCard cell={cell} workout={workout} />
   return (
-    <CardShell cell={cell} workout={workout} totalWeeks={totalWeeks} pill={<Pill tone="muted">Sắp tới</Pill>}>
+    <CardShell cell={cell} workout={workout} pill={<Pill tone="muted">Sắp tới</Pill>}>
       <PlanList workout={workout} />
       <Decisions workout={workout} />
       <EditLink workout={workout} />
@@ -61,11 +59,11 @@ export function DayCard({
   )
 }
 
-function TodayCard({ cell, workout, totalWeeks }: { cell: MonthCell; workout: ScheduledWorkoutView; totalWeeks: number }) {
+function TodayCard({ cell, workout }: { cell: MonthCell; workout: ScheduledWorkoutView }) {
   const session = useSessionOfDay(workout.id)
   const inProgress = session.data?.status === "IN_PROGRESS"
   return (
-    <CardShell cell={cell} workout={workout} totalWeeks={totalWeeks} highlight pill={<Pill tone="accent">Hôm nay</Pill>}>
+    <CardShell cell={cell} workout={workout} highlight pill={<Pill tone="accent">Hôm nay</Pill>}>
       <PlanList workout={workout} />
       <Decisions workout={workout} />
       <Link to={`/workout/${workout.id}`} className={buttonVariants({ className: "mt-3.5 w-full" })}>
@@ -77,7 +75,7 @@ function TodayCard({ cell, workout, totalWeeks }: { cell: MonthCell; workout: Sc
   )
 }
 
-function DoneCard({ cell, workout, totalWeeks }: { cell: MonthCell; workout: ScheduledWorkoutView; totalWeeks: number }) {
+function DoneCard({ cell, workout }: { cell: MonthCell; workout: ScheduledWorkoutView }) {
   const session = useSessionOfDay(workout.id)
   let body: ReactNode
   if (session.isLoading) {
@@ -166,7 +164,7 @@ function DoneCard({ cell, workout, totalWeeks }: { cell: MonthCell; workout: Sch
     )
   }
   return (
-    <CardShell cell={cell} workout={workout} totalWeeks={totalWeeks} pill={<Pill tone="success">Đã tập</Pill>}>
+    <CardShell cell={cell} workout={workout} pill={<Pill tone="success">Đã tập</Pill>}>
       {body}
       <Decisions workout={workout} />
     </CardShell>
@@ -201,14 +199,12 @@ function NoWorkoutCard({ cell, workouts }: { cell: MonthCell; workouts: Schedule
 function CardShell({
   cell,
   workout,
-  totalWeeks,
   pill,
   highlight = false,
   children,
 }: {
   cell: MonthCell
-  workout: ScheduledWorkoutView
-  totalWeeks: number
+  workout: ScheduledWorkoutView
   pill: ReactNode
   highlight?: boolean
   children: ReactNode
@@ -228,7 +224,7 @@ function CardShell({
             highlight ? "text-[var(--color-accent)]" : "text-[var(--color-text-muted)]",
           )}
         >
-          {dayTitle(cell.date)} · Tuần {workout.weekIndex}/{totalWeeks}
+          {dayTitle(cell.date)}
         </span>
         {pill}
       </div>

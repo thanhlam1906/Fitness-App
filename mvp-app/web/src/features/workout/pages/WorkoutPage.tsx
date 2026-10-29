@@ -161,12 +161,13 @@ function WorkoutSkeleton() {
         <Skeleton className="mt-3 h-20 w-48" />
         <div className="mt-6 flex flex-col gap-2">
           <Skeleton className="h-14 w-full" />
-          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-72 w-full rounded-[var(--radius-lg)]" />
           <Skeleton className="h-14 w-full" />
         </div>
         <div className="flex-1" />
         <div className="mt-6 flex items-center justify-between gap-3">
-          <Skeleton className="h-4 w-40" />
+          <Skeleton className="size-11" />
+          <Skeleton className="h-4 flex-1" />
           <Skeleton className="h-4 w-16" />
         </div>
       </div>

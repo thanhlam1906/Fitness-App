@@ -15,7 +15,9 @@ export function ExerciseSearch({
   onQuery,
   onMuscle,
   className,
+  autoFocus,
 }: {
+  autoFocus?: boolean
   exercises: { muscleGroups: string[] }[]
   query: string
   muscle: string | null
@@ -33,6 +35,7 @@ export function ExerciseSearch({
         />
         <Input
           type="search"
+          autoFocus={autoFocus}
           aria-label="Tìm bài"
           placeholder="Tìm bài"
           value={query}

@@ -44,7 +44,8 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
       if (day in next) {
         delete next[day]
       } else {
-        next[day] = active[0] ? [emptyExercise(active[0].id)] : []
+        // Để trống, người dùng tự chọn bài: gán sẵn bài đầu danh sách là chốt hộ một bài họ không chọn.
+        next[day] = []
       }
       return next
     })
@@ -220,7 +221,10 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
         <SheetHeader title="Chọn bài" onCancel={() => setPicking(null)} />
         <div className="overflow-y-auto px-4 pb-7">
           <ExercisePicker
-            exercises={active}
+            // Bỏ bài đã có trong ngày đó: set_logs khoá theo (buổi, bài, số set), hai dòng cùng bài đè set của nhau.
+            exercises={active.filter(
+              (e) => !picking || !draft[picking.day]?.some((x, i) => i !== picking.index && x.exerciseId === e.id),
+            )}
             onPick={(exercise) => {
               if (!picking) return
               const { day, index } = picking
