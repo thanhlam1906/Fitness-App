@@ -16,10 +16,8 @@ export function ExerciseSearch({
   onQuery,
   onMuscle,
   className,
-  autoFocus,
   inputRef,
 }: {
-  autoFocus?: boolean
   /** Để nơi gọi trả focus về ô tìm sau "Xoá bộ lọc" (nút đó biến mất ngay khi bấm). */
   inputRef?: Ref<HTMLInputElement>
   exercises: { muscleGroups: string[] }[]
@@ -40,7 +38,6 @@ export function ExerciseSearch({
         <Input
           ref={inputRef}
           type="search"
-          autoFocus={autoFocus}
           aria-label="Tìm bài"
           placeholder="Tìm bài"
           value={query}
