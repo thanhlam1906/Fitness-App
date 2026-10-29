@@ -1,3 +1,4 @@
+import { Check, X, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/cn"
 
 export type Verdict = "PASS" | "WARN" | "FAIL" | "LOW_CONFIDENCE" | "NOT_APPLICABLE"
@@ -7,12 +8,12 @@ export type Verdict = "PASS" | "WARN" | "FAIL" | "LOW_CONFIDENCE" | "NOT_APPLICA
  * ("quay rõ hơn") và NOT_APPLICABLE ("quay thêm góc khác") dẫn tới hai hành
  * động khác nhau, nên hiển thị khác nhau.
  *
- * Ký hiệu ✓ / ✕ đi kèm màu: không dùng màu làm tín hiệu duy nhất.
+ * Biểu tượng tick / chéo đi kèm màu: không dùng màu làm tín hiệu duy nhất.
  */
-const STYLES: Record<Verdict, { label: string; tone: string }> = {
-  PASS: { label: "Đạt ✓", tone: "text-[var(--color-success)] bg-[var(--color-success-tint)]" },
+const STYLES: Record<Verdict, { label: string; tone: string; icon?: LucideIcon }> = {
+  PASS: { label: "Đạt", icon: Check, tone: "text-[var(--color-success)] bg-[var(--color-success-tint)]" },
   WARN: { label: "Sát quy chuẩn", tone: "text-[var(--color-warn)] bg-[var(--color-warn-tint)]" },
-  FAIL: { label: "Không đạt ✕", tone: "text-[var(--color-danger)] bg-[var(--color-danger-tint)]" },
+  FAIL: { label: "Không đạt", icon: X, tone: "text-[var(--color-danger)] bg-[var(--color-danger-tint)]" },
   LOW_CONFIDENCE: {
     label: "Chưa đủ tin cậy",
     tone: "text-[var(--color-warn)] bg-[var(--color-warn-tint)]",
@@ -24,17 +25,19 @@ const STYLES: Record<Verdict, { label: string; tone: string }> = {
 }
 
 export function VerdictChip({ verdict }: { verdict: string }) {
-  const style = STYLES[verdict as Verdict] ?? {
+  const style: { label: string; tone: string; icon?: LucideIcon } = STYLES[verdict as Verdict] ?? {
     label: verdict,
     tone: "text-[var(--color-text-muted)] bg-[var(--color-surface-2)]",
   }
+  const Icon = style.icon
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold whitespace-nowrap",
+        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold whitespace-nowrap",
         style.tone,
       )}
     >
+      {Icon && <Icon aria-hidden className="size-3.5" strokeWidth={3} />}
       {style.label}
     </span>
   )

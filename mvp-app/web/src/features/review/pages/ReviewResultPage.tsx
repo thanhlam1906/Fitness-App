@@ -11,10 +11,9 @@ import {
   TriangleAlert,
   type LucideIcon,
 } from "lucide-react"
-import { Stepper } from "@/components/Stepper"
 import { VerdictChip } from "@/features/review/components/VerdictChip"
 import { WrongFeedbackButton } from "@/features/feedback/components/WrongFeedbackButton"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { FlowScreen } from "@/components/UserShell"
@@ -45,6 +44,7 @@ export function ReviewResultPage() {
 
   const data = review.data!
   const primary = data.checks.find((c) => c.isPrimary)
+  const others = data.checks.filter((c) => !c.isPrimary)
   // Yêu cầu cũ gửi khi LLM còn đoán bài và nó không nhận ra.
   const unknownExercise = data.status === "REJECTED" && data.rejectReason === "UNKNOWN_EXERCISE"
   const ok = isOverallOk(data.checks)
@@ -52,15 +52,10 @@ export function ReviewResultPage() {
 
   return (
     <FlowScreen>
-      <Stepper label="Kiểm tra form" steps={3} current={2} />
-      <h1 className="mt-3 text-[26px] font-extrabold tracking-[-0.02em]">Kết quả chấm form</h1>
-      <p className="num mt-1 text-xs text-[var(--color-text-muted)]">{subtitle(data)}</p>
-
-      {data.exerciseName && (
-        <div className="mt-4 rounded-[var(--radius-md)] bg-[var(--color-surface)] px-3.5 py-3 text-sm">
-          Bạn đã tập: <b>{data.exerciseName}</b>
-        </div>
-      )}
+      <h1 className="text-[28px] leading-tight font-extrabold tracking-[-0.02em]">
+        {data.exerciseName ?? "Kết quả chấm form"}
+      </h1>
+      <p className="num mt-1 text-[13px] text-[var(--color-text-muted)]">{subtitle(data)}</p>
 
       {(data.status === "PENDING" || data.status === "PROCESSING") && (
         <ResultCard
@@ -71,16 +66,16 @@ export function ReviewResultPage() {
           // Không hứa "tự hiện": quá 5 phút thì thôi poll (stillRunning), kết quả chỉ hiện khi mở lại màn.
           detail="Không cần đợi ở đây, lát quay lại là thấy kết quả."
         >
-          <Link to="/form-check">
-            <Button variant="secondary">Quay lại</Button>
+          <Link to="/form-check" className={buttonVariants({ variant: "secondary" })}>
+            Quay lại
           </Link>
         </ResultCard>
       )}
 
       {unknownExercise && (
         <ResultCard icon={Dumbbell} title="Lần chấm này chưa có bài" detail="Chọn bài rồi tập lại.">
-          <Link to="/form-check">
-            <Button>Chọn bài</Button>
+          <Link to="/form-check" className={buttonVariants()}>
+            Chọn bài
           </Link>
         </ResultCard>
       )}
@@ -88,8 +83,8 @@ export function ReviewResultPage() {
 
       {data.status === "FAILED" && (
         <ResultCard icon={TriangleAlert} tone="danger" title="Chấm không thành công" detail={data.error}>
-          <Link to={again}>
-            <Button>Thử lại</Button>
+          <Link to={again} className={buttonVariants()}>
+            Thử lại
           </Link>
         </ResultCard>
       )}
@@ -98,79 +93,74 @@ export function ReviewResultPage() {
         <>
           <div
             className={cn(
-              "mt-5 inline-flex self-start rounded-full px-3 py-1.5 text-sm font-bold",
+              "mt-4 inline-flex self-start rounded-full px-3 py-1.5 text-sm font-bold",
               ok
                 ? "bg-[var(--color-success-tint)] text-[var(--color-success)]"
                 : "bg-[var(--color-warn-tint)] text-[var(--color-warn)]",
             )}
           >
-            {ok ? "Kỹ thuật ổn ✓" : "Cần cải thiện"}
+            {ok ? "Kỹ thuật ổn" : "Cần cải thiện"}
           </div>
 
           {primary ? (
-            <div className="mt-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4">
-              <div className="text-[11px] font-bold tracking-[0.1em] text-[var(--color-danger)] uppercase">
-                Lỗi quan trọng nhất
+            <>
+              <h2 className="mt-5.5 text-[17px] font-bold">Sửa trước</h2>
+              <div className="mt-2.5 rounded-[var(--radius-lg)] bg-[var(--color-surface)] p-4">
+                <div className="text-[19px] leading-tight font-bold">{checkLabel(primary)}</div>
+                <p className="mt-2 text-sm leading-relaxed">{primary.cueTextVi}</p>
+                {checkDetails(primary).map((line) => (
+                  <p key={line} className="num mt-1 text-xs text-[var(--color-text-muted)]">
+                    {line}
+                  </p>
+                ))}
+                <div className="mt-3.5">
+                  <WrongFeedbackButton source={{ reviewResultId: primary.id }} hint="gửi cho HLV xem lại" />
+                </div>
               </div>
-              <div className="mt-2 text-[19px] leading-tight font-bold">{checkLabel(primary)}</div>
-              <p className="mt-2.5 text-sm leading-relaxed">{primary.cueTextVi}</p>
-              {checkDetails(primary).map((line) => (
-                <p key={line} className="num mt-1 text-xs text-[var(--color-text-muted)]">
-                  {line}
-                </p>
-              ))}
-              <div className="mt-3.5">
-                <WrongFeedbackButton source={{ reviewResultId: primary.id }} hint="gửi cho HLV xem lại" />
-              </div>
-            </div>
+            </>
           ) : (
-            <ResultCard
-              icon={CircleCheckBig}
-              tone="success"
-              title="Không có lỗi nào"
-              detail="Giữ nguyên như vậy."
-              className="mt-4"
-            />
+            <ResultCard icon={CircleCheckBig} tone="success" title="Không có lỗi nào" className="mt-4" />
           )}
 
-          <div className="mt-4 flex flex-col gap-2">
-            {data.checks
-              .filter((check) => !check.isPrimary)
-              .map((check) => (
-                <div key={check.id} className="rounded-[var(--radius-md)] bg-[var(--color-surface)] p-3.5">
-                  <div className="flex items-center justify-between gap-2.5">
-                    <span className="text-[15px] font-semibold">{checkLabel(check)}</span>
-                    <VerdictChip verdict={check.verdict} />
+          {others.length > 0 && (
+            <>
+              {primary && <h2 className="mt-5.5 text-[17px] font-bold">Các mục khác</h2>}
+              <div className="mt-2.5 flex flex-col gap-2">
+                {others.map((check) => (
+                  <div key={check.id} className="rounded-[var(--radius-md)] bg-[var(--color-surface)] p-3.5">
+                    <div className="flex items-center justify-between gap-2.5">
+                      <span className="text-[15px] font-semibold">{checkLabel(check)}</span>
+                      <VerdictChip verdict={check.verdict} />
+                    </div>
+                    {check.cueTextVi && (
+                      <p className="mt-1 text-xs leading-snug text-[var(--color-text-muted)]">{check.cueTextVi}</p>
+                    )}
+                    {checkDetails(check).map((line) => (
+                      <p key={line} className="num mt-1 text-xs text-[var(--color-text-muted)]">
+                        {line}
+                      </p>
+                    ))}
+                    <div className="mt-2">
+                      <WrongFeedbackButton source={{ reviewResultId: check.id }} />
+                    </div>
                   </div>
-                  {check.cueTextVi && (
-                    <p className="mt-1 text-xs leading-snug text-[var(--color-text-muted)]">{check.cueTextVi}</p>
-                  )}
-                  {checkDetails(check).map((line) => (
-                    <p key={line} className="num mt-1 text-xs text-[var(--color-text-muted)]">
-                      {line}
-                    </p>
-                  ))}
-                  <div className="mt-2">
-                    <WrongFeedbackButton source={{ reviewResultId: check.id }} />
-                  </div>
-                </div>
-              ))}
-          </div>
+                ))}
+              </div>
+            </>
+          )}
 
-          <p className="mt-4 text-[11px] leading-relaxed text-[var(--color-text-muted)]">
-            Chấm theo quy chuẩn huấn luyện viên đặt, dựa trên số đo góc khớp từ camera, có thể sai. Không phải đánh giá y
-            tế. Clip đã bị xoá khỏi máy chủ, chỉ giữ số đo.
+          {/* Không nhắc "clip đã xoá": lần chấm bằng camera không có clip nào. */}
+          <p className="mt-4 text-xs leading-relaxed text-[var(--color-text-muted)]">
+            Chấm theo số đo góc khớp và quy chuẩn HLV đặt, có thể sai, không phải đánh giá y tế.
           </p>
 
           <div className="flex-1" />
           <div className="mt-6 flex gap-2.5">
-            <Link to={again} className="flex-1">
-              <Button variant="secondary" className="w-full">
-                Tập lại
-              </Button>
+            <Link to={again} className={buttonVariants({ variant: "secondary", className: "flex-1" })}>
+              Tập lại
             </Link>
-            <Link to="/schedule" className="flex-1">
-              <Button className="w-full">Về lịch</Button>
+            <Link to="/schedule" className={buttonVariants({ className: "flex-1" })}>
+              Về lịch
             </Link>
           </div>
         </>
@@ -179,21 +169,16 @@ export function ReviewResultPage() {
   )
 }
 
-/** Cùng khung với kết quả đã chấm: stepper, tiêu đề, tên bài, nhãn kết luận, thẻ lỗi chính, các mục, hai nút. */
+/** Cùng khung với kết quả đã chấm: tiêu đề, dòng phụ, nhãn kết luận, thẻ lỗi chính, các mục, hai nút. */
 function ResultSkeleton() {
   return (
     <FlowScreen>
       <div role="status" aria-label="Đang tải" className="flex flex-1 flex-col">
-        <div className="flex justify-between">
-          <Skeleton className="h-3 w-24" />
-          <Skeleton className="h-3 w-16" />
-        </div>
-        <Skeleton className="mt-2.5 h-1.5 w-full" />
-        <Skeleton className="mt-3 h-8 w-64" />
-        <Skeleton className="mt-1.5 h-3 w-48" />
-        <Skeleton className="mt-4 h-11" />
-        <Skeleton className="mt-5 h-8 w-32 rounded-full" />
-        <Skeleton className="mt-4 h-40 rounded-xl" />
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="mt-1.5 h-3.5 w-36" />
+        <Skeleton className="mt-4 h-8 w-32 rounded-full" />
+        <Skeleton className="mt-5.5 h-5 w-24" />
+        <Skeleton className="mt-2.5 h-40 rounded-[var(--radius-lg)]" />
         <div className="mt-4 flex flex-col gap-2">
           <Skeleton className="h-24" />
           <Skeleton className="h-24" />
@@ -212,10 +197,6 @@ function subtitle(review: Review): string {
   const parts = [formatDayMonth(review.createdAt)]
   const clips = review.viewpoints.length
   if (clips > 0) parts.push(`${clips} góc quay`)
-  if (review.finishedAt) {
-    const seconds = Math.round((new Date(review.finishedAt).getTime() - new Date(review.createdAt).getTime()) / 1000)
-    if (seconds >= 0) parts.push(`chấm xong sau ${seconds} giây`)
-  }
   return parts.join(" · ")
 }
 
@@ -230,8 +211,8 @@ function RejectedCard({ review, again }: { review: Review; again: string }) {
   const reason = REASONS[review.rejectReason ?? ""] ?? { icon: TriangleAlert, title: "Dữ liệu gửi lên chưa dùng được" }
   return (
     <ResultCard icon={reason.icon} tone="warn" title={reason.title} detail={review.error}>
-      <Link to={again}>
-        <Button>Xem lại hướng dẫn và thử lại</Button>
+      <Link to={again} className={buttonVariants()}>
+        Thử lại
       </Link>
     </ResultCard>
   )
@@ -268,7 +249,7 @@ function ResultCard({
         </IconCircle>
         <div className="min-w-0">
           <b className="block text-[15px]">{title}</b>
-          {detail && <p className="mt-0.5 text-[12.5px] text-[var(--color-text-muted)]">{detail}</p>}
+          {detail && <p className="mt-0.5 text-[13px] text-[var(--color-text-muted)]">{detail}</p>}
         </div>
       </div>
       {children}

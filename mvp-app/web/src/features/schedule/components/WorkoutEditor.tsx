@@ -1,6 +1,7 @@
 import { useState, type Dispatch, type ReactNode, type SetStateAction } from "react"
-import { X } from "lucide-react"
+import { Plus, X } from "lucide-react"
 import { Sheet, SHEET_FOCUS, SheetHeader } from "@/components/ui/sheet"
+import { ExercisePicker } from "@/features/schedule/components/ExercisePicker"
 import { useExercises } from "@/features/exercise/api/useExercises"
 import { IconText } from "@/components/StatusViews"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -77,8 +78,7 @@ export function WorkoutEditSheet({
       {/* Thân khung mount lại mỗi lần mở (Sheet chỉ render con khi đã mở): nháp luôn bắt đầu từ lịch hiện tại. */}
       <EditBody
         title={`Sửa buổi ${workout.label ?? ""}`}
-        subtitle={`${formatDayMonth(workout.scheduledOn)} · chỉ đổi buổi này, các buổi khác giữ nguyên`}
-        addLabel="Thêm bài vào buổi này"
+        subtitle={`${formatDayMonth(workout.scheduledOn)} · chỉ buổi này`}
         exercises={workout.exercises}
         onSave={save}
         onClose={onClose}
@@ -129,15 +129,7 @@ export function ProgramDayEditSheet({
     <Sheet open={open} onClose={onClose} label={`Sửa buổi ${label}`} dismissible={!saving}>
       <EditBody
         title={`Sửa buổi ${label}`}
-        subtitle={
-          <>
-            Áp cho {remaining} buổi {label} còn lại, từ {shortDayTitle(workout.scheduledOn)}.
-            <br />
-            Buổi đã tập giữ nguyên.
-          </>
-        }
-        addLabel={`Thêm bài vào buổi ${label}`}
-        note='Muốn đổi một ngày thôi? Mở ngày đó ở Lịch rồi chọn "Sửa buổi này".'
+        subtitle={`Áp cho ${remaining} buổi ${label} còn lại, từ ${shortDayTitle(workout.scheduledOn)}.`}
         exercises={workout.exercises}
         onSave={save}
         onClose={onClose}
@@ -151,8 +143,6 @@ export function ProgramDayEditSheet({
 function EditBody({
   title,
   subtitle,
-  addLabel,
-  note,
   exercises: original,
   onSave,
   onClose,
@@ -161,8 +151,6 @@ function EditBody({
 }: {
   title: string
   subtitle: ReactNode
-  addLabel: string
-  note?: string
   exercises: ScheduledExerciseView[]
   onSave: SaveFn
   onClose: () => void
@@ -172,6 +160,8 @@ function EditBody({
   const exercises = useExercises()
   const [rows, setRows] = useState<DraftRow[]>(() => toDraft(original))
   const [error, setError] = useState<string | null>(null)
+  // Trang con "Thêm bài" trong cùng khung: nháp giữ nguyên khi qua lại.
+  const [picking, setPicking] = useState(false)
 
   const changes = diffDraft(original, rows)
   const dirty = changes.updates.length + changes.adds.length + changes.removes.length > 0
@@ -195,6 +185,37 @@ function EditBody({
     } finally {
       setSaving(false)
     }
+  }
+
+  if (picking) {
+    return (
+      <>
+        <SheetHeader title="Thêm bài" cancelLabel="Quay lại" onCancel={() => setPicking(false)} />
+        <div className="overflow-y-auto px-4 pb-7">
+          <ExercisePicker
+            exercises={active}
+            onPick={(picked) => {
+              setRows((prev) => [
+                ...prev,
+                {
+                  key: `new-${picked.id}-${prev.length}`,
+                  id: null,
+                  exerciseId: picked.id,
+                  name: picked.nameEn,
+                  sets: 3,
+                  reps: 8,
+                  repsMax: 12,
+                  loadKg: null,
+                  restSeconds: null,
+                  removed: false,
+                },
+              ])
+              setPicking(false)
+            }}
+          />
+        </div>
+      </>
+    )
   }
 
   return (
@@ -221,7 +242,7 @@ function EditBody({
                   aria-label={`Xoá ${r.name} khỏi buổi này`}
                   onClick={() => patch(r.key, (row) => ({ ...row, removed: true }))}
                   className={cn(
-                    "grid size-8 place-items-center rounded-[var(--radius-sm)] bg-[var(--color-surface)] text-[var(--color-text-muted)]",
+                    "-m-1.5 grid size-11 place-items-center rounded-[var(--radius-sm)] text-[var(--color-text-muted)]",
                     SHEET_FOCUS,
                   )}
                 >
@@ -252,44 +273,19 @@ function EditBody({
         )}
         {exercises.isError && <IconText className="mt-3">{exercises.error.message}</IconText>}
         {active.length > 0 && (
-          <select
-            aria-label={addLabel}
-            value=""
-            onChange={(e) => {
-              const picked = active.find((x) => x.id === e.target.value)
-              if (!picked) return
-              setRows((prev) => [
-                ...prev,
-                {
-                  key: `new-${picked.id}-${prev.length}`,
-                  id: null,
-                  exerciseId: picked.id,
-                  name: picked.nameEn,
-                  sets: 3,
-                  reps: 8,
-                  repsMax: 12,
-                  loadKg: null,
-                  restSeconds: null,
-                  removed: false,
-                },
-              ])
-            }}
+          <button
+            type="button"
+            onClick={() => setPicking(true)}
             className={cn(
-              "mt-3 h-12 w-full cursor-pointer appearance-none rounded-[var(--radius-lg)] border-[1.5px] border-dashed border-[var(--color-border)] bg-transparent text-center text-sm font-semibold text-[var(--color-text-muted)]",
+              "mt-3 flex h-12 w-full items-center justify-center gap-1.5 rounded-[var(--radius-lg)] border-[1.5px] border-dashed border-[var(--color-border)] text-[15px] font-bold",
               SHEET_FOCUS,
             )}
           >
-            <option value="">+ {addLabel}</option>
-            {active.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.nameEn}
-              </option>
-            ))}
-          </select>
+            <Plus className="size-4.5" aria-hidden />
+            Thêm bài
+          </button>
         )}
 
-        <p className="mt-3 text-xs text-[var(--color-text-muted)]">Tạ mỗi lần bấm đổi 2,5 kg.</p>
-        {note && <p className="mt-1.5 text-xs text-[var(--color-text-muted)]">{note}</p>}
         {error && <IconText className="mt-2">Lưu thất bại: {error}</IconText>}
       </div>
     </>
@@ -306,13 +302,13 @@ function Stepper({
   onStep: (dir: 1 | -1) => void
 }) {
   const button = cn(
-    "grid size-8 place-items-center rounded-[var(--radius-sm)] bg-[var(--color-surface-2)] text-lg font-bold",
+    "grid size-10 place-items-center rounded-[var(--radius-sm)] bg-[var(--color-surface-2)] text-lg font-bold",
     SHEET_FOCUS,
   )
   return (
     <div>
-      <div className="mb-1 text-[11px] text-[var(--color-text-muted)]">{label}</div>
-      <div className="flex h-10 items-center justify-between rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-1">
+      <div className="mb-1 text-xs font-medium text-[var(--color-text-muted)]">{label}</div>
+      <div className="flex h-11 items-center justify-between rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-0.5">
         <button type="button" aria-label={`Giảm ${label}`} className={button} onClick={() => onStep(-1)}>
           −
         </button>

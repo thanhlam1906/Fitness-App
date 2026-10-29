@@ -1,9 +1,11 @@
 import { useState } from "react"
-import { TriangleAlert } from "lucide-react"
+import { ChevronDown, Plus, TriangleAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Sheet, SHEET_FOCUS, SheetHeader } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
+import { ExercisePicker } from "@/features/schedule/components/ExercisePicker"
 import { useExercises } from "@/features/exercise/api/useExercises"
 import { WEEKDAYS } from "@/features/program/types/schema"
 import { IconText, Notice } from "@/components/StatusViews"
@@ -29,8 +31,11 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
   const [draft, setDraft] = useState<Draft>({})
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10))
   const [weeks, setWeeks] = useState("4")
+  // Dòng đang chọn bài trong khung: index = null là thêm dòng mới cho ngày đó.
+  const [picking, setPicking] = useState<{ day: number; index: number | null } | null>(null)
 
   const active = exercises.data?.filter((e) => e.active) ?? []
+  const nameOf = (id: string) => active.find((e) => e.id === id)?.nameEn ?? "Chọn bài"
   const error = draftError(draft)
 
   function toggleDay(day: number) {
@@ -53,7 +58,7 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
   }
 
   if (exercises.isLoading) {
-    // Khung của form: kicker + 7 nút thứ, hàng ngày bắt đầu/số tuần, cảnh báo, nút tạo.
+    // Khung của form: tiêu đề mục + 7 nút thứ, hàng ngày bắt đầu/số tuần, cảnh báo, nút tạo.
     return (
       <div role="status" aria-label="Đang tải">
         <Skeleton className="h-3 w-40" />
@@ -74,7 +79,7 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
 
   return (
     <div>
-      <div className="kicker">Ngày tập trong tuần</div>
+      <div className="section-title">Ngày tập trong tuần</div>
       <div className="mt-2.5 flex gap-1.5">
         {WEEKDAYS.map((d) => (
           <button
@@ -95,24 +100,24 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
       </div>
 
       {WEEKDAYS.filter((d) => d.value in draft).map((d) => (
-        <div key={d.value} className="mt-5 rounded-xl bg-[var(--color-surface)] p-3.5">
+        <div key={d.value} className="mt-5 rounded-[var(--radius-lg)] bg-[var(--color-surface)] p-3.5">
           <span className="text-[15px] font-bold">Buổi {d.label}</span>
 
           <div className="mt-3 space-y-3">
             {draft[d.value].map((ex, i) => (
               <div key={i} className="space-y-2 border-t border-[var(--color-border)] pt-3">
-                <select
-                  aria-label="Bài tập"
-                  className="w-full rounded-lg bg-[var(--color-surface-2)] px-3 py-2 text-sm"
-                  value={ex.exerciseId}
-                  onChange={(e) => patchExercise(d.value, i, { exerciseId: e.target.value })}
+                <button
+                  type="button"
+                  aria-label={`Bài tập: ${nameOf(ex.exerciseId)}. Bấm để đổi`}
+                  onClick={() => setPicking({ day: d.value, index: i })}
+                  className={cn(
+                    "flex h-11 w-full items-center justify-between gap-2 rounded-[var(--radius-md)] bg-[var(--color-surface-2)] px-3 text-left text-[15px] font-semibold",
+                    SHEET_FOCUS,
+                  )}
                 >
-                  {active.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.nameEn}
-                    </option>
-                  ))}
-                </select>
+                  <span className="truncate">{nameOf(ex.exerciseId)}</span>
+                  <ChevronDown className="size-4.5 flex-none text-[var(--color-text-muted)]" aria-hidden />
+                </button>
                 <div className="flex gap-2">
                   <NumberField
                     label="Set"
@@ -137,7 +142,7 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
                 </div>
                 <button
                   type="button"
-                  className="text-xs text-[var(--color-danger)]"
+                  className={cn("-my-2 min-h-11 rounded-[var(--radius-sm)] text-xs text-[var(--color-danger)]", SHEET_FOCUS)}
                   onClick={() =>
                     setDraft((prev) => ({
                       ...prev,
@@ -152,15 +157,14 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
           </div>
           <button
             type="button"
-            onClick={() =>
-              setDraft((prev) => ({
-                ...prev,
-                [d.value]: [...prev[d.value], emptyExercise(active[0].id)],
-              }))
-            }
-            className="mt-3 h-10 w-full rounded-[var(--radius-md)] border-[1.5px] border-dashed border-[var(--color-border)] text-sm font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+            onClick={() => setPicking({ day: d.value, index: null })}
+            className={cn(
+              "mt-3 flex h-11 w-full items-center justify-center gap-1.5 rounded-[var(--radius-md)] border-[1.5px] border-dashed border-[var(--color-border)] text-sm font-bold",
+              SHEET_FOCUS,
+            )}
           >
-            + Thêm bài
+            <Plus className="size-4" aria-hidden />
+            Thêm bài
           </button>
         </div>
       ))}
@@ -211,6 +215,25 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
       >
         {createProgram.isPending ? "Đang tạo…" : "Tạo lịch"}
       </Button>
+
+      <Sheet open={picking !== null} onClose={() => setPicking(null)} label="Chọn bài">
+        <SheetHeader title="Chọn bài" onCancel={() => setPicking(null)} />
+        <div className="overflow-y-auto px-4 pb-7">
+          <ExercisePicker
+            exercises={active}
+            onPick={(exercise) => {
+              if (!picking) return
+              const { day, index } = picking
+              if (index === null) {
+                setDraft((prev) => ({ ...prev, [day]: [...prev[day], emptyExercise(exercise.id)] }))
+              } else {
+                patchExercise(day, index, { exerciseId: exercise.id })
+              }
+              setPicking(null)
+            }}
+          />
+        </div>
+      </Sheet>
     </div>
   )
 }
@@ -226,7 +249,7 @@ function NumberField({
 }) {
   return (
     <label className="flex-1 space-y-1">
-      <span className="text-[11px] text-[var(--color-text-muted)]">{label}</span>
+      <span className="text-xs font-medium text-[var(--color-text-muted)]">{label}</span>
       <Input
         type="number"
         min={0}

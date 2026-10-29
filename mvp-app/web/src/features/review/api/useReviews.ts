@@ -58,7 +58,8 @@ export function useSubmitReview() {
 
 /**
  * Màn camera: mỗi góc một file .json toạ độ khớp, gửi như clip thường, kèm bài người tập đã chọn
- * (doc/design-cham-form-nguong-v1.md §5). optIn đã tick ở màn camera.
+ * (doc/design-cham-form-nguong-v1.md §5). Bấm "Bật camera" là đồng ý (dòng dưới nút nói chỉ gửi
+ * toạ độ khớp), nên optIn luôn true.
  */
 export function useSubmitLive(exerciseId: string) {
   const queryClient = useQueryClient()

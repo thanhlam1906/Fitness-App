@@ -7,17 +7,22 @@
  * quả của server.
  */
 
+import { VIEW_NAME } from "@/lib/formMeasures"
+
 export type Landmark = { x: number; y: number; z: number; visibility?: number }
 export type Angles = { hip: number; knee: number; elbow: number; shoulder: number }
 export type PoseRead = { inFrame: boolean; why: string | null; ratio: number | null; angles: Angles | null }
 export type ViewCode = "FRONTAL" | "SAGITTAL" | "DIAGONAL"
 export type FrameJson = { norm: number[][]; vis: number[]; world: number[][] } | null
 
-/** Chữ hướng dẫn từng góc trên hình camera. Góc nào được quay do bài quyết định (checkViews). */
-export const VIEW_GUIDE: Record<ViewCode, { label: string; hint: string }> = {
-  SAGITTAL: { label: "NGANG", hint: "Xoay ngang: vai vuông góc với camera" },
-  FRONTAL: { label: "CHÍNH DIỆN", hint: "Quay mặt về phía camera" },
-  DIAGONAL: { label: "CHÉO 45°", hint: "Xoay chéo, nửa chừng giữa ngang và chính diện" },
+/**
+ * Câu nhắc xoay người từng góc trên hình camera. Góc nào được quay do bài quyết định (checkViews).
+ * Tên góc lấy từ VIEW_NAME, một bộ tên cho mọi màn.
+ */
+export const VIEW_GUIDE: Record<ViewCode, { hint: string }> = {
+  SAGITTAL: { hint: "Xoay ngang: vai vuông góc với camera" },
+  FRONTAL: { hint: "Quay mặt về phía camera" },
+  DIAGONAL: { hint: "Xoay chéo, nửa chừng giữa ngang và chính diện" },
 }
 export type CaptureView = ViewCode
 
@@ -235,7 +240,7 @@ export function advance(s: Session, pose: PoseRead, frame: FrameJson, now: numbe
       if (s.counter.count >= REPS_PER_VIEW) {
         s.clips.push({ view: code, frames: s.buffer })
         s.buffer = []
-        s.flash = { text: `Xong ${REPS_PER_VIEW} rep góc ${VIEW_GUIDE[code].label.toLowerCase()}`, at: now }
+        s.flash = { text: `Xong ${REPS_PER_VIEW} rep góc ${VIEW_NAME[code].toLowerCase()}`, at: now }
         s.step++
         s.stage = s.step < s.views.length ? "pose" : "done"
       }

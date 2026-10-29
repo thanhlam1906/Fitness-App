@@ -4,14 +4,14 @@ import { VerdictChip } from "./VerdictChip"
 
 /** §6 concept-frontend-v1.md — bắt buộc: render đúng cho từng verdict. */
 describe("VerdictChip", () => {
-  it("PASS kèm dấu tick, không chỉ dựa vào màu", () => {
+  it("PASS kèm biểu tượng tick, không chỉ dựa vào màu", () => {
     render(<VerdictChip verdict="PASS" />)
-    expect(screen.getByText("Đạt ✓")).toBeInTheDocument()
+    expect(screen.getByText("Đạt").querySelector("svg")).not.toBeNull()
   })
 
-  it("FAIL nói rõ không đạt, kèm dấu ✕", () => {
+  it("FAIL nói rõ không đạt, kèm biểu tượng chéo", () => {
     render(<VerdictChip verdict="FAIL" />)
-    expect(screen.getByText("Không đạt ✕")).toBeInTheDocument()
+    expect(screen.getByText("Không đạt").querySelector("svg")).not.toBeNull()
   })
 
   it("LOW_CONFIDENCE và NOT_APPLICABLE là hai chữ khác nhau", () => {

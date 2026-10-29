@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from "react"
-import { Ban, Camera, CloudOff, CloudUpload } from "lucide-react"
+import { Ban, Camera, CloudOff, CloudUpload, Upload } from "lucide-react"
 import { Link, useNavigate, useParams } from "react-router"
 import type { PoseLandmarker } from "@mediapipe/tasks-vision"
 import { ApiError } from "@/api/client"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { BackLink } from "@/features/review/components/BackLink"
+import { BackLink } from "@/components/BackLink"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { PoseLoading, Viewfinder } from "@/features/review/components/PoseLoading"
 import { FlowScreen } from "@/components/UserShell"
 import { IconCircle, IconText, Notice } from "@/components/StatusViews"
@@ -60,7 +59,6 @@ export function LiveCheckPage() {
   // Huỷ khi rời trang. Tạo trong effect: StrictMode chạy effect hai lần, huỷ ở lần dọn đầu thì lần sau phải có cái mới.
   const alive = useRef<AbortController | null>(null)
   const [screen, setScreen] = useState<Screen>("consent")
-  const [optIn, setOptIn] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [progress, setProgress] = useState(0)
 
@@ -173,13 +171,13 @@ export function LiveCheckPage() {
   return (
     <FlowScreen>
       {/* Bấm nhầm bài thì quay lại chọn bài khác; rời trang thì effect dọn dẹp tự tắt camera. */}
-      <BackLink to="/form-check">← Chọn bài khác</BackLink>
-      <h1 className="mt-2.5 text-[26px] font-extrabold tracking-[-0.02em]">
-        {exercise.data ? `Chấm form: ${exercise.data.nameEn}` : "Chấm form"}
+      <BackLink to="/form-check">Chấm form</BackLink>
+      <h1 className="mt-3 text-[28px] leading-tight font-extrabold tracking-[-0.02em]">
+        {exercise.data?.nameEn ?? "Chấm form"}
       </h1>
-      <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--color-text-muted)]">
-        Đặt máy cách 2–3 m, cả người trong khung. Làm {REPS_PER_VIEW} rep mỗi góc:{" "}
-        {views.map((v) => VIEW_NAME[v]).join(" → ")}.
+      <p className="num mt-1.5 text-[13px] leading-relaxed text-[var(--color-text-muted)]">
+        Cách máy 2–3 m
+        {views.length > 0 && ` · ${REPS_PER_VIEW} rep mỗi góc: ${views.map((v) => VIEW_NAME[v]).join(" → ")}`}
       </p>
       {exercise.isError && <IconText className="mt-3">{exercise.error.message}</IconText>}
       {exercise.data && views.length === 0 && (
@@ -188,7 +186,7 @@ export function LiveCheckPage() {
         </Notice>
       )}
 
-      <div className="relative mt-4 overflow-hidden rounded-xl bg-[var(--color-surface)]">
+      <div className="relative mt-4 overflow-hidden rounded-[var(--radius-lg)] bg-[var(--color-surface)]">
         {/* Video chỉ là nguồn hình cho canvas; ẩn bằng opacity để trình duyệt vẫn giải mã frame. */}
         <video ref={video} playsInline muted className="pointer-events-none absolute h-px w-px opacity-0" />
         <canvas
@@ -204,18 +202,6 @@ export function LiveCheckPage() {
         )}
       </div>
 
-      {screen === "consent" && (
-        <label className="mt-4 flex cursor-pointer gap-2.5 rounded-xl border border-[var(--color-accent)] bg-[var(--color-surface-2)] p-3.5">
-          <Checkbox className="mt-0.5" checked={optIn} onChange={(e) => setOptIn(e.target.checked)} />
-          <span className="text-[13px] leading-relaxed">
-            Tôi đồng ý gửi toạ độ khớp để chấm.{" "}
-            <span className="text-[var(--color-text-muted)]">
-              Hình ảnh không rời máy bạn. Máy chủ chỉ nhận các con số vị trí khớp.
-            </span>
-          </span>
-        </label>
-      )}
-
       {error && <IconText className="mt-3">{error}</IconText>}
       {screen === "failed" && (
         <IconText className="mt-3">
@@ -227,12 +213,25 @@ export function LiveCheckPage() {
       )}
 
       <div className="flex-1" />
-      <div className="mt-6 flex gap-2.5">
-        {screen === "consent" && (
-          <Button className="w-full" disabled={!optIn || views.length === 0} onClick={() => void start()}>
+      {screen === "consent" && (
+        <>
+          {/* Bấm Bật camera là đồng ý (quyết định 10-28): chỉ toạ độ khớp rời máy, nói một dòng dưới nút. */}
+          <Button className="mt-6 w-full" disabled={views.length === 0} onClick={() => void start()}>
             Bật camera
           </Button>
-        )}
+          <p className="mt-2 text-center text-xs text-[var(--color-text-muted)]">
+            Chỉ gửi toạ độ khớp, hình ảnh không rời máy.
+          </p>
+          <Link
+            to={`/form-check/${exerciseId}`}
+            className={buttonVariants({ variant: "secondary", className: "mt-3.5 w-full" })}
+          >
+            <Upload className="size-4.5" aria-hidden />
+            Gửi video đã quay
+          </Link>
+        </>
+      )}
+      <div className="mt-6 flex gap-2.5 empty:hidden">
         {screen === "live" && (
           <>
             <Button variant="secondary" className="flex-1" onClick={restart}>
@@ -262,43 +261,6 @@ export function LiveCheckPage() {
           </>
         )}
       </div>
-      {screen === "consent" && (
-        <>
-          <div className="mt-3.5 flex items-center gap-2.5 text-xs text-[var(--color-text-muted)] before:h-px before:flex-1 before:bg-[var(--color-border)] after:h-px after:flex-1 after:bg-[var(--color-border)]">
-            hoặc
-          </div>
-          {/* Lối gửi clip quay sẵn từng là dòng chữ nhỏ gạch chân, người dùng không thấy; làm thành nút. */}
-          <Link
-            to={`/form-check/${exerciseId}`}
-            className="mt-3 flex min-h-14 items-center gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
-          >
-            <svg
-              aria-hidden
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="shrink-0 text-[var(--color-accent)]"
-            >
-              <path d="M12 16V4M7 9l5-5 5 5" />
-              <path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" />
-            </svg>
-            <span className="min-w-0 flex-1">
-              <span className="block text-[15px] font-bold">Gửi video đã quay sẵn</span>
-              <span className="block text-xs text-[var(--color-text-muted)]">
-                Chọn clip có sẵn trong máy, không cần bật camera
-              </span>
-            </span>
-            <span aria-hidden className="text-[var(--color-text-muted)]">
-              ›
-            </span>
-          </Link>
-        </>
-      )}
     </FlowScreen>
   )
 }
@@ -338,6 +300,7 @@ function drawHud(ctx: CanvasRenderingContext2D, t: HudTheme, s: Session, pose: P
   const bottom = h - size * 1.6
   const code = s.views[Math.min(s.step, s.views.length - 1)]
   const view = VIEW_GUIDE[code]
+  const name = VIEW_NAME[code].toLowerCase()
   const holding = (since: number | null) =>
     `Giữ nguyên… ${Math.round(Math.min(1, since === null ? 0 : (now - since) / HOLD_MS) * 100)}%`
   const flash = s.flash && now - s.flash.at < FLASH_MS ? s.flash.text : null
@@ -347,14 +310,14 @@ function drawHud(ctx: CanvasRenderingContext2D, t: HudTheme, s: Session, pose: P
     pill(ctx, t, pose.why ?? holding(s.okSince), w / 2, bottom, size, pose.inFrame ? t.accent : t.warn)
   } else if (s.stage === "pose") {
     const ok = pose.inFrame && viewOf(s.ratio) === code
-    pill(ctx, t, `Góc ${view.label} (${s.step + 1}/${s.views.length})`, w / 2, top, size, t.text)
+    pill(ctx, t, `Góc ${name} (${s.step + 1}/${s.views.length})`, w / 2, top, size, t.text)
     pill(ctx, t, pose.why ?? (ok ? holding(s.okSince) : view.hint), w / 2, bottom, size, ok ? t.accent : t.warn)
     if (flash) pill(ctx, t, flash, w / 2, bottom - size * 2.2, size * 0.85, t.accent)
   } else if (s.stage === "countdown") {
-    pill(ctx, t, `Chuẩn bị, góc ${view.label}`, w / 2, top, size, t.text)
+    pill(ctx, t, `Chuẩn bị, góc ${name}`, w / 2, top, size, t.text)
     pill(ctx, t, String(Math.max(1, Math.ceil((s.countdownEnd - now) / 1000))), w / 2, h / 2, size * 4, t.text)
   } else if (s.stage === "reps") {
-    pill(ctx, t, `Góc ${view.label}: làm ${REPS_PER_VIEW} rep`, w / 2, top, size, t.text)
+    pill(ctx, t, `Góc ${name}: làm ${REPS_PER_VIEW} rep`, w / 2, top, size, t.text)
     pill(ctx, t, `${s.counter.count}/${REPS_PER_VIEW}`, w - size * 4, h / 2, size * 3, t.accent)
     if (flash) pill(ctx, t, flash, w / 2, bottom, size, t.accent)
     if (pose.why) pill(ctx, t, pose.why, w / 2, bottom - size * 2.2, size * 0.85, t.danger)

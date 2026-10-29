@@ -76,12 +76,15 @@ export function Sheet({
 /** Hàng đầu khung kiểu iOS: "Huỷ" · tiêu đề · nút xác nhận (người dùng chốt giữ kiểu này, 09-26). */
 export function SheetHeader({
   title,
+  cancelLabel,
   confirmLabel,
   confirmDisabled,
   onCancel,
   onConfirm,
 }: {
   title: string
+  /** Mặc định "Huỷ" khi có nút xác nhận, "Đóng" khi không. Trang con trong khung ghi "Quay lại". */
+  cancelLabel?: string
   confirmLabel?: string
   confirmDisabled?: boolean
   onCancel: () => void
@@ -94,7 +97,7 @@ export function SheetHeader({
         onClick={onCancel}
         className={cn("rounded-[var(--radius-sm)] p-2 font-semibold text-[var(--color-text-muted)]", SHEET_FOCUS)}
       >
-        {onConfirm ? "Huỷ" : "Đóng"}
+        {cancelLabel ?? (onConfirm ? "Huỷ" : "Đóng")}
       </button>
       <span className="font-bold">{title}</span>
       {onConfirm ? (

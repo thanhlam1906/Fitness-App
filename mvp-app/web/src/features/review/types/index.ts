@@ -65,12 +65,6 @@ export type Exercise = {
   updatedAt: string
 }
 
-export const VIEWPOINT_OPTIONS = [
-  { value: "SAGITTAL", label: "Ngang (bên hông)" },
-  { value: "FRONTAL", label: "Chính diện" },
-  { value: "DIAGONAL", label: "Chéo ~45°" },
-] as const
-
 export function parseFilmingGuide(raw: string | null): FilmingGuide | null {
   if (!raw) return null
   try {

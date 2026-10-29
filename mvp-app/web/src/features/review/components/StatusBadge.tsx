@@ -1,3 +1,4 @@
+import { Check, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/cn"
 
 /**
@@ -7,10 +8,10 @@ import { cn } from "@/lib/cn"
  * §3.2: ngày nghỉ và buổi bỏ lỡ KHÔNG tô màu, chỉ mờ đi. Tô đỏ buổi bỏ lỡ là
  * trách móc người dùng — sai với sản phẩm này.
  */
-const STYLES: Record<string, { label: string; tone: string }> = {
+const STYLES: Record<string, { label: string; tone: string; icon?: LucideIcon }> = {
   // buổi tập
   PLANNED: { label: "Chưa tập", tone: "text-[var(--color-text-muted)] bg-[var(--color-surface-2)]" },
-  DONE: { label: "Đã xong ✓", tone: "text-[var(--color-success)] bg-[var(--color-success-tint)]" },
+  DONE: { label: "Đã xong", icon: Check, tone: "text-[var(--color-success)] bg-[var(--color-success-tint)]" },
   SKIPPED: {
     label: "Đã bỏ qua",
     tone: "text-[var(--color-text-muted)] bg-[var(--color-surface-2)]",
@@ -24,7 +25,8 @@ const STYLES: Record<string, { label: string; tone: string }> = {
   },
   FAILED: { label: "Chấm lỗi", tone: "text-[var(--color-danger)] bg-[var(--color-danger-tint)]" },
   REJECTED: {
-    label: "Clip chưa dùng được",
+    // Lần chấm bằng camera không có clip nào: chữ không nhắc tới clip.
+    label: "Chưa dùng được",
     tone: "text-[var(--color-danger)] bg-[var(--color-danger-tint)]",
   },
   // REJECTED vì AI chưa nhận ra bài: số đo vẫn dùng được, chỉ cần người dùng chọn bài.
@@ -40,21 +42,27 @@ export function StatusBadge({ status, variant = "pill" }: { status: string; vari
     label: status,
     tone: "text-[var(--color-text-muted)] bg-[var(--color-surface-2)]",
   }
+  const content = (
+    <>
+      {style.icon && <style.icon aria-hidden className="size-3.5" strokeWidth={3} />}
+      {style.label}
+    </>
+  )
   if (variant === "text") {
     return (
-      <span className={cn("text-xs font-semibold whitespace-nowrap", style.tone.split(" ")[0])}>
-        {style.label}
+      <span className={cn("inline-flex items-center gap-1 text-xs font-semibold whitespace-nowrap", style.tone.split(" ")[0])}>
+        {content}
       </span>
     )
   }
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap",
+        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap",
         style.tone,
       )}
     >
-      {style.label}
+      {content}
     </span>
   )
 }

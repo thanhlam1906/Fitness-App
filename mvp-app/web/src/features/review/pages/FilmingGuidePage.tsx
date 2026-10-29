@@ -2,22 +2,23 @@ import { useEffect, useMemo, useState } from "react"
 import { useNavigate, useParams } from "react-router"
 import { Ban, CloudOff, TriangleAlert } from "lucide-react"
 import { ApiError } from "@/api/client"
-import { Stepper } from "@/components/Stepper"
-import { Button } from "@/components/ui/button"
+import { BackLink } from "@/components/BackLink"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import { FlowScreen } from "@/components/UserShell"
 import { IconText, Notice, StatusBlock } from "@/components/StatusViews"
-import { BackLink } from "@/features/review/components/BackLink"
+import { cn } from "@/lib/cn"
 import { Section } from "@/features/review/components/Section"
-import { parseFilmingGuide, VIEWPOINT_OPTIONS } from "@/features/review/types"
+import { parseFilmingGuide } from "@/features/review/types"
 import { clipSizeProblem, MAX_CLIP_MB, MAX_TOTAL_MB } from "@/features/review/utils/clipLimits"
 import { angleNote, missingViews } from "@/features/review/utils/reviewView"
 import { VIEW_NAME, type ViewCode } from "@/lib/formMeasures"
 import { useExercise, useSubmitReview } from "@/features/review/api/useReviews"
 
 const MAX_CLIPS = 3
+const VIEW_CODES = Object.keys(VIEW_NAME) as ViewCode[]
 
 /**
  * Câu dặn mặc định, thứ tự khoảng cách, ánh sáng, độ dài: ô nào admin bỏ trống thì điền câu của đúng ô đó.
@@ -30,32 +31,34 @@ const DEFAULT_TIPS = [
 ]
 
 /** Cách đặt máy cho từng góc, kèm ảnh minh hoạ ở public/form-check (người đứng thẳng, dùng chung mọi bài). */
-const ANGLE_GUIDE: Record<ViewCode, { title: string; image: string; alt: string; steps: string[] }> = {
+const ANGLE_GUIDE: Record<ViewCode, { image: string; alt: string; steps: string[] }> = {
   SAGITTAL: {
-    title: "Góc ngang",
     image: "/form-check/goc-ngang.jpg",
     alt: "Điện thoại đặt bên hông, máy thấy người tập nhìn nghiêng.",
     steps: ["Đặt máy bên hông, vuông góc với hướng mặt bạn.", "Ngang tầm hông, thấy cả người từ đầu tới bàn chân."],
   },
   FRONTAL: {
-    title: "Góc chính diện",
     image: "/form-check/goc-chinh-dien.jpg",
     alt: "Điện thoại đặt thẳng trước mặt, người tập quay mặt vào máy.",
     steps: ["Đặt máy thẳng trước mặt bạn.", "Ngang tầm hông, thấy rõ hai gối và hai bàn chân."],
   },
   DIAGONAL: {
-    title: "Góc chéo 45°",
     image: "/form-check/goc-cheo.jpg",
     alt: "Điện thoại đặt chéo 45 độ phía trước, máy thấy người tập xoay ba phần tư.",
     steps: ["Đặt máy chéo 45° phía trước, giữa thẳng mặt và bên hông.", "Ngang tầm hông, thấy cả người từ đầu tới bàn chân."],
   },
 }
 
+const BULLET = "flex gap-2 before:text-[var(--color-accent)] before:content-['•']"
+// <label> bọc ô chọn file: ô thật ẩn (sr-only) nên viền focus vẽ trên nhãn.
+const FILE_FOCUS =
+  "cursor-pointer has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--color-accent)]"
+
 /**
- * Màn 8 concept-frontend-v1.md — hướng dẫn quay và gửi clip.
+ * Màn 8 concept-frontend-v1.md — hướng dẫn quay và gửi video.
  *
  * "Opt-in gửi clip nằm ở đây, không ở nơi khác": người dùng đọc điều gì sẽ xảy
- * ra với clip NGAY CẠNH chỗ họ đồng ý, không phải trong một trang điều khoản.
+ * ra với video NGAY CẠNH chỗ họ đồng ý, không phải trong một trang điều khoản.
  */
 export function FilmingGuidePage() {
   const { exerciseId } = useParams<{ exerciseId: string }>()
@@ -89,7 +92,7 @@ export function FilmingGuidePage() {
     const picked = Array.from(fileList ?? []).slice(0, MAX_CLIPS)
     setFiles(picked)
     // Điền sẵn góc theo thứ tự thẻ hướng dẫn: quay đúng thứ tự thì không phải chỉnh ô nào.
-    setViewpoints(picked.map((_, i) => views[i] ?? VIEWPOINT_OPTIONS[0].value))
+    setViewpoints(picked.map((_, i) => views[i] ?? VIEW_CODES[0]))
   }
 
   const fileInput = (
@@ -107,12 +110,13 @@ export function FilmingGuidePage() {
 
   return (
     <FlowScreen>
-      <BackLink to={`/form-check/${exerciseId}/live`}>← Quay lại</BackLink>
-      <div className="mt-2.5">
-        <Stepper label="Kiểm tra form" steps={3} current={1} />
-      </div>
-      <h1 className="mt-3 text-[26px] font-extrabold tracking-[-0.02em]">Quay một set {name}</h1>
-      <p className="mt-1.5 text-[13px] text-[var(--color-text-muted)]">Quay mỗi góc một clip.</p>
+      <BackLink to={`/form-check/${exerciseId}/live`}>Quay lại</BackLink>
+      <h1 className="mt-3 text-[28px] leading-tight font-extrabold tracking-[-0.02em]">{name}</h1>
+      {views.length > 0 && (
+        <p className="num mt-1.5 text-[13px] text-[var(--color-text-muted)]">
+          Cần {views.length} video, mỗi góc một video.
+        </p>
+      )}
 
       {/* Mở từ link cũ tới bài chưa có khớp cần kiểm: chặn như màn camera, gửi lên cũng không chấm được. */}
       {views.length === 0 && (
@@ -123,15 +127,15 @@ export function FilmingGuidePage() {
 
       {/* Chỉ các góc bài này có khớp cần kiểm; thẻ đầu mở sẵn, các thẻ sau gập cho màn đỡ dài. */}
       <div className="mt-4 flex flex-col gap-2.5">
-        {exercise.data!.checkViews.map((view, i) => {
+        {views.map((view, i) => {
           const angle = ANGLE_GUIDE[view]
           const note = angleNote(guide, view)
           return (
-            <Section key={view} title={angle.title} meta={`clip ${i + 1}`} open={i === 0}>
+            <Section key={view} title={`Góc ${VIEW_NAME[view].toLowerCase()}`} meta={`video ${i + 1}`} open={i === 0}>
               <img src={angle.image} alt={angle.alt} className="block w-full rounded-[var(--radius-md)]" />
               <ul className="mt-2.5 flex flex-col gap-1.5 text-[13px] leading-snug">
                 {angle.steps.map((step) => (
-                  <li key={step} className="flex gap-2 before:text-[var(--color-accent)] before:content-['•']">
+                  <li key={step} className={BULLET}>
                     {step}
                   </li>
                 ))}
@@ -144,39 +148,24 @@ export function FilmingGuidePage() {
         })}
       </div>
 
-      <ul className="mt-3 flex flex-col gap-1.5">
+      <ul className="mt-3 flex flex-col gap-1.5 rounded-[var(--radius-lg)] bg-[var(--color-surface)] px-3.5 py-3 text-[13px] leading-snug text-[var(--color-text-muted)]">
         {tips.map((tip) => (
-          <li
-            key={tip}
-            className="rounded-[var(--radius-md)] bg-[var(--color-surface)] px-3.5 py-2.5 text-[13px] leading-snug text-[var(--color-text-muted)]"
-          >
+          <li key={tip} className={BULLET}>
             {tip}
           </li>
         ))}
       </ul>
 
-      <div className="mt-4 rounded-xl border border-[var(--color-accent)] bg-[var(--color-surface-2)] p-3.5">
-        <label className="flex cursor-pointer gap-2.5">
-          <Checkbox
-            className="mt-0.5"
-            checked={optIn}
-            onChange={(e) => setOptIn(e.target.checked)}
-          />
-          <span className="text-[13px] leading-relaxed">
-            Tôi đồng ý gửi clip này để hệ thống chấm form.{" "}
-            <span className="text-[var(--color-text-muted)]">
-              Clip bị xoá ngay sau khi chấm xong, kể cả khi chấm thất bại. Không ai xem clip — toàn
-              bộ do máy phân tích.
-            </span>
-          </span>
-        </label>
-      </div>
+      <label className="mt-3 flex cursor-pointer gap-2.5 rounded-[var(--radius-lg)] bg-[var(--color-surface)] p-3.5 text-[13px] leading-relaxed">
+        <Checkbox className="mt-0.5" checked={optIn} onChange={(e) => setOptIn(e.target.checked)} />
+        Đồng ý gửi video để máy chấm. Video bị xoá ngay sau khi chấm.
+      </label>
 
       {files.length > 0 && (
         <div className="mt-4 flex flex-col gap-2.5">
           {files.map((file, i) => (
             <div key={file.name + i} className="flex items-end gap-2.5">
-              {/* Khung hình đầu clip để nhận ra đây là góc nào — bấm để xem thử. */}
+              {/* Khung hình đầu video để nhận ra đây là góc nào — bấm để xem thử. */}
               <video
                 src={`${previews[i]}#t=0.1`}
                 muted
@@ -190,17 +179,18 @@ export function FilmingGuidePage() {
               <span className="min-w-0 flex-1 truncate text-sm">{file.name}</span>
               <div className="space-y-1">
                 <Label htmlFor={`viewpoint-${i}`}>Góc quay</Label>
+                {/* 16px: chữ nhỏ hơn thì iOS Safari phóng to cả trang khi chạm ô chọn. */}
                 <select
                   id={`viewpoint-${i}`}
                   value={viewpoints[i]}
                   onChange={(e) =>
                     setViewpoints((prev) => prev.map((v, j) => (j === i ? e.target.value : v)))
                   }
-                  className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm"
+                  className="h-11 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-base"
                 >
-                  {VIEWPOINT_OPTIONS.map((v) => (
-                    <option key={v.value} value={v.value}>
-                      {v.label}
+                  {VIEW_CODES.map((code) => (
+                    <option key={code} value={code}>
+                      {VIEW_NAME[code]}
                     </option>
                   ))}
                 </select>
@@ -212,19 +202,18 @@ export function FilmingGuidePage() {
 
       {missing.length > 0 && (
         <Notice icon={TriangleAlert} tone="warn" role="alert" className="mt-3">
-          Bài này cần đủ góc {views.map((v) => VIEW_NAME[v]).join(", ")}. Còn thiếu clip góc{" "}
-          {missing.map((v) => VIEW_NAME[v]).join(", ")}: chọn lại clip hoặc đổi ô Góc quay.
+          Thiếu video góc {missing.map((v) => VIEW_NAME[v].toLowerCase()).join(", ")}. Chọn lại video hoặc đổi góc.
         </Notice>
       )}
       {/* Chặn trước khi gửi: quá cỡ thì máy chủ cắt giữa đường, người dùng chỉ thấy lỗi khó hiểu. */}
       {sizeProblem === "clip" && (
         <Notice icon={TriangleAlert} tone="warn" role="alert" className="mt-3">
-          Có clip quá nặng (tối đa {MAX_CLIP_MB} MB mỗi clip). Quay lại ngắn hơn rồi chọn lại clip.
+          Có video quá {MAX_CLIP_MB} MB. Quay ngắn hơn rồi chọn lại.
         </Notice>
       )}
       {sizeProblem === "total" && (
         <Notice icon={TriangleAlert} tone="warn" role="alert" className="mt-3">
-          Các clip cộng lại quá nặng (tối đa {MAX_TOTAL_MB} MB mỗi lần gửi). Quay lại ngắn hơn rồi chọn lại clip.
+          Tổng các video quá {MAX_TOTAL_MB} MB. Quay ngắn hơn rồi chọn lại.
         </Notice>
       )}
       {quotaExceeded && (
@@ -239,22 +228,16 @@ export function FilmingGuidePage() {
       <div className="flex-1" />
 
       {files.length === 0 ? (
-        <>
-          <label className="mt-6 flex min-h-[52px] w-full cursor-pointer items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent)] text-base font-bold text-[var(--color-accent-fg)] hover:brightness-95 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--color-accent)]">
-            {fileInput}
-            Chọn clip vừa quay
-          </label>
-          <p className="mt-2 text-[11px] text-[var(--color-text-muted)]">
-            Cần {views.length} clip, mỗi góc một clip, mỗi clip ≤ 30 giây. Trên điện thoại, nút này mở luôn
-            camera.
-          </p>
-        </>
+        <label className={buttonVariants({ className: cn("mt-6 w-full", FILE_FOCUS) })}>
+          {fileInput}
+          Chọn video
+        </label>
       ) : (
         <div className="mt-6 flex gap-2.5">
-          {/* Chọn thiếu hoặc nhầm clip thì phải chọn lại được, không thì bị kẹt ở cảnh báo thiếu góc. */}
-          <label className="flex min-h-[52px] flex-1 cursor-pointer items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[15px] font-bold has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--color-accent)]">
+          {/* Chọn thiếu hoặc nhầm video thì phải chọn lại được, không thì bị kẹt ở cảnh báo thiếu góc. */}
+          <label className={buttonVariants({ variant: "secondary", className: cn("flex-1", FILE_FOCUS) })}>
             {fileInput}
-            Chọn lại clip
+            Chọn lại
           </label>
           <Button
             className="flex-1"
@@ -266,7 +249,7 @@ export function FilmingGuidePage() {
               )
             }
           >
-            {submit.isPending ? "Đang gửi…" : "Gửi clip để chấm"}
+            {submit.isPending ? "Đang gửi…" : "Gửi chấm"}
           </Button>
         </div>
       )}
@@ -274,27 +257,20 @@ export function FilmingGuidePage() {
   )
 }
 
-/** Cùng khung với màn: nút quay lại, stepper, tiêu đề, thẻ góc đầu mở sẵn có ảnh, thẻ gập, ô đồng ý, nút chọn clip. */
+/** Cùng khung với màn: nút quay lại, tiêu đề, thẻ góc đầu mở sẵn có ảnh, thẻ gập, câu dặn, ô đồng ý, nút chọn video. */
 function GuideSkeleton() {
   return (
     <FlowScreen>
       <div role="status" aria-label="Đang tải" className="flex flex-1 flex-col">
-        <Skeleton className="h-4 w-20" />
-        <div className="mt-2.5">
-          <div className="flex justify-between">
-            <Skeleton className="h-3 w-24" />
-            <Skeleton className="h-3 w-16" />
-          </div>
-          <Skeleton className="mt-2.5 h-1.5 w-full" />
-        </div>
+        <Skeleton className="h-5 w-24" />
         <Skeleton className="mt-3 h-8 w-64" />
-        <Skeleton className="mt-1.5 h-4 w-36" />
+        <Skeleton className="mt-1.5 h-4 w-48" />
         <Skeleton className="mt-4 h-80 rounded-[var(--radius-lg)]" />
         <Skeleton className="mt-2.5 h-14 rounded-[var(--radius-lg)]" />
-        <Skeleton className="mt-3 h-11" />
-        <Skeleton className="mt-4 h-24 rounded-xl" />
+        <Skeleton className="mt-3 h-24 rounded-[var(--radius-lg)]" />
+        <Skeleton className="mt-3 h-14 rounded-[var(--radius-lg)]" />
         <div className="flex-1" />
-        <Skeleton className="mt-6 h-[52px]" />
+        <Skeleton className="mt-6 h-[50px]" />
       </div>
     </FlowScreen>
   )
