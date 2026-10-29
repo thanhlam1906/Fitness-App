@@ -111,6 +111,8 @@ jobs:
         run: |
           scp mvp-app/docker-compose.prod.yml "$MAY_CHU:/opt/vfit/docker-compose.prod.yml.moi"
           scp mvp-app/deploy.sh "$MAY_CHU:/opt/vfit/deploy.sh"
+          # Cấu hình Prometheus, Grafana (chỉ production chạy, nhưng chép cả hai máy cho giống nhau; không có bí mật).
+          scp -r mvp-app/giam-sat "$MAY_CHU:/opt/vfit/"
 
       # Kéo image, (production) backup DB, đổi bản, kiểm trên máy; hỏng thì tự quay về và đỏ. Xem deploy.sh.
       - name: Đổi bản trên máy

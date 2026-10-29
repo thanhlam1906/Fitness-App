@@ -77,6 +77,9 @@ public class SecurityConfig {
 			.sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(auth -> auth
 				.requestMatchers("/actuator/health", "/actuator/info").permitAll()
+				// Prometheus không có token. Chỉ mạng Docker nội bộ gọi được: nginx chặn /actuator từ ngoài,
+				// cổng 8080 không publish. Endpoint chỉ mở ở profile prod (application-prod.yml).
+				.requestMatchers("/actuator/prometheus").permitAll()
 				.requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
 				.requestMatchers("/api/v1/auth/**", "/error").permitAll()
 				// Ảnh bài tập: thẻ <img> không gửi được token (doc/design-anh-bai-tap-v1.md §4).

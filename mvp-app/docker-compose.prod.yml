@@ -105,6 +105,88 @@ services:
     restart: unless-stopped
     mem_limit: 128m
 
+  # ---- Giám sát, CHỈ production (giai đoạn 6, spec §3): bật bằng dòng COMPOSE_PROFILES=monitoring trong
+  # /opt/vfit/.env của máy production. Staging không có dòng đó nên không chạy, tiết kiệm RAM.
+  # Biến trong profile này viết ${X:-}, không ${X:?}: compose kiểm biến của MỌI service kể cả profile không bật,
+  # dùng :? thì staging (không có các biến này) hỏng hết (thử 10-28). Grafana tự kiểm ở entrypoint bên dưới.
+  # Không service nào mở cổng ra ngoài (bẫy 6.2): Docker đi vòng ufw, nên chỉ Grafana bind 127.0.0.1.
+
+  prometheus:
+    image: prom/prometheus:v3.13.5
+    profiles: [monitoring]
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      # Giữ 15 ngày (bẫy 6.3), và chặn trên 2 GB phòng số đo phình bất thường.
+      - --storage.tsdb.retention.time=15d
+      - --storage.tsdb.retention.size=2GB
+    volumes:
+      - ./giam-sat/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus:/prometheus
+    restart: unless-stopped
+    mem_limit: 384m
+
+  # Đọc CPU, RAM, ổ của máy chủ qua /proc, /sys, / gắn chỉ đọc. Ở mạng Docker nội bộ (không network_mode: host)
+  # nên cổng 9100 không ra ngoài; đổi lại không đo được mạng của máy, ba bảng không cần số đó.
+  node-exporter:
+    image: prom/node-exporter:v1.12.1
+    profiles: [monitoring]
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/host/root
+      # backup.sh ghi giờ lần backup thành công vào đây; Grafana báo khi cũ hơn 26 giờ (bẫy 5.6).
+      - --collector.textfile.directory=/textfile
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host/root:ro,rslave
+      - ./textfile:/textfile:ro
+    restart: unless-stopped
+    mem_limit: 64m
+
+  # Xem từ laptop qua đường hầm SSH: ssh -L 3000:127.0.0.1:3000 deploy@vps-gia rồi mở http://localhost:3000.
+  # Không bind IP Tailscale: chính sách Tailscale chỉ cho cổng 22 vào tag:server (bẫy 0.6).
+  grafana:
+    image: grafana/grafana:13.2.4
+    profiles: [monitoring]
+    # Thiếu bí mật thì dừng, không chạy: thiếu mật khẩu admin thì Grafana tự đặt admin/admin (bẫy 6.1), thiếu
+    # mật khẩu Gmail thì cảnh báo lặng lẽ không gửi được. Container chết lặp làm deploy.sh báo đỏ (bẫy 4.12).
+    entrypoint:
+      - sh
+      - -c
+      - >-
+        [ -n "$$GF_SECURITY_ADMIN_PASSWORD" ] && [ -n "$$GF_SMTP_PASSWORD" ] && [ -n "$$ALERT_EMAIL" ]
+        && [ -n "$$GRAFANA_DB_PASSWORD" ]
+        || { echo "Thiếu GRAFANA_ADMIN_PASSWORD, GMAIL_APP_PASSWORD, ALERT_EMAIL hoặc GRAFANA_DB_PASSWORD trong .env"; exit 1; };
+        exec /run.sh
+    environment:
+      # Chỉ có tác dụng lần chạy đầu (volume grafana còn trống); đổi sau đó phải đổi trong Grafana.
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      # Gmail: cổng 587 + STARTTLS bắt buộc, đăng nhập bằng "mật khẩu ứng dụng" Google (không phải mật khẩu Gmail).
+      GF_SMTP_ENABLED: "true"
+      GF_SMTP_HOST: smtp.gmail.com:587
+      GF_SMTP_STARTTLS_POLICY: MandatoryStartTLS
+      GF_SMTP_USER: ${ALERT_EMAIL:-}
+      GF_SMTP_PASSWORD: ${GMAIL_APP_PASSWORD:-}
+      GF_SMTP_FROM_ADDRESS: ${ALERT_EMAIL:-}
+      GF_SMTP_FROM_NAME: vfit Grafana
+      # Đọc trong giam-sat/grafana/provisioning (người nhận cảnh báo, mật khẩu role Postgres chỉ đọc).
+      ALERT_EMAIL: ${ALERT_EMAIL:-}
+      GRAFANA_DB_PASSWORD: ${GRAFANA_DB_PASSWORD:-}
+    volumes:
+      - ./giam-sat/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./giam-sat/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    mem_limit: 256m
+
 networks:
   default:
     ipam:
@@ -119,3 +201,5 @@ networks:
 volumes:
   pgdata:
   clips:
+  prometheus:
+  grafana:

@@ -1,0 +1,36 @@
+{
+  "uid": "vfit-hang-doi",
+  "title": "Hàng đợi chấm form",
+  "schemaVersion": 39,
+  "refresh": "30s",
+  "time": { "from": "now-7d", "to": "now" },
+  "panels": [
+    {
+      "id": 1, "type": "bargauge", "title": "Lượt gửi video theo trạng thái (từ trước tới nay)",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "postgres" },
+      "options": { "reduceOptions": { "values": true, "calcs": ["lastNotNull"], "fields": "" }, "orientation": "horizontal" },
+      "targets": [{
+        "refId": "A", "format": "table", "rawQuery": true, "editorMode": "code",
+        "rawSql": "SELECT status AS \"Trạng thái\", count(*) AS \"Số lượt\" FROM video_review_requests GROUP BY status ORDER BY status"
+      }]
+    },
+    {
+      "id": 2, "type": "stat", "title": "Lượt đang chờ lâu nhất",
+      "description": "Tính từ lúc gửi của lượt PENDING cũ nhất. 0 là không có lượt nào chờ.",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "postgres" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 300 }] }
+        },
+        "overrides": []
+      },
+      "targets": [{
+        "refId": "A", "format": "table", "rawQuery": true, "editorMode": "code",
+        "rawSql": "SELECT coalesce(extract(epoch FROM now() - min(created_at)), 0) AS \"Chờ\" FROM video_review_requests WHERE status = 'PENDING'"
+      }]
+    }
+  ]
+}

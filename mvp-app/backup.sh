@@ -25,6 +25,21 @@ moc=$THU_MUC/.lan-cuoi
 mkdir -p -m 700 backup "$THU_MUC"
 exec 9> "$THU_MUC/.khoa"
 flock -n 9 || exit 0
+
+# Giai đoạn 6: chép giờ sửa của mốc thành số đo cho node-exporter (thư mục textfile, gắn vào container
+# node-exporter), Grafana báo khi cũ hơn 26 giờ (bẫy 5.6). Ghi ở MỌI lượt kết thúc, kể cả lượt thoát sớm vì đã
+# có bản hôm nay. Ghi .tam rồi mv: node-exporter không đọc phải file dở. Chưa có mốc thì không ghi, Grafana coi
+# thiếu số là hỏng. Thư mục textfile phải do deploy tạo trước (để docker tự tạo thì thành của root).
+ghi_moc_giam_sat() {
+  local t
+  [ -d textfile ] && t=$(stat -c %Y "$moc" 2> /dev/null) || return 0
+  # Trap không được đổi mã thoát của lượt backup; ghi hỏng thì Grafana tự báo vì mốc cũ dần.
+  { printf '# HELP vfit_backup_lan_cuoi_thanh_cong_giay Giờ (Unix) lần cuối đẩy backup lên Drive thành công.\n# TYPE vfit_backup_lan_cuoi_thanh_cong_giay gauge\nvfit_backup_lan_cuoi_thanh_cong_giay %s\n' "$t" \
+      > textfile/backup.prom.tam && mv textfile/backup.prom.tam textfile/backup.prom; } 2> /dev/null \
+    || echo "$(date -u +%FT%TZ) LỖI ghi textfile/backup.prom"
+  return 0
+}
+trap ghi_moc_giam_sat EXIT
 [ "$(cat "$moc" 2> /dev/null)" = "$ten" ] && exit 0
 # .tam của lượt bị giết giữa chừng (máy ảo tắt lúc đang dump) không bị ghi đè vì hôm sau tên đã khác.
 rm -f "$THU_MUC"/vfit-*.dump.tam

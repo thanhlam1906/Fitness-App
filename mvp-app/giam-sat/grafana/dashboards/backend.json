@@ -1,0 +1,44 @@
+{
+  "uid": "vfit-backend",
+  "title": "Backend",
+  "schemaVersion": 39,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    {
+      "id": 1, "type": "timeseries", "title": "Lượt gọi API mỗi giây",
+      "description": "Không tính /actuator (Prometheus và healthcheck tự gọi).",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps", "min": 0 }, "overrides": [] },
+      "targets": [{ "refId": "A", "legendFormat": "lượt/s", "expr": "sum(rate(http_server_requests_seconds_count{job=\"backend\",uri!~\"/actuator.*\"}[5m]))" }]
+    },
+    {
+      "id": 2, "type": "timeseries", "title": "Thời gian trả lời",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s", "min": 0 }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "legendFormat": "trung bình", "expr": "sum(rate(http_server_requests_seconds_sum{job=\"backend\",uri!~\"/actuator.*\"}[5m])) / sum(rate(http_server_requests_seconds_count{job=\"backend\",uri!~\"/actuator.*\"}[5m]))" },
+        { "refId": "B", "legendFormat": "chậm nhất", "expr": "max(http_server_requests_seconds_max{job=\"backend\",uri!~\"/actuator.*\"})" }
+      ]
+    },
+    {
+      "id": 3, "type": "timeseries", "title": "Lỗi 5xx mỗi giây",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps", "min": 0 }, "overrides": [] },
+      "targets": [{ "refId": "A", "legendFormat": "5xx/s", "expr": "sum(rate(http_server_requests_seconds_count{job=\"backend\",status=~\"5..\"}[5m])) or vector(0)" }]
+    },
+    {
+      "id": 4, "type": "timeseries", "title": "JVM heap",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "bytes", "min": 0 }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "legendFormat": "đang dùng", "expr": "sum(jvm_memory_used_bytes{job=\"backend\",area=\"heap\"})" },
+        { "refId": "B", "legendFormat": "tối đa", "expr": "sum(jvm_memory_max_bytes{job=\"backend\",area=\"heap\"})" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+# Nguồn dữ liệu của Grafana, nạp lúc Grafana khởi động. Mật khẩu lấy từ biến môi trường (/opt/vfit/.env qua
+# docker-compose.prod.yml), không ghi trong repo.
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+
+  # Đếm hàng đợi chấm form. Role grafana_doc chỉ đọc được vài cột trạng thái của video_review_requests
+  # (giam-sat/tao-role-grafana.sh), không đọc được email hay số liệu sức khoẻ.
+  - name: Postgres
+    uid: postgres
+    type: grafana-postgresql-datasource
+    url: postgres:5432
+    user: grafana_doc
+    jsonData:
+      database: fitness
+      sslmode: disable
+      postgresVersion: 1600
+    secureJsonData:
+      password: $GRAFANA_DB_PASSWORD

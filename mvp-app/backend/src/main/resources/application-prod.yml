@@ -11,3 +11,11 @@ spring:
 
 app:
   jwt-secret: ${JWT_SECRET}
+
+# Prometheus (profile monitoring, chỉ production) đọc số đo qua mạng Docker nội bộ: backend:8080/actuator/prometheus.
+# Người ngoài không tới được: cổng 8080 không publish, nginx trả 404 cho mọi đường /actuator (bẫy 1.7).
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus

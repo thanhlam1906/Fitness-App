@@ -1,0 +1,49 @@
+{
+  "uid": "vfit-may",
+  "title": "Máy chủ",
+  "schemaVersion": 39,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    {
+      "id": 1, "type": "timeseries", "title": "CPU (%)",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 }, "overrides": [] },
+      "targets": [{ "refId": "A", "legendFormat": "CPU", "expr": "100 * (1 - avg(rate(node_cpu_seconds_total{job=\"may\",mode=\"idle\"}[5m])))" }]
+    },
+    {
+      "id": 2, "type": "timeseries", "title": "RAM đã dùng (%)",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 }, "overrides": [] },
+      "targets": [{ "refId": "A", "legendFormat": "RAM", "expr": "100 * (1 - node_memory_MemAvailable_bytes{job=\"may\"} / node_memory_MemTotal_bytes{job=\"may\"})" }]
+    },
+    {
+      "id": 3, "type": "gauge", "title": "Ổ / đã dùng (%)",
+      "gridPos": { "x": 0, "y": 8, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent", "min": 0, "max": 100,
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 85 }] }
+        },
+        "overrides": []
+      },
+      "targets": [{ "refId": "A", "expr": "100 * (1 - node_filesystem_avail_bytes{job=\"may\",mountpoint=\"/\"} / node_filesystem_size_bytes{job=\"may\",mountpoint=\"/\"})" }]
+    },
+    {
+      "id": 4, "type": "stat", "title": "Backup cuối lên Drive cách đây",
+      "gridPos": { "x": 8, "y": 8, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 93600 }] }
+        },
+        "overrides": []
+      },
+      "targets": [{ "refId": "A", "expr": "time() - vfit_backup_lan_cuoi_thanh_cong_giay{job=\"may\"}" }]
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+# Ba bảng nằm trong repo (giam-sat/grafana/dashboards/*.json); sửa trên giao diện không lưu được, sửa file rồi deploy.
+apiVersion: 1
+
+providers:
+  - name: vfit
+    folder: vfit
+    type: file
+    allowUiUpdates: false
+    options:
+      path: /var/lib/grafana/dashboards

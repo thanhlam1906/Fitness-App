@@ -49,6 +49,9 @@ dependencies {
 
 	// health check để xác nhận DB nối được — dùng ngay ở đợt nền tảng này
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
+	// Giám sát production (doc/design-trien-khai-v1.md giai đoạn 6): /actuator/prometheus cho Prometheus.
+	// Người dùng duyệt 10-28. Phiên bản theo BOM của Spring Boot.
+	runtimeOnly("io.micrometer:micrometer-registry-prometheus")
 
 	// API docs
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5")

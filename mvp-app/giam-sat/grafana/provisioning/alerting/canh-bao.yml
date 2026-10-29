@@ -1,0 +1,142 @@
+# Cảnh báo gửi email (doc/design-trien-khai-v1.md giai đoạn 6). Người nhận và tài khoản Gmail gửi đi nằm ở
+# /opt/vfit/.env (ALERT_EMAIL, GMAIL_APP_PASSWORD), không ghi trong repo công khai.
+# Grafana thay $TÊN bằng biến môi trường trong file này, trừ phần annotations và data.model.
+# Máy tắt hẳn thì Grafana trên máy cũng tắt, không báo được: lịch health.yml trên GitHub lo phần đó (spec §5).
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: email-chu
+    receivers:
+      - uid: email-chu
+        type: email
+        settings:
+          addresses: $ALERT_EMAIL
+          singleEmail: true
+
+policies:
+  - orgId: 1
+    receiver: email-chu
+    group_by: [alertname]
+    group_wait: 30s
+    group_interval: 5m
+    # Chưa sửa thì 4 giờ nhắc lại một lần.
+    repeat_interval: 4h
+
+groups:
+  - orgId: 1
+    name: vfit
+    folder: vfit
+    interval: 1m
+    rules:
+      - uid: backend-sap
+        title: Backend không trả lời
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: {from: 300, to: 0}
+            datasourceUid: prometheus
+            model:
+              refId: A
+              expr: up{job="backend"}
+              instant: true
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              datasource: {type: __expr__, uid: __expr__}
+              expression: A
+              conditions:
+                - evaluator: {type: lt, params: [1]}
+        # Prometheus cũng chết thì không có số: coi như sập.
+        noDataState: Alerting
+        execErrState: Alerting
+        # Deploy tạo lại backend, Spring Boot cần tới vài phút mới lên (start_period 180s): chờ 3 phút để không
+        # gửi email mỗi lần CD.
+        for: 3m
+        annotations:
+          summary: Prometheus không đọc được số đo của backend trong 1 phút. Người dùng có thể đang không vào được app.
+
+      - uid: ram-cao
+        title: RAM máy chủ trên 90%
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: {from: 300, to: 0}
+            datasourceUid: prometheus
+            model:
+              refId: A
+              expr: 100 * (1 - node_memory_MemAvailable_bytes{job="may"} / node_memory_MemTotal_bytes{job="may"})
+              instant: true
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              datasource: {type: __expr__, uid: __expr__}
+              expression: A
+              conditions:
+                - evaluator: {type: gt, params: [90]}
+        # node-exporter chết thì cảnh báo backup bên dưới đã báo (không có số), không báo trùng ở đây.
+        noDataState: OK
+        execErrState: Alerting
+        for: 5m
+        annotations:
+          summary: RAM dùng trên 90% suốt 5 phút. Container sắp bị kernel giết vì hết bộ nhớ.
+
+      - uid: o-day
+        title: Ổ máy chủ trên 85%
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: {from: 300, to: 0}
+            datasourceUid: prometheus
+            model:
+              refId: A
+              expr: 100 * (1 - node_filesystem_avail_bytes{job="may",mountpoint="/"} / node_filesystem_size_bytes{job="may",mountpoint="/"})
+              instant: true
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              datasource: {type: __expr__, uid: __expr__}
+              expression: A
+              conditions:
+                - evaluator: {type: gt, params: [85]}
+        noDataState: OK
+        execErrState: Alerting
+        for: 10m
+        annotations:
+          summary: Ổ / dùng trên 85%. Đầy ổ thì Postgres dừng ghi và backup hỏng.
+
+      # backup.sh ghi giờ của lần đẩy lên Drive thành công vào textfile/backup.prom (bẫy 5.6). Ngưỡng 26 giờ:
+      # lịch chạy mỗi ngày, cho thêm 2 giờ trễ. Không có số (file chưa có, node-exporter chết) cũng báo.
+      - uid: backup-cu
+        title: Backup cũ hơn 26 giờ
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: {from: 300, to: 0}
+            datasourceUid: prometheus
+            model:
+              refId: A
+              expr: time() - vfit_backup_lan_cuoi_thanh_cong_giay{job="may"}
+              instant: true
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              datasource: {type: __expr__, uid: __expr__}
+              expression: A
+              conditions:
+                - evaluator: {type: gt, params: [93600]}
+        noDataState: Alerting
+        execErrState: Alerting
+        # Một lần scrape hỏng hay restart Prometheus làm series mất ngay: chờ 15 phút cho khỏi báo nhầm. Ngưỡng
+        # 26 giờ nên trễ thêm 15 phút không đáng kể.
+        for: 15m
+        annotations:
+          summary: Hơn 26 giờ chưa có bản backup nào lên Google Drive. Xem /opt/vfit/backup/backup.log trên máy chủ.
