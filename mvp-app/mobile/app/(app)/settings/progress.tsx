@@ -64,7 +64,7 @@ export default function ProgressScreen() {
               note={p.avgSessionRpe == null ? "chưa ghi RPE buổi nào" : "mỗi buổi"}
             />
             <View className="w-full rounded-md bg-surface p-3.5">
-              <TileHead label="Tổng khối lượng đã nâng" value={`${formatNumber(p.totalTonnageKg)} kg`} note="kg × rep của mọi hiệp" />
+              <TileHead label="Tổng khối lượng đã nâng" value={`${formatNumber(p.totalTonnageKg)} kg`} note="kg × rep của mọi set" />
               <View className="mt-3 h-[110px] flex-row items-end gap-1.5" importantForAccessibility="no-hide-descendants">
                 {p.weekly.map((w, i) => (
                   <View key={w.from} className="h-full min-w-0 flex-1 items-center justify-end gap-1.5">
@@ -82,7 +82,7 @@ export default function ProgressScreen() {
             </View>
           </View>
           <Text className="mt-3.5 text-xs leading-5 text-text-muted">
-            Chỉ tính các buổi bạn đã bắt đầu trong app. Không ước lượng, không làm tròn thêm.
+            Chỉ tính buổi đã tập trong app.
           </Text>
         </>
       )}

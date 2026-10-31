@@ -42,7 +42,7 @@ export default function ProfileScreen() {
   return (
     <SettingsSubLayout title="Hồ sơ">
       <View className="mt-5 gap-2">
-        <EditableRow label="Cân nặng" value={formatKg(metric?.weightKg)} actionLabel="Cập nhật" accent>
+        <EditableRow label="Cân nặng" value={formatKg(metric?.weightKg)} accent>
           {(close) => (
             <MetricEditor
               unit="kg"
@@ -137,13 +137,11 @@ export default function ProfileScreen() {
 function EditableRow({
   label,
   value,
-  actionLabel = "Sửa",
   accent = false,
   children,
 }: {
   label: string
   value: string
-  actionLabel?: string
   accent?: boolean
   children: (close: () => void) => ReactNode
 }) {
@@ -157,8 +155,8 @@ function EditableRow({
             {value}
           </Text>
         </View>
-        <Pressable accessibilityRole="button" accessibilityLabel={`${open ? "Đóng" : actionLabel} ${label}`} onPress={() => setOpen((o) => !o)} hitSlop={8}>
-          <Text className={cn("text-[13px]", accent ? "text-accent" : "text-text-muted")}>{open ? "Đóng" : actionLabel}</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel={`${open ? "Đóng" : "Sửa"} ${label}`} onPress={() => setOpen((o) => !o)} hitSlop={12}>
+          <Text className={cn("text-[13px]", accent ? "text-accent" : "text-text-muted")}>{open ? "Đóng" : "Sửa"}</Text>
         </Pressable>
       </View>
       {open && <View className="mt-3.5">{children(() => setOpen(false))}</View>}

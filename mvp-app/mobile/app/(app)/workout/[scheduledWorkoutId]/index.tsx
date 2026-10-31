@@ -1,8 +1,7 @@
 import { Pressable, Text, View } from "react-native"
 import { useLocalSearchParams, useRouter } from "expo-router"
-import { CircleCheckBig, CloudOff, SearchX } from "lucide-react-native"
+import { ChevronLeft, ChevronRight, CircleCheckBig, CloudOff, SearchX } from "lucide-react-native"
 import { ApiError } from "~/api/client"
-import { Kicker } from "~/components/Kicker"
 import { Screen } from "~/components/Screen"
 import { SegmentBar, type Segment } from "~/features/workout/components/SegmentBar"
 import { Button } from "~/components/ui/Button"
@@ -11,6 +10,7 @@ import { StatusBlock } from "~/components/StatusViews"
 import { useSchedule } from "~/features/schedule/api/useSchedule"
 import { ExerciseLogger } from "~/features/workout/components/ExerciseLogger"
 import { useWorkoutSession } from "~/features/workout/api/useWorkoutSession"
+import { colors } from "~/theme"
 
 /**
  * Màn 5 concept-frontend-v1.md — buổi tập, log từng set. Bản mobile của WorkoutPage web. Xem MỘT
@@ -83,10 +83,10 @@ export default function WorkoutScreen() {
   return (
     <Screen>
       <View className="flex-row justify-between">
-        <Kicker>Buổi {workout.label ?? ""}</Kicker>
-        <Kicker style={{ fontVariant: ["tabular-nums"] }}>
+        <Text className="text-[13px] text-text-muted">Buổi {workout.label ?? ""}</Text>
+        <Text className="text-[13px] text-text-muted" style={{ fontVariant: ["tabular-nums"] }}>
           Bài {index + 1} / {exercises.length}
-        </Kicker>
+        </Text>
       </View>
       <SegmentBar
         className="mt-2.5"
@@ -111,21 +111,30 @@ export default function WorkoutScreen() {
             accessibilityRole="button"
             accessibilityLabel="Bài trước"
             onPress={() => goTo(index - 1)}
-            className="size-8 items-center justify-center rounded-lg bg-surface"
+            className="size-11 items-center justify-center rounded-md bg-surface"
           >
-            <Text className="text-text-muted">‹</Text>
+            <ChevronLeft size={20} color={colors["text-muted"]} />
           </Pressable>
         )}
         {next ? (
-          <Pressable accessibilityRole="button" onPress={() => goTo(index + 1)} className="flex-1">
-            <Text className="text-xs text-text-muted" numberOfLines={1} style={{ fontVariant: ["tabular-nums"] }}>
-              Tiếp: {next.exerciseName} {next.targetSets}×{next.targetReps} ›
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => goTo(index + 1)}
+            className="min-h-11 flex-1 flex-row items-center gap-0.5"
+          >
+            <Text className="flex-shrink text-xs text-text-muted" numberOfLines={1} style={{ fontVariant: ["tabular-nums"] }}>
+              Tiếp: {next.exerciseName} {next.targetSets}×{next.targetReps}
             </Text>
+            <ChevronRight size={14} color={colors["text-muted"]} />
           </Pressable>
         ) : (
           <View className="flex-1" />
         )}
-        <Pressable accessibilityRole="link" onPress={() => router.push(`/workout/${scheduledWorkoutId}/finish`)} hitSlop={8}>
+        <Pressable
+          accessibilityRole="link"
+          onPress={() => router.push(`/workout/${scheduledWorkoutId}/finish`)}
+          className="min-h-11 justify-center"
+        >
           <Text className="text-[13px] font-semibold text-accent">Kết buổi</Text>
         </Pressable>
       </View>
@@ -138,7 +147,7 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max)
 }
 
-/** Cùng khung với màn buổi tập: kicker + thanh đốt, tên bài, số tải lớn, các dòng set, hàng điều hướng. */
+/** Cùng khung với màn buổi tập: dòng buổi + thanh đốt, tên bài, số tải lớn, các dòng set, hàng điều hướng. */
 function WorkoutSkeleton() {
   return (
     <Screen>
@@ -153,11 +162,12 @@ function WorkoutSkeleton() {
         <Skeleton className="mt-3 h-20 w-48" />
         <View className="mt-6 gap-2">
           <Skeleton className="h-14" />
-          <Skeleton className="h-40" />
+          <Skeleton className="h-72 rounded-lg" />
           <Skeleton className="h-14" />
         </View>
-        <View className="mt-auto flex-row justify-between gap-3 pt-6">
-          <Skeleton className="h-4 w-40" />
+        <View className="mt-auto flex-row items-center justify-between gap-3 pt-6">
+          <Skeleton className="size-11" />
+          <Skeleton className="h-4 flex-1" />
           <Skeleton className="h-4 w-16" />
         </View>
       </View>

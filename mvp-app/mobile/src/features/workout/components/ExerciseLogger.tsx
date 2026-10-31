@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Image, Pressable, Text, TextInput, View } from "react-native"
-import { Shuffle } from "lucide-react-native"
+import { Check, Shuffle } from "lucide-react-native"
 import type { ScheduledExerciseView } from "@/features/schedule/types"
 import { SKIP_REASONS, type SetLogResponse } from "@/features/workout/types"
 import { cn } from "@/lib/cn"
@@ -11,7 +11,6 @@ import { LoadDeltaBadge } from "~/components/LoadDeltaBadge"
 import { Button } from "~/components/ui/Button"
 import { Skeleton } from "~/components/ui/Skeleton"
 import { IconText } from "~/components/StatusViews"
-import { Kicker } from "~/components/Kicker"
 import { WrongFeedbackButton } from "~/features/feedback/components/WrongFeedbackButton"
 import { useLogSet, useSubstitute, useSubstitutes } from "~/features/workout/api/useWorkoutSession"
 import { API_URL } from "~/lib/config"
@@ -117,16 +116,21 @@ function SetSummaryRow({
   const done = logged != null
   return (
     <View className="flex-row items-center gap-3 rounded-md bg-surface px-3.5 py-3">
-      <Text className="w-11 text-[11px] tracking-[0.9px] text-text-muted">SET {setIndex}</Text>
+      <Text className="w-11 text-xs text-text-muted">Set {setIndex}</Text>
       <Text className={cn("flex-1 text-sm", done ? "text-text" : "text-text-muted")} style={NUM}>
         {logged?.skipped
           ? `bỏ set · ${SKIP_REASONS.find((r) => r.value === logged.skipReason)?.label ?? "khác"}`
           : `${logged?.reps ?? targetReps} rep · ${formatKg(logged?.loadKg ?? targetLoadKg)}`}
       </Text>
       {done ? (
-        <Text className="text-sm text-success" style={NUM}>
-          {logged!.rpe != null ? `RPE ${logged!.rpe} ` : ""}✓
-        </Text>
+        <View className="flex-row items-center gap-1">
+          {logged!.rpe != null && (
+            <Text className="text-sm text-success" style={NUM}>
+              RPE {logged!.rpe}
+            </Text>
+          )}
+          <Check size={16} strokeWidth={3} color={colors.success} />
+        </View>
       ) : (
         <Text className="text-sm text-text-muted">—</Text>
       )}
@@ -175,9 +179,9 @@ function ActiveSet({
   }
 
   return (
-    <View className="rounded-xl border border-border bg-surface-2 p-4">
+    <View className="rounded-lg border border-border bg-surface-2 p-4">
       <View className="flex-row items-baseline justify-between">
-        <Text className="text-[11px] font-bold uppercase tracking-[1.1px] text-accent">Set {setIndex} — đang làm</Text>
+        <Text className="text-[15px] font-bold text-text">Set {setIndex}</Text>
         {restSeconds != null && (
           <Text className="text-xs text-text-muted" style={NUM}>
             nghỉ {formatRest(restSeconds)}
@@ -187,7 +191,7 @@ function ActiveSet({
 
       {skipping ? (
         <View className="mt-3.5">
-          <Kicker>Lý do bỏ set</Kicker>
+          <Text className="text-xs font-medium text-text-muted">Lý do bỏ set</Text>
           {/* Web dùng <select>; 4 lựa chọn thì bấm một lần nhanh hơn mở danh sách. */}
           <View accessibilityRole="radiogroup" className="mt-1.5 flex-row flex-wrap gap-2">
             {SKIP_REASONS.map((r) => {
@@ -208,14 +212,15 @@ function ActiveSet({
         </View>
       ) : (
         <>
-          <View className="mt-3.5 flex-row gap-[18px]">
+          {/* Mỗi ô một hàng: hai ô cạnh nhau ở màn 375px chỉ còn ~34px cho số, "62.5" bị cắt. */}
+          <View className="mt-3 gap-2.5">
             <NumberStepper label="Rep" value={reps} step={1} min={0} onChange={setReps} />
-            <NumberStepper label="Tải (kg)" value={loadKg} step={2.5} min={0} decimal onChange={setLoadKg} />
+            <NumberStepper label="Tạ (kg)" value={loadKg} step={2.5} min={0} decimal onChange={setLoadKg} />
           </View>
           {isLastSet && (
             // RPE hỏi mềm: bỏ trống được, thiếu thì bài này chỉ chạy double progression.
             <View className="mt-3.5">
-              <Kicker>RPE set cuối — bỏ qua được</Kicker>
+              <Text className="text-xs font-medium text-text-muted">RPE set cuối (tuỳ chọn)</Text>
               <TextInput
                 accessibilityLabel="RPE set cuối"
                 keyboardType="number-pad"
@@ -236,12 +241,13 @@ function ActiveSet({
         {logSet.isPending ? "Đang lưu…" : `Lưu set ${setIndex}`}
       </Button>
 
-      <View className="mt-2.5 flex-row items-center justify-between">
-        <Pressable accessibilityRole="button" onPress={() => setSkipping((s) => !s)} hitSlop={8}>
-          <Text className="text-xs text-text-muted">{skipping ? "Không bỏ nữa" : "Bỏ set này"}</Text>
-        </Pressable>
-        <Text className="text-[11px] text-text-muted">lưu lên server sau mỗi set</Text>
-      </View>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => setSkipping((s) => !s)}
+        className="mt-1 min-h-11 items-center justify-center"
+      >
+        <Text className="text-sm text-text-muted">{skipping ? "Không bỏ nữa" : "Bỏ set này"}</Text>
+      </Pressable>
       {logSet.isError && (
         <IconText small className="mt-2">
           {logSet.error.message}
@@ -287,8 +293,8 @@ function NumberStepper({
   }
 
   return (
-    <View className="flex-1">
-      <Kicker>{label}</Kicker>
+    <View>
+      <Text className="text-xs font-medium text-text-muted">{label}</Text>
       <View className="mt-1.5 flex-row items-center gap-2.5">
         <StepButton label={`Giảm ${label}`} onPress={() => bump(-step)}>
           −
@@ -359,7 +365,7 @@ function CoachingPanel({ exercise }: { exercise: ScheduledExerciseView }) {
 
   return (
     <View className="mt-2">
-      <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} onPress={() => setOpen((o) => !o)} hitSlop={8}>
+      <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} onPress={() => setOpen((o) => !o)} className="-my-3 min-h-11 justify-center self-start">
         <Text className="text-xs text-text-muted">{open ? "Ẩn cách tập" : "Xem cách tập"}</Text>
       </Pressable>
       {open && (
@@ -380,8 +386,8 @@ function SubstitutePanel({ exercise }: { exercise: ScheduledExerciseView }) {
 
   if (!open) {
     return (
-      <Pressable accessibilityRole="button" onPress={() => setOpen(true)} className="mt-3 self-start" hitSlop={8}>
-        <Text className="text-xs text-text-muted">Thiếu thiết bị, đổi bài khác</Text>
+      <Pressable accessibilityRole="button" onPress={() => setOpen(true)} className="mt-1 min-h-11 justify-center self-start">
+        <Text className="text-xs text-text-muted">Thay bài</Text>
       </Pressable>
     )
   }
@@ -389,7 +395,7 @@ function SubstitutePanel({ exercise }: { exercise: ScheduledExerciseView }) {
   return (
     <View className="mt-3 gap-2 rounded-md bg-surface p-3">
       <Text className="text-xs leading-5 text-text-muted">
-        Bài cùng nhóm cơ, lọc theo thiết bị bạn đang có. Set và rep giữ nguyên; tải cần nhập lại.
+        Set và rep giữ nguyên, tạ nhập lại.
       </Text>
       {suggestions.isLoading && (
         // Khung của hàng nút bài gợi ý.
@@ -419,7 +425,7 @@ function SubstitutePanel({ exercise }: { exercise: ScheduledExerciseView }) {
           </Button>
         ))}
       </View>
-      <Pressable accessibilityRole="button" onPress={() => setOpen(false)} className="self-start" hitSlop={8}>
+      <Pressable accessibilityRole="button" onPress={() => setOpen(false)} className="min-h-11 justify-center self-start">
         <Text className="text-xs text-text-muted">Huỷ</Text>
       </Pressable>
       {substitute.isError && <IconText small>{substitute.error.message}</IconText>}

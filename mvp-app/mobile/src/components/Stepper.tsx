@@ -1,5 +1,4 @@
-import { View } from "react-native"
-import { Kicker } from "~/components/Kicker"
+import { Text, View } from "react-native"
 import { SegmentBar, type Segment } from "~/features/workout/components/SegmentBar"
 
 /** Luồng tuyến tính: bước trước `current` là done, sau là todo. */
@@ -12,10 +11,10 @@ export function Stepper({ label, steps, current }: { label: string; steps: numbe
   return (
     <View>
       <View className="flex-row items-center justify-between">
-        <Kicker>{label}</Kicker>
-        <Kicker style={{ fontVariant: ["tabular-nums"] }}>
+        <Text className="text-[13px] text-text-muted">{label}</Text>
+        <Text className="text-[13px] text-text-muted" style={{ fontVariant: ["tabular-nums"] }}>
           Bước {current + 1} / {steps}
-        </Kicker>
+        </Text>
       </View>
       <SegmentBar className="mt-2.5" segments={linearSegments(steps, current)} />
     </View>

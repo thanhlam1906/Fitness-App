@@ -8,7 +8,7 @@ import { defaultTrainingDays, WEEKDAYS } from "@/features/program/types/schema"
 import { ApiError } from "~/api/client"
 import { isoDay, START_OFFSETS, startLabel } from "~/lib/dates"
 import { cleanDecimal, parseDecimal } from "~/lib/number"
-import { Kicker } from "~/components/Kicker"
+import { SectionTitle } from "~/components/SectionTitle"
 import { Screen } from "~/components/Screen"
 import { Button } from "~/components/ui/Button"
 import { Input } from "~/components/ui/Input"
@@ -57,7 +57,7 @@ export default function ProgramScreen() {
         {...(needsOnboarding
           ? { icon: UserRound, title: "Cần hoàn tất hồ sơ trước" }
           : { icon: CloudOff, tone: "danger" as const, title: "Không tải được đề xuất", detail: candidates.error.message })}
-        action={{ to: "/onboarding", label: needsOnboarding ? "Hoàn tất hồ sơ" : "Về onboarding" }}
+        action={{ to: "/onboarding", label: needsOnboarding ? "Hoàn tất hồ sơ" : "Sửa thông tin" }}
       />
     )
   }
@@ -114,17 +114,15 @@ export default function ProgramScreen() {
 
   return (
     <Screen>
-      <Kicker>Đề xuất cho hồ sơ của bạn</Kicker>
       <Text
-        className="mt-3 text-[28px] font-extrabold tracking-[-0.5px] text-text"
+        className="text-[28px] font-extrabold leading-[35px] tracking-[-0.5px] text-text"
         style={{ fontVariant: ["tabular-nums"] }}
       >
         {exact.length > 0 ? `${exact.length} chương trình phù hợp` : "Chọn chương trình gần nhất"}
       </Text>
       {exact.length === 0 && (
         <Text className="mt-2 text-[13px] leading-5 text-text-muted">
-          Chưa có chương trình đúng số buổi/tuần bạn chọn. Các chương trình dưới đây hợp thiết bị của
-          bạn, ngày tập bạn tự chọn.
+          Chưa có chương trình đúng số buổi/tuần bạn chọn.
         </Text>
       )}
 
@@ -143,19 +141,20 @@ export default function ProgramScreen() {
             ) : (
               <ChevronRight size={14} color={colors["text-muted"]} />
             )}
-            <Kicker>Số buổi khác · {others.length}</Kicker>
+            <SectionTitle>Số buổi khác · {others.length}</SectionTitle>
           </Pressable>
-          {othersOpen && <View className="mt-3 gap-3">{others.map((template) => card(template, "Khác số buổi"))}</View>}
+          {/* Không nhãn hạng: tiêu đề nhóm đã nói các chương trình này khác số buổi. */}
+          {othersOpen && <View className="mt-3 gap-3">{others.map((template) => card(template, ""))}</View>}
         </View>
       )}
 
       <Button variant="secondary" className="mt-3 w-full" onPress={() => router.push("/my-schedule")}>
-        Tự thiết kế lịch riêng
+        Tự thiết kế lịch
       </Button>
 
       {selected && (
         <>
-          <Kicker className="mt-6">Ngày tập trong tuần</Kicker>
+          <SectionTitle className="mt-6">Ngày tập trong tuần</SectionTitle>
           <View className="mt-2.5 flex-row gap-1.5">
             {WEEKDAYS.map((d) => {
               const on = trainingDays.includes(d.value)
@@ -199,10 +198,9 @@ export default function ProgramScreen() {
           {/* Template tay không không có bài nào cần tạ: bỏ cả mục, không để tiêu đề trơ. */}
           {loadable.length > 0 && (
             <>
-              <Kicker className="mt-6">Mức tạ khởi điểm</Kicker>
+              <SectionTitle className="mt-6">Mức tạ khởi điểm</SectionTitle>
               <Text className="mt-2 text-[13px] leading-5 text-text-muted">
-                Chọn mức bạn làm được 2 set đầu mà vẫn còn dư sức. Bỏ trống cũng được — lúc đó lịch không
-                gợi ý tải và bạn tự nhập trong buổi đầu.
+                Mức bạn làm 2 set mà còn dư sức. Bỏ trống thì lịch không gợi ý tạ.
               </Text>
               <View className="mt-3 gap-3">
                 {loadable.map((exercise) => (
@@ -260,14 +258,14 @@ function TemplateCard({
       accessibilityState={{ checked: selected }}
       onPress={onSelect}
       className={cn(
-        "rounded-xl border p-4",
+        "rounded-lg border p-4",
         selected ? "border-accent bg-surface-2" : "border-transparent bg-surface",
       )}
     >
       <View className="flex-row items-center justify-between">
         <Text
           className={cn(
-            "text-[11px] font-bold uppercase tracking-[1.1px]",
+            "text-[13px] font-semibold",
             selected ? "text-accent" : "text-text-muted",
           )}
         >
@@ -349,23 +347,22 @@ function EmptyState({
         <Button onPress={() => router.push(action.to)}>{action.label}</Button>
         {/* Lịch tự thiết kế không cần hồ sơ hay template: lối ra này luôn phải có. */}
         <Button variant="secondary" onPress={() => router.push("/my-schedule")}>
-          Tự thiết kế lịch riêng
+          Tự thiết kế lịch
         </Button>
       </StatusBlock>
     </Screen>
   )
 }
 
-/** Cùng khung với màn chọn: kicker, tiêu đề, các thẻ đề xuất, nút tự thiết kế lịch. */
+/** Cùng khung với màn chọn: tiêu đề, các thẻ đề xuất, nút tự thiết kế lịch. */
 function ProgramSkeleton() {
   return (
     <Screen>
       <View accessible accessibilityLabel="Đang tải">
-        <Skeleton className="h-3 w-52" />
-        <Skeleton className="mt-3 h-8 w-64" />
+        <Skeleton className="h-8 w-64" />
         <View className="mt-5 gap-3">
-          <Skeleton className="h-40 rounded-xl" />
-          <Skeleton className="h-40 rounded-xl" />
+          <Skeleton className="h-40 rounded-lg" />
+          <Skeleton className="h-40 rounded-lg" />
         </View>
         <Skeleton className="mt-3 h-11" />
       </View>

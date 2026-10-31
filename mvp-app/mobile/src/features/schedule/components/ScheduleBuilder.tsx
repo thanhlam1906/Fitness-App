@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Pressable, Text, View } from "react-native"
-import { ChevronDown, TriangleAlert } from "lucide-react-native"
+import { ChevronDown, Plus, TriangleAlert } from "lucide-react-native"
 import { WEEKDAYS } from "@/features/program/types/schema"
 import {
   draftError,
@@ -9,15 +9,16 @@ import {
   type Draft,
   type DraftExercise,
 } from "@/features/schedule/utils/customProgram"
-import type { Exercise } from "@/features/exercise/types"
 import { cn } from "@/lib/cn"
 import { range } from "@/lib/wheel"
-import { Kicker } from "~/components/Kicker"
+import { SectionTitle } from "~/components/SectionTitle"
 import { Button } from "~/components/ui/Button"
 import { Input } from "~/components/ui/Input"
 import { Label } from "~/components/ui/Label"
 import { PickerField } from "~/components/ui/Picker"
+import { Sheet, SheetHeader } from "~/components/ui/Sheet"
 import { Skeleton } from "~/components/ui/Skeleton"
+import { ExercisePicker } from "~/features/schedule/components/ExercisePicker"
 import { isoDay, START_OFFSETS, startLabel } from "~/lib/dates"
 import { cleanDecimal } from "~/lib/number"
 import { useCreateCustomProgram } from "~/features/schedule/api/useCustomProgram"
@@ -39,8 +40,11 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
   const [draft, setDraft] = useState<Draft>({})
   const [startOffset, setStartOffset] = useState(0)
   const [weeks, setWeeks] = useState(4)
+  // Dòng đang chọn bài trong khung: index = null là thêm dòng mới cho ngày đó.
+  const [picking, setPicking] = useState<{ day: number; index: number | null } | null>(null)
 
   const active = exercises.data?.filter((e) => e.active) ?? []
+  const nameOf = (id: string) => active.find((e) => e.id === id)?.nameEn ?? "Chọn bài"
   const error = draftError(draft)
 
   function toggleDay(day: number) {
@@ -49,7 +53,8 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
       if (day in next) {
         delete next[day]
       } else {
-        next[day] = active[0] ? [emptyExercise(active[0].id)] : []
+        // Để trống, người dùng tự chọn bài: gán sẵn bài đầu danh sách là chốt hộ một bài họ không chọn.
+        next[day] = []
       }
       return next
     })
@@ -63,7 +68,7 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
   }
 
   if (exercises.isLoading) {
-    // Khung của form: kicker + 7 nút thứ, hàng ngày bắt đầu/số tuần, cảnh báo, nút tạo.
+    // Khung của form: tiêu đề mục + 7 nút thứ, hàng ngày bắt đầu/số tuần, cảnh báo, nút tạo.
     return (
       <View accessible accessibilityLabel="Đang tải">
         <Skeleton className="h-3 w-40" />
@@ -84,7 +89,7 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
 
   return (
     <View>
-      <Kicker>Ngày tập trong tuần</Kicker>
+      <SectionTitle>Ngày tập trong tuần</SectionTitle>
       <View className="mt-2.5 flex-row gap-1.5">
         {WEEKDAYS.map((d) => {
           const on = d.value in draft
@@ -103,17 +108,23 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
       </View>
 
       {WEEKDAYS.filter((d) => d.value in draft).map((d) => (
-        <View key={d.value} className="mt-5 rounded-xl bg-surface p-3.5">
+        <View key={d.value} className="mt-5 rounded-lg bg-surface p-3.5">
           <Text className="text-[15px] font-bold text-text">Buổi {d.label}</Text>
 
           <View className="mt-3 gap-3">
             {draft[d.value].map((ex, i) => (
               <View key={i} className="gap-2 border-t border-border pt-3">
-                <ExercisePicker
-                  options={active}
-                  value={ex.exerciseId}
-                  onChange={(exerciseId) => patchExercise(d.value, i, { exerciseId })}
-                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Bài tập: ${nameOf(ex.exerciseId)}. Bấm để đổi`}
+                  onPress={() => setPicking({ day: d.value, index: i })}
+                  className="h-11 flex-row items-center justify-between gap-2 rounded-md bg-surface-2 px-3"
+                >
+                  <Text className="flex-1 text-[15px] font-semibold text-text" numberOfLines={1}>
+                    {nameOf(ex.exerciseId)}
+                  </Text>
+                  <ChevronDown size={18} color={colors["text-muted"]} />
+                </Pressable>
                 <View className="flex-row gap-2">
                   <NumberField label="Set" value={ex.sets} onChange={(v) => patchExercise(d.value, i, { sets: v })} />
                   <NumberField label="Rep từ" value={ex.repsMin} onChange={(v) => patchExercise(d.value, i, { repsMin: v })} />
@@ -128,7 +139,7 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
                 <Pressable
                   accessibilityRole="button"
                   className="self-start"
-                  hitSlop={8}
+                  hitSlop={12}
                   onPress={() =>
                     setDraft((prev) => ({
                       ...prev,
@@ -143,15 +154,11 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
           </View>
           <Pressable
             accessibilityRole="button"
-            onPress={() =>
-              setDraft((prev) => ({
-                ...prev,
-                [d.value]: [...prev[d.value], emptyExercise(active[0].id)],
-              }))
-            }
-            className="mt-3 h-10 items-center justify-center rounded-md border-[1.5px] border-dashed border-border"
+            onPress={() => setPicking({ day: d.value, index: null })}
+            className="mt-3 h-11 flex-row items-center justify-center gap-1.5 rounded-md border-[1.5px] border-dashed border-border"
           >
-            <Text className="text-sm font-semibold text-text-muted">+ Thêm bài</Text>
+            <Plus size={16} color={colors.text} />
+            <Text className="text-sm font-bold text-text">Thêm bài</Text>
           </Pressable>
         </View>
       ))}
@@ -205,54 +212,27 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
       >
         {createProgram.isPending ? "Đang tạo…" : "Tạo lịch"}
       </Button>
-    </View>
-  )
-}
 
-/** Web dùng <select>; trên điện thoại bấm ô để mở danh sách ngay dưới, chọn xong tự gập. */
-function ExercisePicker({
-  options,
-  value,
-  onChange,
-}: {
-  options: Exercise[]
-  value: string
-  onChange: (exerciseId: string) => void
-}) {
-  const [open, setOpen] = useState(false)
-  const current = options.find((o) => o.id === value)
-  return (
-    <View>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`Bài tập: ${current ? current.nameEn : "chưa chọn"}`}
-        accessibilityState={{ expanded: open }}
-        onPress={() => setOpen((o) => !o)}
-        className="flex-row items-center justify-between rounded-lg bg-surface-2 px-3 py-2.5"
-      >
-        <Text className="flex-1 text-sm text-text">{current ? current.nameEn : "Chọn bài"}</Text>
-        <ChevronDown size={16} color={colors["text-muted"]} />
-      </Pressable>
-      {open && (
-        <View className="mt-1 rounded-lg bg-bg px-3">
-          {options.map((o, i) => (
-            <Pressable
-              key={o.id}
-              accessibilityRole="button"
-              accessibilityState={{ selected: o.id === value }}
-              onPress={() => {
-                onChange(o.id)
-                setOpen(false)
-              }}
-              className={cn("py-2.5", i > 0 && "border-t border-border")}
-            >
-              <Text className={cn("text-sm", o.id === value ? "font-bold text-accent" : "text-text")}>
-                {o.nameEn}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      )}
+      <Sheet open={picking !== null} onClose={() => setPicking(null)} label="Chọn bài">
+        <SheetHeader title="Chọn bài" onCancel={() => setPicking(null)} />
+        <ExercisePicker
+          autoFocus
+          // Bỏ bài đã có trong ngày đó: set_logs khoá theo (buổi, bài, số set), hai dòng cùng bài đè set của nhau.
+          exercises={active.filter(
+            (e) => !picking || !draft[picking.day]?.some((x, i) => i !== picking.index && x.exerciseId === e.id),
+          )}
+          onPick={(exercise) => {
+            if (!picking) return
+            const { day, index } = picking
+            if (index === null) {
+              setDraft((prev) => ({ ...prev, [day]: [...prev[day], emptyExercise(exercise.id)] }))
+            } else {
+              patchExercise(day, index, { exerciseId: exercise.id })
+            }
+            setPicking(null)
+          }}
+        />
+      </Sheet>
     </View>
   )
 }
@@ -270,7 +250,7 @@ function NumberField({
 }) {
   return (
     <View className="flex-1 gap-1">
-      <Text className="text-[11px] text-text-muted">{label}</Text>
+      <Text className="text-xs font-medium text-text-muted">{label}</Text>
       <Input
         accessibilityLabel={label}
         keyboardType={decimal ? "decimal-pad" : "number-pad"}

@@ -1,11 +1,12 @@
 import { useState, type Dispatch, type ReactNode, type SetStateAction } from "react"
 import { Pressable, ScrollView, Text, View } from "react-native"
-import { X } from "lucide-react-native"
+import { Plus, X } from "lucide-react-native"
 import { diffDraft, nudge, toDraft, type DraftRow } from "@/features/schedule/utils/editDraft"
 import { shortDayTitle } from "@/features/schedule/utils/programDays"
 import type { ScheduledExerciseView, ScheduledWorkoutView } from "@/features/schedule/types"
 import { formatDayMonth } from "@/lib/format"
 import { Sheet, SheetHeader } from "~/components/ui/Sheet"
+import { ExercisePicker } from "~/features/schedule/components/ExercisePicker"
 import {
   useAddScheduledExercise,
   useEditProgramDay,
@@ -35,6 +36,7 @@ export function WorkoutEditSheet({
   onClose: () => void
 }) {
   const [saving, setSaving] = useState(false)
+  const [picking, setPicking] = useState(false)
   const update = useUpdateScheduledExercise()
   const add = useAddScheduledExercise()
   const remove = useRemoveScheduledExercise()
@@ -71,17 +73,27 @@ export function WorkoutEditSheet({
   }
 
   return (
-    <Sheet open={open} onClose={onClose} label={`Sửa buổi ${workout.label ?? ""}`} dismissible={!saving}>
+    <Sheet
+      open={open}
+      onClose={() => {
+        setPicking(false)
+        onClose()
+      }}
+      onBack={picking ? () => setPicking(false) : undefined}
+      label={`Sửa buổi ${workout.label ?? ""}`}
+      dismissible={!saving}
+    >
       {/* Thân khung dựng lại mỗi lần mở: nháp luôn bắt đầu từ lịch hiện tại. */}
       <EditBody
         title={`Sửa buổi ${workout.label ?? ""}`}
-        subtitle={`${formatDayMonth(workout.scheduledOn)} · chỉ đổi buổi này, các buổi khác giữ nguyên`}
-        addLabel="Thêm bài vào buổi này"
+        subtitle={`${formatDayMonth(workout.scheduledOn)} · chỉ buổi này`}
         exercises={workout.exercises}
         onSave={save}
         onClose={onClose}
         saving={saving}
         setSaving={setSaving}
+        picking={picking}
+        setPicking={setPicking}
       />
     </Sheet>
   )
@@ -105,6 +117,7 @@ export function ProgramDayEditSheet({
   onClose: () => void
 }) {
   const [saving, setSaving] = useState(false)
+  const [picking, setPicking] = useState(false)
   const edit = useEditProgramDay()
   const target = (r: DraftRow): ExerciseTarget => ({
     exerciseId: r.exerciseId,
@@ -124,17 +137,26 @@ export function ProgramDayEditSheet({
     })
   }
   return (
-    <Sheet open={open} onClose={onClose} label={`Sửa buổi ${label}`} dismissible={!saving}>
+    <Sheet
+      open={open}
+      onClose={() => {
+        setPicking(false)
+        onClose()
+      }}
+      onBack={picking ? () => setPicking(false) : undefined}
+      label={`Sửa buổi ${label}`}
+      dismissible={!saving}
+    >
       <EditBody
         title={`Sửa buổi ${label}`}
-        subtitle={`Áp cho ${remaining} buổi ${label} còn lại, từ ${shortDayTitle(workout.scheduledOn)}.\nBuổi đã tập giữ nguyên.`}
-        addLabel={`Thêm bài vào buổi ${label}`}
-        note='Muốn đổi một ngày thôi? Mở ngày đó ở Lịch rồi chọn "Sửa buổi này".'
+        subtitle={`Áp cho ${remaining} buổi ${label} còn lại, từ ${shortDayTitle(workout.scheduledOn)}.`}
         exercises={workout.exercises}
         onSave={save}
         onClose={onClose}
         saving={saving}
         setSaving={setSaving}
+        picking={picking}
+        setPicking={setPicking}
       />
     </Sheet>
   )
@@ -143,29 +165,29 @@ export function ProgramDayEditSheet({
 function EditBody({
   title,
   subtitle,
-  addLabel,
-  note,
   exercises: original,
   onSave,
   onClose,
   saving,
   setSaving,
+  picking,
+  setPicking,
 }: {
   title: string
   subtitle: string
-  addLabel: string
-  note?: string
   exercises: ScheduledExerciseView[]
   onSave: SaveFn
   onClose: () => void
   saving: boolean
   setSaving: (saving: boolean) => void
+  picking: boolean
+  setPicking: (picking: boolean) => void
 }) {
   const exercises = useExercises()
   const [rows, setRows] = useState<DraftRow[]>(() => toDraft(original))
   const [error, setError] = useState<string | null>(null)
-  // Web dùng <select>; trên điện thoại mở danh sách ngay trong khung, không chồng thêm khung thứ hai.
-  const [picking, setPicking] = useState(false)
+  // Trang con "Thêm bài" trong cùng khung, nháp giữ nguyên khi qua lại. State nằm ở khung ngoài để nút
+  // back Android (onRequestClose của Modal) quay về danh sách thay vì đóng cả khung, mất nháp.
 
   const changes = diffDraft(original, rows)
   const dirty = changes.updates.length + changes.adds.length + changes.removes.length > 0
@@ -189,6 +211,36 @@ function EditBody({
     } finally {
       setSaving(false)
     }
+  }
+
+  if (picking) {
+    return (
+      <>
+        <SheetHeader title="Thêm bài" cancelLabel="Quay lại" onCancel={() => setPicking(false)} />
+        <ExercisePicker
+          autoFocus
+          exercises={active}
+          onPick={(picked) => {
+            setRows((prev) => [
+              ...prev,
+              {
+                key: `new-${picked.id}-${prev.length}`,
+                id: null,
+                exerciseId: picked.id,
+                name: picked.nameEn,
+                sets: 3,
+                reps: 8,
+                repsMax: 12,
+                loadKg: null,
+                restSeconds: null,
+                removed: false,
+              },
+            ])
+            setPicking(false)
+          }}
+        />
+      </>
+    )
   }
 
   return (
@@ -215,7 +267,7 @@ function EditBody({
                     accessibilityRole="button"
                     accessibilityLabel={`Xoá ${r.name} khỏi buổi này`}
                     onPress={() => patch(r.key, (row) => ({ ...row, removed: true }))}
-                    className="size-8 items-center justify-center rounded-sm bg-surface"
+                    className="-m-1.5 size-11 items-center justify-center rounded-sm"
                   >
                     <X size={16} color={colors["text-muted"]} />
                   </Pressable>
@@ -247,47 +299,14 @@ function EditBody({
         {active.length > 0 && (
           <Pressable
             accessibilityRole="button"
-            accessibilityState={{ expanded: picking }}
-            onPress={() => setPicking((p) => !p)}
-            className="mt-3 h-12 items-center justify-center rounded-lg border-[1.5px] border-dashed border-border"
+            onPress={() => setPicking(true)}
+            className="mt-3 h-12 flex-row items-center justify-center gap-1.5 rounded-lg border-[1.5px] border-dashed border-border"
           >
-            <Text className="text-sm font-semibold text-text-muted">+ {addLabel}</Text>
+            <Plus size={18} color={colors.text} />
+            <Text className="text-[15px] font-bold text-text">Thêm bài</Text>
           </Pressable>
         )}
-        {picking && (
-          <View className="mt-2 rounded-md bg-bg px-3">
-            {active.map((option, i) => (
-              <Pressable
-                key={option.id}
-                accessibilityRole="button"
-                onPress={() => {
-                  setRows((prev) => [
-                    ...prev,
-                    {
-                      key: `new-${option.id}-${prev.length}`,
-                      id: null,
-                      exerciseId: option.id,
-                      name: option.nameEn,
-                      sets: 3,
-                      reps: 8,
-                      repsMax: 12,
-                      loadKg: null,
-                      restSeconds: null,
-                      removed: false,
-                    },
-                  ])
-                  setPicking(false)
-                }}
-                className={i > 0 ? "border-t border-border py-3" : "py-3"}
-              >
-                <Text className="text-sm text-text">{option.nameEn}</Text>
-              </Pressable>
-            ))}
-          </View>
-        )}
 
-        <Text className="mt-3 text-xs text-text-muted">Tạ mỗi lần bấm đổi 2,5 kg.</Text>
-        {note && <Text className="mt-1.5 text-xs text-text-muted">{note}</Text>}
         {error && <IconText className="mt-2">Lưu thất bại: {error}</IconText>}
       </ScrollView>
     </>
@@ -298,8 +317,8 @@ function Stepper({ label, value, onStep }: { label: string; value: string; onSte
   return (
     // Hai ô một hàng như lưới 2 cột của web.
     <View style={{ width: "48.5%" }}>
-      <Text className="mb-1 text-[11px] text-text-muted">{label}</Text>
-      <View className="h-10 flex-row items-center justify-between rounded-md border border-border bg-surface px-1">
+      <Text className="mb-1 text-xs font-medium text-text-muted">{label}</Text>
+      <View className="h-11 flex-row items-center justify-between rounded-md border border-border bg-surface px-0.5">
         <StepButton label={`Giảm ${label}`} onPress={() => onStep(-1)}>
           −
         </StepButton>
@@ -324,7 +343,7 @@ function StepButton({ label, onPress, children }: { label: string; onPress: () =
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
-      className="size-8 items-center justify-center rounded-sm bg-surface-2"
+      className="size-10 items-center justify-center rounded-sm bg-surface-2"
     >
       <Text className="text-lg font-bold text-text">{children}</Text>
     </Pressable>

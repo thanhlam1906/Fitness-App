@@ -15,7 +15,6 @@ import {
 } from "@/features/schedule/utils/weeks"
 import { cn } from "@/lib/cn"
 import { ApiError } from "~/api/client"
-import { Kicker } from "~/components/Kicker"
 import { Screen } from "~/components/Screen"
 import { Button } from "~/components/ui/Button"
 import { Skeleton } from "~/components/ui/Skeleton"
@@ -92,22 +91,23 @@ export default function ScheduleScreen() {
   return (
     <Screen>
       <View className="flex-row items-center justify-between gap-2">
-        <Kicker style={NUM}>
+        <Text className="text-[13px] text-text-muted" style={NUM}>
           {progress.weekIndex === null ? `${progress.totalWeeks} tuần` : `Tuần ${progress.weekIndex} / ${progress.totalWeeks}`}
-        </Kicker>
+        </Text>
         {progress.total > 0 && (
-          <Kicker style={NUM}>
+          <Text className="text-[13px] text-text-muted" style={NUM}>
             {progress.done}/{progress.total} buổi tuần này
-          </Kicker>
+          </Text>
         )}
       </View>
 
       <View className="mt-2.5 flex-row items-center gap-3">
-        <Text className="flex-1 text-[30px] font-extrabold tracking-[-0.6px] text-text">Lịch</Text>
+        <Text className="flex-1 text-[28px] font-extrabold leading-[35px] tracking-[-0.5px] text-text">Lịch</Text>
         {/* Sửa cả chương trình ở màn riêng (doc/design-chuong-trinh-v1.md); sửa một ngày ở thẻ ngày. */}
         <Pressable
           accessibilityRole="link"
           onPress={() => router.push("/my-program")}
+          hitSlop={4}
           className="h-9 flex-row items-center gap-1.5 rounded-full border border-border px-3.5 active:bg-surface"
         >
           <List size={14} color={colors.text} />
@@ -142,7 +142,7 @@ export default function ScheduleScreen() {
 
       <Legend />
 
-      <DayCard cell={cell} workouts={workouts} totalWeeks={progress.totalWeeks} />
+      <DayCard cell={cell} workouts={workouts} />
     </Screen>
   )
 }
@@ -177,7 +177,7 @@ function DayButton({ cell, selected, onSelect }: { cell: MonthCell; selected: bo
         accessibilityLabel={label}
         accessibilityState={{ selected }}
         onPress={onSelect}
-        className={cn("h-[46px] items-center justify-center rounded-xl", selected && "bg-surface-2")}
+        className={cn("h-[46px] items-center justify-center rounded-md", selected && "bg-surface-2")}
       >
         {/* Viền 1.5px thay cho shadow inset của web (RN không có). */}
         <View
@@ -226,6 +226,8 @@ function MonthNav({
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
+      // Nút 32px trông gọn, vùng bấm nới ra 44px.
+      hitSlop={6}
       className={cn("size-8 items-center justify-center rounded-md bg-surface", disabled && "opacity-30")}
     >
       {children}
@@ -266,7 +268,7 @@ function MonthSkeleton() {
             </View>
           ))}
         </View>
-        <Skeleton className="mt-4 h-40 rounded-2xl" />
+        <Skeleton className="mt-4 h-40 rounded-lg" />
       </View>
     </Screen>
   )

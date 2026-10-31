@@ -38,7 +38,7 @@ export function WrongFeedbackButton({ source, hint }: { source: FeedbackSource; 
         placeholder="Sai ở chỗ nào? (tuỳ chọn)"
         value={note}
         onChangeText={setNote}
-        className="h-9 text-xs"
+        className="h-9"
       />
       <View className="flex-row items-center gap-3">
         <Pressable

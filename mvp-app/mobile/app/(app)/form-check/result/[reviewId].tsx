@@ -19,7 +19,6 @@ import { cn } from "@/lib/cn"
 import { formatDayMonth } from "@/lib/format"
 import { BackLink } from "~/components/BackLink"
 import { Screen } from "~/components/Screen"
-import { Stepper } from "~/components/Stepper"
 import { IconCircle, StatusBlock, type Tone } from "~/components/StatusViews"
 import { Button } from "~/components/ui/Button"
 import { Card } from "~/components/ui/Card"
@@ -54,6 +53,7 @@ export default function ReviewResultScreen() {
 
   const data = review.data!
   const primary = data.checks.find((c) => c.isPrimary)
+  const others = data.checks.filter((c) => !c.isPrimary)
   const unknownExercise = data.status === "REJECTED" && data.rejectReason === "UNKNOWN_EXERCISE"
   const ok = isOverallOk(data.checks)
   const again: Href = data.exerciseId ? `/form-check/${data.exerciseId}` : "/form-check"
@@ -61,21 +61,12 @@ export default function ReviewResultScreen() {
   return (
     <Screen>
       <BackLink label="Chấm form" fallback="/form-check" />
-      <View className="mt-2.5">
-        <Stepper label="Kiểm tra form" steps={3} current={2} />
-      </View>
-      <Text className="mt-3 text-[26px] font-extrabold tracking-[-0.5px] text-text">Kết quả chấm form</Text>
-      <Text className="mt-1 text-xs text-text-muted" style={NUM}>
+      <Text className="mt-3 text-[28px] font-extrabold leading-[35px] tracking-[-0.5px] text-text">
+        {data.exerciseName ?? "Kết quả chấm form"}
+      </Text>
+      <Text className="mt-1 text-[13px] text-text-muted" style={NUM}>
         {subtitle(data)}
       </Text>
-
-      {data.exerciseName && (
-        <View className="mt-4 rounded-md bg-surface px-3.5 py-3">
-          <Text className="text-sm text-text">
-            Bạn đã tập: <Text className="font-bold">{data.exerciseName}</Text>
-          </Text>
-        </View>
-      )}
 
       {(data.status === "PENDING" || data.status === "PROCESSING") && (
         <ResultCard
@@ -108,63 +99,60 @@ export default function ReviewResultScreen() {
 
       {data.status === "DONE" && (
         <>
-          <View className={cn("mt-5 self-start rounded-full px-3 py-1.5", ok ? "bg-success-tint" : "bg-warn-tint")}>
+          <View className={cn("mt-4 self-start rounded-full px-3 py-1.5", ok ? "bg-success-tint" : "bg-warn-tint")}>
             <Text className={cn("text-sm font-bold", ok ? "text-success" : "text-warn")}>
-              {ok ? "Kỹ thuật ổn ✓" : "Cần cải thiện"}
+              {ok ? "Kỹ thuật ổn" : "Cần cải thiện"}
             </Text>
           </View>
 
           {primary ? (
-            <View className="mt-4 rounded-xl border border-border bg-surface-2 p-4">
-              <Text className="text-[11px] font-bold uppercase tracking-[1.1px] text-danger">
-                Lỗi quan trọng nhất
-              </Text>
-              <Text className="mt-2 text-[19px] font-bold leading-6 text-text">{checkLabel(primary)}</Text>
-              <Text className="mt-2.5 text-sm leading-[22px] text-text">{primary.cueTextVi}</Text>
-              {checkDetails(primary).map((line) => (
-                <Text key={line} className="mt-1 text-xs text-text-muted" style={NUM}>
-                  {line}
-                </Text>
-              ))}
-              <View className="mt-3.5">
-                <WrongFeedbackButton source={{ reviewResultId: primary.id }} hint="gửi cho HLV xem lại" />
+            <>
+              <Text className="mt-[22px] text-[17px] font-bold text-text">Sửa trước</Text>
+              <View className="mt-2.5 rounded-lg bg-surface p-4">
+                <Text className="text-[19px] font-bold leading-6 text-text">{checkLabel(primary)}</Text>
+                <Text className="mt-2 text-sm leading-[22px] text-text">{primary.cueTextVi}</Text>
+                {checkDetails(primary).map((line) => (
+                  <Text key={line} className="mt-1 text-xs text-text-muted" style={NUM}>
+                    {line}
+                  </Text>
+                ))}
+                <View className="mt-3.5">
+                  <WrongFeedbackButton source={{ reviewResultId: primary.id }} hint="gửi cho HLV xem lại" />
+                </View>
               </View>
-            </View>
+            </>
           ) : (
-            <ResultCard
-              icon={CircleCheckBig}
-              tone="success"
-              title="Không có lỗi nào"
-              detail="Giữ nguyên như vậy."
-              className="mt-4"
-            />
+            <ResultCard icon={CircleCheckBig} tone="success" title="Không có lỗi nào" className="mt-4" />
           )}
 
-          <View className="mt-4 gap-2">
-            {data.checks
-              .filter((check) => !check.isPrimary)
-              .map((check) => (
-                <View key={check.id} className="rounded-md bg-surface p-3.5">
-                  <View className="flex-row items-center justify-between gap-2.5">
-                    <Text className="flex-1 text-[15px] font-semibold text-text">{checkLabel(check)}</Text>
-                    <VerdictChip verdict={check.verdict} />
+          {others.length > 0 && (
+            <>
+              {primary && <Text className="mt-[22px] text-[17px] font-bold text-text">Các mục khác</Text>}
+              <View className="mt-2.5 gap-2">
+                {others.map((check) => (
+                  <View key={check.id} className="rounded-md bg-surface p-3.5">
+                    <View className="flex-row items-center justify-between gap-2.5">
+                      <Text className="flex-1 text-[15px] font-semibold text-text">{checkLabel(check)}</Text>
+                      <VerdictChip verdict={check.verdict} />
+                    </View>
+                    {check.cueTextVi && <Text className="mt-1 text-xs leading-4 text-text-muted">{check.cueTextVi}</Text>}
+                    {checkDetails(check).map((line) => (
+                      <Text key={line} className="mt-1 text-xs text-text-muted" style={NUM}>
+                        {line}
+                      </Text>
+                    ))}
+                    <View className="mt-2">
+                      <WrongFeedbackButton source={{ reviewResultId: check.id }} />
+                    </View>
                   </View>
-                  {check.cueTextVi && <Text className="mt-1 text-xs leading-4 text-text-muted">{check.cueTextVi}</Text>}
-                  {checkDetails(check).map((line) => (
-                    <Text key={line} className="mt-1 text-xs text-text-muted" style={NUM}>
-                      {line}
-                    </Text>
-                  ))}
-                  <View className="mt-2">
-                    <WrongFeedbackButton source={{ reviewResultId: check.id }} />
-                  </View>
-                </View>
-              ))}
-          </View>
+                ))}
+              </View>
+            </>
+          )}
 
-          <Text className="mt-4 text-[11px] leading-4 text-text-muted">
-            Chấm theo quy chuẩn huấn luyện viên đặt, dựa trên số đo góc khớp từ camera, có thể sai. Không phải đánh giá y
-            tế. Clip đã bị xoá khỏi máy chủ, chỉ giữ số đo.
+          {/* Không nhắc "clip đã xoá" như web: danh sách có cả lần chấm bằng camera trên web, không có clip nào. */}
+          <Text className="mt-4 text-xs leading-5 text-text-muted">
+            Chấm theo số đo góc khớp và quy chuẩn HLV đặt, có thể sai, không phải đánh giá y tế.
           </Text>
         </>
       )}
@@ -187,10 +175,6 @@ function subtitle(review: Review): string {
   const parts = [formatDayMonth(review.createdAt)]
   const clips = review.viewpoints.length
   if (clips > 0) parts.push(`${clips} góc quay`)
-  if (review.finishedAt) {
-    const seconds = Math.round((new Date(review.finishedAt).getTime() - new Date(review.createdAt).getTime()) / 1000)
-    if (seconds >= 0) parts.push(`chấm xong sau ${seconds} giây`)
-  }
   return parts.join(" · ")
 }
 
@@ -205,7 +189,7 @@ function RejectedCard({ review, onRetry }: { review: Review; onRetry: () => void
   const reason = REASONS[review.rejectReason ?? ""] ?? { icon: TriangleAlert, title: "Dữ liệu gửi lên chưa dùng được" }
   return (
     <ResultCard icon={reason.icon} tone="warn" title={reason.title} detail={review.error}>
-      <Button onPress={onRetry}>Xem lại hướng dẫn và thử lại</Button>
+      <Button onPress={onRetry}>Thử lại</Button>
     </ResultCard>
   )
 }
@@ -236,7 +220,7 @@ function ResultCard({
         </IconCircle>
         <View className="flex-1">
           <Text className="text-[15px] font-bold text-text">{title}</Text>
-          {!!detail && <Text className="mt-0.5 text-[12.5px] text-text-muted">{detail}</Text>}
+          {!!detail && <Text className="mt-0.5 text-[13px] text-text-muted">{detail}</Text>}
         </View>
       </View>
       {children}
@@ -273,22 +257,17 @@ function ScanBeam() {
   )
 }
 
-/** Cùng khung với kết quả đã chấm: nút quay lại, stepper, tiêu đề, tên bài, nhãn kết luận, thẻ lỗi chính, các mục. */
+/** Cùng khung với kết quả đã chấm: nút quay lại, tiêu đề, dòng phụ, nhãn kết luận, thẻ lỗi chính, các mục. */
 function ResultSkeleton() {
   return (
     <Screen>
       <View accessible accessibilityLabel="Đang tải">
-        <Skeleton className="h-4 w-20" />
-        <View className="mt-2.5 flex-row justify-between">
-          <Skeleton className="h-3 w-24" />
-          <Skeleton className="h-3 w-16" />
-        </View>
-        <Skeleton className="mt-2.5 h-1.5 w-full" />
+        <Skeleton className="h-5 w-24" />
         <Skeleton className="mt-3 h-8 w-64" />
-        <Skeleton className="mt-1.5 h-3 w-48" />
-        <Skeleton className="mt-4 h-11" />
-        <Skeleton className="mt-5 h-8 w-32 rounded-full" />
-        <Skeleton className="mt-4 h-40 rounded-xl" />
+        <Skeleton className="mt-1.5 h-3.5 w-36" />
+        <Skeleton className="mt-4 h-8 w-32 rounded-full" />
+        <Skeleton className="mt-[22px] h-5 w-24" />
+        <Skeleton className="mt-2.5 h-40 rounded-lg" />
         <View className="mt-4 gap-2">
           <Skeleton className="h-24" />
           <Skeleton className="h-24" />

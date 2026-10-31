@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Pressable, Text, View } from "react-native"
+import { ChevronLeft } from "lucide-react-native"
 import { Link, Redirect, useRouter } from "expo-router"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -13,6 +14,7 @@ import { ApiError } from "~/api/client"
 import { useAuth } from "~/features/auth/components/AuthContext"
 import { AuthField, AuthLayout, OrDivider, SocialButtons } from "~/features/auth/components/AuthLayout"
 import { Button } from "~/components/ui/Button"
+import { colors } from "~/theme"
 
 // Chỉ kiểm bắt buộc: z.email() chặt hơn @Email của backend, tài khoản cũ có thể bị chặn oan.
 const loginSchema = z.object({
@@ -65,7 +67,7 @@ export default function LoginScreen() {
   }
 
   return (
-    <AuthLayout title="Đăng nhập" subtitle="Tiếp tục lịch tập của bạn.">
+    <AuthLayout title="Đăng nhập">
       <SocialButtons />
       <OrDivider label="hoặc" />
       <View className="gap-3.5">
@@ -88,7 +90,6 @@ export default function LoginScreen() {
           password
           autoComplete="current-password"
           textContentType="password"
-          placeholder="Mật khẩu của bạn"
           returnKeyType="go"
           onSubmitEditing={handleSubmit(onSubmit)}
         />
@@ -142,7 +143,7 @@ function NewPasswordStep({
   }
 
   return (
-    <AuthLayout title="Đặt mật khẩu mới" subtitle="Tài khoản đang dùng mật khẩu tạm. Đặt mật khẩu của riêng bạn để tiếp tục.">
+    <AuthLayout title="Đặt mật khẩu mới" subtitle="Bạn đang dùng mật khẩu tạm. Đặt mật khẩu mới để tiếp tục.">
       <View className="gap-3.5">
         <AuthField
           control={control}
@@ -173,8 +174,13 @@ function NewPasswordStep({
           {isSubmitting ? "Đang lưu…" : "Lưu và vào app"}
         </Button>
       </View>
-      <Pressable accessibilityRole="button" onPress={onBack} className="mt-4">
-        <Text className="text-center text-[13px] text-text-muted">← Quay lại đăng nhập</Text>
+      <Pressable
+        accessibilityRole="button"
+        onPress={onBack}
+        className="mt-2 min-h-11 flex-row items-center justify-center gap-0.5"
+      >
+        <ChevronLeft size={16} color={colors["text-muted"]} />
+        <Text className="text-[13px] text-text-muted">Quay lại đăng nhập</Text>
       </Pressable>
     </AuthLayout>
   )

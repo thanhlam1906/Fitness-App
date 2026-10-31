@@ -1,8 +1,15 @@
 import type { ReactNode } from "react"
-import { Modal, Pressable, Text, View } from "react-native"
-import Animated, { SlideInDown } from "react-native-reanimated"
+import { KeyboardAvoidingView, Modal, Platform, Pressable, Text, View } from "react-native"
+import Animated, { Keyframe } from "react-native-reanimated"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { cn } from "@/lib/cn"
+
+// Không dùng SlideInDown: nó chạy trên originY tính theo cửa sổ, trong Modal statusBarTranslucent của Android
+// khung dừng lệch lên đúng chiều cao thanh trạng thái, chừa dải hở ở đáy. translateY không phụ thuộc vị trí đó.
+const truotLen = new Keyframe({
+  0: { transform: [{ translateY: 800 }] },
+  100: { transform: [{ translateY: 0 }] },
+}).duration(200)
 
 /**
  * Khung trượt từ đáy lên — bản mobile của Sheet web (<dialog>). Nền tối hiện dần, khung trượt lên;
@@ -15,6 +22,7 @@ export function Sheet({
   label,
   className,
   dismissible = true,
+  onBack,
   children,
 }: {
   open: boolean
@@ -22,6 +30,8 @@ export function Sheet({
   label: string
   className?: string
   dismissible?: boolean
+  /** Đang ở trang con trong khung: nút back Android quay về trang trước thay vì đóng khung. */
+  onBack?: () => void
   children: ReactNode
 }) {
   const insets = useSafeAreaInsets()
@@ -30,17 +40,19 @@ export function Sheet({
       visible={open}
       transparent
       animationType="fade"
-      onRequestClose={() => dismissible && onClose()}
+      onRequestClose={() => (onBack ? onBack() : dismissible && onClose())}
       statusBarTranslucent
     >
-      <View className="flex-1 justify-end">
+      {/* Modal là cây riêng, KeyboardAvoidingView của Screen không tới đây: ô tìm bài tự focus trong khung
+          thì bàn phím che mất danh sách kết quả. */}
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="flex-1 justify-end">
         <Pressable
           accessibilityLabel="Đóng"
           className="absolute inset-0 bg-bg/70"
           onPress={() => dismissible && onClose()}
         />
         <Animated.View
-          entering={SlideInDown.duration(200)}
+          entering={truotLen}
           accessibilityViewIsModal
           aria-label={label}
           className={cn("max-h-[88%] rounded-t-[20px] border-t border-border bg-surface pt-2.5", className)}
@@ -49,7 +61,7 @@ export function Sheet({
           <View className="mx-auto mb-1.5 h-1 w-10 rounded-full bg-border" />
           {open && children}
         </Animated.View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   )
 }
@@ -57,12 +69,15 @@ export function Sheet({
 /** Hàng đầu khung kiểu iOS: "Huỷ" · tiêu đề · nút xác nhận (người dùng chốt giữ kiểu này, 09-26). */
 export function SheetHeader({
   title,
+  cancelLabel,
   confirmLabel,
   confirmDisabled,
   onCancel,
   onConfirm,
 }: {
   title: string
+  /** Mặc định "Huỷ" khi có nút xác nhận, "Đóng" khi không. Trang con trong khung ghi "Quay lại". */
+  cancelLabel?: string
   confirmLabel?: string
   confirmDisabled?: boolean
   onCancel: () => void
@@ -71,7 +86,7 @@ export function SheetHeader({
   return (
     <View className="flex-row items-center justify-between px-3 pb-2">
       <Pressable accessibilityRole="button" onPress={onCancel} className="p-2">
-        <Text className="font-semibold text-text-muted">{onConfirm ? "Huỷ" : "Đóng"}</Text>
+        <Text className="font-semibold text-text-muted">{cancelLabel ?? (onConfirm ? "Huỷ" : "Đóng")}</Text>
       </Pressable>
       <Text className="flex-1 text-center font-bold text-text" numberOfLines={1}>
         {title}

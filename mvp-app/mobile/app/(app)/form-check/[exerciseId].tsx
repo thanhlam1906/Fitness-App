@@ -3,7 +3,7 @@ import { Image, Pressable, Text, View } from "react-native"
 import { useLocalSearchParams, useRouter } from "expo-router"
 import * as ImagePicker from "expo-image-picker"
 import { Ban, CloudOff, Film, TriangleAlert, X } from "lucide-react-native"
-import { parseFilmingGuide, VIEWPOINT_OPTIONS } from "@/features/review/types"
+import { parseFilmingGuide } from "@/features/review/types"
 import { clipSizeProblem, MAX_CLIP_MB, MAX_TOTAL_MB } from "@/features/review/utils/clipLimits"
 import { angleNote, missingViews } from "@/features/review/utils/reviewView"
 import { VIEW_NAME, type ViewCode } from "@/lib/formMeasures"
@@ -11,7 +11,6 @@ import { cn } from "@/lib/cn"
 import { ApiError } from "~/api/client"
 import { BackLink } from "~/components/BackLink"
 import { Screen } from "~/components/Screen"
-import { Stepper } from "~/components/Stepper"
 import { IconText, Notice, StatusBlock } from "~/components/StatusViews"
 import { Button } from "~/components/ui/Button"
 import { Checkbox } from "~/components/ui/Checkbox"
@@ -22,6 +21,7 @@ import { assetUrl } from "~/lib/config"
 import { colors } from "~/theme"
 
 const MAX_CLIPS = 3
+const VIEW_CODES = Object.keys(VIEW_NAME) as ViewCode[]
 const MAX_SECONDS = 30
 // Video chọn từ thư viện: luôn chuyển sang H.264 1080p, vì video iPhone mặc định HEVC/4K vừa nặng vừa
 // có thể vượt MAX_CLIP_MB; Passthrough (mặc định) chép nguyên file gốc. iOS bỏ qua preset này khi quay mới,
@@ -40,21 +40,18 @@ const DEFAULT_TIPS = [
 ]
 
 /** Cách đặt máy cho từng góc, ảnh minh hoạ lấy từ web/public/form-check. */
-const ANGLE_GUIDE: Record<ViewCode, { title: string; image: string; alt: string; steps: string[] }> = {
+const ANGLE_GUIDE: Record<ViewCode, { image: string; alt: string; steps: string[] }> = {
   SAGITTAL: {
-    title: "Góc ngang",
     image: "/form-check/goc-ngang.jpg",
     alt: "Điện thoại đặt bên hông, máy thấy người tập nhìn nghiêng.",
     steps: ["Đặt máy bên hông, vuông góc với hướng mặt bạn.", "Ngang tầm hông, thấy cả người từ đầu tới bàn chân."],
   },
   FRONTAL: {
-    title: "Góc chính diện",
     image: "/form-check/goc-chinh-dien.jpg",
     alt: "Điện thoại đặt thẳng trước mặt, người tập quay mặt vào máy.",
     steps: ["Đặt máy thẳng trước mặt bạn.", "Ngang tầm hông, thấy rõ hai gối và hai bàn chân."],
   },
   DIAGONAL: {
-    title: "Góc chéo 45°",
     image: "/form-check/goc-cheo.jpg",
     alt: "Điện thoại đặt chéo 45 độ phía trước, máy thấy người tập xoay ba phần tư.",
     steps: ["Đặt máy chéo 45° phía trước, giữa thẳng mặt và bên hông.", "Ngang tầm hông, thấy cả người từ đầu tới bàn chân."],
@@ -65,11 +62,11 @@ type PickedClip = Clip & { seconds: number | null; bytes: number | null }
 
 /**
  * Màn 8 concept-frontend-v1.md — bản mobile của FilmingGuidePage web: hướng dẫn quay từng góc và gửi
- * clip. Khác web: không có màn camera nhận dạng trực tiếp (cần thư viện native ngoài Expo Go, người
- * dùng chốt 10-09), nên đây là lối chấm duy nhất của mobile; "Quay clip" mở camera quay từng góc một,
+ * video. Khác web: không có màn camera nhận dạng trực tiếp (cần thư viện native ngoài Expo Go, người
+ * dùng chốt 10-09), nên đây là lối chấm duy nhất của mobile; "Quay video" mở camera quay từng góc một,
  * "Chọn video có sẵn" lấy từ thư viện ảnh.
  *
- * "Opt-in gửi clip nằm ở đây, không ở nơi khác": người dùng đọc điều gì sẽ xảy ra với clip NGAY CẠNH
+ * "Opt-in gửi clip nằm ở đây, không ở nơi khác": người dùng đọc điều gì sẽ xảy ra với video NGAY CẠNH
  * chỗ họ đồng ý, không phải trong một trang điều khoản.
  */
 export default function FilmingGuideScreen() {
@@ -105,7 +102,7 @@ export default function FilmingGuideScreen() {
   const sizeProblem = clipSizeProblem(clips.map((c) => c.bytes))
   const quotaExceeded = submit.error instanceof ApiError && submit.error.status === 429
 
-  /** Thêm clip vào cuối, ô góc điền sẵn theo thứ tự thẻ hướng dẫn: quay đúng thứ tự thì không phải chỉnh. */
+  /** Thêm video vào cuối, ô góc điền sẵn theo thứ tự thẻ hướng dẫn: quay đúng thứ tự thì không phải chỉnh. */
   function addClips(assets: ImagePicker.ImagePickerAsset[]) {
     const room = MAX_CLIPS - clips.length
     const added = assets.slice(0, room).map((a, i) => ({
@@ -116,10 +113,10 @@ export default function FilmingGuideScreen() {
       bytes: a.fileSize ?? null,
     }))
     setClips((prev) => [...prev, ...added])
-    // Góc còn thiếu trước: bỏ một clip quay hỏng rồi quay lại thì clip mới nhận đúng góc vừa trống.
+    // Góc còn thiếu trước: bỏ một video quay hỏng rồi quay lại thì video mới nhận đúng góc vừa trống.
     setViewpoints((prev) => {
       const free = missingViews(views, prev)
-      return [...prev, ...added.map((_, i) => free[i] ?? VIEWPOINT_OPTIONS[0].value)]
+      return [...prev, ...added.map((_, i) => free[i] ?? VIEW_CODES[0])]
     })
   }
 
@@ -165,11 +162,12 @@ export default function FilmingGuideScreen() {
   return (
     <Screen>
       <BackLink label="Quay lại" fallback="/form-check" />
-      <View className="mt-2.5">
-        <Stepper label="Kiểm tra form" steps={3} current={1} />
-      </View>
-      <Text className="mt-3 text-[26px] font-extrabold tracking-[-0.5px] text-text">Quay một set {name}</Text>
-      <Text className="mt-1.5 text-[13px] text-text-muted">Quay mỗi góc một clip.</Text>
+      <Text className="mt-3 text-[28px] font-extrabold leading-[35px] tracking-[-0.5px] text-text">{name}</Text>
+      {views.length > 0 && (
+        <Text className="mt-1.5 text-[13px] text-text-muted" style={{ fontVariant: ["tabular-nums"] }}>
+          Cần {views.length} video, mỗi góc một video.
+        </Text>
+      )}
 
       {/* Mở từ link cũ tới bài chưa có khớp cần kiểm: gửi lên cũng không chấm được. */}
       {views.length === 0 && (
@@ -184,7 +182,7 @@ export default function FilmingGuideScreen() {
           const angle = ANGLE_GUIDE[view]
           const note = angleNote(guide, view)
           return (
-            <Section key={view} title={angle.title} meta={`clip ${i + 1}`} open={i === 0}>
+            <Section key={view} title={`Góc ${VIEW_NAME[view].toLowerCase()}`} meta={`video ${i + 1}`} open={i === 0}>
               <Image
                 source={{ uri: assetUrl(angle.image) }}
                 accessibilityLabel={angle.alt}
@@ -207,54 +205,52 @@ export default function FilmingGuideScreen() {
         })}
       </View>
 
-      <View className="mt-3 gap-1.5">
+      <View className="mt-3 gap-1.5 rounded-lg bg-surface px-3.5 py-3">
         {tips.map((tip) => (
-          <Text key={tip} className="rounded-md bg-surface px-3.5 py-2.5 text-[13px] leading-[18px] text-text-muted">
-            {tip}
-          </Text>
+          <View key={tip} className="flex-row gap-2">
+            <Text className="text-[13px] text-accent">•</Text>
+            <Text className="flex-1 text-[13px] leading-[18px] text-text-muted">{tip}</Text>
+          </View>
         ))}
       </View>
 
-      <View className="mt-4 rounded-xl border border-accent bg-surface-2 p-3.5">
+      <View className="mt-3 rounded-lg bg-surface p-3.5">
         <Checkbox checked={optIn} onChange={setOptIn}>
           <Text className="flex-1 text-[13px] leading-5 text-text">
-            Tôi đồng ý gửi clip này để hệ thống chấm form.{" "}
-            <Text className="text-text-muted">
-              Clip bị xoá ngay sau khi chấm xong, kể cả khi chấm thất bại. Không ai xem clip — toàn bộ do máy phân tích.
-            </Text>
+            Đồng ý gửi video để máy chấm. Video bị xoá ngay sau khi chấm.
           </Text>
         </Checkbox>
       </View>
 
       {clips.length > 0 && (
         <View className="mt-4 gap-2.5">
-          {/* Khác web: không có khung hình đầu clip, vì lấy ảnh từ video cần thêm thư viện. Tên góc
+          {/* Khác web: không có khung hình đầu video, vì lấy ảnh từ video cần thêm thư viện. Tên góc
               điền sẵn theo thứ tự quay/chọn, người dùng đổi ở ô Góc quay nếu lệch. */}
           {clips.map((clip, i) => (
             <View key={clip.uri} className="rounded-md bg-surface p-3">
               <View className="flex-row items-center gap-2.5">
                 <Film size={18} color={colors["text-muted"]} />
                 <Text className="flex-1 text-sm text-text" numberOfLines={1}>
-                  Clip {i + 1}
+                  Video {i + 1}
                   {clip.seconds !== null && <Text className="text-text-muted"> · {clip.seconds} giây</Text>}
                 </Text>
-                <Pressable accessibilityRole="button" accessibilityLabel={`Bỏ clip ${i + 1}`} hitSlop={8} onPress={() => removeClip(i)}>
+                <Pressable accessibilityRole="button" accessibilityLabel={`Bỏ video ${i + 1}`} hitSlop={12} onPress={() => removeClip(i)}>
                   <X size={18} color={colors["text-muted"]} />
                 </Pressable>
               </View>
               <Text className="mb-1.5 mt-2.5 text-xs text-text-muted">Góc quay</Text>
               <View accessibilityRole="radiogroup" className="flex-row gap-1.5">
-                {VIEWPOINT_OPTIONS.map((v) => {
-                  const on = viewpoints[i] === v.value
+                {VIEW_CODES.map((code) => {
+                  const on = viewpoints[i] === code
                   return (
                     <Pressable
-                      key={v.value}
+                      key={code}
                       accessibilityRole="radio"
                       accessibilityState={{ selected: on }}
-                      onPress={() => setViewpoints((prev) => prev.map((p, j) => (j === i ? v.value : p)))}
-                      className={cn("flex-1 items-center rounded-md py-2", on ? "border border-accent bg-accent-tint" : "bg-surface-2")}
+                      onPress={() => setViewpoints((prev) => prev.map((p, j) => (j === i ? code : p)))}
+                      className={cn("h-11 flex-1 items-center justify-center rounded-md", on ? "border border-accent bg-accent-tint" : "bg-surface-2")}
                     >
-                      <Text className={cn("text-xs", on ? "font-semibold text-accent" : "text-text-muted")}>{v.label}</Text>
+                      <Text className={cn("text-[13px]", on ? "font-semibold text-accent" : "text-text-muted")}>{VIEW_NAME[code]}</Text>
                     </Pressable>
                   )
                 })}
@@ -266,23 +262,22 @@ export default function FilmingGuideScreen() {
 
       {missing.length > 0 && (
         <Notice icon={TriangleAlert} tone="warn" alert className="mt-3">
-          Bài này cần đủ góc {views.map((v) => VIEW_NAME[v]).join(", ")}. Còn thiếu clip góc{" "}
-          {missing.map((v) => VIEW_NAME[v]).join(", ")}: thêm clip hoặc đổi ô Góc quay.
+          Thiếu video góc {missing.map((v) => VIEW_NAME[v].toLowerCase()).join(", ")}. Thêm video hoặc đổi góc.
         </Notice>
       )}
       {tooLong && (
         <Notice icon={TriangleAlert} tone="warn" alert className="mt-3">
-          Mỗi clip tối đa {MAX_SECONDS} giây. Bỏ clip dài rồi quay lại ngắn hơn.
+          Có video quá {MAX_SECONDS} giây. Bỏ video đó rồi quay ngắn hơn.
         </Notice>
       )}
       {sizeProblem === "clip" && (
         <Notice icon={TriangleAlert} tone="warn" alert className="mt-3">
-          Clip quá nặng (tối đa {MAX_CLIP_MB} MB). Bỏ clip đó rồi quay lại ngắn hơn.
+          Có video quá {MAX_CLIP_MB} MB. Bỏ video đó rồi quay ngắn hơn.
         </Notice>
       )}
       {sizeProblem === "total" && (
         <Notice icon={TriangleAlert} tone="warn" alert className="mt-3">
-          Các clip cộng lại quá nặng (tối đa {MAX_TOTAL_MB} MB mỗi lần gửi). Bỏ bớt clip hoặc quay lại ngắn hơn.
+          Tổng các video quá {MAX_TOTAL_MB} MB. Bỏ bớt video hoặc quay ngắn hơn.
         </Notice>
       )}
       {pickError && <IconText className="mt-3">{pickError}</IconText>}
@@ -297,18 +292,14 @@ export default function FilmingGuideScreen() {
         {clips.length < MAX_CLIPS && (
           <View className="flex-row gap-2.5">
             <Button variant={clips.length === 0 ? "primary" : "secondary"} className="flex-1" onPress={record}>
-              Quay clip
+              Quay video
             </Button>
             <Button variant="secondary" className="flex-1" onPress={pickFromLibrary}>
               Chọn video có sẵn
             </Button>
           </View>
         )}
-        {clips.length === 0 ? (
-          <Text className="mt-2 text-[11px] text-text-muted">
-            Cần {views.length} clip, mỗi góc một clip, mỗi clip ≤ {MAX_SECONDS} giây.
-          </Text>
-        ) : (
+        {clips.length > 0 && (
           <Button
             className="mt-2.5 w-full"
             disabled={!optIn || views.length === 0 || missing.length > 0 || tooLong || sizeProblem !== null || submit.isPending}
@@ -319,7 +310,7 @@ export default function FilmingGuideScreen() {
               )
             }
           >
-            {submit.isPending ? "Đang gửi…" : "Gửi clip để chấm"}
+            {submit.isPending ? "Đang gửi…" : "Gửi chấm"}
           </Button>
         )}
       </View>
@@ -327,24 +318,19 @@ export default function FilmingGuideScreen() {
   )
 }
 
-/** Cùng khung với màn: nút quay lại, stepper, tiêu đề, thẻ góc đầu mở sẵn có ảnh, thẻ gập, ô đồng ý, nút. */
+/** Cùng khung với màn: nút quay lại, tiêu đề, thẻ góc đầu mở sẵn có ảnh, thẻ gập, câu dặn, ô đồng ý, nút. */
 function GuideSkeleton() {
   return (
     <Screen>
       <View accessible accessibilityLabel="Đang tải" className="flex-1">
-        <Skeleton className="h-4 w-20" />
-        <View className="mt-2.5 flex-row justify-between">
-          <Skeleton className="h-3 w-24" />
-          <Skeleton className="h-3 w-16" />
-        </View>
-        <Skeleton className="mt-2.5 h-1.5 w-full" />
+        <Skeleton className="h-5 w-24" />
         <Skeleton className="mt-3 h-8 w-64" />
-        <Skeleton className="mt-1.5 h-4 w-36" />
+        <Skeleton className="mt-1.5 h-4 w-48" />
         <Skeleton className="mt-4 h-64 rounded-lg" />
         <Skeleton className="mt-2.5 h-14 rounded-lg" />
-        <Skeleton className="mt-3 h-11" />
-        <Skeleton className="mt-4 h-24 rounded-xl" />
-        <Skeleton className="mt-auto h-[52px]" />
+        <Skeleton className="mt-3 h-24 rounded-lg" />
+        <Skeleton className="mt-3 h-14 rounded-lg" />
+        <Skeleton className="mt-auto h-[50px]" />
       </View>
     </Screen>
   )

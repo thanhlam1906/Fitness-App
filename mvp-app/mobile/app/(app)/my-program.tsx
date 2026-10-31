@@ -9,7 +9,7 @@ import { cn } from "@/lib/cn"
 import { ApiError } from "~/api/client"
 import { BackLink } from "~/components/BackLink"
 import { ExerciseImage } from "~/components/ExerciseImage"
-import { Kicker } from "~/components/Kicker"
+import { SectionTitle as SectionLabel } from "~/components/SectionTitle"
 import { Screen } from "~/components/Screen"
 import { Button } from "~/components/ui/Button"
 import { Skeleton } from "~/components/ui/Skeleton"
@@ -24,8 +24,8 @@ import { colors } from "~/theme"
 const NUM = { fontVariant: ["tabular-nums" as const] }
 
 const OPTIONS: { Icon: typeof LayoutTemplate; title: string; desc: string; to: Href }[] = [
-  { Icon: LayoutTemplate, title: "Đổi chương trình mẫu", desc: "Chọn từ các chương trình soạn sẵn. App tự tăng tải theo luật.", to: "/program" },
-  { Icon: PencilRuler, title: "Tự thiết kế lịch riêng", desc: "Tự chọn ngày tập, bài và con số. App không tự tăng tải.", to: "/my-schedule" },
+  { Icon: LayoutTemplate, title: "Đổi chương trình mẫu", desc: "Soạn sẵn, tự tăng tải.", to: "/program" },
+  { Icon: PencilRuler, title: "Tự thiết kế lịch", desc: "Tự chọn ngày, bài và con số. Không tự tăng tải.", to: "/my-schedule" },
 ]
 
 const dayMonth = (iso: string) => {
@@ -86,8 +86,7 @@ export default function MyProgramScreen() {
   return (
     <Screen>
       <BackLink label="Lịch" fallback="/schedule" />
-      <Kicker className="mt-3.5">Chương trình đang dùng</Kicker>
-      <Text className="mt-2 text-[28px] font-extrabold leading-[34px] tracking-[-0.5px] text-text">{current.templateName}</Text>
+      <Text className="mt-3 text-[28px] font-extrabold leading-[34px] tracking-[-0.5px] text-text">{current.templateName}</Text>
       <Text className="mt-2 text-[13px] text-text-muted" style={NUM}>
         {progress.weekIndex !== null && `Tuần ${progress.weekIndex}/${progress.totalWeeks} · `}
         từ <Text className="font-semibold text-text">{dayMonth(startDate)}</Text>
@@ -106,8 +105,8 @@ export default function MyProgramScreen() {
       <SectionTitle
         action={
           !isCustom && (
-            <Pressable accessibilityRole="button" onPress={() => setDaysOpen(true)} hitSlop={8}>
-              <Text className="px-1 text-[13px] font-bold text-accent">Đổi</Text>
+            <Pressable accessibilityRole="button" onPress={() => setDaysOpen(true)} hitSlop={12}>
+              <Text className="px-1 text-[13px] font-bold text-accent">Sửa</Text>
             </Pressable>
           )
         }
@@ -130,7 +129,7 @@ export default function MyProgramScreen() {
       </View>
       {isCustom && (
         <Text className="mt-3 text-xs leading-5 text-text-muted">
-          Lịch tự thiết kế gắn bài theo thứ. Muốn đổi ngày thì thiết kế lại ở cuối trang.
+          Lịch tự thiết kế gắn bài theo thứ.
         </Text>
       )}
 
@@ -186,7 +185,7 @@ export default function MyProgramScreen() {
 function SectionTitle({ children, action }: { children: ReactNode; action?: ReactNode }) {
   return (
     <View className="mb-2.5 mt-6 flex-row items-center justify-between">
-      <Kicker>{children}</Kicker>
+      <SectionLabel>{children}</SectionLabel>
       {action}
     </View>
   )
@@ -249,8 +248,7 @@ function MyProgramSkeleton() {
     <Screen>
       <View accessible accessibilityLabel="Đang tải">
         <Skeleton className="h-5 w-12" />
-        <Skeleton className="mt-3.5 h-3 w-36" />
-        <Skeleton className="mt-2 h-8 w-64" />
+        <Skeleton className="mt-3 h-8 w-64" />
         <Skeleton className="mt-2 h-4 w-48" />
         <Skeleton className="mt-2.5 h-5 w-32 rounded-full" />
         <Skeleton className="mb-2.5 mt-6 h-3 w-40" />

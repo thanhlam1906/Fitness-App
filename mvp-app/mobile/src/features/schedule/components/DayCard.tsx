@@ -28,21 +28,19 @@ const NUM = { fontVariant: ["tabular-nums" as const] }
 export function DayCard({
   cell,
   workouts,
-  totalWeeks,
 }: {
   cell: MonthCell
   workouts: ScheduledWorkoutView[]
-  totalWeeks: number
 }) {
   const router = useRouter()
   const workout = cell.workout
   if (!workout) return <NoWorkoutCard cell={cell} workouts={workouts} />
 
   const status = workout.status
-  if (status === "DONE") return <DoneCard cell={cell} workout={workout} totalWeeks={totalWeeks} />
+  if (status === "DONE") return <DoneCard cell={cell} workout={workout} />
   if (status === "MISSED" || status === "SKIPPED") {
     return (
-      <CardShell cell={cell} workout={workout} totalWeeks={totalWeeks} pill={<Pill tone="danger">Bỏ lỡ</Pill>}>
+      <CardShell cell={cell} workout={workout} pill={<Pill tone="danger">Bỏ lỡ</Pill>}>
         <PlanList workout={workout} />
         {/* Buổi bỏ lỡ vẫn tập được (backend không chặn) — người ta hay tập bù hôm sau. */}
         <Button variant="secondary" className="mt-3.5 w-full" onPress={() => router.push(`/workout/${workout.id}`)}>
@@ -51,9 +49,9 @@ export function DayCard({
       </CardShell>
     )
   }
-  if (cell.isToday) return <TodayCard cell={cell} workout={workout} totalWeeks={totalWeeks} />
+  if (cell.isToday) return <TodayCard cell={cell} workout={workout} />
   return (
-    <CardShell cell={cell} workout={workout} totalWeeks={totalWeeks} pill={<Pill tone="muted">Sắp tới</Pill>}>
+    <CardShell cell={cell} workout={workout} pill={<Pill tone="muted">Sắp tới</Pill>}>
       <PlanList workout={workout} />
       <Decisions workout={workout} />
       <EditLink workout={workout} />
@@ -61,12 +59,12 @@ export function DayCard({
   )
 }
 
-function TodayCard({ cell, workout, totalWeeks }: { cell: MonthCell; workout: ScheduledWorkoutView; totalWeeks: number }) {
+function TodayCard({ cell, workout }: { cell: MonthCell; workout: ScheduledWorkoutView }) {
   const router = useRouter()
   const session = useSessionOfDay(workout.id)
   const inProgress = session.data?.status === "IN_PROGRESS"
   return (
-    <CardShell cell={cell} workout={workout} totalWeeks={totalWeeks} highlight pill={<Pill tone="accent">Hôm nay</Pill>}>
+    <CardShell cell={cell} workout={workout} highlight pill={<Pill tone="accent">Hôm nay</Pill>}>
       <PlanList workout={workout} />
       <Decisions workout={workout} />
       <Button className="mt-3.5 w-full" onPress={() => router.push(`/workout/${workout.id}`)}>
@@ -78,7 +76,7 @@ function TodayCard({ cell, workout, totalWeeks }: { cell: MonthCell; workout: Sc
   )
 }
 
-function DoneCard({ cell, workout, totalWeeks }: { cell: MonthCell; workout: ScheduledWorkoutView; totalWeeks: number }) {
+function DoneCard({ cell, workout }: { cell: MonthCell; workout: ScheduledWorkoutView }) {
   const session = useSessionOfDay(workout.id)
   let body: ReactNode
   if (session.isLoading) {
@@ -164,7 +162,7 @@ function DoneCard({ cell, workout, totalWeeks }: { cell: MonthCell; workout: Sch
     )
   }
   return (
-    <CardShell cell={cell} workout={workout} totalWeeks={totalWeeks} pill={<Pill tone="success">Đã tập</Pill>}>
+    <CardShell cell={cell} workout={workout} pill={<Pill tone="success">Đã tập</Pill>}>
       {body}
       <Decisions workout={workout} />
     </CardShell>
@@ -176,7 +174,7 @@ function NoWorkoutCard({ cell, workouts }: { cell: MonthCell; workouts: Schedule
   const inProgram = cell.date >= dates[0] && cell.date <= dates[dates.length - 1]
   const next = inProgram ? nextPlannedAfter(workouts, cell.date) : null
   return (
-    <View className="mt-3.5 items-center rounded-2xl bg-surface p-5">
+    <View className="mt-3.5 items-center rounded-lg bg-surface p-5">
       <IconCircle icon={inProgram && cell.isRestDay ? BedDouble : CalendarMinus} size={48} iconSize={22} />
       <Text className="mt-2.5 text-center text-[15px] font-semibold text-text">
         {dayTitle(cell.date)}
@@ -196,14 +194,12 @@ function NoWorkoutCard({ cell, workouts }: { cell: MonthCell; workouts: Schedule
 function CardShell({
   cell,
   workout,
-  totalWeeks,
   pill,
   highlight = false,
   children,
 }: {
   cell: MonthCell
   workout: ScheduledWorkoutView
-  totalWeeks: number
   pill: ReactNode
   highlight?: boolean
   children: ReactNode
@@ -211,17 +207,17 @@ function CardShell({
   return (
     <View
       accessibilityLabel={dayTitle(cell.date)}
-      className={cn("mt-3.5 rounded-2xl border border-border p-3.5", highlight ? "bg-surface-2" : "bg-surface")}
+      className={cn("mt-3.5 rounded-lg border border-border p-3.5", highlight ? "bg-surface-2" : "bg-surface")}
     >
       <View className="flex-row items-center justify-between gap-2">
         <Text
           className={cn(
-            "flex-1 text-[10px] font-extrabold uppercase tracking-[1.2px]",
+            "flex-1 text-[13px] font-semibold",
             highlight ? "text-accent" : "text-text-muted",
           )}
           style={NUM}
         >
-          {dayTitle(cell.date)} · Tuần {workout.weekIndex}/{totalWeeks}
+          {dayTitle(cell.date)}
         </Text>
         {pill}
       </View>

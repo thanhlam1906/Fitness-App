@@ -6,7 +6,7 @@ import { GOALS, labelOf } from "@/features/profile/types"
 import { cn } from "@/lib/cn"
 import { formatKg } from "@/lib/format"
 import { useAuth } from "~/features/auth/components/AuthContext"
-import { Kicker } from "~/components/Kicker"
+import { SectionTitle } from "~/components/SectionTitle"
 import { Screen } from "~/components/Screen"
 import { Skeleton } from "~/components/ui/Skeleton"
 import { useCurrentProgram } from "~/features/program/api/useCurrentProgram"
@@ -40,8 +40,7 @@ export default function SettingsScreen() {
 
   return (
     <Screen>
-      <Kicker>Tài khoản</Kicker>
-      <Text className="mt-2 text-[28px] font-extrabold leading-[34px] tracking-[-0.5px] text-text">Cài đặt</Text>
+      <Text className="text-[28px] font-extrabold leading-[34px] tracking-[-0.5px] text-text">Cài đặt</Text>
 
       <View className="mt-4 flex-row items-center gap-3 rounded-md border border-border bg-surface p-3.5">
         <View className="size-[46px] items-center justify-center rounded-full bg-accent-tint">
@@ -100,8 +99,8 @@ export default function SettingsScreen() {
       </Group>
 
       <Group title="Khác">
-        <Row to="/settings/password" Icon={KeyRound} title="Đổi mật khẩu" sub="Đăng xuất các thiết bị khác" />
-        <Row to="/settings/privacy" Icon={ShieldCheck} title="Dữ liệu & quyền riêng tư" sub="Camera, clip, trợ lý" />
+        <Row to="/settings/password" Icon={KeyRound} title="Đổi mật khẩu" />
+        <Row to="/settings/privacy" Icon={ShieldCheck} title="Dữ liệu & quyền riêng tư" sub="Camera, video, trợ lý" />
         <Row to="/settings/about" Icon={Info} title="Giới thiệu & điều khoản" sub="Cam kết an toàn" />
       </Group>
 
@@ -127,7 +126,7 @@ function restDaysLabel(restDays: number[]): string {
 function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
     <View className="mt-6">
-      <Kicker>{title}</Kicker>
+      <SectionTitle>{title}</SectionTitle>
       <View className="mt-2 overflow-hidden rounded-md border border-border bg-surface">{children}</View>
     </View>
   )
@@ -144,7 +143,7 @@ function Row({
   Icon: ComponentType<{ color: string; size?: number }>
   title: string
   /** null = đang chờ số liệu, hiện khối mảnh thay chữ. */
-  sub: string | null
+  sub?: string | null
   accent?: boolean
 }) {
   const router = useRouter()
@@ -155,7 +154,7 @@ function Row({
       onPress={() => router.push(to)}
       className="-mt-px flex-row items-center gap-3 border-t border-border px-3.5 py-3 active:bg-surface-2"
     >
-      <View className={cn("size-[34px] items-center justify-center rounded-[10px]", accent ? "bg-accent-tint" : "bg-surface-2")}>
+      <View className={cn("size-[34px] items-center justify-center rounded-md", accent ? "bg-accent-tint" : "bg-surface-2")}>
         <Icon size={18} color={accent ? colors.accent : colors.text} />
       </View>
       <View className="flex-1">
@@ -165,9 +164,11 @@ function Row({
             <Skeleton className="mt-1 h-3 w-32" />
           </View>
         ) : (
-          <Text className="text-xs text-text-muted" numberOfLines={1} style={NUM}>
-            {sub}
-          </Text>
+          sub && (
+            <Text className="text-xs text-text-muted" numberOfLines={1} style={NUM}>
+              {sub}
+            </Text>
+          )
         )}
       </View>
       <ChevronRight size={16} color={colors["text-muted"]} />

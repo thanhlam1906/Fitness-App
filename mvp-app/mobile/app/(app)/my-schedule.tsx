@@ -10,10 +10,8 @@ export default function MyScheduleScreen() {
   return (
     <Screen>
       <BackLink label="Lịch" fallback="/schedule" />
-      <Text className="mt-2 text-[28px] font-extrabold tracking-[-0.5px] text-text">Tự thiết kế lịch</Text>
-      <Text className="mt-1.5 text-[13px] leading-5 text-text-muted">
-        Chọn ngày tập trong tuần, thêm bài cho từng ngày. Tuần nào cũng lặp lại y hệt.
-      </Text>
+      <Text className="mt-3 text-[28px] font-extrabold leading-[35px] tracking-[-0.5px] text-text">Tự thiết kế lịch</Text>
+      <Text className="mt-1.5 text-[13px] leading-5 text-text-muted">Tuần nào cũng lặp lại y hệt.</Text>
       <View className="mt-5">
         <ScheduleBuilder onCreated={openFirstWorkout} />
       </View>

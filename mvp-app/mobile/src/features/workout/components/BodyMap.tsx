@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { AccessibilityInfo, Pressable, Text, View } from "react-native"
 import Svg, { G, Path } from "react-native-svg"
+import { Check } from "lucide-react-native"
 import { BODY_AREAS } from "@/features/workout/types"
 import { BODY_VIEWS } from "@/features/workout/utils/bodyMap"
 import { cn } from "@/lib/cn"
@@ -82,12 +83,14 @@ export function BodyMap({ value, onChange }: { value: string | null; onChange: (
       <Text className="mt-2 text-center text-[13px] text-text-muted">
         {selected ? (
           <>
-            Đang chọn <Text className="font-semibold text-danger">{selected.label} ✓</Text>
+            Đang chọn <Text className="font-semibold text-danger">{selected.label}</Text>
           </>
         ) : reader ? (
+          // Khác web: VoiceOver ẩn hình nên vẫn cần câu chỉ chỗ chọn.
           "Chọn chỗ đau ở các nút bên dưới"
         ) : (
-          "Chạm vào chỗ đau trên hình"
+          // Giữ chỗ dòng trống để chọn vùng không đẩy nút bên dưới.
+          " "
         )}
       </Text>
 
@@ -102,12 +105,13 @@ export function BodyMap({ value, onChange }: { value: string | null; onChange: (
               accessibilityRole="button"
               accessibilityState={{ selected: on }}
               onPress={() => onChange(area.value)}
-              className={cn("rounded-full px-3.5 py-2", on ? "border border-danger bg-danger-tint" : "bg-surface")}
+              className={cn(
+                "flex-row items-center gap-1 rounded-full px-3.5 py-2",
+                on ? "border border-danger bg-danger-tint" : "bg-surface",
+              )}
             >
-              <Text className={cn("text-[13px]", on ? "font-semibold text-danger" : "text-text-muted")}>
-                {area.label}
-                {on && " ✓"}
-              </Text>
+              <Text className={cn("text-[13px]", on ? "font-semibold text-danger" : "text-text-muted")}>{area.label}</Text>
+              {on && <Check size={14} color={colors.danger} />}
             </Pressable>
           )
         })}

@@ -2,7 +2,7 @@ import { Text, View } from "react-native"
 import { Check } from "lucide-react-native"
 import { formatDate } from "@/lib/format"
 import { DisclaimerText } from "~/components/DisclaimerText"
-import { Kicker } from "~/components/Kicker"
+import { SectionTitle } from "~/components/SectionTitle"
 import { Logo } from "~/components/Logo"
 import { SettingsSubLayout } from "~/features/profile/components/SettingsSubLayout"
 import { useProfile } from "~/features/profile/api/useProfile"
@@ -14,7 +14,7 @@ export default function AboutScreen() {
   const acceptedAt = profile.data?.disclaimerAt
 
   return (
-    <SettingsSubLayout title="Giới thiệu">
+    <SettingsSubLayout title="Giới thiệu & điều khoản">
       <View className="mt-5 flex-row items-center gap-3">
         <Logo />
         <Text className="text-xs text-text-muted">Bản thử nghiệm</Text>
@@ -29,7 +29,7 @@ export default function AboutScreen() {
         </View>
       )}
 
-      <Kicker className="mt-6">Cam kết an toàn</Kicker>
+      <SectionTitle className="mt-6">Cam kết an toàn</SectionTitle>
       <View className="mt-2">
         <DisclaimerText />
       </View>

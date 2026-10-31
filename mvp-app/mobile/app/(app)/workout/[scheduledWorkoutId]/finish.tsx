@@ -6,7 +6,6 @@ import type { SetLogResponse } from "@/features/workout/types"
 import { cn } from "@/lib/cn"
 import { formatDayMonth, formatNumber } from "@/lib/format"
 import { BodyMap } from "~/features/workout/components/BodyMap"
-import { Kicker } from "~/components/Kicker"
 import { Screen } from "~/components/Screen"
 import { Button } from "~/components/ui/Button"
 import { Skeleton } from "~/components/ui/Skeleton"
@@ -56,7 +55,7 @@ export default function FinishSessionScreen() {
           detail={session.isError ? session.error.message : undefined}
         >
           <Button variant="secondary" onPress={() => router.dismissTo("/schedule")}>
-            Về lịch tuần
+            Về lịch
           </Button>
         </StatusBlock>
       </Screen>
@@ -68,18 +67,22 @@ export default function FinishSessionScreen() {
 
   return (
     <Screen>
-      <Kicker style={NUM}>{formatDayMonth(workout.scheduledOn)}</Kicker>
-      <Text className="mt-3 text-[28px] font-extrabold tracking-[-0.5px] text-text">Xong buổi {workout.label ?? ""}.</Text>
+      <Text className="text-[13px] text-text-muted" style={NUM}>
+        {formatDayMonth(workout.scheduledOn)}
+      </Text>
+      <Text className="mt-1 text-[28px] font-extrabold leading-[35px] tracking-[-0.5px] text-text">Xong buổi {workout.label ?? ""}.</Text>
 
       <View className="mt-[18px] flex-row flex-wrap gap-2">
         <Stat value={`${stats.loggedSets}`} label="set đã ghi" />
-        <Stat value={formatNumber(stats.volumeKg)} label="kg tổng tải" />
+        <Stat value={formatNumber(stats.volumeKg)} label="kg tổng tạ" />
         <Stat value={`${stats.doneExercises} / ${workout.exercises.length}`} label="bài hoàn thành" />
         <Stat value={elapsed(session.data!.startedAt)} label="thời gian" />
       </View>
 
       <View className="mt-6">
-        <Text className="text-[17px] font-bold text-text">Buổi này nặng cỡ nào?</Text>
+        <Text className="text-[17px] font-bold text-text">
+          Buổi này nặng cỡ nào? <Text className="font-normal text-text-muted">(tuỳ chọn)</Text>
+        </Text>
         <Text className="mt-1 text-xs text-text-muted">4 là nhẹ nhàng, 10 là không thêm được rep nào.</Text>
         <View className="mt-3 flex-row gap-1.5">
           {RPE_CHOICES.map((value) => {
@@ -99,18 +102,15 @@ export default function FinishSessionScreen() {
             )
           })}
         </View>
-        <Text className="mt-2.5 text-xs text-text-muted">
-          {sessionRpe == null
-            ? "Bỏ qua cũng được — engine vẫn chạy bằng rep và RPE từng set."
-            : `RPE trung bình các set đã ghi: ${stats.avgRpe ?? "—"}`}
-        </Text>
+        {sessionRpe != null && (
+          <Text className="mt-2.5 text-xs text-text-muted">RPE trung bình các set đã ghi: {stats.avgRpe ?? "—"}</Text>
+        )}
       </View>
 
       <View className="mt-6">
         <Text className="text-[17px] font-bold text-text">Có đau ở đâu không?</Text>
         <Text className="mt-1 text-xs leading-5 text-text-muted">
-          Bỏ qua nếu không đau. Báo đau làm giảm tải hoặc đổi bài ở tuần kế — đây không phải chẩn đoán y tế,
-          đau kéo dài thì đi khám.
+          Không đau thì bỏ qua. Báo đau sẽ giảm tạ, không phải chẩn đoán y tế.
         </Text>
         <View className="mt-3">
           <BodyMap value={bodyArea} onChange={(area) => setBodyArea(bodyArea === area ? null : area)} />
@@ -153,7 +153,7 @@ export default function FinishSessionScreen() {
           )
         }
       >
-        {finish.isPending ? "Đang lưu…" : "Lưu và về lịch tuần"}
+        {finish.isPending ? "Đang lưu…" : "Lưu và về lịch"}
       </Button>
     </Screen>
   )
@@ -194,8 +194,8 @@ function FinishSkeleton() {
   return (
     <Screen>
       <View accessible accessibilityLabel="Đang tải" className="flex-1">
-        <Skeleton className="h-3 w-16" />
-        <Skeleton className="mt-3 h-8 w-56" />
+        <Skeleton className="h-4 w-16" />
+        <Skeleton className="mt-1 h-8 w-56" />
         <View className="mt-4 gap-2">
           <View className="flex-row gap-2">
             <Skeleton className="h-20 flex-1" />

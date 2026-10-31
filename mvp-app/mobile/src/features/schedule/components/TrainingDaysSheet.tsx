@@ -5,7 +5,7 @@ import { previewDates, shortDayTitle } from "@/features/schedule/utils/programDa
 import type { ScheduledWorkoutView } from "@/features/schedule/types"
 import { toIso, WEEKDAY_LABELS } from "@/features/schedule/utils/weeks"
 import { cn } from "@/lib/cn"
-import { Kicker } from "~/components/Kicker"
+import { SectionTitle } from "~/components/SectionTitle"
 import { Sheet, SheetHeader } from "~/components/ui/Sheet"
 import { useChangeTrainingDays } from "~/features/schedule/api/useEditSchedule"
 import { IconText, Notice } from "~/components/StatusViews"
@@ -63,7 +63,7 @@ function Body({
         onConfirm={() => change.mutate(sorted, { onSuccess: onClose })}
       />
       <Text className="px-4 pb-2.5 text-center text-xs leading-5 text-text-muted">
-        {"Các buổi chưa tập dời sang ngày mới, giữ đúng thứ tự.\nBuổi đã tập giữ nguyên."}
+        {"Các buổi chưa tập dời sang ngày mới, giữ đúng thứ tự."}
       </Text>
       <ScrollView className="px-4" contentContainerClassName="pb-4">
         <View className="flex-row gap-1.5">
@@ -98,7 +98,7 @@ function Body({
         )}
         {preview.length > 0 && (
           <>
-            <Kicker className="mt-5">Các buổi tới</Kicker>
+            <SectionTitle className="mt-5">Các buổi tới</SectionTitle>
             <View className="mt-2 rounded-md bg-bg px-3">
               {preview.map((p, i) => (
                 <View key={p.date} className={cn("flex-row justify-between py-2", i > 0 && "border-t border-border")}>

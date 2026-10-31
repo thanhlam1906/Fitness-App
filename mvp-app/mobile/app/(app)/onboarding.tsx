@@ -5,6 +5,7 @@ import {
   BicepsFlexed,
   CalendarDays,
   ChevronLeft,
+  Check,
   CloudOff,
   Dumbbell,
   Flame,
@@ -24,7 +25,6 @@ import { joinTenths, range, splitTenths } from "@/lib/wheel"
 import { EQUIPMENT_OPTIONS, EXPERIENCE_LEVELS, GENDERS, GOALS } from "@/features/profile/types"
 import { DisclaimerText } from "~/components/DisclaimerText"
 import { FadedImage } from "~/components/FadedImage"
-import { Kicker } from "~/components/Kicker"
 import { Screen } from "~/components/Screen"
 import { Stepper } from "~/components/Stepper"
 import { Button } from "~/components/ui/Button"
@@ -50,24 +50,17 @@ const STEPS = ["DISCLAIMER", "BODY", "GOAL", "EQUIPMENT", "EXPERIENCE"] as const
 type Step = (typeof STEPS)[number]
 type Icon = ComponentType<{ color: string; size?: number }>
 
-const HEADINGS: Record<Step, { title: string; hint: string; icon: Icon }> = {
-  DISCLAIMER: { title: "Trước khi bắt đầu", hint: "Đọc và đồng ý để đi tiếp.", icon: ShieldCheck },
-  BODY: {
-    title: "Vài số về cơ thể bạn",
-    hint: "Nhập tay. Không đồng bộ từ ứng dụng sức khoẻ nào.",
-    icon: Ruler,
-  },
-  GOAL: { title: "Bạn muốn gì từ 8 tuần tới?", hint: "Chọn một. Đổi được sau ở Cài đặt › Hồ sơ.", icon: Target },
+// hint chỉ khi nói điều màn không tự cho thấy: bước nào nhìn là hiểu thì không có dòng phụ.
+const HEADINGS: Record<Step, { title: string; hint?: string; icon: Icon }> = {
+  DISCLAIMER: { title: "Trước khi bắt đầu", icon: ShieldCheck },
+  BODY: { title: "Vài số về cơ thể bạn", icon: Ruler },
+  GOAL: { title: "Bạn muốn gì từ 8 tuần tới?", hint: "Đổi được sau ở Cài đặt.", icon: Target },
   EQUIPMENT: {
     title: "Bạn tập ở đâu, có những gì?",
     hint: "Chương trình đề xuất chỉ dùng thiết bị bạn có.",
     icon: Dumbbell,
   },
-  EXPERIENCE: {
-    title: "Bạn tập được bao lâu rồi?",
-    hint: "Số buổi mỗi tuần quyết định lịch tuần trông thế nào.",
-    icon: CalendarDays,
-  },
+  EXPERIENCE: { title: "Bạn tập được bao lâu rồi?", icon: CalendarDays },
 }
 
 // Icon theo giá trị trong features/profile/types — màn Hồ sơ dùng chung danh sách nhưng không cần icon.
@@ -149,10 +142,10 @@ export default function OnboardingScreen() {
       <View className="mt-6 size-[52px] items-center justify-center rounded-lg border border-accent/25 bg-accent-tint">
         <heading.icon color={colors.accent} size={26} />
       </View>
-      <Text className="mt-3.5 text-[28px] font-extrabold leading-[31px] tracking-[-0.5px] text-text">
+      <Text className="mt-3.5 text-[28px] font-extrabold leading-[35px] tracking-[-0.5px] text-text">
         {heading.title}
       </Text>
-      <Text className="mt-2.5 text-[13px] text-text-muted">{heading.hint}</Text>
+      {heading.hint && <Text className="mt-2.5 text-[13px] text-text-muted">{heading.hint}</Text>}
 
       <View className="mt-5 flex-1">
         {current === "DISCLAIMER" && (
@@ -277,7 +270,7 @@ function OptionRow({
         </View>
       )}
       <Text className={cn("flex-1 text-[15px]", checked ? "text-text" : "text-text-muted")}>{label}</Text>
-      {checked && <Text className="font-bold text-accent">✓</Text>}
+      {checked && <Check size={18} strokeWidth={3} color={colors.accent} />}
     </Pressable>
   )
 }
@@ -472,7 +465,6 @@ function EquipmentStep({
   return (
     <View className="flex-1">
       <View className="gap-4">
-        <Kicker>Thiết bị sẵn có</Kicker>
         <View className="gap-2">
           {EQUIPMENT_OPTIONS.map((eq) => (
             <OptionRow

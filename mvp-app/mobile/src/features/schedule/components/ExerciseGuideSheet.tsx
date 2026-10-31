@@ -1,10 +1,12 @@
 import { ScrollView, Text, View } from "react-native"
+import { CircleAlert } from "lucide-react-native"
 import { formatTarget, type ProgramDay } from "@/features/schedule/utils/programDays"
 import type { ScheduledExerciseView } from "@/features/schedule/types"
 import { cn } from "@/lib/cn"
 import { ExerciseImage } from "~/components/ExerciseImage"
-import { Kicker } from "~/components/Kicker"
+import { SectionTitle } from "~/components/SectionTitle"
 import { Sheet, SheetHeader } from "~/components/ui/Sheet"
+import { colors } from "~/theme"
 
 // Mã nhóm cơ trong bảng exercises (muscle_groups) → chữ hiện cho người dùng. Giống web.
 const MUSCLE_VI: Record<string, string> = {
@@ -45,7 +47,7 @@ export function ExerciseGuideSheet({
 
         {exercise.muscleGroups.length > 0 && (
           <>
-            <Kicker className="mt-5">Cơ chính</Kicker>
+            <SectionTitle className="mt-5">Cơ chính</SectionTitle>
             <View className="mt-2 flex-row flex-wrap gap-1.5">
               {exercise.muscleGroups.map((code, i) => (
                 <View key={code} className={cn("rounded-full px-2.5 py-1", i === 0 ? "bg-accent-tint" : "bg-surface-2")}>
@@ -60,7 +62,7 @@ export function ExerciseGuideSheet({
 
         {exercise.stepsVi.length > 0 && (
           <>
-            <Kicker className="mt-5">Cách tập</Kicker>
+            <SectionTitle className="mt-5">Cách tập</SectionTitle>
             <View className="mt-1.5">
               {exercise.stepsVi.map((step, i) => (
                 <View key={step} className="flex-row gap-2.5 py-1.5">
@@ -76,18 +78,18 @@ export function ExerciseGuideSheet({
 
         {exercise.mistakesVi.length > 0 && (
           <>
-            <Kicker className="mt-5">Lỗi hay gặp</Kicker>
+            <SectionTitle className="mt-5">Lỗi hay gặp</SectionTitle>
             <View className="mt-2 rounded-md border border-warn/30 bg-warn-tint px-3 py-1">
               {exercise.mistakesVi.map((m) => (
                 <View key={m} className="flex-row gap-2 py-1.5">
-                  <Text className="font-extrabold text-warn">!</Text>
+                  <CircleAlert size={16} color={colors.warn} style={{ marginTop: 2 }} />
                   <Text className="flex-1 text-[13px] leading-5 text-text">{m}</Text>
                 </View>
               ))}
             </View>
           </>
         )}
-        <Kicker className="mt-5">Trong chương trình</Kicker>
+        <SectionTitle className="mt-5">Trong chương trình</SectionTitle>
         <View className="mt-2 rounded-md bg-bg px-3">
           {usedIn.map((u, i) => (
             <View key={u.label} className={cn("flex-row justify-between py-2", i > 0 && "border-t border-border")}>

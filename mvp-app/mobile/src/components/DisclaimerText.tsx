@@ -16,7 +16,7 @@ export function DisclaimerText() {
         và hỏi ý kiến bác sĩ.
       </Text>
       <Text className="text-sm leading-[22px] text-text-muted">
-        Phần chấm form qua video chạy bằng máy, có thể sai. Luôn có nút báo "góp ý này sai".
+        Phần chấm form qua video chạy bằng máy, có thể sai. Luôn có nút "Góp ý này sai?".
       </Text>
     </View>
   )

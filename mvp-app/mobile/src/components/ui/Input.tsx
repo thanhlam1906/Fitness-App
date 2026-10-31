@@ -14,7 +14,7 @@ export const Input = forwardRef<TextInput, InputProps>(
         ref={ref}
         placeholderTextColor={colors["text-muted"]}
         className={cn(
-          "h-12 w-full rounded-md border border-border bg-surface px-3.5 text-[15px] text-text",
+          "h-12 w-full rounded-md border border-border bg-surface px-3.5 text-base text-text",
           focused && "border-accent",
           invalid && "border-danger",
           className,

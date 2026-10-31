@@ -66,7 +66,7 @@ export function StatusBlock({
   return (
     <View
       accessibilityRole={tone === "danger" ? "alert" : undefined}
-      className={cn("items-center rounded-2xl bg-surface px-5 py-7", className)}
+      className={cn("items-center rounded-lg bg-surface px-5 py-7", className)}
     >
       <IconCircle icon={icon} tone={tone} />
       <Text className="mt-3.5 text-center text-[17px] font-bold text-text">{title}</Text>

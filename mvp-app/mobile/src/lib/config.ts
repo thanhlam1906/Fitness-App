@@ -7,8 +7,13 @@ function devHost(): string {
   return hostUri ? hostUri.split(":")[0] : "localhost"
 }
 
-export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? `http://${devHost()}:8080`
+// Dòng để trống trong .env coi như không đặt, để API và ảnh cùng một cách hiểu.
+const PROD_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, "") || undefined
 
+export const API_URL = PROD_URL ?? `http://${devHost()}:8080`
+
+// Bản build (APK) có EXPO_PUBLIC_API_URL và không có máy dev :5173. Nginx ở origin đó phát luôn
+// file public/ của web, nên ảnh lấy từ chính origin đó; không thế thì APK mất hết ảnh.
 export function assetUrl(path: string): string {
-  return `http://${devHost()}:5173${path}`
+  return PROD_URL ? `${PROD_URL}${path}` :`http://${devHost()}:5173${path}`
 }

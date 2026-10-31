@@ -44,9 +44,9 @@ export default function RegisterScreen() {
   }
 
   return (
-    <AuthLayout title="Tạo tài khoản" subtitle="Mất khoảng một phút.">
+    <AuthLayout title="Tạo tài khoản">
       <SocialButtons />
-      <OrDivider label="hoặc đăng ký bằng email" />
+      <OrDivider label="hoặc" />
       <View className="gap-3.5">
         <AuthField
           control={control}
@@ -96,7 +96,6 @@ export default function RegisterScreen() {
           password
           autoComplete="new-password"
           textContentType="newPassword"
-          placeholder="Gõ lại mật khẩu"
         />
         <View>
           <Controller

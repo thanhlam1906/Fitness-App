@@ -21,7 +21,7 @@ export function AuthLayout({
   children,
 }: {
   title: string
-  subtitle: string
+  subtitle?: string
   children: ReactNode
 }) {
   const insets = useSafeAreaInsets()
@@ -34,10 +34,10 @@ export function AuthLayout({
         keyboardShouldPersistTaps="handled"
       >
         <Logo className="px-1" />
-        <Text className="mt-[120px] px-1 text-[30px] font-extrabold leading-[33px] tracking-[-0.75px] text-text">
+        <Text className="mt-[120px] px-1 text-[28px] font-extrabold leading-[35px] tracking-[-0.56px] text-text">
           {title}
         </Text>
-        <Text className="mt-1.5 px-1 text-sm text-text-muted">{subtitle}</Text>
+        {subtitle && <Text className="mt-1.5 px-1 text-sm text-text-muted">{subtitle}</Text>}
         <View className="mt-5 rounded-lg border border-glass-border bg-glass p-4">{children}</View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -49,32 +49,28 @@ const PROVIDERS = [
   { name: "Facebook", Icon: FacebookIcon },
 ]
 
-/** Chưa nối OAuth (nối sau khi deploy). Bấm vẫn phản hồi để người dùng không tưởng app hỏng. */
+/**
+ * Chưa nối OAuth (nối sau khi deploy). Nút khoá cùng nhãn "Sắp có": nhìn là biết chưa dùng được, không
+ * cần thêm câu báo khi bấm.
+ */
 export function SocialButtons() {
-  const [notice, setNotice] = useState<string | null>(null)
   return (
-    <View>
-      <View className="flex-row gap-2.5">
-        {PROVIDERS.map(({ name, Icon }) => (
-          <Pressable
-            key={name}
-            accessibilityRole="button"
-            onPress={() => setNotice(`Đăng nhập bằng ${name} sẽ mở sau khi app phát hành.`)}
-            className="relative h-12 flex-1 flex-row items-center justify-center gap-2 rounded-md border border-border bg-surface active:bg-surface-2"
-          >
-            <Icon />
-            <Text className="text-sm font-semibold text-text">{name}</Text>
-            <View className="absolute -top-2 right-2 rounded-full border border-border bg-surface-2 px-1.5">
-              <Text className="text-[10px] font-bold text-text-muted">Sắp có</Text>
-            </View>
-          </Pressable>
-        ))}
-      </View>
-      {notice && (
-        <Text accessibilityLiveRegion="polite" className="mt-2.5 text-[13px] text-text-muted">
-          {notice}
-        </Text>
-      )}
+    <View className="flex-row gap-2.5">
+      {PROVIDERS.map(({ name, Icon }) => (
+        <Pressable
+          key={name}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: true }}
+          disabled
+          className="relative h-12 flex-1 flex-row items-center justify-center gap-2 rounded-md border border-border bg-surface opacity-70"
+        >
+          <Icon />
+          <Text className="text-sm font-semibold text-text">{name}</Text>
+          <View className="absolute -top-2 right-2 rounded-full border border-border bg-surface-2 px-1.5">
+            <Text className="text-[10px] font-bold text-text-muted">Sắp có</Text>
+          </View>
+        </Pressable>
+      ))}
     </View>
   )
 }

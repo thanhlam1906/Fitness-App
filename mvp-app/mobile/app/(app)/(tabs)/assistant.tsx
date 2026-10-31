@@ -23,9 +23,9 @@ import { colors } from "~/theme"
 
 /** Ba câu mẫu phủ ba loại trợ lý trả lời được: lịch, tiến bộ (tool), kiến thức (tài liệu). */
 const SUGGESTIONS = [
-  { question: "Tuần này tôi tập gì?", hint: "Xem lịch của bạn", Icon: CalendarDays },
-  { question: "4 tuần qua tôi tiến bộ thế nào?", hint: "Tổng tạ, số buổi đã tập", Icon: TrendingUp },
-  { question: "RPE là gì?", hint: "Từ tài liệu của app", Icon: BookOpen },
+  { question: "Tuần này tôi tập gì?", Icon: CalendarDays },
+  { question: "4 tuần qua tôi tiến bộ thế nào?", Icon: TrendingUp },
+  { question: "RPE là gì?", Icon: BookOpen },
 ]
 
 /**
@@ -68,6 +68,7 @@ export default function AssistantScreen() {
             accessibilityState={{ disabled: empty || pending }}
             disabled={empty || pending}
             onPress={() => userId && clearConversation(userId)}
+            hitSlop={4}
             className={cn("size-9 items-center justify-center rounded-md bg-surface", (empty || pending) && "opacity-40")}
           >
             <SquarePen size={16} color={colors["text-muted"]} />
@@ -81,12 +82,9 @@ export default function AssistantScreen() {
             keyboardShouldPersistTaps="handled"
           >
             <AssistantMark size={64} />
-            <Text className="mt-4 text-center text-2xl font-extrabold tracking-[-0.5px] text-text">Hỏi gì về buổi tập?</Text>
-            <Text className="mb-5 mt-1.5 text-center text-sm text-text-muted">
-              Lịch tuần, mức tạ, tiến bộ của bạn, hay một khái niệm bạn chưa rõ.
-            </Text>
+            <Text className="mb-5 mt-4 text-center text-2xl font-extrabold tracking-[-0.5px] text-text">Hỏi gì về buổi tập?</Text>
             <View className="w-full gap-2">
-              {SUGGESTIONS.map(({ question, hint, Icon }) => (
+              {SUGGESTIONS.map(({ question, Icon }) => (
                 <Pressable
                   key={question}
                   accessibilityRole="button"
@@ -94,10 +92,7 @@ export default function AssistantScreen() {
                   className="flex-row items-center gap-2.5 rounded-lg border border-border bg-surface px-3.5 py-3 active:bg-surface-2"
                 >
                   <Icon size={18} color={colors.accent} />
-                  <View className="flex-1">
-                    <Text className="text-sm text-text">{question}</Text>
-                    <Text className="text-xs text-text-muted">{hint}</Text>
-                  </View>
+                  <Text className="flex-1 text-sm text-text">{question}</Text>
                   <ChevronRight size={16} color={colors["text-muted"]} />
                 </Pressable>
               ))}
@@ -135,7 +130,7 @@ export default function AssistantScreen() {
             accessibilityLabel="Câu hỏi"
             placeholder="Hỏi trợ lý…"
             placeholderTextColor={colors["text-muted"]}
-            className="h-9 flex-1 text-[15px] text-text"
+            className="h-9 flex-1 text-base text-text"
             value={input}
             onChangeText={setInput}
             onFocus={() => setFocused(true)}
@@ -185,8 +180,9 @@ function MessageRow({ message }: { message: ChatMessage }) {
         {!!message.sourceTitles?.length && (
           <View className="mt-2 flex-row flex-wrap gap-1.5">
             {message.sourceTitles.map((title) => (
-              <View key={title} className="rounded-sm border border-border px-1.5 py-0.5">
-                <Text className="text-[11px] text-text-muted">↳ {title}</Text>
+              <View key={title} className="flex-row items-center gap-1 rounded-sm border border-border px-1.5 py-0.5">
+                <BookOpen size={12} color={colors["text-muted"]} />
+                <Text className="text-[11px] text-text-muted">{title}</Text>
               </View>
             ))}
           </View>
