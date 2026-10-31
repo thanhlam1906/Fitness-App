@@ -14,6 +14,16 @@
       "expo-router",
       "expo-secure-store",
       "expo-status-bar"
-    ]
+    ],
+    "android": {
+      "package": "vn.id.thanhlam.vfit"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "72ec4b94-f2fc-4cfa-861b-43d0597939b9"
+      }
+    },
+    "owner": "lam1287"
   }
 }
