@@ -134,3 +134,46 @@ describe("ExerciseFormPage: tạo bài mới", () => {
     })
   })
 })
+
+describe("ExerciseFormPage: cách tập, lỗi hay gặp, bài chưa duyệt", () => {
+  it("nạp mỗi bước một dòng; lưu gửi lại danh sách đã cắt khoảng trắng và bỏ dòng trống", async () => {
+    api.get.mockResolvedValue({ ...exercise("a"), stepsVi: ["Đứng thẳng", "Hạ người"], mistakesVi: ["Cong lưng"] })
+    renderAt("/admin/exercises/a?tab=info")
+    const steps = await screen.findByLabelText("Cách tập, mỗi dòng một bước")
+    expect(steps).toHaveValue("Đứng thẳng\nHạ người")
+    expect(screen.getByLabelText("Lỗi hay gặp, mỗi dòng một lỗi")).toHaveValue("Cong lưng")
+
+    fireEvent.change(steps, { target: { value: "Đứng thẳng\n\n  Hạ người chậm \n" } })
+    fireEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }))
+
+    await waitFor(() => expect(api.put).toHaveBeenCalled())
+    expect(api.put.mock.calls[0][1]).toMatchObject({
+      stepsVi: ["Đứng thẳng", "Hạ người chậm"],
+      mistakesVi: ["Cong lưng"],
+    })
+  })
+
+  it("bài mới tạo không điền hai ô thì gửi hai danh sách rỗng", async () => {
+    api.post.mockResolvedValue(exercise("f"))
+    renderAt("/admin/exercises/new")
+    fireEvent.change(await screen.findByLabelText("slug"), { target: { value: "f" } })
+    fireEvent.change(screen.getByLabelText("Tên (EN)"), { target: { value: "Bài f" } })
+    fireEvent.click(screen.getByRole("radio", { name: "Đùi trước" }))
+    fireEvent.click(screen.getByRole("button", { name: "Tạo bài" }))
+
+    await waitFor(() => expect(api.post).toHaveBeenCalled())
+    expect(api.post.mock.calls[0][1]).toMatchObject({ stepsVi: [], mistakesVi: [] })
+  })
+
+  it("bài chưa duyệt có dòng phụ dưới ô Đang hoạt động, bài đang bật thì không", async () => {
+    api.get.mockResolvedValue({ ...exercise("a"), active: false, draft: true })
+    renderAt("/admin/exercises/a?tab=info")
+    expect(await screen.findByText("Bài mới nạp, chưa duyệt: bật để người tập chọn được.")).toBeInTheDocument()
+
+    cleanup()
+    api.get.mockResolvedValue(exercise("b"))
+    renderAt("/admin/exercises/b?tab=info")
+    await screen.findByDisplayValue("Bài b")
+    expect(screen.queryByText(/chưa duyệt/)).not.toBeInTheDocument()
+  })
+})

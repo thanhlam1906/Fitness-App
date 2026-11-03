@@ -18,6 +18,7 @@ import { FormCheckEditor } from "@/features/admin/components/FormCheckEditor"
 import { HelpButton, HelpText, useHelp } from "@/features/admin/components/HelpButton"
 import { ImageSlot } from "@/features/admin/components/ImageSlot"
 import { formToGuide, guideToForm, type ExerciseFormValues } from "@/features/admin/utils/filmingGuideForm"
+import { fromLines, toLines } from "@/features/admin/utils/lineList"
 import { useExercise, useSaveExercise, useSaveExerciseImages } from "@/features/exercise/api/useExercises"
 import type { ImageDraft, ImageDrafts } from "@/features/exercise/types"
 import { exerciseImageUrl } from "@/lib/exerciseImage"
@@ -83,9 +84,9 @@ export function ExerciseFormPage() {
 
   const { register, handleSubmit, reset, control } = useForm<ExerciseFormValues>({
     // Bài mới: ô hướng dẫn quay phải có chuỗi rỗng sẵn, không thì formToGuide gặp undefined; nhóm cơ,
-    // thiết bị là mảng rỗng để nút bấm có giá trị mà bật/tắt. Cách tập, lỗi hay gặp chưa có ô sửa nhưng
-    // phải đi theo form, không thì PUT thiếu hai trường và lưu bài làm mất chúng.
-    defaultValues: { guide: guideToForm(null), muscleGroups: [], equipment: [], stepsVi: [], mistakesVi: [] },
+    // thiết bị là mảng rỗng để nút bấm có giá trị mà bật/tắt. Cách tập, lỗi hay gặp là hai ô nhiều dòng
+    // của form này: phải có chuỗi rỗng sẵn, không thì fromLines gặp undefined lúc lưu bài mới.
+    defaultValues: { guide: guideToForm(null), muscleGroups: [], equipment: [], stepsText: "", mistakesText: "" },
     values: existing.data
       ? {
           slug: existing.data.slug,
@@ -96,15 +97,15 @@ export function ExerciseFormPage() {
           description: existing.data.description ?? "",
           filmingGuide: existing.data.filmingGuide ?? "",
           guide: guideToForm(existing.data.filmingGuide),
-          stepsVi: existing.data.stepsVi,
-          mistakesVi: existing.data.mistakesVi,
+          stepsText: toLines(existing.data.stepsVi),
+          mistakesText: toLines(existing.data.mistakesVi),
           active: existing.data.active,
         }
       : undefined,
   })
 
   function onSubmit(values: ExerciseFormValues) {
-    const { guide, ...rest } = values
+    const { guide, stepsText, mistakesText, ...rest } = values
     const hasDrafts = drafts.still !== null || drafts.animated !== null
     const startedOn = id
     // Admin đã sang bài khác thì kết quả lưu này không được đụng tới trang đang mở: clearDrafts sẽ xoá nháp ảnh và
@@ -117,7 +118,7 @@ export function ExerciseFormPage() {
       else reset()
     }
     save.mutate(
-      { ...rest, filmingGuide: formToGuide(guide) },
+      { ...rest, filmingGuide: formToGuide(guide), stepsVi: fromLines(stepsText), mistakesVi: fromLines(mistakesText) },
       {
         onSuccess: (result) => {
           if (!hasDrafts) return done(result)
@@ -235,6 +236,14 @@ export function ExerciseFormPage() {
               </div>
               <MuscleEquipmentFields control={control} />
               <div className="space-y-1.5">
+                <Label htmlFor="stepsText">Cách tập, mỗi dòng một bước</Label>
+                <Textarea id="stepsText" rows={6} {...register("stepsText")} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="mistakesText">Lỗi hay gặp, mỗi dòng một lỗi</Label>
+                <Textarea id="mistakesText" rows={4} {...register("mistakesText")} />
+              </div>
+              <div className="space-y-1.5">
                 <Label htmlFor="description">Mô tả</Label>
                 <Textarea id="description" rows={2} {...register("description")} />
               </div>
@@ -264,10 +273,16 @@ export function ExerciseFormPage() {
                 </div>
               </section>
               <FilmingGuideFields register={register} checkViews={existing.data?.checkViews ?? []} />
-              <div className="flex gap-4">
+              <div className="space-y-1.5">
                 <label className="flex items-center gap-2 text-sm">
                   <Checkbox {...register("active")} /> Đang hoạt động
                 </label>
+                {/* Cờ lấy từ server, không từ ô tick: bài chưa duyệt vẫn chưa duyệt cho tới khi lưu với ô này bật. */}
+                {existing.data?.draft && (
+                  <p className="text-xs text-[var(--color-text-muted)]">
+                    Bài mới nạp, chưa duyệt: bật để người tập chọn được.
+                  </p>
+                )}
               </div>
 
               {save.isError && (

@@ -1,7 +1,7 @@
 import { useController, type Control } from "react-hook-form"
 import { cn } from "@/lib/cn"
 import { MUSCLE_OPTIONS } from "@/lib/muscles"
-import { EQUIPMENT_OPTIONS } from "@/features/profile/types"
+import { EXERCISE_EQUIPMENT_OPTIONS } from "@/lib/equipment"
 import type { ExerciseFormValues } from "@/features/admin/utils/filmingGuideForm"
 import { setPrimaryMuscle, toggleEquipment, toggleSecondaryMuscle } from "@/features/admin/utils/exerciseCodes"
 
@@ -93,7 +93,7 @@ export function MuscleEquipmentFields({ control }: { control: Control<ExerciseFo
           thiết bị.
         </p>
         <div role="group" aria-labelledby="equipment" className="flex flex-wrap gap-1.5">
-          {EQUIPMENT_OPTIONS.map((o) => {
+          {EXERCISE_EQUIPMENT_OPTIONS.map((o) => {
             const on = gear.includes(o.value)
             return (
               <button

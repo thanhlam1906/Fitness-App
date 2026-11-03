@@ -1,8 +1,8 @@
 import { MUSCLE_OPTIONS } from "@/lib/muscles"
-import { EQUIPMENT_OPTIONS } from "@/features/profile/types"
+import { EXERCISE_EQUIPMENT_OPTIONS } from "@/lib/equipment"
 
 const MUSCLE_ORDER: string[] = MUSCLE_OPTIONS.map((m) => m.value)
-const EQUIPMENT_ORDER: string[] = EQUIPMENT_OPTIONS.map((e) => e.value)
+const EQUIPMENT_ORDER: string[] = EXERCISE_EQUIPMENT_OPTIONS.map((e) => e.value)
 
 /** Xếp theo thứ tự nút trên màn: lưu ra luôn cùng một thứ tự, không phụ thuộc admin bấm trước bấm sau. */
 const ordered = (codes: string[], order: string[]) => order.filter((c) => codes.includes(c))

@@ -39,4 +39,8 @@ describe("toggleEquipment", () => {
     expect(toggleEquipment(["BENCH"], "DUMBBELL")).toEqual(["DUMBBELL", "BENCH"])
     expect(toggleEquipment(["DUMBBELL", "BENCH"], "DUMBBELL")).toEqual(["BENCH"])
   })
+
+  it("mã dụng cụ riêng của bài tập cũng xếp theo thứ tự nút: máy cáp trước dụng cụ khác", () => {
+    expect(toggleEquipment(["OTHER"], "CABLE")).toEqual(["CABLE", "OTHER"])
+  })
 })

@@ -41,7 +41,9 @@ type Item = {
  * Nhật ký quản trị: doc/design-quan-ly-user-v1.md §6.7.
  */
 function useGroups(): { title: string; items: Item[] }[] {
-  const exercises = useExercises({ all: true })
+  // Chỉ bài đang bật: dùng `all` thì mọi màn admin đều tải cả ~1.3k bài kèm cách tập chỉ để đếm một con số.
+  // Nên số này khác "N bài tập" ở đầu danh sách bài, vốn đếm cả bài chưa duyệt và đã xoá.
+  const exercises = useExercises()
   const templates = useTemplates()
   const overview = useAdminOverview()
   const corpus = useDocuments()
