@@ -100,11 +100,10 @@ public class ExerciseService {
 
 	/**
 	 * §5.5 ke-hoach-chi-tiet-chuc-nang-v1.md — thiếu thiết bị thì đề xuất bài thay thế cùng nhóm cơ,
-	 * lọc theo thiết bị người dùng đang có. Lọc trong Java trên ~40 bài thay vì viết query GIN: bảng
-	 * nhỏ, đọc dễ hơn.
+	 * lọc theo thiết bị người dùng đang có. Lọc trong Java thay vì viết query GIN: đọc dễ hơn.
 	 *
-	 * ponytail: quét toàn bảng exercises mỗi lần gọi. Trần là vài chục bài — nếu catalog lên hàng
-	 * nghìn thì đổi sang query `muscle_groups && ARRAY[...]`.
+	 * ponytail: quét toàn bảng exercises mỗi lần gọi. Đo 11-03 trên DB dev 1.328 bài: 40–100 ms cả
+	 * request. Lên hàng chục nghìn bài hoặc chậm quá ~200 ms thì đổi sang query `muscle_groups && ARRAY[...]`.
 	 */
 	public List<ExerciseResponse> substitutes(UUID userId, UUID exerciseId) {
 		Exercise original = findOrThrow(exerciseId);
