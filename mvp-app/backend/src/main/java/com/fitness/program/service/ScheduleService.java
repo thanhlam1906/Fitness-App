@@ -102,7 +102,8 @@ public class ScheduleService {
 			// Lớp 1 concept-backend-v1.md §5: không đụng được vào lịch của người khác.
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy bài trong lịch");
 		}
-		if (!exercises.existsById(request.exerciseId())) {
+		// Bài chưa duyệt hay đã xoá (is_active = false) người tập không được chọn, chỉ bài đang bật.
+		if (exercises.findById(request.exerciseId()).filter(Exercise::isActive).isEmpty()) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Bài thay thế không tồn tại");
 		}
 
@@ -126,7 +127,7 @@ public class ScheduleService {
 		ScheduledWorkout workout = scheduledWorkouts.findById(scheduledWorkoutId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy buổi tập"));
 		requireEditable(userId, workout);
-		if (!exercises.existsById(request.exerciseId())) {
+		if (exercises.findById(request.exerciseId()).filter(Exercise::isActive).isEmpty()) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Bài tập không tồn tại");
 		}
 

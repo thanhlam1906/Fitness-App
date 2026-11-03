@@ -3,6 +3,7 @@ package com.fitness.program.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fitness.auth.entity.Role;
+import com.fitness.content.entity.Exercise;
 import com.fitness.content.repository.ExerciseRepository;
 import com.fitness.content.repository.ProgramTemplateRepository;
 import com.fitness.program.dto.AddExerciseRequest;
@@ -169,6 +170,24 @@ class ProgramEditIntegrationTest extends PostgresIntegrationTest {
 		assertThat(unknown.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(inverted.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(nullItem.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+	}
+
+	@Test
+	void editDay_addInactiveExercise_returns400() {
+		var user = newAuthedUser(Role.USER);
+		createDailyProgram(user.userId());
+		// Bài mới tạo ngay trong test: không đụng bài seed dùng chung với test khác.
+		Exercise inactive = new Exercise("test-" + UUID.randomUUID(), "Test", null,
+				new String[0], new String[0], null, null, false);
+		inactive.deactivate();
+		UUID inactiveId = exercises.save(inactive).getId();
+
+		var resp = rest.exchange("/api/v1/schedule/days", HttpMethod.PUT, new HttpEntity<>(
+				new EditDayRequest("A", List.of(), List.of(),
+						List.of(new EditDayRequest.ExerciseTargetRequest(inactiveId, 3, 8, 8, null))),
+				user.headers()), String.class);
+
+		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 	}
 
 	@Test

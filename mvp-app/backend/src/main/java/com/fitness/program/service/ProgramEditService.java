@@ -1,5 +1,6 @@
 package com.fitness.program.service;
 
+import com.fitness.content.entity.Exercise;
 import com.fitness.content.repository.ExerciseRepository;
 import com.fitness.program.dto.EditDayRequest;
 import com.fitness.program.entity.Program;
@@ -67,7 +68,8 @@ public class ProgramEditService {
 			throw badRequest("Rep đến phải lớn hơn hoặc bằng rep từ");
 		}
 		for (EditDayRequest.ExerciseTargetRequest t : add) {
-			if (!exercises.existsById(t.exerciseId())) {
+			// Chỉ bài đang bật: bài chưa duyệt hay đã xoá không được thêm vào lịch người tập.
+			if (exercises.findById(t.exerciseId()).filter(Exercise::isActive).isEmpty()) {
 				throw badRequest("Bài tập không tồn tại");
 			}
 		}

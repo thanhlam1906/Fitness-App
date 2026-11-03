@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fitness.auth.entity.Role;
 import com.fitness.content.dto.ExerciseResponse;
+import com.fitness.content.entity.Exercise;
 import com.fitness.content.repository.ExerciseRepository;
 import com.fitness.content.repository.ProgramTemplateRepository;
 import com.fitness.feedback.dto.FeedbackRequest;
@@ -90,6 +91,26 @@ class SubstituteIntegrationTest extends PostgresIntegrationTest {
 		ScheduleResponse after = getSchedule(user.headers());
 		assertThat(after.workouts().get(1).exercises())
 				.anyMatch(e -> e.exerciseSlug().equals("barbell-back-squat"));
+	}
+
+	@Test
+	void substitute_withInactiveExercise_returns400() {
+		var user = newAuthedUser(Role.USER);
+		saveProfile(user.userId(), "BARBELL_RACK", "DUMBBELL", "BENCH");
+		UUID templateId = templates.findBySlug("full-body-3x").orElseThrow().getId();
+		programService.createProgram(user.userId(), templateId, Map.of(), Set.of(), LocalDate.now());
+		UUID scheduledExerciseId = getSchedule(user.headers()).workouts().get(0).exercises().get(0).id();
+		// Bài mới tạo ngay trong test: không đụng bài seed dùng chung với test khác.
+		Exercise inactive = new Exercise("test-" + UUID.randomUUID(), "Test", null,
+				new String[0], new String[0], null, null, false);
+		inactive.deactivate();
+		UUID inactiveId = exercises.save(inactive).getId();
+
+		var resp = rest.exchange(
+				"/api/v1/schedule/exercises/" + scheduledExerciseId + "/substitute", HttpMethod.POST,
+				new HttpEntity<>(new SubstituteRequest(inactiveId), user.headers()), String.class);
+
+		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 	}
 
 	@Test
