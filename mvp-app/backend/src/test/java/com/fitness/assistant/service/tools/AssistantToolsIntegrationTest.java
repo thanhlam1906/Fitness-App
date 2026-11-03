@@ -249,6 +249,16 @@ class AssistantToolsIntegrationTest extends PostgresIntegrationTest {
 	}
 
 	@Test
+	void findExerciseGuide_baiDaXoa_goDungTenVanRong() {
+		insertCableFixtures();
+
+		// Gõ đúng tên bài đã xoá: nhánh "khớp đúng" không được trả nó. Các bài cable chưa duyệt gần tên thì vẫn
+		// hiện (khớp gần đúng), nên không đòi danh sách rỗng, chỉ đòi không có bài đã xoá.
+		assertThat(tools.findExerciseGuide("deleted cable crossover").exercises())
+				.extracting(ExerciseCardResponse::nameEn).doesNotContain("deleted cable crossover");
+	}
+
+	@Test
 	void findExerciseGuide_khongCo_rong() {
 		assertThat(tools.findExerciseGuide("zzqx wobble").exercises()).isEmpty();
 	}
