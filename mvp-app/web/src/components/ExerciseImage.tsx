@@ -7,8 +7,9 @@ type Props = {
   alt: string
   variant: "thumb" | "large"
   /**
-   * Ảnh nằm trong thẻ bài của trợ lý (mockup doc/mockup-thu-vien-bai/demo.html): `thumb` có nền trắng,
-   * `large` bỏ bo góc để dải trắng sát mép khung thẻ (khung đã bo góc và cắt tràn). Màn khác không truyền.
+   * Ảnh nằm trong thẻ bài của trợ lý (mockup doc/mockup-thu-vien-bai/demo.html): `thumb` hiện trọn ảnh
+   * trên nền trắng (không cắt), `large` bỏ bo góc để dải trắng sát mép khung thẻ (khung đã bo góc và cắt
+   * tràn) và cỡ 180px đúng cỡ GIF gốc (240px thì phóng lên, mờ). Màn khác không truyền.
    */
   inCard?: boolean
 }
@@ -44,7 +45,7 @@ function ExerciseImageBody({ slug, alt, variant, inCard }: Props) {
         alt={alt}
         loading="lazy"
         onError={() => setBroken(true)}
-        className={cn("size-11 flex-none rounded-[var(--radius-md)] object-cover", inCard && "bg-white")}
+        className={cn("size-11 flex-none rounded-[var(--radius-md)] object-cover", inCard && "bg-white object-contain")}
       />
     )
   }
@@ -57,7 +58,7 @@ function ExerciseImageBody({ slug, alt, variant, inCard }: Props) {
           src={exerciseImageUrl(slug, "animated")}
           alt={alt}
           onError={() => setAnimatedBroken(true)}
-          className="size-60 object-contain"
+          className={cn("object-contain", inCard ? "size-45" : "size-60")}
         />
       </div>
     )

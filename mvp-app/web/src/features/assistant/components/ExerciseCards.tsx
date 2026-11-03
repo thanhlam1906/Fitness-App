@@ -14,7 +14,8 @@ const FRAME = "overflow-hidden rounded-[var(--radius-lg)] border border-[var(--c
 /**
  * Thẻ bài dưới câu trả lời của trợ lý, theo mockup doc/mockup-thu-vien-bai/demo.html
  * (doc/design-thu-vien-bai-v1.md §7.3). Một bài: thẻ đầy đủ. Hai, ba bài: hàng gọn, bấm mở thẻ.
- * Nội dung lấy thẳng từ DB qua backend, nên vẫn nằm dưới nút "cái này sai" của tin nhắn.
+ * Nội dung lấy thẳng từ DB qua backend. Nút "cái này sai" nằm dưới thẻ và áp cho cả tin nhắn, thẻ
+ * cũng vậy.
  */
 export function ExerciseCards({ cards }: { cards?: ExerciseCard[] }) {
   if (!cards?.length) return null
