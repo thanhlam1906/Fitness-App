@@ -275,10 +275,11 @@ class AssistantToolsIntegrationTest extends PostgresIntegrationTest {
 	void findExerciseGuide_instructionKhongLamCanCuChoNumberGuard() {
 		toolCallLog.clear();
 
-		tools.findExerciseGuide("zzqx wobble");
+		// Nhánh có kết quả: chỉ INSTRUCTION_FOUND có "1–2" (INSTRUCTION_EMPTY không có số nào).
+		tools.findExerciseGuide("Push-up");
 
 		// "1–2 câu" trong instruction mà lọt vào contextText thì NumberGuard coi 1 và 2 là số có căn cứ.
-		assertThat(toolCallLog.contextText()).doesNotContain("câu");
+		assertThat(toolCallLog.contextText()).doesNotContain("1–2").doesNotContain("KHÔNG dùng markdown");
 	}
 
 	@Test

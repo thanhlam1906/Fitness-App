@@ -293,9 +293,11 @@ public class AssistantTools {
 	}
 
 	static final String INSTRUCTION_FOUND = "App đã hiện thẻ cho các bài này ngay dưới câu trả lời (ảnh động, cơ, "
-			+ "dụng cụ, các bước, lỗi hay gặp). Chỉ trả lời 1–2 câu chữ thường: một bài thì nói đây là cách tập "
-			+ "bài đó; nhiều bài thì nói có bao nhiêu bài gần tên và mời bấm xem. KHÔNG liệt kê các bước, cơ, "
-			+ "dụng cụ, KHÔNG dùng markdown.";
+			// "Văn bản thuần", không "chữ thường": tiếng Việt hiểu "chữ thường" là chữ không viết hoa, 11-03 model
+			// đã mở đầu câu trả lời bằng chữ thường theo đúng nghĩa đó.
+			+ "dụng cụ, các bước, lỗi hay gặp). Chỉ trả lời 1–2 câu văn bản thuần, viết hoa đầu câu như bình "
+			+ "thường: một bài thì nói đây là cách tập bài đó; nhiều bài thì nói có bao nhiêu bài gần tên và mời "
+			+ "bấm xem. KHÔNG liệt kê các bước, cơ, dụng cụ, KHÔNG dùng markdown.";
 
 	static final String INSTRUCTION_EMPTY = "Thư viện không có bài nào gần tên này. Trả lời ngắn là không tìm "
 			+ "thấy, gợi ý gõ tên tiếng Anh của bài.";
