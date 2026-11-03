@@ -46,7 +46,7 @@ export function DashboardPage() {
   const dashboard = useAdminDashboard(days)
   const overview = useAdminOverview()
   const templates = useTemplates()
-  const exercises = useExercises()
+  const exercises = useExercises({ all: true })
   const data = dashboard.data
   // keepPreviousData giữ số của khoảng cũ trong lúc tải khoảng mới: chữ đi kèm số phải theo khoảng của số.
   const shownDays = (data?.days ?? days) as InsightDays

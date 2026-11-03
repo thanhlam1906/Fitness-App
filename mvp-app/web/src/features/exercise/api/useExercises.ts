@@ -5,10 +5,15 @@ import type { Exercise, ExerciseInput, FormCheck, FormCheckInput, ImageDrafts } 
 const exercisesKey = ["exercises"] as const
 const formChecksKey = (exerciseId: string) => ["exercises", exerciseId, "form-checks"] as const
 
-export function useExercises() {
+/**
+ * Mặc định chỉ bài đang bật (màn người tập). `all` lấy cả bài chưa duyệt và đã xoá, dành cho admin;
+ * khoá riêng để hai danh sách không đè nhau trong cache, còn invalidate theo ["exercises"] vẫn quét cả hai.
+ */
+export function useExercises(options?: { all?: boolean }) {
+  const all = options?.all === true
   return useQuery({
-    queryKey: exercisesKey,
-    queryFn: () => api.get<Exercise[]>("/exercises"),
+    queryKey: all ? [...exercisesKey, { all: true }] : exercisesKey,
+    queryFn: () => api.get<Exercise[]>(all ? "/exercises?all=true" : "/exercises"),
   })
 }
 

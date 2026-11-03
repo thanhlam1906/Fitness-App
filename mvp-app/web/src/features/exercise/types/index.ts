@@ -12,6 +12,9 @@ export type Exercise = {
   filmingGuide: string | null // JSON thô — hướng dẫn quay hiện ở màn 8
   analyzable: boolean // máy tự tính: có ít nhất một khớp cần kiểm đang bật
   active: boolean
+  draft: boolean // bài mới nạp từ thư viện, chưa được admin duyệt (chỉ hiện khi gọi ?all=true)
+  stepsVi: string[]
+  mistakesVi: string[]
   formCheckCount: number
   checkViews: ViewCode[] // các góc có khớp đang bật, thứ tự camera hướng dẫn
   hasStillImage: boolean // cột trái màn 12 ghi "chưa có ảnh" khi false
@@ -27,6 +30,8 @@ export type ExerciseInput = {
   equipment: string[]
   description: string
   filmingGuide: string
+  stepsVi: string[]
+  mistakesVi: string[]
   active: boolean
 }
 

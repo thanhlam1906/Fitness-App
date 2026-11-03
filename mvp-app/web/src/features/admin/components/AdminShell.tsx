@@ -41,7 +41,7 @@ type Item = {
  * Nhật ký quản trị: doc/design-quan-ly-user-v1.md §6.7.
  */
 function useGroups(): { title: string; items: Item[] }[] {
-  const exercises = useExercises()
+  const exercises = useExercises({ all: true })
   const templates = useTemplates()
   const overview = useAdminOverview()
   const corpus = useDocuments()

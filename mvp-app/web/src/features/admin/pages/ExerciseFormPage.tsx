@@ -83,8 +83,9 @@ export function ExerciseFormPage() {
 
   const { register, handleSubmit, reset, control } = useForm<ExerciseFormValues>({
     // Bài mới: ô hướng dẫn quay phải có chuỗi rỗng sẵn, không thì formToGuide gặp undefined; nhóm cơ,
-    // thiết bị là mảng rỗng để nút bấm có giá trị mà bật/tắt.
-    defaultValues: { guide: guideToForm(null), muscleGroups: [], equipment: [] },
+    // thiết bị là mảng rỗng để nút bấm có giá trị mà bật/tắt. Cách tập, lỗi hay gặp chưa có ô sửa nhưng
+    // phải đi theo form, không thì PUT thiếu hai trường và lưu bài làm mất chúng.
+    defaultValues: { guide: guideToForm(null), muscleGroups: [], equipment: [], stepsVi: [], mistakesVi: [] },
     values: existing.data
       ? {
           slug: existing.data.slug,
@@ -95,6 +96,8 @@ export function ExerciseFormPage() {
           description: existing.data.description ?? "",
           filmingGuide: existing.data.filmingGuide ?? "",
           guide: guideToForm(existing.data.filmingGuide),
+          stepsVi: existing.data.stepsVi,
+          mistakesVi: existing.data.mistakesVi,
           active: existing.data.active,
         }
       : undefined,

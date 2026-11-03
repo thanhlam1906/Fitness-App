@@ -15,6 +15,11 @@ export const MUSCLE_OPTIONS = [
   { value: "SHOULDERS", label: "Vai" },
   { value: "TRICEPS", label: "Tay sau" },
   { value: "BICEPS", label: "Tay trước" },
+  { value: "CALVES", label: "Bắp chân" },
+  { value: "FOREARMS", label: "Cẳng tay" },
+  { value: "ADDUCTORS", label: "Đùi trong" },
+  { value: "ABDUCTORS", label: "Đùi ngoài" },
+  { value: "CARDIO", label: "Tim mạch" },
 ] as const
 
 /** Mã → chữ hiện cho người dùng. */

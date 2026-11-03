@@ -15,7 +15,7 @@ type Filter = "ALL" | "ANALYZABLE" | "PLAIN"
  * `GET /exercises` — backend đếm gộp một query, không phải 40.
  */
 export function ExerciseListPanel({ activeId }: { activeId?: string }) {
-  const exercises = useExercises()
+  const exercises = useExercises({ all: true })
   const [query, setQuery] = useState("")
   const [filter, setFilter] = useState<Filter>("ALL")
 

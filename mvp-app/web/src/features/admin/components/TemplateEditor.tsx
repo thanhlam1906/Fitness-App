@@ -41,7 +41,7 @@ export function TemplateEditor({
   const navigate = useNavigate()
   const save = useSaveTemplate(id ?? undefined)
   const duplicate = useDuplicateTemplate()
-  const exercises = useExercises()
+  const exercises = useExercises({ all: true })
   const help = useHelp<TemplateHelpKey>()
   const confirmRef = useRef<HTMLDialogElement>(null)
   const pending = useRef<ProgramTemplateInput | null>(null)

@@ -1,8 +1,5 @@
-import { CircleAlert } from "lucide-react"
-import { ExerciseImage } from "@/components/ExerciseImage"
+import { ExerciseGuideBody } from "@/components/ExerciseGuideBody"
 import { Sheet, SheetHeader } from "@/components/ui/sheet"
-import { cn } from "@/lib/cn"
-import { MUSCLE_VI } from "@/lib/muscles"
 import { formatTarget, type ProgramDay } from "@/features/schedule/utils/programDays"
 import type { ScheduledExerciseView } from "@/features/schedule/types"
 
@@ -25,59 +22,13 @@ export function ExerciseGuideSheet({
     <Sheet open={open} onClose={onClose} label={exercise.exerciseName}>
       <SheetHeader title={exercise.exerciseName} onCancel={onClose} />
       <div className="overflow-y-auto px-4 pb-7">
-        <ExerciseImage slug={exercise.exerciseSlug} alt={exercise.exerciseName} variant="large" />
-        {exercise.description && <p className="mt-3.5 text-sm leading-relaxed">{exercise.description}</p>}
-
-        {exercise.muscleGroups.length > 0 && (
-          <>
-            <div className="section-title mt-5">Cơ chính</div>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {exercise.muscleGroups.map((code, i) => (
-                <span
-                  key={code}
-                  className={cn(
-                    "rounded-full px-2.5 py-1 text-xs font-bold",
-                    i === 0
-                      ? "bg-[var(--color-accent-tint)] text-[var(--color-accent)]"
-                      : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]",
-                  )}
-                >
-                  {MUSCLE_VI[code] ?? code}
-                </span>
-              ))}
-            </div>
-          </>
-        )}
-
-        {exercise.stepsVi.length > 0 && (
-          <>
-            <div className="section-title mt-5">Cách tập</div>
-            <ol className="mt-1.5">
-              {exercise.stepsVi.map((step, i) => (
-                <li key={step} className="flex gap-2.5 py-1.5 text-sm leading-relaxed">
-                  <span className="num mt-0.5 grid size-5.5 flex-none place-items-center rounded-full bg-[var(--color-surface-2)] text-xs font-extrabold">
-                    {i + 1}
-                  </span>
-                  {step}
-                </li>
-              ))}
-            </ol>
-          </>
-        )}
-
-        {exercise.mistakesVi.length > 0 && (
-          <>
-            <div className="section-title mt-5">Lỗi hay gặp</div>
-            <ul className="mt-2 rounded-[var(--radius-md)] border border-[color-mix(in_srgb,var(--color-warn)_30%,transparent)] bg-[var(--color-warn-tint)] px-3 py-1">
-              {exercise.mistakesVi.map((m) => (
-                <li key={m} className="flex gap-2 py-1.5 text-[13px] leading-relaxed">
-                  <CircleAlert aria-hidden className="mt-[0.2em] size-4 flex-none text-[var(--color-warn)]" />
-                  {m}
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
+        <ExerciseGuideBody
+          slug={exercise.exerciseSlug}
+          description={exercise.description}
+          muscleGroups={exercise.muscleGroups}
+          stepsVi={exercise.stepsVi}
+          mistakesVi={exercise.mistakesVi}
+        />
         <div className="section-title mt-5">Trong chương trình</div>
         <div className="mt-2 rounded-[var(--radius-md)] bg-[var(--color-bg)] px-3">
           {usedIn.map((u) => (
