@@ -274,7 +274,7 @@ class AssistantServiceIntegrationTest extends PostgresIntegrationTest {
 	}
 
 	/**
-	 * Số bài "Có 3 bài gần với..." do code đếm (cards.size()), nên có căn cứ. Slug không chứa chữ số: kết quả
+	 * Cụm "Có 3 bài gần với..." (số do code đếm) được NumberGuard bỏ qua. Slug không chứa chữ số: kết quả
 	 * tool là căn cứ duy nhất của NumberGuard, một chữ số lạc trong uuid sẽ che mất lỗi.
 	 */
 	@Test
@@ -296,6 +296,27 @@ class AssistantServiceIntegrationTest extends PostgresIntegrationTest {
 		assertThat(answer.exercises()).hasSize(3);
 		assertThat(answer.text()).isEqualTo("Có 3 bài gần với wobble plank, bấm vào để xem.");
 		assertThat(answer.guardResult()).isEqualTo("OK");
+	}
+
+	/** Số thẻ không làm căn cứ cho mọi số trùng nó: 3 thẻ mà model viết "3 hiệp" thì đó là số bịa. */
+	@Test
+	void ask_nhieuThe_soBiaTrungSoThe_vanBiNumberGuardChan() {
+		for (String suffix : List.of("alpha", "beta", "gamma")) {
+			jdbc.update("DELETE FROM exercises WHERE slug = ?", "tra-bai-svc-" + suffix);
+			jdbc.update("INSERT INTO exercises (slug, name_en, is_active, is_draft) VALUES (?, ?, false, true)",
+					"tra-bai-svc-" + suffix, "wobble plank " + suffix);
+		}
+		UUID userId = newAuthedUser(Role.USER).userId();
+		asUser(userId);
+		when(chatModel.call(any(org.springframework.ai.chat.prompt.Prompt.class))).thenAnswer(inv -> {
+			assistantTools.findExerciseGuide("wobble plank");
+			return reply("Với wobble plank bạn nên tập 3 hiệp.");
+		});
+
+		AssistantService.Answer answer = assistantService.ask(userId, UUID.randomUUID(), "cách tập wobble plank");
+
+		assertThat(answer.guardResult()).isEqualTo("NUMBERS_UNGROUNDED");
+		assertThat(answer.exercises()).isEmpty();
 	}
 
 	private static final String NL = System.lineSeparator();

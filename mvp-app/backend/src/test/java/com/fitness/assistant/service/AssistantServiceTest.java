@@ -216,4 +216,23 @@ class AssistantServiceTest {
 		assertThat(AssistantService.answerWithCards("**x**", cards))
 				.isEqualTo("Có 3 bài gần với tên bạn hỏi. Bấm vào một bài để xem cách tập.");
 	}
+
+	// ── withoutCardCount: chỉ cụm "<số thẻ> bài" thôi căn cứ, không phải mọi số trùng số thẻ ──
+
+	@Test
+	void withoutCardCount_boCumSoTheBai_giuSoKhac() {
+		List<ExerciseCardResponse> cards = List.of(card("A"), card("B"), card("C"));
+
+		assertThat(AssistantService.withoutCardCount("Có 3 bài gần tên bạn hỏi.", cards))
+				.isEqualTo("Có bài gần tên bạn hỏi.");
+		assertThat(AssistantService.withoutCardCount("Nên tập 3 hiệp.", cards)).isEqualTo("Nên tập 3 hiệp.");
+		// Số dính vào "3" là số khác, giữ nguyên để guard soi.
+		assertThat(AssistantService.withoutCardCount("Có 13 bài, 2.3 bài, 4 bài.", cards))
+				.isEqualTo("Có 13 bài, 2.3 bài, 4 bài.");
+	}
+
+	@Test
+	void withoutCardCount_khongCoThe_giuNguyen() {
+		assertThat(AssistantService.withoutCardCount("Có 0 bài.", List.of())).isEqualTo("Có 0 bài.");
+	}
 }

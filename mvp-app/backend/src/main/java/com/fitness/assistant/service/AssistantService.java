@@ -189,13 +189,11 @@ public class AssistantService {
 			// Mốc ngày chỉ là nguồn số khi model đã đọc lịch — câu kiến thức bịa "30 giây" không được
 			// lọt chỉ vì tháng trước có ngày 30.
 			List<String> toolsCalled = toolCallLog.toolNames();
-			// Số thẻ do code đếm nên có căn cứ. Câu trả lời nhiều bài nói "Có 3 bài gần với..." (design
-			// thu-vien-bai §7.3), mà con số đó không nằm trong kết quả tool: thiếu dòng này câu trả lời
-			// thành NUMBERS_UNGROUNDED và mất cả thẻ.
 			String groundingContext = knowledgeContext + "\n" + toolCallLog.contextText() + "\n" + question
-					+ (toolsCalled.contains("getSchedule") ? "\n" + todayLine : "")
-					+ (cards.isEmpty() ? "" : "\n" + cards.size());
-			boolean grounded = numberGuard.isGrounded(answer, groundingContext);
+					+ (toolsCalled.contains("getSchedule") ? "\n" + todayLine : "");
+			// Chỉ riêng cụm "<số thẻ> bài" do code đếm (câu mẫu, design thu-vien-bai §7.3) được bỏ khỏi phép
+			// kiểm. Thêm số thẻ vào căn cứ thì mọi con số trùng nó, như "nên tập 3 hiệp", cũng lọt.
+			boolean grounded = numberGuard.isGrounded(withoutCardCount(answer, cards), groundingContext);
 
 			Classification classification = classify(answer, toolsCalled, chunks);
 
@@ -244,6 +242,18 @@ public class AssistantService {
 		return cards.size() == 1
 				? "Đây là cách tập " + cards.get(0).nameEn() + ". Xem ảnh động và các bước bên dưới."
 				: "Có " + cards.size() + " bài gần với tên bạn hỏi. Bấm vào một bài để xem cách tập.";
+	}
+
+	/**
+	 * Bỏ cụm "<số thẻ> bài" khỏi chuỗi đưa vào NumberGuard (không đổi câu trả lời): số thẻ do code đếm, không nằm
+	 * trong kết quả tool, mà câu "Có 3 bài gần với..." nào cũng nói. Số khác dính vào "3" (13, 2.3) giữ nguyên.
+	 * Package-private để test thuần, không cần Spring/DB.
+	 */
+	static String withoutCardCount(String answer, List<ExerciseCardResponse> cards) {
+		if (cards.isEmpty()) {
+			return answer;
+		}
+		return answer.replaceAll("(?<![\\d.,])" + cards.size() + "\\s+bài", "bài");
 	}
 
 	record Classification(String intent, List<String> sourceTitles, List<UUID> citedChunkIds) {
