@@ -5,5 +5,5 @@ import java.util.UUID;
 
 public record AskResponse(
 		UUID messageId, String answer, boolean blocked, UUID threadId, List<String> sourceTitles,
-		List<String> toolsCalled, String guardResult) {
+		List<String> toolsCalled, String guardResult, List<ExerciseCardResponse> exercises) {
 }

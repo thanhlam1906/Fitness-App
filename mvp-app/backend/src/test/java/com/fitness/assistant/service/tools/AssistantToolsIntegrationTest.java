@@ -2,6 +2,7 @@ package com.fitness.assistant.service.tools;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fitness.assistant.dto.ExerciseCardResponse;
 import com.fitness.auth.entity.Role;
 import com.fitness.content.repository.ExerciseRepository;
 import com.fitness.program.entity.LoadDecision;
@@ -19,9 +20,12 @@ import com.fitness.workout.repository.SetLogRepository;
 import com.fitness.workout.repository.WorkoutSessionRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -50,6 +54,17 @@ class AssistantToolsIntegrationTest extends PostgresIntegrationTest {
 	private WorkoutSessionRepository workoutSessions;
 	@Autowired
 	private SetLogRepository setLogs;
+	@Autowired
+	private JdbcTemplate jdbc;
+	@Autowired
+	private ToolCallLog toolCallLog;
+
+	// DB Testcontainers dùng chung mọi test class: bài thử chèn bằng JDBC rồi xoá, không sửa bài seed.
+	@AfterEach
+	void cleanExerciseLookupFixtures() {
+		jdbc.update("DELETE FROM exercises WHERE slug LIKE 'tra-bai-test-%'");
+		toolCallLog.clear();
+	}
 
 	@Test
 	void getSchedule_countsByStatusAndLabel_onlyCurrentUser_withinRange() {
@@ -182,6 +197,80 @@ class AssistantToolsIntegrationTest extends PostgresIntegrationTest {
 		assertThat(summary.sessionsFinished()).isEqualTo(1);
 		assertThat(summary.totalTonnageKg()).isEqualByComparingTo(new BigDecimal("300.00")); // 60kg x 5 reps
 		assertThat(summary.avgSessionRpe()).isEqualTo(8.0);
+	}
+
+	// ── findExerciseGuide: tra bài theo tên (design-thu-vien-bai-v1 §7.1) ──
+
+	@Test
+	void findExerciseGuide_tenDung_motBai() {
+		List<ExerciseCardResponse> cards = tools.findExerciseGuide("Push-up");
+
+		assertThat(cards).hasSize(1);
+		assertThat(cards.get(0).slug()).isEqualTo("push-up");
+		assertThat(cards.get(0).stepsVi()).isNotEmpty();
+	}
+
+	@Test
+	void findExerciseGuide_tenVietBaiCu_motBai() {
+		List<ExerciseCardResponse> cards = tools.findExerciseGuide("Chống đẩy");
+
+		assertThat(cards).extracting(ExerciseCardResponse::slug).containsExactly("push-up");
+	}
+
+	@Test
+	void findExerciseGuide_tenGan_toiDaBa() {
+		insertCableFixtures();
+
+		List<ExerciseCardResponse> cards = tools.findExerciseGuide("cable crossover");
+
+		assertThat(cards).hasSizeBetween(1, 3);
+		assertThat(cards).extracting(ExerciseCardResponse::nameEn)
+				.allSatisfy(name -> assertThat(name).containsIgnoringCase("cable"))
+				.doesNotContain("deleted cable crossover");
+	}
+
+	@Test
+	void findExerciseGuide_baiChuaDuyet_tra() {
+		insertCableFixtures();
+
+		List<ExerciseCardResponse> cards = tools.findExerciseGuide("cable upper chest crossovers");
+
+		assertThat(cards).extracting(ExerciseCardResponse::nameEn).containsExactly("cable upper chest crossovers");
+	}
+
+	@Test
+	void findExerciseGuide_khongCo_rong() {
+		assertThat(tools.findExerciseGuide("zzqx wobble")).isEmpty();
+	}
+
+	@Test
+	void findExerciseGuide_tenRong_rong() {
+		insertCableFixtures(); // bài chưa duyệt không có tên Việt: tên rỗng không được khớp đúng chúng
+
+		assertThat(tools.findExerciseGuide("  ")).isEmpty();
+	}
+
+	@Test
+	void findExerciseGuide_ghiThe() {
+		toolCallLog.clear();
+
+		tools.findExerciseGuide("Push-up");
+
+		assertThat(toolCallLog.exerciseCards()).extracting(ExerciseCardResponse::slug).containsExactly("push-up");
+		assertThat(toolCallLog.toolNames()).contains("findExerciseGuide");
+	}
+
+	private void insertCableFixtures() {
+		insertExercise("cable cross-over variation", false, true);
+		insertExercise("cable upper chest crossovers", false, true);
+		insertExercise("cable standing up straight crossovers", false, true);
+		insertExercise("cable rope crossover seated row", false, true);
+		insertExercise("deleted cable crossover", false, false);
+	}
+
+	private void insertExercise(String nameEn, boolean active, boolean draft) {
+		jdbc.update("INSERT INTO exercises (slug, name_en, is_active, is_draft) VALUES (?, ?, ?, ?)",
+				"tra-bai-test-" + UUID.randomUUID(), nameEn, active, draft);
 	}
 
 	private ScheduledWorkout saveWorkout(UUID programId, LocalDate date, String label, UUID exerciseId,

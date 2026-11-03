@@ -1,5 +1,6 @@
 package com.fitness.assistant.service.tools;
 
+import com.fitness.assistant.dto.ExerciseCardResponse;
 import com.fitness.common.CurrentUser;
 import com.fitness.content.entity.Exercise;
 import com.fitness.content.repository.ExerciseRepository;
@@ -265,6 +266,36 @@ public class AssistantTools {
 		ProgressSummary result = new ProgressSummary(
 				p.weeks(), p.sessionsStarted(), p.sessionsFinished(), p.totalTonnageKg(), p.avgSessionRpe());
 		toolCallLog.record("getProgressSummary", result);
+		return result;
+	}
+
+	// ── B4: "Cách tập chống đẩy?" — tra bài theo tên, kèm thẻ bài trong response ──
+
+	// ponytail: 0.3 là mặc định của pg_trgm, chưa đo trên bộ tên thật (~1.330 bài). Chỉnh khi gặp ca sai:
+	// tên thiếu chữ không ra bài (hạ ngưỡng) hoặc ra bài không liên quan (nâng ngưỡng).
+	static final double MIN_NAME_SIMILARITY = 0.3;
+
+	@Tool(description = "Tra bài tập trong thư viện theo tên. Dùng khi người dùng hỏi cách tập, hướng dẫn, kỹ "
+			+ "thuật của MỘT bài cụ thể. Truyền tên TIẾNG ANH thông dụng của bài; người dùng gõ tiếng Việt thì "
+			+ "tự dịch sang tên tiếng Anh (vd 'chống đẩy' → 'push-up'). Trả về tối đa " + ToolCallLog.MAX_EXERCISE_CARDS
+			+ " bài gần tên nhất, mỗi bài gồm tên, nhóm cơ, dụng cụ, các bước, lỗi hay gặp; tên khớp đúng một bài "
+			+ "thì chỉ trả bài đó. Kết quả rỗng nghĩa là thư viện không có bài đó.")
+	public List<ExerciseCardResponse> findExerciseGuide(
+			@ToolParam(description = "tên tiếng Anh thông dụng của bài, ví dụ 'push-up', 'cable crossover'")
+			String name) {
+		String query = name == null ? "" : name.strip();
+		List<Exercise> found = exercises.searchByName(query, MIN_NAME_SIMILARITY, ToolCallLog.MAX_EXERCISE_CARDS);
+		// Tên khớp đúng một bài thì các bài "gần tên" chỉ là nhiễu: "Push-up" không cần kèm "Incline push-up".
+		List<Exercise> exact = found.stream()
+				.filter(e -> query.equalsIgnoreCase(e.getNameEn()) || query.equalsIgnoreCase(e.getNameVi()))
+				.limit(1)
+				.toList();
+		List<ExerciseCardResponse> result = (exact.isEmpty() ? found : exact).stream()
+				.map(ExerciseCardResponse::from)
+				.toList();
+		toolCallLog.record("findExerciseGuide", result);
+		// Thẻ hiện trên app do code thu ở đây, không do model viết lại: model chỉ nói 1-2 câu.
+		toolCallLog.recordExerciseCards(result);
 		return result;
 	}
 }

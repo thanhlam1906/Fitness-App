@@ -10,8 +10,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fitness.assistant.dto.AskRequest;
+import com.fitness.assistant.dto.ExerciseCardResponse;
 import com.fitness.assistant.entity.AssistantMessage;
 import com.fitness.assistant.repository.AssistantMessageRepository;
+import com.fitness.assistant.service.tools.AssistantTools;
 import com.fitness.auth.entity.Role;
 import com.fitness.support.PostgresIntegrationTest;
 import io.github.resilience4j.bulkhead.Bulkhead;
@@ -48,6 +50,8 @@ class AssistantServiceIntegrationTest extends PostgresIntegrationTest {
 	private AssistantService assistantService;
 	@Autowired
 	private AssistantMessageRepository messages;
+	@Autowired
+	private AssistantTools assistantTools;
 	@Autowired
 	private JdbcTemplate jdbc;
 	@MockitoBean
@@ -251,10 +255,41 @@ class AssistantServiceIntegrationTest extends PostgresIntegrationTest {
 				.isInstanceOf(NonTransientAiException.class);
 	}
 
+	/** Model giả gọi tool ngay trong luồng gọi model, đúng như Spring AI gọi tool thật: thẻ do code thu, không do model viết. */
+	@Test
+	void ask_traBai_kemThe_khongNguon() {
+		UUID userId = newAuthedUser(Role.USER).userId();
+		asUser(userId);
+		when(chatModel.call(any(org.springframework.ai.chat.prompt.Prompt.class))).thenAnswer(inv -> {
+			assistantTools.findExerciseGuide("Push-up");
+			return reply("Đây là bài Push-up, khuỷu chếch về sau khoảng 45 độ.");
+		});
+
+		AssistantService.Answer answer = assistantService.ask(userId, UUID.randomUUID(), "cách tập push-up");
+
+		assertThat(answer.exercises()).extracting(ExerciseCardResponse::slug).containsExactly("push-up");
+		assertThat(answer.sourceTitles()).isEmpty();
+		assertThat(answer.guardResult()).isEqualTo("OK"); // 45 có trong các bước của thẻ, tức trong kết quả tool
+	}
+
+	@Test
+	void ask_biChan_khongThe() {
+		UUID userId = newAuthedUser(Role.USER).userId();
+		asUser(userId);
+
+		AssistantService.Answer answer = assistantService.ask(userId, UUID.randomUUID(), "tôi đang mang thai có tập được không");
+
+		assertThat(answer.blocked()).isTrue();
+		assertThat(answer.exercises()).isEmpty();
+	}
+
 	private void stubModelReply(String text) {
-		ChatResponse response = new ChatResponse(
+		when(chatModel.call(any(org.springframework.ai.chat.prompt.Prompt.class))).thenReturn(reply(text));
+	}
+
+	private static ChatResponse reply(String text) {
+		return new ChatResponse(
 				List.of(new Generation(new org.springframework.ai.chat.messages.AssistantMessage(text))));
-		when(chatModel.call(any(org.springframework.ai.chat.prompt.Prompt.class))).thenReturn(response);
 	}
 
 	private void asUser(UUID userId) {

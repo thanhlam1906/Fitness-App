@@ -2,6 +2,7 @@ package com.fitness.assistant.service;
 
 import com.fitness.assistant.dto.AskRequest;
 import com.fitness.assistant.dto.AskResponse;
+import com.fitness.assistant.dto.ExerciseCardResponse;
 import com.fitness.assistant.entity.AssistantMessage;
 import com.fitness.assistant.repository.AssistantMessageRepository;
 import com.fitness.assistant.service.retrieval.FtsRetriever;
@@ -57,6 +58,9 @@ public class AssistantService {
 			  Những câu hỏi này phải hướng người dùng tới chuyên gia y tế hoặc mục "Chấm form" (gửi clip).
 			- Câu hỏi về lịch tập, tải, hay tiến bộ CỦA NGƯỜI DÙNG ĐANG HỎI: PHẢI gọi tool tương ứng để
 			  lấy số liệu thật, không tự đoán hay suy luận số.
+			- Người dùng hỏi cách tập, hướng dẫn, kỹ thuật MỘT bài cụ thể: PHẢI gọi findExerciseGuide. Có kết quả
+			  thì trả lời 1-2 câu; nhiều bài thì nói có mấy bài gần tên và mời bấm xem; KHÔNG chép lại các bước
+			  (app đã hiện thẻ bài). Không có kết quả thì nói thư viện không có bài đó, gợi ý gõ tên tiếng Anh.
 			- Câu hỏi kiến thức chung: CHỈ dùng thông tin trong phần "Tài liệu tham khảo" nếu được cung cấp.
 			  Không có tài liệu liên quan thì nói rõ "không có trong tài liệu", không suy diễn. Tài liệu được
 			  đưa vào KHÔNG có nghĩa là nó trả lời được câu hỏi — nếu đoạn trích không nói TRỰC TIẾP đến điều
@@ -104,7 +108,7 @@ public class AssistantService {
 	/** messageId: dòng ASSISTANT đã lưu — web gắn nút "cái này sai" vào đúng câu trả lời này. */
 	public record Answer(
 			UUID messageId, String text, boolean blocked, List<String> sourceTitles, List<String> toolsCalled,
-			String guardResult) {
+			String guardResult, List<ExerciseCardResponse> exercises) {
 	}
 
 	/** Chưa có threadId = cuộc trò chuyện mới; web gửi lại threadId cũ để nối tiếp. */
@@ -115,7 +119,7 @@ public class AssistantService {
 		Answer answer = ask(userId, threadId, request.question());
 		return new AskResponse(
 				answer.messageId(), answer.text(), answer.blocked(), threadId, answer.sourceTitles(), answer.toolsCalled(),
-				answer.guardResult());
+				answer.guardResult(), answer.exercises());
 	}
 
 	/**
@@ -127,7 +131,7 @@ public class AssistantService {
 
 		if (safetyGate.isBlocked(question)) {
 			return persistAndReturn(userId, threadId, SafetyGate.REFUSAL_MESSAGE, true, "D_BLOCKED", List.of(),
-					List.of(), List.of(), "BLOCKED_D");
+					List.of(), List.of(), "BLOCKED_D", List.of());
 		}
 
 		try {
@@ -158,8 +162,8 @@ public class AssistantService {
 			String userPrompt = question + "\n" + todayLine + (knowledgeContext.isBlank()
 					? "\n\n---\n(Đã tìm trong kho tài liệu nhưng KHÔNG có mục nào liên quan đến câu "
 							+ "hỏi này. Nếu đây là câu hỏi kiến thức chung — không phải hỏi lịch/tải/tiến bộ của "
-							+ "người dùng — bắt buộc trả lời đúng dạng \"Không có thông tin trong tài liệu về "
-							+ "[chủ đề]\", KHÔNG dùng kiến thức có sẵn của bạn để tự trả lời, kể cả khi bạn biết "
+							+ "người dùng, hay hỏi cách tập một bài — bắt buộc trả lời đúng dạng \"Không có thông "
+							+ "tin trong tài liệu về [chủ đề]\", KHÔNG dùng kiến thức có sẵn của bạn để tự trả lời, kể cả khi bạn biết "
 							+ "đáp án.)"
 					: "\n\n---\nTài liệu tham khảo (chỉ dùng đúng nội dung này, trích nguồn nếu trả lời "
 							+ "dựa vào đây):\n" + knowledgeContext);
@@ -179,15 +183,21 @@ public class AssistantService {
 			boolean grounded = numberGuard.isGrounded(answer, groundingContext);
 
 			Classification classification = classify(answer, toolsCalled, chunks);
+			// Lấy trước finally: clear() ở đó xoá luôn thẻ.
+			List<ExerciseCardResponse> cards = toolCallLog.exerciseCards();
 
 			if (!grounded) {
 				// Câu dự phòng không dựa vào tài liệu nào (thay hẳn câu trả lời của model) — kèm
 				// "Nguồn" ở đây cũng là bịa nguồn, dù intent vẫn ghi log đúng là A.
 				return persistAndReturn(userId, threadId, FALLBACK_UNGROUNDED, false, classification.intent(),
-						List.of(), List.of(), toolsCalled, "NUMBERS_UNGROUNDED");
+						List.of(), List.of(), toolsCalled, "NUMBERS_UNGROUNDED", List.of());
 			}
+			// Câu trả lời có thẻ không kèm "Nguồn": classify không tự bỏ nguồn khi có gọi tool, và nội dung
+			// thẻ đến từ DB chứ không từ tài liệu — gắn nguồn tài liệu vào đó là bịa nguồn.
+			boolean hasCards = !cards.isEmpty();
 			return persistAndReturn(userId, threadId, answer, false, classification.intent(),
-					classification.sourceTitles(), classification.citedChunkIds(), toolsCalled, "OK");
+					hasCards ? List.of() : classification.sourceTitles(),
+					hasCards ? List.of() : classification.citedChunkIds(), toolsCalled, "OK", cards);
 		} finally {
 			toolCallLog.clear();
 		}
@@ -269,11 +279,11 @@ public class AssistantService {
 
 	private Answer persistAndReturn(
 			UUID userId, UUID threadId, String text, boolean blocked, String intent, List<String> sourceTitles,
-			List<UUID> chunkIds, List<String> toolsCalled, String guardResult) {
+			List<UUID> chunkIds, List<String> toolsCalled, String guardResult, List<ExerciseCardResponse> exercises) {
 		AssistantMessage assistantMessage = new AssistantMessage(userId, threadId, "ASSISTANT", text);
 		assistantMessage.tagAssistantMetadata(intent, chunkIds.toArray(UUID[]::new),
 				toolsCalled.toArray(String[]::new), guardResult);
 		messages.save(assistantMessage);
-		return new Answer(assistantMessage.getId(), text, blocked, sourceTitles, toolsCalled, guardResult);
+		return new Answer(assistantMessage.getId(), text, blocked, sourceTitles, toolsCalled, guardResult, exercises);
 	}
 }
