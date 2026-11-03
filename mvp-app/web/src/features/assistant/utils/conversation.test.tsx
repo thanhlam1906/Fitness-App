@@ -98,14 +98,18 @@ describe("useAssistant", () => {
     const { result, unmount } = renderHook(() => useAssistant(), { wrapper })
     result.current.mutate({ userId: "u1", question: "RPE là gì?", threadId: null })
     unmount()
-    answer({ messageId: "m9", answer: "RPE là mức gắng sức.", blocked: false, threadId: "t9", sourceTitles: ["Bài 1"] })
+    const exercises = [
+      { slug: "push-up", nameEn: "Push-up", muscleGroups: ["CHEST"], equipment: [], stepsVi: ["Hạ ngực."], mistakesVi: [] },
+    ]
+    answer({ messageId: "m9", answer: "RPE là mức gắng sức.", blocked: false, threadId: "t9", sourceTitles: ["Bài 1"], exercises })
     await waitFor(() => expect(getConversation("u1").messages).toHaveLength(2))
     expect(getConversation("u1")).toMatchObject({
       threadId: "t9",
       messages: [
         { role: "USER", text: "RPE là gì?" },
         // messageId lưu kèm để nút "cái này sai" còn dùng được sau khi tải lại trang.
-        { role: "ASSISTANT", text: "RPE là mức gắng sức.", sourceTitles: ["Bài 1"], messageId: "m9" },
+        // Thẻ bài lưu cùng tin để tải lại trang vẫn còn thẻ.
+        { role: "ASSISTANT", text: "RPE là mức gắng sức.", sourceTitles: ["Bài 1"], messageId: "m9", exercises },
       ],
     })
     expect(post).toHaveBeenCalledWith("/assistant/messages", { question: "RPE là gì?", threadId: null })

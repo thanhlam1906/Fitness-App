@@ -1,5 +1,5 @@
 import { cleanup, render, screen } from "@testing-library/react"
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { ExerciseGuideBody } from "./ExerciseGuideBody"
 
 const base = { slug: "push-up", muscleGroups: ["CHEST"], stepsVi: ["Hạ ngực sát sàn."], mistakesVi: ["Võng hông."] }
@@ -36,5 +36,19 @@ describe("ExerciseGuideBody", () => {
     render(<ExerciseGuideBody {...base} title="Push-up" description="Bài đẩy ngực." />)
     expect(screen.getByText("Push-up")).toBeInTheDocument()
     expect(screen.getByText("Bài đẩy ngực.")).toBeInTheDocument()
+  })
+
+  it("ảnh để alt rỗng vì tên bài đã hiện thành chữ ngay bên cạnh", () => {
+    const { container } = render(<ExerciseGuideBody {...base} title="Push-up" />)
+    expect(container.querySelector("img")).toHaveAttribute("alt", "")
+  })
+
+  it("hai dòng cách tập, lỗi hay gặp trùng chữ vẫn hiện đủ, React không báo trùng key", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {})
+    render(<ExerciseGuideBody {...base} stepsVi={["Siết bụng.", "Siết bụng."]} mistakesVi={["Võng hông.", "Võng hông."]} />)
+    expect(screen.getAllByText("Siết bụng.")).toHaveLength(2)
+    expect(screen.getAllByText("Võng hông.")).toHaveLength(2)
+    expect(error).not.toHaveBeenCalled()
+    error.mockRestore()
   })
 })

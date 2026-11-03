@@ -31,7 +31,8 @@ export function ExerciseGuideBody({
 }) {
   return (
     <div>
-      <ExerciseImage slug={slug} alt={title ?? ""} variant="large" />
+      {/* alt rỗng: tên bài luôn hiện thành chữ ngay cạnh (tiêu đề khung chi tiết hoặc `title` của thẻ), alt có chữ thì trình đọc màn hình đọc tên hai lần. */}
+      <ExerciseImage slug={slug} alt="" variant="large" />
       {title && <div className="mt-3 text-base font-extrabold tracking-[-0.01em]">{title}</div>}
       {description && <p className="mt-3.5 text-sm leading-relaxed">{description}</p>}
 
@@ -72,8 +73,9 @@ export function ExerciseGuideBody({
         <>
           <div className="section-title mt-5">Cách tập</div>
           <ol className="mt-1.5">
+            {/* key theo chỉ số: danh sách tĩnh, mà dữ liệu nhập vào có thể lặp nguyên một dòng. */}
             {stepsVi.map((step, i) => (
-              <li key={step} className="flex gap-2.5 py-1.5 text-sm leading-relaxed">
+              <li key={i} className="flex gap-2.5 py-1.5 text-sm leading-relaxed">
                 <span className="num mt-0.5 grid size-5.5 flex-none place-items-center rounded-full bg-[var(--color-surface-2)] text-xs font-extrabold">
                   {i + 1}
                 </span>
@@ -88,8 +90,8 @@ export function ExerciseGuideBody({
         <>
           <div className="section-title mt-5">Lỗi hay gặp</div>
           <ul className="mt-2 rounded-[var(--radius-md)] border border-[color-mix(in_srgb,var(--color-warn)_30%,transparent)] bg-[var(--color-warn-tint)] px-3 py-1">
-            {mistakesVi.map((m) => (
-              <li key={m} className="flex gap-2 py-1.5 text-[13px] leading-relaxed">
+            {mistakesVi.map((m, i) => (
+              <li key={i} className="flex gap-2 py-1.5 text-[13px] leading-relaxed">
                 <CircleAlert aria-hidden className="mt-[0.2em] size-4 flex-none text-[var(--color-warn)]" />
                 {m}
               </li>

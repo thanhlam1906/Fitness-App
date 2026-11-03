@@ -7,6 +7,7 @@ import { WrongFeedbackButton } from "@/features/feedback/components/WrongFeedbac
 import { cn } from "@/lib/cn"
 import { clearConversation, getConversation, subscribe } from "@/features/assistant/utils/conversation"
 import { ASK_KEY, useAssistant } from "@/features/assistant/api/useAssistant"
+import { ExerciseCards } from "@/features/assistant/components/ExerciseCards"
 import type { ChatMessage } from "@/features/assistant/types"
 
 const FOCUS = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
@@ -174,6 +175,8 @@ function MessageRow({ message }: { message: ChatMessage }) {
           <div className="mb-0.5 text-xs font-semibold text-[var(--color-danger)]">Ngoài phạm vi trợ lý</div>
         )}
         <p className="whitespace-pre-wrap">{message.text}</p>
+        {/* Thẻ nằm giữa chữ và nhãn nguồn (mockup doc/mockup-thu-vien-bai/demo.html). */}
+        <ExerciseCards cards={message.exercises} />
         {!!message.sourceTitles?.length && (
           <div className="mt-2 flex flex-wrap gap-1.5">
             {message.sourceTitles.map((title) => (
