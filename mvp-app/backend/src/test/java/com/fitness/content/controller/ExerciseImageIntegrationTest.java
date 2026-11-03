@@ -6,6 +6,10 @@ import com.fitness.auth.entity.Role;
 import com.fitness.content.dto.ExerciseRequest;
 import com.fitness.content.dto.ExerciseResponse;
 import com.fitness.support.PostgresIntegrationTest;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
@@ -13,6 +17,8 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -20,6 +26,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
@@ -30,8 +37,14 @@ class ExerciseImageIntegrationTest extends PostgresIntegrationTest {
 	private static final byte[] JPG = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0, 4, 5, 6};
 	private static final byte[] GIF = "GIF89a-anh-dong".getBytes(StandardCharsets.ISO_8859_1);
 
+	private static final String URL_ANH = "https://res.cloudinary.com/demo/image/upload/exercises/x.gif";
+
 	@Autowired
 	private TestRestTemplate rest;
+	@Autowired
+	private JdbcTemplate jdbc;
+	@LocalServerPort
+	private int port;
 
 	private ExerciseResponse createExercise(HttpHeaders admin) {
 		var request = new ExerciseRequest(
@@ -76,6 +89,58 @@ class ExerciseImageIntegrationTest extends PostgresIntegrationTest {
 		assertThat(got.getHeaders().getContentType()).isEqualTo(MediaType.IMAGE_PNG);
 		assertThat(got.getHeaders().getCacheControl()).isEqualTo("no-cache");
 		assertThat(got.getBody()).isEqualTo(PNG);
+	}
+
+	/** Ảnh nạp từ Cloudinary (§4.7): dòng chỉ có url, không có bytes. */
+	private void themDongUrl(String slug) {
+		jdbc.update("INSERT INTO exercise_images (slug, kind, content_type, url) VALUES (?, 'ANIMATED', 'image/gif', ?)",
+				slug, URL_ANH);
+	}
+
+	@Test
+	void anhCloudinary_tra302() throws Exception {
+		HttpHeaders admin = newAuthedUser(Role.ADMIN).headers();
+		ExerciseResponse ex = createExercise(admin);
+		themDongUrl(ex.slug());
+
+		// TestRestTemplate tự đi theo 302 tới Cloudinary: dùng client JDK không theo chuyển hướng để thấy chính phản hồi 302.
+		HttpClient noRedirect = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build();
+		HttpResponse<Void> got = noRedirect.send(
+				HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/v1/exercise-images/" + ex.slug() + "/animated")).build(),
+				HttpResponse.BodyHandlers.discarding());
+
+		assertThat(got.statusCode()).isEqualTo(302);
+		assertThat(got.headers().firstValue("Location")).contains(URL_ANH);
+		assertThat(got.headers().firstValue("ETag")).isEmpty();
+		assertThat(got.headers().firstValue("Cache-Control")).contains("no-cache");
+	}
+
+	@Test
+	void adminTaiAnh_thangAnhCloudinary() {
+		HttpHeaders admin = newAuthedUser(Role.ADMIN).headers();
+		ExerciseResponse ex = createExercise(admin);
+		themDongUrl(ex.slug());
+
+		assertThat(upload(admin, ex.id(), "animated", "dong.gif", GIF).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+
+		ResponseEntity<byte[]> got = view(ex.slug(), "animated");
+		assertThat(got.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(got.getBody()).isEqualTo(GIF);
+		assertThat(jdbc.queryForObject("SELECT url FROM exercise_images WHERE slug = ? AND kind = 'ANIMATED'",
+				String.class, ex.slug())).isNull();
+	}
+
+	@Test
+	void dongUrl_tinhLaCoAnh() {
+		HttpHeaders admin = newAuthedUser(Role.ADMIN).headers();
+		ExerciseResponse ex = createExercise(admin);
+		themDongUrl(ex.slug());
+
+		List<ExerciseResponse> all = rest.exchange("/api/v1/exercises?all=true", HttpMethod.GET, new HttpEntity<>(admin),
+				new ParameterizedTypeReference<List<ExerciseResponse>>() {}).getBody();
+
+		assertThat(all).filteredOn(e -> e.id().equals(ex.id())).singleElement()
+				.satisfies(e -> assertThat(e.hasAnimatedImage()).isTrue());
 	}
 
 	@Test

@@ -20,6 +20,8 @@ import org.springframework.web.server.ResponseStatusException;
 /**
  * Ảnh minh hoạ bài tập (doc/design-anh-bai-tap-v1.md §3–4): mỗi bài một ảnh tĩnh, một ảnh động tuỳ chọn.
  * Cất trong Postgres để bản sao lưu DB giữ luôn ảnh. Khoá theo slug — xem V16 vì sao không khoá ngoại.
+ * Riêng ảnh 1.308 bài nạp từ dataset nằm ở Cloudinary: dòng chỉ có `url`, không có `bytes`
+ * (doc/design-thu-vien-bai-v1.md §4.7).
  */
 @Service
 public class ExerciseImageService {
@@ -57,8 +59,9 @@ public class ExerciseImageService {
 	}
 
 	public ExerciseImageResponse get(String slug, String kind) {
-		return jdbc.query("SELECT content_type, bytes, updated_at FROM exercise_images WHERE slug = ? AND kind = ?",
-						(rs, i) -> new ExerciseImageResponse(rs.getString(1), rs.getBytes(2), rs.getTimestamp(3).toInstant()),
+		return jdbc.query("SELECT content_type, bytes, url, updated_at FROM exercise_images WHERE slug = ? AND kind = ?",
+						(rs, i) -> new ExerciseImageResponse(rs.getString(1), rs.getBytes(2), rs.getString(3),
+								rs.getTimestamp(4).toInstant()),
 						slug, Kind.of(kind).name())
 				.stream().findFirst()
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bài này chưa có ảnh."));
@@ -80,10 +83,11 @@ public class ExerciseImageService {
 		if (type == null || !k.accepted.contains(type)) {
 			throw badRequest(k.rejected);
 		}
+		// url = NULL cùng lúc ghi bytes: ảnh admin tải lên thắng ảnh Cloudinary (controller thấy url là 302 trước).
 		jdbc.update("""
 				INSERT INTO exercise_images (slug, kind, content_type, bytes) VALUES (?, ?, ?, ?)
 				ON CONFLICT (slug, kind) DO UPDATE
-				SET content_type = EXCLUDED.content_type, bytes = EXCLUDED.bytes, updated_at = now()
+				SET content_type = EXCLUDED.content_type, bytes = EXCLUDED.bytes, url = NULL, updated_at = now()
 				""", exercise.getSlug(), k.name(), type, bytes);
 		touch(exercise);
 	}

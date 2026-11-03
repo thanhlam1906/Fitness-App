@@ -2,6 +2,7 @@ package com.fitness.content.controller;
 
 import com.fitness.content.dto.ExerciseImageResponse;
 import com.fitness.content.service.ExerciseImageService;
+import java.net.URI;
 import java.util.UUID;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
@@ -32,6 +33,13 @@ public class ExerciseImageController {
 	@GetMapping("/api/v1/exercise-images/{slug}/{kind}")
 	public ResponseEntity<byte[]> get(@PathVariable String slug, @PathVariable String kind, WebRequest request) {
 		ExerciseImageResponse image = images.get(slug, kind);
+		if (image.url() != null) {
+			// Ảnh ở Cloudinary: chuyển hướng, không ETag. no-cache để khi admin tải ảnh riêng lên, lần mở sau thấy ngay.
+			return ResponseEntity.status(HttpStatus.FOUND)
+					.location(URI.create(image.url()))
+					.cacheControl(CacheControl.noCache())
+					.build();
+		}
 		if (request.checkNotModified(image.etag())) {
 			return null; // Spring đã đặt 304
 		}
