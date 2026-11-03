@@ -19,6 +19,7 @@ import { AssistantMark } from "~/components/AssistantMark"
 import { WrongFeedbackButton } from "~/features/feedback/components/WrongFeedbackButton"
 import { clearConversation, getConversation, subscribe } from "~/features/assistant/utils/conversation"
 import { ASK_KEY, useAssistant } from "~/features/assistant/api/useAssistant"
+import { ExerciseCards } from "~/features/assistant/components/ExerciseCards"
 import { colors } from "~/theme"
 
 /** Ba câu mẫu phủ ba loại trợ lý trả lời được: lịch, tiến bộ (tool), kiến thức (tài liệu). */
@@ -177,6 +178,8 @@ function MessageRow({ message }: { message: ChatMessage }) {
         <Text selectable className="text-[15px] leading-[24px] text-text">
           {message.text}
         </Text>
+        {/* Thẻ nằm giữa chữ và nhãn nguồn, như web. */}
+        <ExerciseCards cards={message.exercises} />
         {!!message.sourceTitles?.length && (
           <View className="mt-2 flex-row flex-wrap gap-1.5">
             {message.sourceTitles.map((title) => (

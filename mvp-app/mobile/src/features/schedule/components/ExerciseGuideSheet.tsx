@@ -1,27 +1,10 @@
 import { ScrollView, Text, View } from "react-native"
-import { CircleAlert } from "lucide-react-native"
 import { formatTarget, type ProgramDay } from "@/features/schedule/utils/programDays"
 import type { ScheduledExerciseView } from "@/features/schedule/types"
 import { cn } from "@/lib/cn"
-import { ExerciseImage } from "~/components/ExerciseImage"
+import { ExerciseGuideBody } from "~/components/ExerciseGuideBody"
 import { SectionTitle } from "~/components/SectionTitle"
 import { Sheet, SheetHeader } from "~/components/ui/Sheet"
-import { colors } from "~/theme"
-
-// Mã nhóm cơ trong bảng exercises (muscle_groups) → chữ hiện cho người dùng. Giống web.
-const MUSCLE_VI: Record<string, string> = {
-  QUADS: "Đùi trước",
-  HAMSTRINGS: "Đùi sau",
-  GLUTES: "Mông",
-  CORE: "Bụng",
-  LOWER_BACK: "Lưng dưới",
-  UPPER_BACK: "Lưng trên",
-  LATS: "Xô",
-  CHEST: "Ngực",
-  SHOULDERS: "Vai",
-  TRICEPS: "Tay sau",
-  BICEPS: "Tay trước",
-}
 
 /** Bấm một bài ở màn Chương trình (spec §3.3): ảnh động, cơ chính, cách tập, lỗi hay gặp (doc/design-anh-dong-v1.md). */
 export function ExerciseGuideSheet({
@@ -42,53 +25,13 @@ export function ExerciseGuideSheet({
     <Sheet open={open} onClose={onClose} label={exercise.exerciseName}>
       <SheetHeader title={exercise.exerciseName} onCancel={onClose} />
       <ScrollView className="px-4" contentContainerClassName="pb-4">
-        <ExerciseImage slug={exercise.exerciseSlug} alt={exercise.exerciseName} variant="large" />
-        {exercise.description && <Text className="mt-3.5 text-sm leading-[22px] text-text">{exercise.description}</Text>}
-
-        {exercise.muscleGroups.length > 0 && (
-          <>
-            <SectionTitle className="mt-5">Cơ chính</SectionTitle>
-            <View className="mt-2 flex-row flex-wrap gap-1.5">
-              {exercise.muscleGroups.map((code, i) => (
-                <View key={code} className={cn("rounded-full px-2.5 py-1", i === 0 ? "bg-accent-tint" : "bg-surface-2")}>
-                  <Text className={cn("text-xs font-bold", i === 0 ? "text-accent" : "text-text-muted")}>
-                    {MUSCLE_VI[code] ?? code}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </>
-        )}
-
-        {exercise.stepsVi.length > 0 && (
-          <>
-            <SectionTitle className="mt-5">Cách tập</SectionTitle>
-            <View className="mt-1.5">
-              {exercise.stepsVi.map((step, i) => (
-                <View key={step} className="flex-row gap-2.5 py-1.5">
-                  <View className="mt-0.5 size-[22px] items-center justify-center rounded-full bg-surface-2">
-                    <Text className="text-xs font-extrabold text-text">{i + 1}</Text>
-                  </View>
-                  <Text className="flex-1 text-sm leading-[22px] text-text">{step}</Text>
-                </View>
-              ))}
-            </View>
-          </>
-        )}
-
-        {exercise.mistakesVi.length > 0 && (
-          <>
-            <SectionTitle className="mt-5">Lỗi hay gặp</SectionTitle>
-            <View className="mt-2 rounded-md border border-warn/30 bg-warn-tint px-3 py-1">
-              {exercise.mistakesVi.map((m) => (
-                <View key={m} className="flex-row gap-2 py-1.5">
-                  <CircleAlert size={16} color={colors.warn} style={{ marginTop: 2 }} />
-                  <Text className="flex-1 text-[13px] leading-5 text-text">{m}</Text>
-                </View>
-              ))}
-            </View>
-          </>
-        )}
+        <ExerciseGuideBody
+          slug={exercise.exerciseSlug}
+          description={exercise.description}
+          muscleGroups={exercise.muscleGroups}
+          stepsVi={exercise.stepsVi}
+          mistakesVi={exercise.mistakesVi}
+        />
         <SectionTitle className="mt-5">Trong chương trình</SectionTitle>
         <View className="mt-2 rounded-md bg-bg px-3">
           {usedIn.map((u, i) => (
