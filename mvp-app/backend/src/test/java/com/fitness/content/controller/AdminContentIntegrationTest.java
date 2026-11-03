@@ -241,18 +241,20 @@ class AdminContentIntegrationTest extends PostgresIntegrationTest {
 
 	@Test
 	void khongGuiCacBuoc_giuNguyen() {
+		// Bài tạo mới, không đụng bài seed: DB Testcontainers dùng chung cho mọi test class.
 		HttpHeaders admin = adminHeaders();
-		var pushUp = java.util.Arrays.stream(
-				rest.exchange("/api/v1/exercises", HttpMethod.GET, new HttpEntity<>(admin), ExerciseResponse[].class).getBody())
-				.filter(e -> e.slug().equals("push-up")).findFirst().orElseThrow();
-		assertThat(pushUp.stepsVi()).isNotEmpty();
-		assertThat(pushUp.mistakesVi()).isNotEmpty();
+		var created = rest.exchange("/api/v1/exercises", HttpMethod.POST,
+				new HttpEntity<>(libraryRequest("keep-steps-" + UUID.randomUUID(), List.of("QUADS"), List.of(), true,
+						List.of("Bước một", "Bước hai"), List.of("Lỗi một")), admin),
+				ExerciseResponse.class).getBody();
+		assertThat(created.stepsVi()).containsExactly("Bước một", "Bước hai");
+		assertThat(created.mistakesVi()).containsExactly("Lỗi một");
 
-		var updated = put(admin, pushUp.id(), libraryRequest(
-				pushUp.slug(), pushUp.muscleGroups(), pushUp.equipment(), true, null, null));
+		var updated = put(admin, created.id(), libraryRequest(
+				created.slug(), List.of("QUADS"), List.of(), true, null, null));
 
-		assertThat(updated.stepsVi()).isEqualTo(pushUp.stepsVi());
-		assertThat(updated.mistakesVi()).isEqualTo(pushUp.mistakesVi());
+		assertThat(updated.stepsVi()).containsExactly("Bước một", "Bước hai");
+		assertThat(updated.mistakesVi()).containsExactly("Lỗi một");
 	}
 
 	@Test
