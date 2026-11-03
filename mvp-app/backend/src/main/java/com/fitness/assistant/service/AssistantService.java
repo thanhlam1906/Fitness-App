@@ -67,8 +67,8 @@ public class AssistantService {
 			  đang hỏi (chỉ nhắc thoáng qua, hoặc là chủ đề gần chứ không phải câu trả lời), vẫn phải nói "không
 			  có trong tài liệu". Không được lấp khoảng trống bằng kiến thức chung của bạn dù bạn biết đáp án.
 			- Không tự thêm bất kỳ con số nào ngoài số có trong kết quả tool hoặc tài liệu tham khảo.
-			- Trả lời bằng CHỮ THƯỜNG THUẦN, không dùng markdown (không **, không #, không gạch đầu dòng -) —
-			  giao diện hiển thị nguyên văn, không render markdown.
+			- Trả lời bằng VĂN BẢN THUẦN, viết hoa đầu câu như bình thường, không dùng markdown (không **,
+			  không #, không gạch đầu dòng -) — giao diện hiển thị nguyên văn, không render markdown.
 			""";
 
 	private static final String FALLBACK_UNGROUNDED =
@@ -225,7 +225,8 @@ public class AssistantService {
 	/**
 	 * Lưới an toàn của code cho câu trả lời CÓ thẻ (design-thu-vien-bai-v1 §7.2): app đã hiện thẻ, câu chữ chỉ 1–2
 	 * câu. Dặn trong prompt và trong kết quả tool chưa đủ (11-03 gpt-4o-mini vẫn chép hết các bước kèm markdown),
-	 * nên model dài, có "**" hoặc chép nguyên một bước thì thay bằng câu mẫu. Không thẻ thì giữ nguyên.
+	 * nên model dài, có "**", xuống dòng (danh sách) hoặc chép nguyên một bước thì thay bằng câu mẫu. Không thẻ thì
+	 * giữ nguyên.
 	 * Package-private để test thuần, không cần Spring/DB.
 	 */
 	static String answerWithCards(String answer, List<ExerciseCardResponse> cards) {
@@ -237,7 +238,7 @@ public class AssistantService {
 				.map(String::strip)
 				.filter(step -> step.length() >= MIN_COPIED_STEP_CHARS)
 				.anyMatch(answer::contains);
-		if (answer.length() <= MAX_CARD_ANSWER_CHARS && !answer.contains("**") && !copiedStep) {
+		if (answer.length() <= MAX_CARD_ANSWER_CHARS && !answer.contains("**") && !answer.contains("\n") && !copiedStep) {
 			return answer;
 		}
 		return cards.size() == 1

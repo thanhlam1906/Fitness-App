@@ -201,6 +201,15 @@ class AssistantServiceTest {
 	}
 
 	@Test
+	void answerWithCards_xuongDongThanhDanhSach_thayBangCauMau() {
+		// 11-03 thử thật: "Có 3 bài gần tên ...:\n\n1. ...\n2. ..." — ngắn, không "**", vẫn là danh sách.
+		String answer = "Có 3 bài gần tên \"cable crossover\":\n\n1. A\n2. B\n3. C";
+
+		assertThat(AssistantService.answerWithCards(answer, List.of(card("A"), card("B"), card("C"))))
+				.isEqualTo("Có 3 bài gần với tên bạn hỏi. Bấm vào một bài để xem cách tập.");
+	}
+
+	@Test
 	void answerWithCards_nhieuThe_cauMauNoiSoBai() {
 		List<ExerciseCardResponse> cards = List.of(card("A"), card("B"), card("C"));
 
