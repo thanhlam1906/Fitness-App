@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -43,10 +44,12 @@ public class ExerciseService {
 		this.images = images;
 	}
 
-	public List<ExerciseResponse> list() {
+	/** all = false: chỉ bài đang bật (màn người tập). all = true: cả bài tắt, chưa duyệt, đã xoá (màn admin). */
+	public List<ExerciseResponse> list(boolean all) {
 		Map<UUID, List<FormCheck>> checks = activeChecks();
 		Map<String, Set<String>> imageKinds = images.kindsBySlug();
 		return exercises.findAll().stream()
+				.filter(e -> all || e.isActive())
 				.map(e -> toResponse(e, checks.getOrDefault(e.getId(), List.of()), imageKinds))
 				.toList();
 	}
@@ -67,7 +70,8 @@ public class ExerciseService {
 		Exercise exercise = new Exercise(
 				request.slug(), request.nameEn(), request.nameVi(),
 				toArray(request.muscleGroups()), toArray(request.equipment()),
-				request.description(), blankToNull(request.filmingGuide()), false);
+				request.description(), blankToNull(request.filmingGuide()), false,
+				cleanLines(request.stepsVi()), cleanLines(request.mistakesVi()));
 		exercises.save(exercise);
 		return withCount(exercise);
 	}
@@ -76,19 +80,20 @@ public class ExerciseService {
 		requireValidCodes(request);
 		JsonText.requireValidOrNull(objectMapper, "filmingGuide", request.filmingGuide());
 		Exercise exercise = findOrThrow(id);
+		// null = form không gửi hai danh sách này (client cũ): giữ nguyên, không xoá.
+		String[] stepsVi = request.stepsVi() == null ? exercise.getStepsVi() : cleanLines(request.stepsVi());
+		String[] mistakesVi = request.mistakesVi() == null ? exercise.getMistakesVi() : cleanLines(request.mistakesVi());
 		exercise.update(
 				request.nameEn(), request.nameVi(), toArray(request.muscleGroups()),
 				toArray(request.equipment()), request.description(), blankToNull(request.filmingGuide()),
-				request.active());
+				stepsVi, mistakesVi, request.active());
 		exercises.save(exercise);
 		return withCount(exercise);
 	}
 
 	public ExerciseResponse deactivate(UUID id) {
 		Exercise exercise = findOrThrow(id);
-		exercise.update(
-				exercise.getNameEn(), exercise.getNameVi(), exercise.getMuscleGroups(),
-				exercise.getEquipment(), exercise.getDescription(), exercise.getFilmingGuide(), false);
+		exercise.deactivate();
 		exercises.save(exercise);
 		return withCount(exercise);
 	}
@@ -179,6 +184,15 @@ public class ExerciseService {
 	/** Textarea rỗng gửi lên là "" — cột jsonb không nhận chuỗi rỗng, đổi thành NULL. */
 	private static String blankToNull(String value) {
 		return value == null || value.isBlank() ? null : value;
+	}
+
+	/**
+	 * Mỗi dòng cắt khoảng trắng hai đầu, dòng trống bỏ đi: ô nhập nhiều dòng hay dư dòng trắng.
+	 * Phần tử null (gọi API thẳng, @Size không bắt null) bỏ như dòng trống, không thành lỗi 500.
+	 */
+	private static String[] cleanLines(List<String> lines) {
+		return lines == null ? new String[0]
+				: lines.stream().filter(Objects::nonNull).map(String::strip).filter(l -> !l.isEmpty()).toArray(String[]::new);
 	}
 
 	private static String[] toArray(List<String> values) {

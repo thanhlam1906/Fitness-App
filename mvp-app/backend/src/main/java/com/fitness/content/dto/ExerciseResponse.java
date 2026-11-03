@@ -11,6 +11,7 @@ import java.util.UUID;
  * cho dòng "sửa lúc ..." — cả hai đã nằm sẵn trong DB, chỉ chưa trả ra.
  * `checkViews`: các góc có khớp đang bật, theo thứ tự camera hướng dẫn.
  * `hasStillImage`/`hasAnimatedImage`: cột trái màn 12 ghi "chưa có ảnh", form admin hiện ảnh đang có.
+ * `draft`: bài nhập từ bộ dữ liệu ngoài, chờ admin duyệt (cùng `active` = false nhưng khác "đã xoá").
  */
 public record ExerciseResponse(
 		UUID id,
@@ -27,7 +28,10 @@ public record ExerciseResponse(
 		List<String> checkViews,
 		boolean hasStillImage,
 		boolean hasAnimatedImage,
-		Instant updatedAt) {
+		Instant updatedAt,
+		boolean draft,
+		List<String> stepsVi,
+		List<String> mistakesVi) {
 
 	/** imageKinds: các loại ảnh đang có của bài ("STILL", "ANIMATED"), từ ExerciseImageService.kindsBySlug. */
 	public static ExerciseResponse from(Exercise e, long formCheckCount, List<String> checkViews, Set<String> imageKinds) {
@@ -36,6 +40,6 @@ public record ExerciseResponse(
 				List.of(e.getMuscleGroups()), List.of(e.getEquipment()),
 				e.getDescription(), e.getFilmingGuide(), e.isAnalyzable(), e.isActive(),
 				formCheckCount, checkViews, imageKinds.contains("STILL"), imageKinds.contains("ANIMATED"),
-				e.getUpdatedAt());
+				e.getUpdatedAt(), e.isDraft(), List.of(e.getStepsVi()), List.of(e.getMistakesVi()));
 	}
 }

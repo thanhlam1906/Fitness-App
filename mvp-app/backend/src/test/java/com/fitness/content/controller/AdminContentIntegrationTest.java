@@ -38,6 +38,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 /** Màn 12 concept-frontend-v1.md: CRUD bài tập + form_checks + template cho admin. */
 class AdminContentIntegrationTest extends PostgresIntegrationTest {
@@ -45,10 +46,13 @@ class AdminContentIntegrationTest extends PostgresIntegrationTest {
 	@Autowired
 	private TestRestTemplate rest;
 
+	@Autowired
+	private JdbcTemplate jdbc;
+
 	private static ExerciseRequest exerciseRequest(String slug, boolean active) {
 		return new ExerciseRequest(
 				slug, "Test Exercise", "Bài test", List.of("QUADS"), List.of("BARBELL_RACK"),
-				"mô tả", null, active);
+				"mô tả", null, active, null, null);
 	}
 
 	@Test
@@ -95,7 +99,7 @@ class AdminContentIntegrationTest extends PostgresIntegrationTest {
 
 		var updateReq = new ExerciseRequest(
 				"ignored-on-update", "Updated Name", "Tên mới", List.of("GLUTES"), List.of("DUMBBELL"),
-				"mô tả mới", null, true);
+				"mô tả mới", null, true, null, null);
 		rest.exchange("/api/v1/exercises/" + created.id(), HttpMethod.PUT,
 				new HttpEntity<>(updateReq, admin), ExerciseResponse.class);
 
@@ -109,9 +113,9 @@ class AdminContentIntegrationTest extends PostgresIntegrationTest {
 	void nhomCoThietBiLa_hoacThieuCoChinh_400() {
 		HttpHeaders admin = adminHeaders();
 		String slug = "code-ex-" + UUID.randomUUID();
-		var thieuCoChinh = new ExerciseRequest(slug, "Code Test", "Bài thử mã", List.of(), List.of(), null, null, true);
-		var coLa = new ExerciseRequest(slug, "Code Test", "Bài thử mã", List.of("QUADS", "NECK"), List.of(), null, null, true);
-		var thietBiLa = new ExerciseRequest(slug, "Code Test", "Bài thử mã", List.of("QUADS"), List.of("TREADMILL"), null, null, true);
+		var thieuCoChinh = new ExerciseRequest(slug, "Code Test", "Bài thử mã", List.of(), List.of(), null, null, true, null, null);
+		var coLa = new ExerciseRequest(slug, "Code Test", "Bài thử mã", List.of("QUADS", "NECK"), List.of(), null, null, true, null, null);
+		var thietBiLa = new ExerciseRequest(slug, "Code Test", "Bài thử mã", List.of("QUADS"), List.of("TREADMILL"), null, null, true, null, null);
 
 		var r1 = rest.exchange("/api/v1/exercises", HttpMethod.POST, new HttpEntity<>(thieuCoChinh, admin), String.class);
 		var r2 = rest.exchange("/api/v1/exercises", HttpMethod.POST, new HttpEntity<>(coLa, admin), String.class);
@@ -125,8 +129,8 @@ class AdminContentIntegrationTest extends PostgresIntegrationTest {
 		assertThat(r3.getBody()).contains("TREADMILL");
 
 		// Phần tử null (gọi API thẳng) là mã sai như mọi mã khác, không phải lỗi 500.
-		var coNull = new ExerciseRequest(slug, "Code Test", "Bài thử mã", Arrays.asList("QUADS", null), List.of(), null, null, true);
-		var thietBiNull = new ExerciseRequest(slug, "Code Test", "Bài thử mã", List.of("QUADS"), Arrays.asList((String) null), null, null, true);
+		var coNull = new ExerciseRequest(slug, "Code Test", "Bài thử mã", Arrays.asList("QUADS", null), List.of(), null, null, true, null, null);
+		var thietBiNull = new ExerciseRequest(slug, "Code Test", "Bài thử mã", List.of("QUADS"), Arrays.asList((String) null), null, null, true, null, null);
 		assertThat(rest.exchange("/api/v1/exercises", HttpMethod.POST, new HttpEntity<>(coNull, admin), String.class)
 				.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(rest.exchange("/api/v1/exercises", HttpMethod.POST, new HttpEntity<>(thietBiNull, admin), String.class)
@@ -165,6 +169,144 @@ class AdminContentIntegrationTest extends PostgresIntegrationTest {
 				.getBody();
 
 		assertThat(all).extracting(ExerciseResponse::id).contains(created.id());
+	}
+
+	/** Request đủ trường để test thư viện bài: các test dưới chỉ đổi cơ, thiết bị, bước, lỗi, active. */
+	private static ExerciseRequest libraryRequest(
+			String slug, List<String> muscles, List<String> equipment, boolean active,
+			List<String> stepsVi, List<String> mistakesVi) {
+		return new ExerciseRequest(
+				slug, "Library Test", "Bài thư viện", muscles, equipment, null, null, active, stepsVi, mistakesVi);
+	}
+
+	private ExerciseResponse put(HttpHeaders admin, UUID id, ExerciseRequest request) {
+		return rest.exchange("/api/v1/exercises/" + id, HttpMethod.PUT, new HttpEntity<>(request, admin),
+				ExerciseResponse.class).getBody();
+	}
+
+	/** Bài chưa duyệt do script nhập tạo ra (không qua API): tắt và đánh dấu draft thẳng trong DB. */
+	private ExerciseResponse newDraftExercise(HttpHeaders admin) {
+		String slug = "draft-ex-" + UUID.randomUUID();
+		var created = rest.exchange("/api/v1/exercises", HttpMethod.POST,
+				new HttpEntity<>(exerciseRequest(slug, true), admin), ExerciseResponse.class).getBody();
+		jdbc.update("UPDATE exercises SET is_active = false, is_draft = true WHERE slug = ?", slug);
+		return created;
+	}
+
+	@Test
+	void maCoVaDungCuMoi_luuDuoc() {
+		HttpHeaders admin = adminHeaders();
+		var muscles = List.of("CALVES", "FOREARMS", "ADDUCTORS", "ABDUCTORS", "CARDIO");
+		var equipment = List.of("CABLE", "MACHINE", "BAND", "BALL", "OTHER");
+
+		var response = rest.exchange("/api/v1/exercises", HttpMethod.POST,
+				new HttpEntity<>(libraryRequest("new-codes-" + UUID.randomUUID(), muscles, equipment, true, null, null), admin),
+				ExerciseResponse.class);
+
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+		assertThat(response.getBody().muscleGroups()).containsExactlyElementsOf(muscles);
+		assertThat(response.getBody().equipment()).containsExactlyElementsOf(equipment);
+	}
+
+	@Test
+	void suaCacBuocVaLoiHayGap_boDongTrong() {
+		HttpHeaders admin = adminHeaders();
+		var created = rest.exchange("/api/v1/exercises", HttpMethod.POST,
+				new HttpEntity<>(exerciseRequest("steps-ex-" + UUID.randomUUID(), true), admin), ExerciseResponse.class)
+				.getBody();
+
+		var updated = put(admin, created.id(), libraryRequest(
+				created.slug(), List.of("QUADS"), List.of(), true,
+				List.of("  Bước một ", "", "Bước hai"), List.of("Lỗi một")));
+
+		assertThat(updated.stepsVi()).containsExactly("Bước một", "Bước hai");
+		assertThat(updated.mistakesVi()).containsExactly("Lỗi một");
+		assertThat(exercise(admin, created.id()).stepsVi()).containsExactly("Bước một", "Bước hai");
+	}
+
+	@Test
+	void cacBuocCoPhanTuNull_boQuaKhongLoi500() {
+		HttpHeaders admin = adminHeaders();
+		var created = rest.exchange("/api/v1/exercises", HttpMethod.POST,
+				new HttpEntity<>(exerciseRequest("null-steps-" + UUID.randomUUID(), true), admin), ExerciseResponse.class)
+				.getBody();
+
+		var updated = put(admin, created.id(), libraryRequest(
+				created.slug(), List.of("QUADS"), List.of(), true,
+				Arrays.asList("Bước một", null), Arrays.asList((String) null)));
+
+		assertThat(updated.stepsVi()).containsExactly("Bước một");
+		assertThat(updated.mistakesVi()).isEmpty();
+	}
+
+	@Test
+	void khongGuiCacBuoc_giuNguyen() {
+		HttpHeaders admin = adminHeaders();
+		var pushUp = java.util.Arrays.stream(
+				rest.exchange("/api/v1/exercises", HttpMethod.GET, new HttpEntity<>(admin), ExerciseResponse[].class).getBody())
+				.filter(e -> e.slug().equals("push-up")).findFirst().orElseThrow();
+		assertThat(pushUp.stepsVi()).isNotEmpty();
+		assertThat(pushUp.mistakesVi()).isNotEmpty();
+
+		var updated = put(admin, pushUp.id(), libraryRequest(
+				pushUp.slug(), pushUp.muscleGroups(), pushUp.equipment(), true, null, null));
+
+		assertThat(updated.stepsVi()).isEqualTo(pushUp.stepsVi());
+		assertThat(updated.mistakesVi()).isEqualTo(pushUp.mistakesVi());
+	}
+
+	@Test
+	void baiChuaDuyet_luuMaChuaBat_vanChuaDuyet() {
+		HttpHeaders admin = adminHeaders();
+		var draft = newDraftExercise(admin);
+
+		var updated = put(admin, draft.id(), libraryRequest(
+				draft.slug(), List.of("QUADS"), List.of(), false, null, null));
+
+		assertThat(updated.draft()).isTrue();
+		assertThat(updated.active()).isFalse();
+	}
+
+	@Test
+	void baiChuaDuyet_bat_thanhDangBat() {
+		HttpHeaders admin = adminHeaders();
+		var draft = newDraftExercise(admin);
+
+		var updated = put(admin, draft.id(), libraryRequest(
+				draft.slug(), List.of("QUADS"), List.of(), true, null, null));
+
+		assertThat(updated.draft()).isFalse();
+		assertThat(updated.active()).isTrue();
+	}
+
+	@Test
+	void xoaBaiChuaDuyet_thanhDaXoa() {
+		HttpHeaders admin = adminHeaders();
+		var draft = newDraftExercise(admin);
+
+		var deleted = rest.exchange("/api/v1/exercises/" + draft.id(), HttpMethod.DELETE, new HttpEntity<>(admin),
+				ExerciseResponse.class).getBody();
+
+		assertThat(deleted.draft()).isFalse();
+		assertThat(deleted.active()).isFalse();
+	}
+
+	@Test
+	void danhSach_macDinhChiBaiDangBat_allTraMoiBai() {
+		HttpHeaders admin = adminHeaders();
+		var created = rest.exchange("/api/v1/exercises", HttpMethod.POST,
+				new HttpEntity<>(exerciseRequest("off-ex-" + UUID.randomUUID(), true), admin), ExerciseResponse.class)
+				.getBody();
+		var off = put(admin, created.id(), libraryRequest(
+				created.slug(), List.of("QUADS"), List.of(), false, null, null));
+
+		var defaultList = rest.exchange("/api/v1/exercises", HttpMethod.GET, new HttpEntity<>(admin),
+				ExerciseResponse[].class).getBody();
+		var allList = rest.exchange("/api/v1/exercises?all=true", HttpMethod.GET, new HttpEntity<>(admin),
+				ExerciseResponse[].class).getBody();
+
+		assertThat(defaultList).extracting(ExerciseResponse::slug).doesNotContain(off.slug());
+		assertThat(allList).extracting(ExerciseResponse::slug).contains(off.slug());
 	}
 
 	private static FormCheckRequest check(String view, String measure, Integer from, Integer to) {

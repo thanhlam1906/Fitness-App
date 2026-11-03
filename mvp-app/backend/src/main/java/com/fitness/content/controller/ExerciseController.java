@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -30,8 +31,8 @@ public class ExerciseController {
 	}
 
 	@GetMapping
-	public List<ExerciseResponse> list() {
-		return exerciseService.list();
+	public List<ExerciseResponse> list(@RequestParam(defaultValue = "false") boolean all) {
+		return exerciseService.list(all);
 	}
 
 	@GetMapping("/{id}")

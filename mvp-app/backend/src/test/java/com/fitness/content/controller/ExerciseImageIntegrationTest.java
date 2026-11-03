@@ -35,7 +35,7 @@ class ExerciseImageIntegrationTest extends PostgresIntegrationTest {
 
 	private ExerciseResponse createExercise(HttpHeaders admin) {
 		var request = new ExerciseRequest(
-				"img-test-" + UUID.randomUUID(), "Image Test", "Bài thử ảnh", List.of("QUADS"), List.of(), null, null, true);
+				"img-test-" + UUID.randomUUID(), "Image Test", "Bài thử ảnh", List.of("QUADS"), List.of(), null, null, true, null, null);
 		return rest.exchange("/api/v1/exercises", HttpMethod.POST, new HttpEntity<>(request, admin), ExerciseResponse.class)
 				.getBody();
 	}

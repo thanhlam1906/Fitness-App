@@ -46,7 +46,6 @@ public class Exercise {
 	@Column(name = "filming_guide", columnDefinition = "jsonb")
 	private String filmingGuide;
 
-	// Chỉ sửa qua seed (R__seed_content.sql); form admin chưa có hai trường này.
 	@JdbcTypeCode(SqlTypes.ARRAY)
 	@Column(name = "steps_vi", columnDefinition = "text[]", nullable = false)
 	private String[] stepsVi = new String[0];
@@ -61,6 +60,10 @@ public class Exercise {
 	@Column(name = "is_active", nullable = false)
 	private boolean active = true;
 
+	// Bài nhập từ bộ dữ liệu ngoài, chưa admin duyệt: cũng is_active = false nhưng khác "đã xoá" (trợ lý vẫn tra được).
+	@Column(name = "is_draft", nullable = false)
+	private boolean draft;
+
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt = Instant.now();
 
@@ -73,6 +76,14 @@ public class Exercise {
 	public Exercise(
 			String slug, String nameEn, String nameVi, String[] muscleGroups,
 			String[] equipment, String description, String filmingGuide, boolean analyzable) {
+		this(slug, nameEn, nameVi, muscleGroups, equipment, description, filmingGuide, analyzable,
+				new String[0], new String[0]);
+	}
+
+	public Exercise(
+			String slug, String nameEn, String nameVi, String[] muscleGroups,
+			String[] equipment, String description, String filmingGuide, boolean analyzable,
+			String[] stepsVi, String[] mistakesVi) {
 		this.slug = slug;
 		this.nameEn = nameEn;
 		this.nameVi = nameVi;
@@ -81,18 +92,33 @@ public class Exercise {
 		this.description = description;
 		this.filmingGuide = filmingGuide;
 		this.analyzable = analyzable;
+		this.stepsVi = stepsVi;
+		this.mistakesVi = mistakesVi;
 	}
 
 	public void update(
 			String nameEn, String nameVi, String[] muscleGroups, String[] equipment,
-			String description, String filmingGuide, boolean active) {
+			String description, String filmingGuide, String[] stepsVi, String[] mistakesVi, boolean active) {
 		this.nameEn = nameEn;
 		this.nameVi = nameVi;
 		this.muscleGroups = muscleGroups;
 		this.equipment = equipment;
 		this.description = description;
 		this.filmingGuide = filmingGuide;
+		this.stepsVi = stepsVi;
+		this.mistakesVi = mistakesVi;
 		this.active = active;
+		// Bật bài tức là admin đã duyệt; lưu mà vẫn tắt thì giữ nguyên trạng thái chưa duyệt.
+		if (active) {
+			this.draft = false;
+		}
+		this.updatedAt = Instant.now();
+	}
+
+	/** "Xoá" bài: chưa duyệt cũng thành đã xoá, không quay về danh sách chờ duyệt. */
+	public void deactivate() {
+		this.active = false;
+		this.draft = false;
 		this.updatedAt = Instant.now();
 	}
 
@@ -153,6 +179,10 @@ public class Exercise {
 
 	public boolean isActive() {
 		return active;
+	}
+
+	public boolean isDraft() {
+		return draft;
 	}
 
 	public Instant getUpdatedAt() {
