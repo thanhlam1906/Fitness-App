@@ -178,13 +178,17 @@ public class AssistantService {
 			// Mốc ngày chỉ là nguồn số khi model đã đọc lịch — câu kiến thức bịa "30 giây" không được
 			// lọt chỉ vì tháng trước có ngày 30.
 			List<String> toolsCalled = toolCallLog.toolNames();
+			// Lấy trước finally: clear() ở đó xoá luôn thẻ.
+			List<ExerciseCardResponse> cards = toolCallLog.exerciseCards();
+			// Số thẻ do code đếm nên có căn cứ. Câu trả lời nhiều bài nói "Có 3 bài gần với..." (design
+			// thu-vien-bai §7.3), mà con số đó không nằm trong kết quả tool: thiếu dòng này câu trả lời
+			// thành NUMBERS_UNGROUNDED và mất cả thẻ.
 			String groundingContext = knowledgeContext + "\n" + toolCallLog.contextText() + "\n" + question
-					+ (toolsCalled.contains("getSchedule") ? "\n" + todayLine : "");
+					+ (toolsCalled.contains("getSchedule") ? "\n" + todayLine : "")
+					+ (cards.isEmpty() ? "" : "\n" + cards.size());
 			boolean grounded = numberGuard.isGrounded(answer, groundingContext);
 
 			Classification classification = classify(answer, toolsCalled, chunks);
-			// Lấy trước finally: clear() ở đó xoá luôn thẻ.
-			List<ExerciseCardResponse> cards = toolCallLog.exerciseCards();
 
 			if (!grounded) {
 				// Câu dự phòng không dựa vào tài liệu nào (thay hẳn câu trả lời của model) — kèm

@@ -22,6 +22,7 @@ import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.model.ChatModel;
@@ -270,6 +271,37 @@ class AssistantServiceIntegrationTest extends PostgresIntegrationTest {
 		assertThat(answer.exercises()).extracting(ExerciseCardResponse::slug).containsExactly("push-up");
 		assertThat(answer.sourceTitles()).isEmpty();
 		assertThat(answer.guardResult()).isEqualTo("OK"); // 45 có trong các bước của thẻ, tức trong kết quả tool
+	}
+
+	/**
+	 * Số bài "Có 3 bài gần với..." do code đếm (cards.size()), nên có căn cứ. Slug không chứa chữ số: kết quả
+	 * tool là căn cứ duy nhất của NumberGuard, một chữ số lạc trong uuid sẽ che mất lỗi.
+	 */
+	@Test
+	void ask_nhieuThe_soLuongBaiDoCodeDem_khongBiNumberGuardChan() {
+		for (String suffix : List.of("alpha", "beta", "gamma")) {
+			jdbc.update("DELETE FROM exercises WHERE slug = ?", "tra-bai-svc-" + suffix);
+			jdbc.update("INSERT INTO exercises (slug, name_en, is_active, is_draft) VALUES (?, ?, false, true)",
+					"tra-bai-svc-" + suffix, "wobble plank " + suffix);
+		}
+		UUID userId = newAuthedUser(Role.USER).userId();
+		asUser(userId);
+		when(chatModel.call(any(org.springframework.ai.chat.prompt.Prompt.class))).thenAnswer(inv -> {
+			int n = assistantTools.findExerciseGuide("wobble plank").size();
+			return reply("Có " + n + " bài gần với wobble plank, bấm vào để xem.");
+		});
+
+		AssistantService.Answer answer = assistantService.ask(userId, UUID.randomUUID(), "cách tập wobble plank");
+
+		assertThat(answer.exercises()).hasSize(3);
+		assertThat(answer.text()).isEqualTo("Có 3 bài gần với wobble plank, bấm vào để xem.");
+		assertThat(answer.guardResult()).isEqualTo("OK");
+	}
+
+	// DB Testcontainers dùng chung mọi test class: bài thử chèn bằng JDBC thì xoá, không để lại cho class khác.
+	@AfterEach
+	void cleanExerciseFixtures() {
+		jdbc.update("DELETE FROM exercises WHERE slug LIKE 'tra-bai-svc-%'");
 	}
 
 	@Test

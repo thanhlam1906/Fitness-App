@@ -275,6 +275,15 @@ public class AssistantTools {
 	// tên thiếu chữ không ra bài (hạ ngưỡng) hoặc ra bài không liên quan (nâng ngưỡng).
 	static final double MIN_NAME_SIMILARITY = 0.3;
 
+	/**
+	 * Bỏ hoa thường, khoảng trắng và - _ . , / ( ) ' để so tên ("push up" = "Push-up"). PHẢI cùng nghĩa với
+	 * biểu thức regexp_replace trong ExerciseRepository.searchByName: SQL xếp bài khớp đúng lên đầu, đây giữ
+	 * lại đúng bài đó. Cố ý không dùng \p{L} hay \W: tên Việt có dấu không được mất chữ.
+	 */
+	static String normalizeName(String name) {
+		return name == null ? "" : name.toLowerCase(Locale.ROOT).replaceAll("[\\s_.,/()'-]", "");
+	}
+
 	@Tool(description = "Tra bài tập trong thư viện theo tên. Dùng khi người dùng hỏi cách tập, hướng dẫn, kỹ "
 			+ "thuật của MỘT bài cụ thể. Truyền tên TIẾNG ANH thông dụng của bài; người dùng gõ tiếng Việt thì "
 			+ "tự dịch sang tên tiếng Anh (vd 'chống đẩy' → 'push-up'). Trả về tối đa " + ToolCallLog.MAX_EXERCISE_CARDS
@@ -283,11 +292,14 @@ public class AssistantTools {
 	public List<ExerciseCardResponse> findExerciseGuide(
 			@ToolParam(description = "tên tiếng Anh thông dụng của bài, ví dụ 'push-up', 'cable crossover'")
 			String name) {
-		String query = name == null ? "" : name.strip();
-		List<Exercise> found = exercises.searchByName(query, MIN_NAME_SIMILARITY, ToolCallLog.MAX_EXERCISE_CARDS);
+		String query = normalizeName(name);
+		// Tên toàn dấu câu/khoảng trắng chuẩn hoá thành rỗng: không khớp được bài nào, khỏi hỏi DB (bài có
+		// name_vi rỗng sẽ khớp "đúng" tên rỗng).
+		List<Exercise> found = query.isEmpty() ? List.of()
+				: exercises.searchByName(name.strip(), MIN_NAME_SIMILARITY, ToolCallLog.MAX_EXERCISE_CARDS);
 		// Tên khớp đúng một bài thì các bài "gần tên" chỉ là nhiễu: "Push-up" không cần kèm "Incline push-up".
 		List<Exercise> exact = found.stream()
-				.filter(e -> query.equalsIgnoreCase(e.getNameEn()) || query.equalsIgnoreCase(e.getNameVi()))
+				.filter(e -> query.equals(normalizeName(e.getNameEn())) || query.equals(normalizeName(e.getNameVi())))
 				.limit(1)
 				.toList();
 		List<ExerciseCardResponse> result = (exact.isEmpty() ? found : exact).stream()

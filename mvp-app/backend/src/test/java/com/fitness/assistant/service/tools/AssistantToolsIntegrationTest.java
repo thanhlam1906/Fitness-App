@@ -218,6 +218,16 @@ class AssistantToolsIntegrationTest extends PostgresIntegrationTest {
 	}
 
 	@Test
+	void findExerciseGuide_boDauCauVaKhoangTrang_khopDung() {
+		// Bài gần tên chen vào nếu "push up" không được coi là khớp đúng "Push-up".
+		insertExercise("push up wide grip", false, true);
+
+		List<ExerciseCardResponse> cards = tools.findExerciseGuide("push up");
+
+		assertThat(cards).extracting(ExerciseCardResponse::slug).containsExactly("push-up");
+	}
+
+	@Test
 	void findExerciseGuide_tenGan_toiDaBa() {
 		insertCableFixtures();
 
