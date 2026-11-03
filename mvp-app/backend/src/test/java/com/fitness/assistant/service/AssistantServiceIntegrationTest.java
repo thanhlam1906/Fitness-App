@@ -287,7 +287,7 @@ class AssistantServiceIntegrationTest extends PostgresIntegrationTest {
 		UUID userId = newAuthedUser(Role.USER).userId();
 		asUser(userId);
 		when(chatModel.call(any(org.springframework.ai.chat.prompt.Prompt.class))).thenAnswer(inv -> {
-			int n = assistantTools.findExerciseGuide("wobble plank").size();
+			int n = assistantTools.findExerciseGuide("wobble plank").exercises().size();
 			return reply("Có " + n + " bài gần với wobble plank, bấm vào để xem.");
 		});
 
@@ -296,6 +296,28 @@ class AssistantServiceIntegrationTest extends PostgresIntegrationTest {
 		assertThat(answer.exercises()).hasSize(3);
 		assertThat(answer.text()).isEqualTo("Có 3 bài gần với wobble plank, bấm vào để xem.");
 		assertThat(answer.guardResult()).isEqualTo("OK");
+	}
+
+	private static final String NL = System.lineSeparator();
+
+	/** gpt-4o-mini thật chép cả các bước kèm ** ra câu trả lời: code thay bằng câu mẫu, thẻ vẫn giữ, guard vẫn OK. */
+	@Test
+	void ask_modelChepCacBuoc_codeThayBangCauMau_giuThe() {
+		UUID userId = newAuthedUser(Role.USER).userId();
+		asUser(userId);
+		when(chatModel.call(any(org.springframework.ai.chat.prompt.Prompt.class))).thenAnswer(inv -> {
+			List<String> steps = assistantTools.findExerciseGuide("Push-up").exercises().get(0).stepsVi();
+			// 99 là số bịa: câu mẫu phải thay câu này TRƯỚC NumberGuard, không thì cả câu rơi vào câu dự phòng và mất thẻ.
+			return reply("**Cách tập Push-up**" + NL + String.join(NL, steps) + NL + "Làm 99 lần mỗi ngày.");
+		});
+
+		AssistantService.Answer answer = assistantService.ask(userId, UUID.randomUUID(), "hướng dẫn mình tập chống đẩy");
+
+		assertThat(answer.text()).isEqualTo("Đây là cách tập Push-up. Xem ảnh động và các bước bên dưới.");
+		assertThat(answer.exercises()).extracting(ExerciseCardResponse::slug).containsExactly("push-up");
+		assertThat(answer.guardResult()).isEqualTo("OK");
+		// Bản lưu là câu cuối, không phải câu model chép.
+		assertThat(messages.findById(answer.messageId()).orElseThrow().getContent()).isEqualTo(answer.text());
 	}
 
 	// DB Testcontainers dùng chung mọi test class: bài thử chèn bằng JDBC thì xoá, không để lại cho class khác.

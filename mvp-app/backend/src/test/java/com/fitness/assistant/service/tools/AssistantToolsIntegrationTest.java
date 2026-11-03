@@ -203,7 +203,7 @@ class AssistantToolsIntegrationTest extends PostgresIntegrationTest {
 
 	@Test
 	void findExerciseGuide_tenDung_motBai() {
-		List<ExerciseCardResponse> cards = tools.findExerciseGuide("Push-up");
+		List<ExerciseCardResponse> cards = tools.findExerciseGuide("Push-up").exercises();
 
 		assertThat(cards).hasSize(1);
 		assertThat(cards.get(0).slug()).isEqualTo("push-up");
@@ -212,7 +212,7 @@ class AssistantToolsIntegrationTest extends PostgresIntegrationTest {
 
 	@Test
 	void findExerciseGuide_tenVietBaiCu_motBai() {
-		List<ExerciseCardResponse> cards = tools.findExerciseGuide("Chống đẩy");
+		List<ExerciseCardResponse> cards = tools.findExerciseGuide("Chống đẩy").exercises();
 
 		assertThat(cards).extracting(ExerciseCardResponse::slug).containsExactly("push-up");
 	}
@@ -222,7 +222,7 @@ class AssistantToolsIntegrationTest extends PostgresIntegrationTest {
 		// Bài gần tên chen vào nếu "push up" không được coi là khớp đúng "Push-up".
 		insertExercise("push up wide grip", false, true);
 
-		List<ExerciseCardResponse> cards = tools.findExerciseGuide("push up");
+		List<ExerciseCardResponse> cards = tools.findExerciseGuide("push up").exercises();
 
 		assertThat(cards).extracting(ExerciseCardResponse::slug).containsExactly("push-up");
 	}
@@ -231,7 +231,7 @@ class AssistantToolsIntegrationTest extends PostgresIntegrationTest {
 	void findExerciseGuide_tenGan_toiDaBa() {
 		insertCableFixtures();
 
-		List<ExerciseCardResponse> cards = tools.findExerciseGuide("cable crossover");
+		List<ExerciseCardResponse> cards = tools.findExerciseGuide("cable crossover").exercises();
 
 		assertThat(cards).hasSizeBetween(1, 3);
 		assertThat(cards).extracting(ExerciseCardResponse::nameEn)
@@ -243,21 +243,42 @@ class AssistantToolsIntegrationTest extends PostgresIntegrationTest {
 	void findExerciseGuide_baiChuaDuyet_tra() {
 		insertCableFixtures();
 
-		List<ExerciseCardResponse> cards = tools.findExerciseGuide("cable upper chest crossovers");
+		List<ExerciseCardResponse> cards = tools.findExerciseGuide("cable upper chest crossovers").exercises();
 
 		assertThat(cards).extracting(ExerciseCardResponse::nameEn).containsExactly("cable upper chest crossovers");
 	}
 
 	@Test
 	void findExerciseGuide_khongCo_rong() {
-		assertThat(tools.findExerciseGuide("zzqx wobble")).isEmpty();
+		assertThat(tools.findExerciseGuide("zzqx wobble").exercises()).isEmpty();
 	}
 
 	@Test
 	void findExerciseGuide_tenRong_rong() {
 		insertCableFixtures(); // bài chưa duyệt không có tên Việt: tên rỗng không được khớp đúng chúng
 
-		assertThat(tools.findExerciseGuide("  ")).isEmpty();
+		assertThat(tools.findExerciseGuide("  ").exercises()).isEmpty();
+	}
+
+	@Test
+	void findExerciseGuide_danModelTraLoiNgan_ngayTrongKetQua() {
+		AssistantTools.ExerciseLookupResult found = tools.findExerciseGuide("Push-up");
+		assertThat(found.instruction()).isEqualTo(AssistantTools.INSTRUCTION_FOUND)
+				.contains("1–2 câu").contains("KHÔNG dùng markdown");
+
+		AssistantTools.ExerciseLookupResult empty = tools.findExerciseGuide("zzqx wobble");
+		assertThat(empty.instruction()).isEqualTo(AssistantTools.INSTRUCTION_EMPTY)
+				.contains("gợi ý gõ tên tiếng Anh");
+	}
+
+	@Test
+	void findExerciseGuide_instructionKhongLamCanCuChoNumberGuard() {
+		toolCallLog.clear();
+
+		tools.findExerciseGuide("zzqx wobble");
+
+		// "1–2 câu" trong instruction mà lọt vào contextText thì NumberGuard coi 1 và 2 là số có căn cứ.
+		assertThat(toolCallLog.contextText()).doesNotContain("câu");
 	}
 
 	@Test

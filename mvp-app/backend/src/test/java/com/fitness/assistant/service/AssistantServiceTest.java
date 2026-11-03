@@ -2,6 +2,7 @@ package com.fitness.assistant.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fitness.assistant.dto.ExerciseCardResponse;
 import com.fitness.assistant.service.retrieval.FtsRetriever;
 import java.time.LocalDate;
 import java.util.List;
@@ -143,5 +144,67 @@ class AssistantServiceTest {
 		assertThat(sunday).contains("Chủ nhật, 6/12/2026")
 				.contains("tuần này 2026-11-30 → 2026-12-06")
 				.contains("tháng sau 2027-01-01 → 2027-01-31");
+	}
+
+	// ── answerWithCards: lưới an toàn khi model chép các bước ra câu trả lời có thẻ ──
+
+	private static final String STEP = "Khuỷu tay chếch về sau khoảng 45 độ so với thân người.";
+
+	private static ExerciseCardResponse card(String nameEn) {
+		return new ExerciseCardResponse("slug-" + nameEn, nameEn, List.of(), List.of(), List.of(STEP, "Hạ"), List.of());
+	}
+
+	@Test
+	void answerWithCards_cauNganKhongChepBuoc_giuNguyen() {
+		String answer = "Đây là cách tập Push-up, bạn xem thẻ bên dưới nhé.";
+
+		assertThat(AssistantService.answerWithCards(answer, List.of(card("Push-up")))).isEqualTo(answer);
+	}
+
+	@Test
+	void answerWithCards_khongCoThe_giuNguyen_kheCaCauDaiVaMarkdown() {
+		String answer = "**" + "x".repeat(AssistantService.MAX_CARD_ANSWER_CHARS + 1);
+
+		assertThat(AssistantService.answerWithCards(answer, List.of())).isEqualTo(answer);
+	}
+
+	@Test
+	void answerWithCards_quaDai_thayBangCauMauMotThe() {
+		String answer = "a".repeat(AssistantService.MAX_CARD_ANSWER_CHARS + 1);
+
+		assertThat(AssistantService.answerWithCards(answer, List.of(card("Push-up"))))
+				.isEqualTo("Đây là cách tập Push-up. Xem ảnh động và các bước bên dưới.");
+		assertThat(AssistantService.answerWithCards("a".repeat(AssistantService.MAX_CARD_ANSWER_CHARS),
+				List.of(card("Push-up")))).hasSize(AssistantService.MAX_CARD_ANSWER_CHARS); // đúng ngưỡng thì giữ
+	}
+
+	@Test
+	void answerWithCards_chepNguyenMotBuoc_thayBangCauMau() {
+		String answer = "Bài này tập thế này: " + STEP + " Chúc bạn tập tốt.";
+
+		assertThat(AssistantService.answerWithCards(answer, List.of(card("Push-up"))))
+				.isEqualTo("Đây là cách tập Push-up. Xem ảnh động và các bước bên dưới.");
+	}
+
+	@Test
+	void answerWithCards_buocNganDuoiMuoiLamKyTu_khongTinhLaChep() {
+		// Bước "Hạ" chỉ 2 ký tự: câu nào cũng chứa nó, không được vì thế mà bị thay.
+		String answer = "Hạ người từ từ rồi đẩy lên, xem thẻ bên dưới.";
+
+		assertThat(AssistantService.answerWithCards(answer, List.of(card("Push-up")))).isEqualTo(answer);
+	}
+
+	@Test
+	void answerWithCards_coMarkdown_thayBangCauMau() {
+		assertThat(AssistantService.answerWithCards("Đây là **Push-up**.", List.of(card("Push-up"))))
+				.isEqualTo("Đây là cách tập Push-up. Xem ảnh động và các bước bên dưới.");
+	}
+
+	@Test
+	void answerWithCards_nhieuThe_cauMauNoiSoBai() {
+		List<ExerciseCardResponse> cards = List.of(card("A"), card("B"), card("C"));
+
+		assertThat(AssistantService.answerWithCards("**x**", cards))
+				.isEqualTo("Có 3 bài gần với tên bạn hỏi. Bấm vào một bài để xem cách tập.");
 	}
 }

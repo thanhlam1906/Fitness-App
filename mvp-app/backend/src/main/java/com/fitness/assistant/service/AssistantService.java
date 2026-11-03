@@ -173,13 +173,22 @@ public class AssistantService {
 				answer = "";
 			}
 
+			// Lấy trước finally: clear() ở đó xoá luôn thẻ.
+			List<ExerciseCardResponse> cards = toolCallLog.exerciseCards();
+			// Trước NumberGuard: câu dài kèm một số bịa mà qua guard trước thì rơi vào câu dự phòng và mất thẻ,
+			// trong khi chỉ cần thay bằng câu mẫu của code.
+			String cardAnswer = answerWithCards(answer, cards);
+			if (!cardAnswer.equals(answer)) {
+				log.info("Câu trả lời có thẻ bị thay bằng câu mẫu (dài, markdown hoặc chép bước): {} ký tự",
+						answer.length());
+			}
+			answer = cardAnswer;
+
 			// Số hợp lệ đến từ 3 nguồn: chunk RAG, kết quả tool (đã đúng vì đọc thẳng DB),
 			// và số chính người dùng gõ ra (vd "4 tuần" phản chiếu lại trong câu trả lời).
 			// Mốc ngày chỉ là nguồn số khi model đã đọc lịch — câu kiến thức bịa "30 giây" không được
 			// lọt chỉ vì tháng trước có ngày 30.
 			List<String> toolsCalled = toolCallLog.toolNames();
-			// Lấy trước finally: clear() ở đó xoá luôn thẻ.
-			List<ExerciseCardResponse> cards = toolCallLog.exerciseCards();
 			// Số thẻ do code đếm nên có căn cứ. Câu trả lời nhiều bài nói "Có 3 bài gần với..." (design
 			// thu-vien-bai §7.3), mà con số đó không nằm trong kết quả tool: thiếu dòng này câu trả lời
 			// thành NUMBERS_UNGROUNDED và mất cả thẻ.
@@ -205,6 +214,35 @@ public class AssistantService {
 		} finally {
 			toolCallLog.clear();
 		}
+	}
+
+	// ponytail: 300 ký tự đoán từ "1–2 câu" tiếng Việt, chưa đo trên câu trả lời thật. Câu hợp lệ bị thay oan
+	// thì nâng lên, model vẫn dài dòng lọt qua thì hạ xuống.
+	static final int MAX_CARD_ANSWER_CHARS = 300;
+	// Bước ngắn hơn thế (vd "Hạ") câu nào cũng chứa, so nguyên văn sẽ thay oan mọi câu.
+	private static final int MIN_COPIED_STEP_CHARS = 15;
+
+	/**
+	 * Lưới an toàn của code cho câu trả lời CÓ thẻ (design-thu-vien-bai-v1 §7.2): app đã hiện thẻ, câu chữ chỉ 1–2
+	 * câu. Dặn trong prompt và trong kết quả tool chưa đủ (11-03 gpt-4o-mini vẫn chép hết các bước kèm markdown),
+	 * nên model dài, có "**" hoặc chép nguyên một bước thì thay bằng câu mẫu. Không thẻ thì giữ nguyên.
+	 * Package-private để test thuần, không cần Spring/DB.
+	 */
+	static String answerWithCards(String answer, List<ExerciseCardResponse> cards) {
+		if (cards.isEmpty()) {
+			return answer;
+		}
+		boolean copiedStep = cards.stream()
+				.flatMap(card -> card.stepsVi().stream())
+				.map(String::strip)
+				.filter(step -> step.length() >= MIN_COPIED_STEP_CHARS)
+				.anyMatch(answer::contains);
+		if (answer.length() <= MAX_CARD_ANSWER_CHARS && !answer.contains("**") && !copiedStep) {
+			return answer;
+		}
+		return cards.size() == 1
+				? "Đây là cách tập " + cards.get(0).nameEn() + ". Xem ảnh động và các bước bên dưới."
+				: "Có " + cards.size() + " bài gần với tên bạn hỏi. Bấm vào một bài để xem cách tập.";
 	}
 
 	record Classification(String intent, List<String> sourceTitles, List<UUID> citedChunkIds) {

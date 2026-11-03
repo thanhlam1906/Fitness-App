@@ -284,12 +284,29 @@ public class AssistantTools {
 		return name == null ? "" : name.toLowerCase(Locale.ROOT).replaceAll("[\\s_.,/()'-]", "");
 	}
 
+	/**
+	 * instruction đi liền với dữ liệu: dặn trong system prompt thì model bỏ qua (11-03 thử thật với gpt-4o-mini:
+	 * chép cả các bước kèm markdown ra câu trả lời), dặn ngay trong kết quả tool thì nó làm theo.
+	 * AssistantService.answerWithCards là lưới an toàn của code khi model vẫn chép.
+	 */
+	public record ExerciseLookupResult(String instruction, List<ExerciseCardResponse> exercises) {
+	}
+
+	static final String INSTRUCTION_FOUND = "App đã hiện thẻ cho các bài này ngay dưới câu trả lời (ảnh động, cơ, "
+			+ "dụng cụ, các bước, lỗi hay gặp). Chỉ trả lời 1–2 câu chữ thường: một bài thì nói đây là cách tập "
+			+ "bài đó; nhiều bài thì nói có bao nhiêu bài gần tên và mời bấm xem. KHÔNG liệt kê các bước, cơ, "
+			+ "dụng cụ, KHÔNG dùng markdown.";
+
+	static final String INSTRUCTION_EMPTY = "Thư viện không có bài nào gần tên này. Trả lời ngắn là không tìm "
+			+ "thấy, gợi ý gõ tên tiếng Anh của bài.";
+
 	@Tool(description = "Tra bài tập trong thư viện theo tên. Dùng khi người dùng hỏi cách tập, hướng dẫn, kỹ "
 			+ "thuật của MỘT bài cụ thể. Truyền tên TIẾNG ANH thông dụng của bài; người dùng gõ tiếng Việt thì "
-			+ "tự dịch sang tên tiếng Anh (vd 'chống đẩy' → 'push-up'). Trả về tối đa " + ToolCallLog.MAX_EXERCISE_CARDS
-			+ " bài gần tên nhất, mỗi bài gồm tên, nhóm cơ, dụng cụ, các bước, lỗi hay gặp; tên khớp đúng một bài "
-			+ "thì chỉ trả bài đó. Kết quả rỗng nghĩa là thư viện không có bài đó.")
-	public List<ExerciseCardResponse> findExerciseGuide(
+			+ "tự dịch sang tên tiếng Anh (vd 'chống đẩy' → 'push-up'). Trả về instruction (cách trả lời, làm "
+			+ "đúng theo đó) và exercises: tối đa " + ToolCallLog.MAX_EXERCISE_CARDS + " bài gần tên nhất, mỗi bài "
+			+ "gồm tên, nhóm cơ, dụng cụ, các bước, lỗi hay gặp; tên khớp đúng một bài thì chỉ trả bài đó. "
+			+ "exercises rỗng nghĩa là thư viện không có bài đó.")
+	public ExerciseLookupResult findExerciseGuide(
 			@ToolParam(description = "tên tiếng Anh thông dụng của bài, ví dụ 'push-up', 'cable crossover'")
 			String name) {
 		String query = normalizeName(name);
@@ -302,12 +319,14 @@ public class AssistantTools {
 				.filter(e -> query.equals(normalizeName(e.getNameEn())) || query.equals(normalizeName(e.getNameVi())))
 				.limit(1)
 				.toList();
-		List<ExerciseCardResponse> result = (exact.isEmpty() ? found : exact).stream()
+		List<ExerciseCardResponse> cards = (exact.isEmpty() ? found : exact).stream()
 				.map(ExerciseCardResponse::from)
 				.toList();
-		toolCallLog.record("findExerciseGuide", result);
+		// Ghi danh sách thẻ chứ không ghi cả ExerciseLookupResult: instruction có "1–2", ghi vào thì
+		// NumberGuard coi 1 và 2 là số có căn cứ.
+		toolCallLog.record("findExerciseGuide", cards);
 		// Thẻ hiện trên app do code thu ở đây, không do model viết lại: model chỉ nói 1-2 câu.
-		toolCallLog.recordExerciseCards(result);
-		return result;
+		toolCallLog.recordExerciseCards(cards);
+		return new ExerciseLookupResult(cards.isEmpty() ? INSTRUCTION_EMPTY : INSTRUCTION_FOUND, cards);
 	}
 }
