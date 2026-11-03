@@ -21,8 +21,8 @@ export function ExerciseCards({ cards }: { cards?: ExerciseCard[] }) {
   if (cards.length === 1) {
     const [c] = cards
     return (
-      <div className={cn("mt-2.5 p-3", FRAME)}>
-        <ExerciseGuideBody {...bodyProps(c)} title={c.nameEn} />
+      <div className={cn("mt-2.5", FRAME)}>
+        <ExerciseGuideBody {...bodyProps(c)} title={c.nameEn} inCard />
       </div>
     )
   }
@@ -44,7 +44,7 @@ function ExerciseRows({ cards }: { cards: ExerciseCard[] }) {
               onClick={() => setOpenSlug(open ? null : c.slug)}
               className={cn("flex w-full items-center gap-2.5 rounded-[var(--radius-lg)] py-2 pr-3 pl-2 text-left", FOCUS)}
             >
-              <ExerciseImage slug={c.slug} alt="" variant="thumb" />
+              <ExerciseImage slug={c.slug} alt="" variant="thumb" inCard />
               <span className="min-w-0 flex-1">
                 <b className="block truncate text-sm font-bold">{c.nameEn}</b>
                 <small className="block truncate text-xs text-[var(--color-text-muted)]">{summary(c)}</small>
@@ -59,8 +59,8 @@ function ExerciseRows({ cards }: { cards: ExerciseCard[] }) {
             </button>
             {/* Chỉ dựng thân khi mở: không tải ảnh động của hàng đang đóng. Tên đã ở nút nên không truyền `title`. */}
             {open && (
-              <div className="border-t border-[var(--color-border)] p-3">
-                <ExerciseGuideBody {...bodyProps(c)} />
+              <div className="border-t border-[var(--color-border)]">
+                <ExerciseGuideBody {...bodyProps(c)} inCard />
               </div>
             )}
           </div>

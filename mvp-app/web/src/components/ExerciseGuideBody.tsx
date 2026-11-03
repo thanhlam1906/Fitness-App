@@ -11,6 +11,9 @@ import { MUSCLE_VI } from "@/lib/muscles"
  *
  * `title` chỉ truyền khi khung ngoài chưa hiện tên bài (thẻ trợ lý); khung chi tiết đã có tên ở
  * tiêu đề nên bỏ qua. `equipment` không truyền thì không có dòng dụng cụ; mảng rỗng là tập tay không.
+ *
+ * `inCard`: khung ngoài không có lề (thẻ trợ lý, khung đã bo góc và cắt tràn) nên ảnh chạy sát mép khung,
+ * chữ bên dưới tự có lề ngang và lề dưới như `.inner` của mockup. Khung chi tiết bài không truyền.
  */
 export function ExerciseGuideBody({
   slug,
@@ -20,6 +23,7 @@ export function ExerciseGuideBody({
   equipment,
   stepsVi,
   mistakesVi,
+  inCard,
 }: {
   slug: string
   title?: string
@@ -28,11 +32,15 @@ export function ExerciseGuideBody({
   equipment?: string[]
   stepsVi: string[]
   mistakesVi: string[]
+  inCard?: boolean
 }) {
   return (
-    <div>
+    // px-3.5 của khung ngoài và -mx-3.5 của khối ảnh triệt nhau: chỉ ảnh sát mép, chữ vẫn có lề.
+    <div className={inCard ? "px-3.5 pb-3.5" : undefined}>
       {/* alt rỗng: tên bài luôn hiện thành chữ ngay cạnh (tiêu đề khung chi tiết hoặc `title` của thẻ), alt có chữ thì trình đọc màn hình đọc tên hai lần. */}
-      <ExerciseImage slug={slug} alt="" variant="large" />
+      <div className={inCard ? "-mx-3.5" : undefined}>
+        <ExerciseImage slug={slug} alt="" variant="large" inCard={inCard} />
+      </div>
       {title && <div className="mt-3 text-base font-extrabold tracking-[-0.01em]">{title}</div>}
       {description && <p className="mt-3.5 text-sm leading-relaxed">{description}</p>}
 

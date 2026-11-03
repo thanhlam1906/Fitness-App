@@ -51,4 +51,12 @@ describe("ExerciseGuideBody", () => {
     expect(error).not.toHaveBeenCalled()
     error.mockRestore()
   })
+
+  it("trong thẻ bài (inCard) mới có lề ngang cho chữ, khung chi tiết bài giữ nguyên không lề", () => {
+    const { container, rerender } = render(<ExerciseGuideBody {...base} />)
+    expect(container.firstElementChild).not.toHaveClass("px-3.5")
+
+    rerender(<ExerciseGuideBody {...base} inCard />)
+    expect(container.firstElementChild).toHaveClass("px-3.5")
+  })
 })
