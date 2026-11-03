@@ -1331,7 +1331,8 @@ INSERT INTO exercises (slug, name_en, muscle_groups, equipment, steps_vi, mistak
   ('wrist-rollerer', 'wrist rollerer', '{FOREARMS,BICEPS,TRICEPS}', '{OTHER}', ARRAY['Gắn một tạ vào một đầu dây hoặc thanh.', 'Cầm đầu còn lại của dây hoặc thanh bằng hai tay, lòng bàn tay hướng xuống.', 'Đứng hai chân rộng bằng vai, hai tay duỗi thẳng ra trước.', 'Từ từ cuộn tạ lên về phía tay bằng cách gập cổ tay.', 'Dừng một nhịp ở trên cùng, rồi từ từ hạ tạ về vị trí ban đầu.', 'Lặp lại đủ số lần mong muốn.'], '{}', false, false, true)
 ON CONFLICT (slug) DO NOTHING;
 
-INSERT INTO exercise_images (slug, kind, content_type, url) VALUES
+INSERT INTO exercise_images (slug, kind, content_type, url)
+SELECT v.slug, v.kind, v.content_type, v.url FROM (VALUES
   ('3-4-sit-up', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/3-4-sit-up.gif'),
   ('3-4-sit-up', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/3-4-sit-up-still.jpg'),
   ('45-side-bend', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/45-side-bend.gif'),
@@ -1532,9 +1533,12 @@ INSERT INTO exercise_images (slug, kind, content_type, url) VALUES
   ('barbell-bench-squat', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/barbell-bench-squat-still.jpg'),
   ('barbell-bent-arm-pullover', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/barbell-bent-arm-pullover.gif'),
   ('barbell-bent-arm-pullover', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/barbell-bent-arm-pullover-still.jpg')
+) AS v(slug, kind, content_type, url)
+WHERE EXISTS (SELECT 1 FROM exercises e WHERE e.slug = v.slug AND e.is_draft)
 ON CONFLICT DO NOTHING;
 
-INSERT INTO exercise_images (slug, kind, content_type, url) VALUES
+INSERT INTO exercise_images (slug, kind, content_type, url)
+SELECT v.slug, v.kind, v.content_type, v.url FROM (VALUES
   ('barbell-biceps-curl-with-arm-blaster', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/barbell-biceps-curl-with-arm-blaster.gif'),
   ('barbell-biceps-curl-with-arm-blaster', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/barbell-biceps-curl-with-arm-blaster-still.jpg'),
   ('barbell-clean-and-press', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/barbell-clean-and-press.gif'),
@@ -1735,9 +1739,12 @@ INSERT INTO exercise_images (slug, kind, content_type, url) VALUES
   ('barbell-split-squat-v-2', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/barbell-split-squat-v-2-still.jpg'),
   ('barbell-squat-on-knees', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/barbell-squat-on-knees.gif'),
   ('barbell-squat-on-knees', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/barbell-squat-on-knees-still.jpg')
+) AS v(slug, kind, content_type, url)
+WHERE EXISTS (SELECT 1 FROM exercises e WHERE e.slug = v.slug AND e.is_draft)
 ON CONFLICT DO NOTHING;
 
-INSERT INTO exercise_images (slug, kind, content_type, url) VALUES
+INSERT INTO exercise_images (slug, kind, content_type, url)
+SELECT v.slug, v.kind, v.content_type, v.url FROM (VALUES
   ('barbell-squat-jump-step-rear-lunge', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/barbell-squat-jump-step-rear-lunge.gif'),
   ('barbell-squat-jump-step-rear-lunge', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/barbell-squat-jump-step-rear-lunge-still.jpg'),
   ('barbell-standing-ab-rollerout', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/barbell-standing-ab-rollerout.gif'),
@@ -1938,9 +1945,12 @@ INSERT INTO exercise_images (slug, kind, content_type, url) VALUES
   ('cable-kneeling-crunch', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/cable-kneeling-crunch-still.jpg'),
   ('cable-kneeling-rear-delt-row-with-rope-male', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/cable-kneeling-rear-delt-row-with-rope-male.gif'),
   ('cable-kneeling-rear-delt-row-with-rope-male', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/cable-kneeling-rear-delt-row-with-rope-male-still.jpg')
+) AS v(slug, kind, content_type, url)
+WHERE EXISTS (SELECT 1 FROM exercises e WHERE e.slug = v.slug AND e.is_draft)
 ON CONFLICT DO NOTHING;
 
-INSERT INTO exercise_images (slug, kind, content_type, url) VALUES
+INSERT INTO exercise_images (slug, kind, content_type, url)
+SELECT v.slug, v.kind, v.content_type, v.url FROM (VALUES
   ('cable-kneeling-triceps-extension', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/cable-kneeling-triceps-extension.gif'),
   ('cable-kneeling-triceps-extension', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/cable-kneeling-triceps-extension-still.jpg'),
   ('cable-lat-pulldown-full-range-of-motion', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/cable-lat-pulldown-full-range-of-motion.gif'),
@@ -2141,9 +2151,12 @@ INSERT INTO exercise_images (slug, kind, content_type, url) VALUES
   ('cable-standing-twist-row-v-bar', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/cable-standing-twist-row-v-bar-still.jpg'),
   ('cable-standing-up-straight-crossovers', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/cable-standing-up-straight-crossovers.gif'),
   ('cable-standing-up-straight-crossovers', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/cable-standing-up-straight-crossovers-still.jpg')
+) AS v(slug, kind, content_type, url)
+WHERE EXISTS (SELECT 1 FROM exercises e WHERE e.slug = v.slug AND e.is_draft)
 ON CONFLICT DO NOTHING;
 
-INSERT INTO exercise_images (slug, kind, content_type, url) VALUES
+INSERT INTO exercise_images (slug, kind, content_type, url)
+SELECT v.slug, v.kind, v.content_type, v.url FROM (VALUES
   ('cable-straight-arm-pulldown', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/cable-straight-arm-pulldown.gif'),
   ('cable-straight-arm-pulldown', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/cable-straight-arm-pulldown-still.jpg'),
   ('cable-straight-arm-pulldown-with-rope', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/cable-straight-arm-pulldown-with-rope.gif'),
@@ -2344,9 +2357,12 @@ INSERT INTO exercise_images (slug, kind, content_type, url) VALUES
   ('dumbbell-fly', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/dumbbell-fly-still.jpg'),
   ('dumbbell-fly-on-exercise-ball', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/dumbbell-fly-on-exercise-ball.gif'),
   ('dumbbell-fly-on-exercise-ball', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/dumbbell-fly-on-exercise-ball-still.jpg')
+) AS v(slug, kind, content_type, url)
+WHERE EXISTS (SELECT 1 FROM exercises e WHERE e.slug = v.slug AND e.is_draft)
 ON CONFLICT DO NOTHING;
 
-INSERT INTO exercise_images (slug, kind, content_type, url) VALUES
+INSERT INTO exercise_images (slug, kind, content_type, url)
+SELECT v.slug, v.kind, v.content_type, v.url FROM (VALUES
   ('dumbbell-forward-lunge-triceps-extension', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/dumbbell-forward-lunge-triceps-extension.gif'),
   ('dumbbell-forward-lunge-triceps-extension', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/dumbbell-forward-lunge-triceps-extension-still.jpg'),
   ('dumbbell-front-raise', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/dumbbell-front-raise.gif'),
@@ -2547,9 +2563,12 @@ INSERT INTO exercise_images (slug, kind, content_type, url) VALUES
   ('dumbbell-one-arm-shoulder-press-v-2', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/dumbbell-one-arm-shoulder-press-v-2-still.jpg'),
   ('dumbbell-one-arm-snatch', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/dumbbell-one-arm-snatch.gif'),
   ('dumbbell-one-arm-snatch', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/dumbbell-one-arm-snatch-still.jpg')
+) AS v(slug, kind, content_type, url)
+WHERE EXISTS (SELECT 1 FROM exercises e WHERE e.slug = v.slug AND e.is_draft)
 ON CONFLICT DO NOTHING;
 
-INSERT INTO exercise_images (slug, kind, content_type, url) VALUES
+INSERT INTO exercise_images (slug, kind, content_type, url)
+SELECT v.slug, v.kind, v.content_type, v.url FROM (VALUES
   ('dumbbell-one-arm-standing-curl', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/dumbbell-one-arm-standing-curl.gif'),
   ('dumbbell-one-arm-standing-curl', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/dumbbell-one-arm-standing-curl-still.jpg'),
   ('dumbbell-one-arm-standing-hammer-curl', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/dumbbell-one-arm-standing-hammer-curl.gif'),
@@ -2750,9 +2769,12 @@ INSERT INTO exercise_images (slug, kind, content_type, url) VALUES
   ('dumbbell-standing-concentration-curl', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/dumbbell-standing-concentration-curl-still.jpg'),
   ('dumbbell-standing-front-raise-above-head', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/dumbbell-standing-front-raise-above-head.gif'),
   ('dumbbell-standing-front-raise-above-head', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/dumbbell-standing-front-raise-above-head-still.jpg')
+) AS v(slug, kind, content_type, url)
+WHERE EXISTS (SELECT 1 FROM exercises e WHERE e.slug = v.slug AND e.is_draft)
 ON CONFLICT DO NOTHING;
 
-INSERT INTO exercise_images (slug, kind, content_type, url) VALUES
+INSERT INTO exercise_images (slug, kind, content_type, url)
+SELECT v.slug, v.kind, v.content_type, v.url FROM (VALUES
   ('dumbbell-standing-inner-biceps-curl-v-2', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/dumbbell-standing-inner-biceps-curl-v-2.gif'),
   ('dumbbell-standing-inner-biceps-curl-v-2', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/dumbbell-standing-inner-biceps-curl-v-2-still.jpg'),
   ('dumbbell-standing-kickback', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/dumbbell-standing-kickback.gif'),
@@ -2953,9 +2975,12 @@ INSERT INTO exercise_images (slug, kind, content_type, url) VALUES
   ('full-planche', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/full-planche-still.jpg'),
   ('full-planche-push-up', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/full-planche-push-up.gif'),
   ('full-planche-push-up', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/full-planche-push-up-still.jpg')
+) AS v(slug, kind, content_type, url)
+WHERE EXISTS (SELECT 1 FROM exercises e WHERE e.slug = v.slug AND e.is_draft)
 ON CONFLICT DO NOTHING;
 
-INSERT INTO exercise_images (slug, kind, content_type, url) VALUES
+INSERT INTO exercise_images (slug, kind, content_type, url)
+SELECT v.slug, v.kind, v.content_type, v.url FROM (VALUES
   ('gironda-sternum-chin', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/gironda-sternum-chin.gif'),
   ('gironda-sternum-chin', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/gironda-sternum-chin-still.jpg'),
   ('glute-bridge-march', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/glute-bridge-march.gif'),
@@ -3156,9 +3181,12 @@ INSERT INTO exercise_images (slug, kind, content_type, url) VALUES
   ('kick-out-sit', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/kick-out-sit-still.jpg'),
   ('kipping-muscle-up', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/kipping-muscle-up.gif'),
   ('kipping-muscle-up', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/kipping-muscle-up-still.jpg')
+) AS v(slug, kind, content_type, url)
+WHERE EXISTS (SELECT 1 FROM exercises e WHERE e.slug = v.slug AND e.is_draft)
 ON CONFLICT DO NOTHING;
 
-INSERT INTO exercise_images (slug, kind, content_type, url) VALUES
+INSERT INTO exercise_images (slug, kind, content_type, url)
+SELECT v.slug, v.kind, v.content_type, v.url FROM (VALUES
   ('knee-touch-crunch', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/knee-touch-crunch.gif'),
   ('knee-touch-crunch', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/knee-touch-crunch-still.jpg'),
   ('kneeling-jump-squat', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/kneeling-jump-squat.gif'),
@@ -3359,9 +3387,12 @@ INSERT INTO exercise_images (slug, kind, content_type, url) VALUES
   ('medicine-ball-chest-push-multiple-response', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/medicine-ball-chest-push-multiple-response-still.jpg'),
   ('medicine-ball-chest-push-single-response', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/medicine-ball-chest-push-single-response.gif'),
   ('medicine-ball-chest-push-single-response', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/medicine-ball-chest-push-single-response-still.jpg')
+) AS v(slug, kind, content_type, url)
+WHERE EXISTS (SELECT 1 FROM exercises e WHERE e.slug = v.slug AND e.is_draft)
 ON CONFLICT DO NOTHING;
 
-INSERT INTO exercise_images (slug, kind, content_type, url) VALUES
+INSERT INTO exercise_images (slug, kind, content_type, url)
+SELECT v.slug, v.kind, v.content_type, v.url FROM (VALUES
   ('medicine-ball-chest-push-with-run-release', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/medicine-ball-chest-push-with-run-release.gif'),
   ('medicine-ball-chest-push-with-run-release', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/medicine-ball-chest-push-with-run-release-still.jpg'),
   ('medicine-ball-close-grip-push-up', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/medicine-ball-close-grip-push-up.gif'),
@@ -3562,9 +3593,12 @@ INSERT INTO exercise_images (slug, kind, content_type, url) VALUES
   ('scapula-push-up', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/scapula-push-up-still.jpg'),
   ('scapular-pull-up', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/scapular-pull-up.gif'),
   ('scapular-pull-up', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/scapular-pull-up-still.jpg')
+) AS v(slug, kind, content_type, url)
+WHERE EXISTS (SELECT 1 FROM exercises e WHERE e.slug = v.slug AND e.is_draft)
 ON CONFLICT DO NOTHING;
 
-INSERT INTO exercise_images (slug, kind, content_type, url) VALUES
+INSERT INTO exercise_images (slug, kind, content_type, url)
+SELECT v.slug, v.kind, v.content_type, v.url FROM (VALUES
   ('scissor-jumps-male', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/scissor-jumps-male.gif'),
   ('scissor-jumps-male', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/scissor-jumps-male-still.jpg'),
   ('seated-calf-stretch-male', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/seated-calf-stretch-male.gif'),
@@ -3765,9 +3799,12 @@ INSERT INTO exercise_images (slug, kind, content_type, url) VALUES
   ('smith-toe-raise', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/smith-toe-raise-still.jpg'),
   ('smith-upright-row', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/smith-upright-row.gif'),
   ('smith-upright-row', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/smith-upright-row-still.jpg')
+) AS v(slug, kind, content_type, url)
+WHERE EXISTS (SELECT 1 FROM exercises e WHERE e.slug = v.slug AND e.is_draft)
 ON CONFLICT DO NOTHING;
 
-INSERT INTO exercise_images (slug, kind, content_type, url) VALUES
+INSERT INTO exercise_images (slug, kind, content_type, url)
+SELECT v.slug, v.kind, v.content_type, v.url FROM (VALUES
   ('smith-wide-grip-bench-press', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/smith-wide-grip-bench-press.gif'),
   ('smith-wide-grip-bench-press', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/smith-wide-grip-bench-press-still.jpg'),
   ('smith-wide-grip-decline-bench-press', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/smith-wide-grip-decline-bench-press.gif'),
@@ -3968,9 +4005,12 @@ INSERT INTO exercise_images (slug, kind, content_type, url) VALUES
   ('wheel-rollerout', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/wheel-rollerout-still.jpg'),
   ('wheel-run', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/wheel-run.gif'),
   ('wheel-run', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/wheel-run-still.jpg')
+) AS v(slug, kind, content_type, url)
+WHERE EXISTS (SELECT 1 FROM exercises e WHERE e.slug = v.slug AND e.is_draft)
 ON CONFLICT DO NOTHING;
 
-INSERT INTO exercise_images (slug, kind, content_type, url) VALUES
+INSERT INTO exercise_images (slug, kind, content_type, url)
+SELECT v.slug, v.kind, v.content_type, v.url FROM (VALUES
   ('wide-grip-pull-up', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/wide-grip-pull-up.gif'),
   ('wide-grip-pull-up', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/wide-grip-pull-up-still.jpg'),
   ('wide-grip-rear-pull-up', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/wide-grip-rear-pull-up.gif'),
@@ -3987,4 +4027,6 @@ INSERT INTO exercise_images (slug, kind, content_type, url) VALUES
   ('wrist-circles', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/wrist-circles-still.jpg'),
   ('wrist-rollerer', 'ANIMATED', 'image/gif', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/wrist-rollerer.gif'),
   ('wrist-rollerer', 'STILL', 'image/jpeg', 'https://res.cloudinary.com/dhgzezjrv/image/upload/exercises/wrist-rollerer-still.jpg')
+) AS v(slug, kind, content_type, url)
+WHERE EXISTS (SELECT 1 FROM exercises e WHERE e.slug = v.slug AND e.is_draft)
 ON CONFLICT DO NOTHING;
