@@ -45,9 +45,6 @@ public class AssistantMessage {
 	@Column(name = "guard_result")
 	private String guardResult;
 
-	@Column(name = "is_wrong")
-	private Boolean isWrong;
-
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt = Instant.now();
 
