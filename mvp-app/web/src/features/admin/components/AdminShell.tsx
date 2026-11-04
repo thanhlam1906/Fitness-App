@@ -4,7 +4,6 @@ import {
   BookOpen,
   ClipboardList,
   Dumbbell,
-  Flag,
   Gauge,
   KeyRound,
   LayoutDashboard,
@@ -24,7 +23,7 @@ import { cn } from "@/lib/cn"
 
 type Item = {
   label: string
-  to?: string
+  to: string
   count?: number
   Icon: LucideIcon
 }
@@ -33,9 +32,8 @@ type Item = {
  * Bản admin là sản phẩm thật (§0 concept-frontend-v1.md), nên nó có khung riêng:
  * sidebar 248px chia nhóm, không dùng chung thanh nav với bản user.
  *
- * "Góp ý bị báo sai" đã có số thật từ `GET /admin/overview`, nhưng chưa có màn
- * riêng để mở nên vẫn để tắt: badge cho HLV biết có việc cần xử lý, còn trang
- * xử lý là việc của đợt sau.
+ * Không có mục "Góp ý bị báo sai": chưa có màn xử lý, số báo sai đã hiện ở
+ * Tổng quan và Kho kiến thức (người dùng chọn bỏ mục mờ, 11-04).
  * Không có mục hàng đợi phân tích: chấm theo ngưỡng xong trong vài giây nên
  * hàng đợi gần như luôn rỗng, admin không có gì để xử lý ở đó.
  * Nhật ký quản trị: doc/design-quan-ly-user-v1.md §6.7.
@@ -62,7 +60,6 @@ function useGroups(): { title: string; items: Item[] }[] {
       title: "Chấm form",
       items: [
         { label: "Bài tập và quy chuẩn", to: "/admin/exercises", count: exercises.data?.length, Icon: Gauge },
-        { label: "Góp ý bị báo sai", count: overview.data?.wrongFeedbackCount, Icon: Flag },
       ],
     },
     {
@@ -165,18 +162,6 @@ function NavItem({ item }: { item: Item }) {
       {item.count != null && <span className="num text-xs font-bold">{item.count}</span>}
     </>
   )
-
-  if (!item.to) {
-    return (
-      <span
-        aria-disabled="true"
-        title="Chưa có trong bản này"
-        className={cn(ROW, "cursor-not-allowed text-[var(--color-text-muted)] opacity-45")}
-      >
-        {body}
-      </span>
-    )
-  }
 
   return (
     <NavLink

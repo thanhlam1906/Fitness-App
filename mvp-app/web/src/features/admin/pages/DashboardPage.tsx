@@ -117,7 +117,7 @@ export function DashboardPage() {
                 sub="Mở trang Buổi tập"
                 to={`/admin/sessions?${writeInsightsFilter({ templateId: null, days: shownDays })}`}
               />
-              {/* Chưa có trang xử lý góp ý (xem AdminShell) nên ô này chỉ báo số, không bấm được. */}
+              {/* Chưa có trang xử lý góp ý nên ô này chỉ báo số, không bấm được. */}
               <AttentionTile
                 count={overview.data?.wrongFeedbackCount}
                 loading={overview.isLoading}

@@ -24,7 +24,7 @@ export function useAdminUsers(params: UserListParams) {
   })
 }
 
-/** Bốn ô thống kê, số trên tab, và badge "Người dùng" / "Góp ý bị báo sai" ở sidebar. */
+/** Bốn ô thống kê, số trên tab, badge "Người dùng" ở sidebar, và ô góp ý bị báo sai ở Tổng quan. */
 export function useAdminOverview() {
   return useQuery({ queryKey: overviewKey, queryFn: () => api.get<AdminOverview>("/admin/overview") })
 }
