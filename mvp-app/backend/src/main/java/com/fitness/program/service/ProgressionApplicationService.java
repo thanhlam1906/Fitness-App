@@ -152,7 +152,10 @@ public class ProgressionApplicationService {
 				result.ruleId(), ruleParamsJson, result.messageVi()));
 	}
 
-	/** SUBSTITUTE (đau lặp lại) chỉ ghi quyết định — đổi bài cần catalog bài thay thế, chưa xây (kế hoạch §5.5). */
+	/**
+	 * SUBSTITUTE (đau lặp lại) chỉ ghi quyết định, không tự đổi bài trong lịch: người tập tự chọn bài
+	 * thay thế bằng chức năng Thay bài (`ScheduleService.substitute`, kế hoạch §5.5).
+	 */
 	private void applyToFutureSchedule(
 			UUID programId, UUID exerciseId, LocalDate sessionDate, ScheduledExercise thisWeekExercise,
 			LoadDecisionResult result) {
