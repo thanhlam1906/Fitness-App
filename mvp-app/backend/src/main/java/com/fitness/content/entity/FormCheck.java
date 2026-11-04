@@ -15,7 +15,8 @@ import org.hibernate.type.SqlTypes;
  * Bảng form_checks: một khớp cần kiểm của bài (doc/design-cham-form-nguong-v1.md §2). Admin sửa
  * trên web, có hiệu lực ngay, không deploy. Cách đo nằm ở analyzer; ở đây chỉ có khoá số đo
  * (`metric`), góc quay, lúc đo, ngưỡng và câu nhắc. cue_pass_vi, cue_warn_vi còn trong bảng
- * nhưng không dùng nữa.
+ * nhưng không dùng nữa. confidence_min cũng vậy: admin không nhập, analyzer lọc rep bằng hằng 0,70
+ * (`MIN_REP_CONFIDENCE`) cho mọi bài.
  */
 @Entity
 @Table(name = "form_checks")

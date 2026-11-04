@@ -30,7 +30,7 @@ class FormCheck:
     metric: str
     valid_viewpoints: list[str]
     thresholds: dict[str, Any]
-    confidence_min: float
+    confidence_min: float        # nạp nhưng không đọc: worker lọc rep bằng MIN_REP_CONFIDENCE
     cue_pass_vi: str | None
     cue_warn_vi: str | None
     cue_fail_vi: str

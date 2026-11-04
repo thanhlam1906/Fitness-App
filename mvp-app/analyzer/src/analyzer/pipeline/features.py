@@ -16,7 +16,8 @@ from .geometry import FrameMetrics, angle_deg
 from .pose import LM, Frame
 from .reps import GENERIC_SIGNALS, GenericSegmentation, Rep
 
-MIN_REP_CONFIDENCE = 0.70   # như confidence_min mặc định của form_checks
+# Cố định cho mọi bài, admin không thấy (spec §2). Cột form_checks.confidence_min không được đọc ở đây.
+MIN_REP_CONFIDENCE = 0.70
 _TORSO = [LM["l_sho"], LM["r_sho"], LM["l_hip"], LM["r_hip"]]
 _SIDE = {s: [LM[f"{s}_sho"], LM[f"{s}_hip"], LM[f"{s}_knee"], LM[f"{s}_ankle"]] for s in ("l", "r")}
 
