@@ -2,7 +2,10 @@
 # (doc/design-trien-khai-v1.md §5). Hai cách chạy:
 # - CI/CD gọi sau khi push vào master: staging tự chạy, production chờ bạn duyệt.
 # - Bấm tay trên tab Actions (Run workflow): đưa một bản cũ lên lại để quay về bản trước. Production vẫn phải
-#   duyệt. Chỉ quay về được bản từng build trên master từ khi có CD (image phải có trên GHCR).
+#   duyệt. Chỉ quay về được bản từng build trên master từ khi có CD (image phải có trên GHCR). Quay về vẫn chạy
+#   deploy.sh của commit workflow này (có khoá), chỉ compose và giam-sat là của bản cũ. KHÔNG bấm Re-run một lượt
+#   có từ trước khi có khoá deploy (bẫy 4.19): nó chạy lại workflow và deploy.sh cũ, chép đè, không khoá. Quay
+#   về thì dùng Run workflow.
 # Máy, khoá SSH, khoá máy nằm trong secret của Environment cùng tên, không ghi trong repo công khai này.
 name: Deploy
 
@@ -52,6 +55,9 @@ jobs:
     env:
       MOI_TRUONG: ${{ inputs.moi_truong }}
       SHA: ${{ inputs.sha }}
+      # Thư mục riêng của lượt này trên máy. Có số lần chạy lại: Re-run hay quay về cùng mã commit cũng không
+      # trùng thư mục của lượt trước (bẫy 4.19).
+      LUOT: /opt/vfit/luot/${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       # GitHub cho đọc mọi commit của cả mạng fork qua URL repo này: mã lạ có thể là code của người khác, và
       # deploy.sh của nó sẽ chạy trên máy chủ. Chỉ nhận commit nằm trên master (bẫy 4.16).
@@ -67,8 +73,8 @@ jobs:
             *) echo "::error::$SHA không nằm trên master ($trang_thai)"; exit 1 ;;
           esac
 
-      # Lấy compose và deploy.sh của ĐÚNG commit sẽ chạy: đổi compose (vd. trần RAM) lên máy cùng image,
-      # quay về bản cũ thì chạy cả compose cũ (bẫy 4.13).
+      # Lấy compose và giam-sat của ĐÚNG commit sẽ chạy: đổi compose (vd. trần RAM) lên máy cùng image,
+      # quay về bản cũ thì chạy cả compose cũ (bẫy 4.13). deploy.sh thì lấy theo commit workflow (bước chép).
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.sha }}
@@ -104,21 +110,32 @@ jobs:
             '  ConnectTimeout 20' \
             '  ServerAliveInterval 15' > ~/.ssh/config
 
-      # Compose mới chép vào .moi: deploy.sh tự đặt vào chỗ khi đã kéo xong image, giữ bản cũ để quay về.
+      # Chép vào thư mục của lượt, không đè lên /opt/vfit: lượt trước có thể vẫn đang chạy trên máy và đang dùng
+      # các file đó, kể cả chính deploy.sh mà bash đọc dở (bẫy 4.19). deploy.sh có khoá rồi mới đặt compose,
+      # giam-sat (cấu hình Prometheus, Grafana, không có bí mật) vào chỗ. mkdir không -p: có rồi là đỏ, không chép đè.
+      # ponytail: không dọn thư mục lượt cũ (mỗi lượt ~50 KB); nhiều quá thì xoá bớt thư mục cũ trong /opt/vfit/luot.
       - name: Chép compose và deploy.sh lên máy
         env:
           MAY_CHU: ${{ secrets.MAY_CHU }}
         run: |
-          scp mvp-app/docker-compose.prod.yml "$MAY_CHU:/opt/vfit/docker-compose.prod.yml.moi"
-          scp mvp-app/deploy.sh "$MAY_CHU:/opt/vfit/deploy.sh"
-          # Cấu hình Prometheus, Grafana (chỉ production chạy, nhưng chép cả hai máy cho giống nhau; không có bí mật).
-          scp -r mvp-app/giam-sat "$MAY_CHU:/opt/vfit/"
+          # deploy.sh lấy theo commit của workflow đang chạy, không theo inputs.sha: quay về bản cũ vẫn chạy
+          # deploy.sh có khoá, còn compose, giam-sat vẫn của bản cũ (bẫy 4.13). Được ci.yml gọi bằng ./ thì deploy.yml
+          # cùng commit với ci.yml, và github.workflow_sha là của ci.yml, tức trùng inputs.sha; bấm tay thì là commit
+          # của nhánh được chọn. Không hở thêm 4.16: mã này không ai nhập, code workflow của nhánh đó vốn đã chạy với
+          # secret của nó, và production chỉ cho deploy từ master (bẫy 4.3). Repo công khai: fetch không cần quyền.
+          git fetch --depth=1 origin "$GITHUB_WORKFLOW_SHA"
+          git show FETCH_HEAD:mvp-app/deploy.sh > mvp-app/deploy.sh
+          # Bản trước 43fe9f9 chưa có giam-sat: chép thư mục rỗng, máy giữ cấu hình giám sát đang có.
+          mkdir -p mvp-app/giam-sat
+          ssh "$MAY_CHU" "mkdir -p /opt/vfit/luot && mkdir $LUOT" < /dev/null
+          scp -r mvp-app/docker-compose.prod.yml mvp-app/deploy.sh mvp-app/giam-sat "$MAY_CHU:$LUOT/"
 
       # Kéo image, (production) backup DB, đổi bản, kiểm trên máy; hỏng thì tự quay về và đỏ. Xem deploy.sh.
+      # Huỷ lượt khi bước này đang chạy chỉ cắt ssh, deploy.sh trên máy vẫn chạy tới hết (bẫy 4.19).
       - name: Đổi bản trên máy
         env:
           MAY_CHU: ${{ secrets.MAY_CHU }}
-        run: ssh "$MAY_CHU" "bash /opt/vfit/deploy.sh $SHA $MOI_TRUONG" < /dev/null
+        run: ssh "$MAY_CHU" "bash $LUOT/deploy.sh $SHA $MOI_TRUONG" < /dev/null
 
       # Đi đúng đường người dùng đi: internet → Cloudflare → đường hầm → nginx → backend → Postgres.
       # Staging nằm sau Cloudflare Access nên chỉ kiểm trên máy (bẫy 2.2). Thử lại vì đường hầm có thể chậm vài giây.

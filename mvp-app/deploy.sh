@@ -1,27 +1,46 @@
 #!/usr/bin/env bash
 # Đổi bản đang chạy trên một máy (staging hoặc production) sang bản <sha> (doc/design-trien-khai-v1.md §5).
-# Workflow .github/workflows/deploy.yml chép file này và docker-compose.prod.yml (thành .moi) của ĐÚNG commit
-# đó lên /opt/vfit rồi chạy:  bash /opt/vfit/deploy.sh <sha 40 ký tự> <staging|production>
+# Workflow .github/workflows/deploy.yml chép file này (của commit workflow), docker-compose.prod.yml và giam-sat/
+# (của ĐÚNG commit sẽ lên) vào thư mục riêng của lượt rồi chạy file này từ đó:
+#   bash /opt/vfit/luot/<mã lượt>-<lần chạy>/deploy.sh <sha 40 ký tự> <staging|production>
 # Bản mới không chạy được thì tự quay về bản trước và thoát mã 1 để workflow báo đỏ.
 # Output hiện trong log Actions của repo công khai, ai cũng đọc được: không in bí mật, không đọc .env ra màn
 # hình, không chạy `docker compose config` trần (bẫy C2, C6).
 set -euo pipefail
+luot=$(dirname "$(readlink -f "$0")")
+# Output đi qua tee -p chứ không thẳng ra ssh (bẫy 4.19). ssh đứt (huỷ lượt trên Actions) mà sshd biết thì nó
+# đóng pipe; phiên không có pty nên script chết ở lần ghi kế tiếp, có thể giữa lúc đổi bản và đường quay về
+# (`docker compose up` ghi tiến độ ra stderr). tee -p bỏ qua pipe hỏng, vẫn ghi đủ vào nhat-ky của lượt, nên
+# script chạy tới hết. Đặt trước `exec 9>` để tee không kế thừa fd khoá. `cat` đọc tiếp nếu tee thoát (ssh đứt
+# cùng lúc ổ đầy, tee hết chỗ ghi), không thì script lại chết vì SIGPIPE.
+exec > >(tee -p "$luot/nhat-ky"; cat > /dev/null) 2>&1
 cd /opt/vfit
 
 moi=${1:-}
 moi_truong=${2:-}
 [[ $moi =~ ^[0-9a-f]{40}$ ]] || { echo "Mã commit phải đủ 40 ký tự 0-9a-f"; exit 2; }
 [[ $moi_truong =~ ^(staging|production)$ ]] || { echo "Môi trường phải là staging hoặc production"; exit 2; }
-[ -f docker-compose.prod.yml.moi ] || { echo "Thiếu docker-compose.prod.yml.moi (workflow chép lên trước)"; exit 2; }
 
-# IMAGE_TAG là mã commit, không phải bí mật.
+# Mỗi máy một lượt tại một lúc (bẫy 4.19). concurrency của workflow không đủ: huỷ lượt trên Actions chỉ cắt
+# ssh, script trên máy vẫn chạy tiếp tới hết (nhờ tee ở trên), còn GitHub cho lượt sau chạy ngay.
+# Gặp khoá thì dừng chứ không chờ: lượt đang chờ mà bị huỷ cũng thành script mồ côi trên máy, có khoá lúc nào
+# là tự deploy lúc đó, có khi đè lên bản mới hơn. Khoá tự nhả khi script thoát hay chết.
+exec 9> .khoa-deploy
+flock -n 9 || { echo "::error::Máy đang chạy một lượt deploy khác (thường là lượt vừa bị huỷ trên Actions: huỷ không dừng được script trên máy, nó chạy tiếp tới hết, có thể tới 30 phút). Lượt này chưa đổi gì trên máy. Chờ rồi bấm Re-run failed jobs"; exit 1; }
+# ponytail: huỷ trên Actions không dừng được lượt đang chạy; nó chạy hết, đổi bản hoặc quay về trọn vẹn, xem
+# /opt/vfit/luot/<lượt>/nhat-ky. Cần dừng thật thì vào máy kill tiến trình đó.
+
+# IMAGE_TAG là mã commit, không phải bí mật. Đọc sau khi có khoá: lượt trước có thể vừa đổi nó.
 cu=$(sed -n 's/^IMAGE_TAG=//p' .env)
 echo "Bản đang chạy: $cu"
 echo "Bản mới:       $moi ($moi_truong)"
 
 # 1. Kéo image bản mới trước khi đổi gì: kéo hỏng (vd. image chưa có hay gói GHCR còn private) thì máy vẫn
-#    nguyên bản cũ. Biến shell thắng .env nên chỉ lệnh này dùng tag mới.
-IMAGE_TAG=$moi docker compose -f docker-compose.prod.yml.moi pull --quiet backend web analyzer
+#    nguyên bản cũ. Biến shell thắng .env nên chỉ lệnh này dùng tag mới. Compose phải nằm ở /opt/vfit để đọc
+#    .env ở đó. Tên không phải .moi: lỡ Re-run một lượt có từ trước khi có khoá (workflow cũ, chép rồi mv .moi,
+#    không khoá) thì nó không giành mất compose của lượt này.
+cp "$luot/docker-compose.prod.yml" docker-compose.prod.yml.sap-len
+IMAGE_TAG=$moi docker compose -f docker-compose.prod.yml.sap-len pull --quiet backend web analyzer
 
 # 2. Production: backup DB trước khi đổi (bẫy 4.9). Migration Flyway của bản mới không lùi được, quay về image
 #    cũ không gỡ được nó; khi đó chỉ file này cứu được dữ liệu. < /dev/null: exec -T đọc stdin (bẫy 2.12).
@@ -39,8 +58,12 @@ fi
 
 # 3. Đổi sang bản mới, giữ compose cũ để quay về. IMAGE_TAG ghi vào .env chứ không chỉ đặt ở dòng lệnh: ai gõ
 #    `docker compose up -d` tay về sau vẫn chạy đúng bản đang chạy (bẫy 4.14). sed -i giữ quyền 600 của .env.
+#    giam-sat: cấu hình Prometheus, Grafana (chỉ production chạy, chép cả hai máy cho giống nhau; không có bí mật).
+#    Chép trước khi đổi compose: hỏng thì chưa đổi gì khác. cp ghi đè tại chỗ như scp trước đây nên file gắn vào
+#    container vẫn là file đó. Quay về không trả lại bản cũ của nó.
+cp -r "$luot/giam-sat" .
 cp docker-compose.prod.yml docker-compose.prod.yml.cu
-mv docker-compose.prod.yml.moi docker-compose.prod.yml
+mv docker-compose.prod.yml.sap-len docker-compose.prod.yml
 sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$moi/" .env
 
 # Tên, số lần tự khởi động lại, trạng thái của mọi container trong project.
