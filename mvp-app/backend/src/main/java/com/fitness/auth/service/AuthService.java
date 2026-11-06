@@ -3,6 +3,7 @@ package com.fitness.auth.service;
 import com.fitness.auth.dto.ChangePasswordRequest;
 import com.fitness.auth.dto.FirstLoginPasswordRequest;
 import com.fitness.auth.dto.RegisterRequest;
+import com.fitness.auth.dto.SocialConfigResponse;
 import com.fitness.auth.dto.TokenResponse;
 import com.fitness.auth.entity.RefreshToken;
 import com.fitness.auth.entity.Role;
@@ -20,10 +21,12 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.Locale;
 import java.util.UUID;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
@@ -46,17 +49,22 @@ public class AuthService {
 	private final PasswordEncoder passwordEncoder;
 	private final JwtIssuer jwtIssuer;
 	private final RateLimits rateLimits;
+	private final SocialTokenVerifier socialVerifier;
+	private final TransactionTemplate transaction;
 	private final SecureRandom random = new SecureRandom();
 
 	public AuthService(
 			UserRepository users, ProfileService profileService, RefreshTokenRepository refreshTokens,
-			PasswordEncoder passwordEncoder, JwtIssuer jwtIssuer, RateLimits rateLimits) {
+			PasswordEncoder passwordEncoder, JwtIssuer jwtIssuer, RateLimits rateLimits,
+			SocialTokenVerifier socialVerifier, TransactionTemplate transaction) {
 		this.users = users;
 		this.profileService = profileService;
 		this.refreshTokens = refreshTokens;
 		this.passwordEncoder = passwordEncoder;
 		this.jwtIssuer = jwtIssuer;
 		this.rateLimits = rateLimits;
+		this.socialVerifier = socialVerifier;
+		this.transaction = transaction;
 	}
 
 	/**
@@ -95,6 +103,76 @@ public class AuthService {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, PASSWORD_CHANGE_REQUIRED);
 		}
 		return issueTokens(user);
+	}
+
+	public SocialConfigResponse socialConfig() {
+		return socialVerifier.config();
+	}
+
+	public TokenResponse googleLogin(String accessToken, String clientIp) {
+		rateLimits.check("login-ip", clientIp);
+		return socialLogin(socialVerifier.google(accessToken));
+	}
+
+	public TokenResponse facebookLogin(String accessToken, String clientIp) {
+		rateLimits.check("login-ip", clientIp);
+		return socialLogin(socialVerifier.facebook(accessToken));
+	}
+
+	/**
+	 * Khớp theo email nhà cung cấp đã xác minh: trùng thì vào tài khoản cũ, chưa có thì tạo mới không số
+	 * điện thoại (doc/design-dang-nhap-mxh-v1.md §1). Không @Transactional ở đây: không giữ transaction
+	 * trong lúc chờ Google/Facebook, chỉ phần tạo user + hồ sơ chạy trong transaction.
+	 */
+	private TokenResponse socialLogin(SocialTokenVerifier.Identity identity) {
+		User user = users.findByEmailIgnoreCase(identity.email()).orElseGet(() -> createSocialUser(identity));
+		if (!user.isActive()) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, LOCKED_MESSAGE);
+		}
+		if (!user.isEmailVerified()) {
+			user = claimUnverifiedAccount(user.getId());
+		}
+		// Không chặn must_change_password: mật khẩu tạm chỉ là chuyện mật khẩu, Google/Facebook đã chứng minh chủ email.
+		return issueTokens(user);
+	}
+
+	/**
+	 * Tài khoản đăng ký bằng mật khẩu chưa ai xác minh email: có thể kẻ khác đăng ký trước bằng email này. Chủ email
+	 * thật thắng: thay mật khẩu bằng chuỗi ngẫu nhiên, thu hồi mọi phiên (người dùng chốt 11-06). Muốn dùng lại
+	 * mật khẩu thì nhờ admin cấp mật khẩu tạm.
+	 */
+	private User claimUnverifiedAccount(UUID userId) {
+		return transaction.execute(status -> {
+			// Đọc lại và khoá dòng: user đọc lúc nãy đã tách khỏi phiên, merge nó sẽ ghi đè lệnh khoá admin vừa bấm.
+			User user = users.lockById(userId).orElseThrow(
+					() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không tìm thấy người dùng"));
+			if (!user.isActive()) {
+				throw new ResponseStatusException(HttpStatus.FORBIDDEN, LOCKED_MESSAGE);
+			}
+			// Tab khác vừa nhận xong thì không thu hồi lần nữa (sẽ đăng xuất chính tab đó).
+			if (!user.isEmailVerified()) {
+				user.setPassword(passwordEncoder.encode(generateOpaqueToken()), false);
+				user.markEmailVerified();
+				revokeSessions(user);
+			}
+			return user;
+		});
+	}
+
+	private User createSocialUser(SocialTokenVerifier.Identity identity) {
+		try {
+			return transaction.execute(status -> {
+				// Cột password_hash NOT NULL: băm một chuỗi ngẫu nhiên không ai biết, đăng nhập bằng mật khẩu không qua được.
+				User created = new User(identity.email(), passwordEncoder.encode(generateOpaqueToken()), Role.USER);
+				created.markEmailVerified();
+				User user = users.save(created);
+				profileService.createForNewUser(user.getId(), identity.name(), null);
+				return user;
+			});
+		} catch (DataIntegrityViolationException e) {
+			// Hai lần bấm cùng lúc: lần kia vừa tạo xong email này, dùng luôn tài khoản đó.
+			return users.findByEmailIgnoreCase(identity.email()).orElseThrow(() -> e);
+		}
 	}
 
 	/** Rotation: token cũ bị revoke ngay khi dùng — dùng lại token đã revoke nghĩa là nó đã bị lộ. */

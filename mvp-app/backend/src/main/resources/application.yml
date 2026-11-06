@@ -114,6 +114,13 @@ app:
   # 17–50 s, lô 50 trang của sách 288 trang mất ~27 phút → 60 phút còn dư.
   pdf-hybrid-timeout: ${PDF_HYBRID_TIMEOUT:PT60M}
 
+  # Đăng nhập Google, Facebook (doc/design-dang-nhap-mxh-v1.md §3). Rỗng = tắt, nút trên web hiện "Sắp có".
+  # Client ID, App ID công khai (web đọc qua /auth/social-config); App Secret chỉ nằm ở .env.
+  oauth:
+    google-client-id: ${GOOGLE_CLIENT_ID:}
+    facebook-app-id: ${FACEBOOK_APP_ID:}
+    facebook-app-secret: ${FACEBOOK_APP_SECRET:}
+
 # doc/design-chiu-loi-v1.md §5. Đếm MỌI lần gọi (cả đúng mật khẩu): người thật không đăng nhập 5 lần một phút.
 resilience4j:
   ratelimiter:

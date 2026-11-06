@@ -45,6 +45,10 @@ public class User {
 	@Column(name = "must_change_password", nullable = false)
 	private boolean mustChangePassword;
 
+	/** Google/Facebook đã chứng minh chủ email (V21). Đăng ký bằng email không xác minh nên mặc định false. */
+	@Column(name = "email_verified", nullable = false)
+	private boolean emailVerified;
+
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
 
@@ -90,6 +94,14 @@ public class User {
 
 	public boolean isMustChangePassword() {
 		return mustChangePassword;
+	}
+
+	public boolean isEmailVerified() {
+		return emailVerified;
+	}
+
+	public void markEmailVerified() {
+		this.emailVerified = true;
 	}
 
 	public void setActive(boolean active) {

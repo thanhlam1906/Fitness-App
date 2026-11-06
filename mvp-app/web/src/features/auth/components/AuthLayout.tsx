@@ -1,9 +1,16 @@
-import { forwardRef, useState, type InputHTMLAttributes, type ReactNode } from "react"
+import { forwardRef, useEffect, useState, type InputHTMLAttributes, type ReactNode } from "react"
+import { useLocation, useNavigate } from "react-router"
 import { Eye, EyeOff } from "lucide-react"
 import { Logo } from "@/components/Logo"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/cn"
+import { useSocialConfig } from "@/features/auth/api/useSocialConfig"
+import { useAuth } from "@/features/auth/components/AuthContext"
+import type { SocialProvider } from "@/features/auth/types"
+import { landingPath } from "@/features/auth/utils/homePath"
+import { getStoredSession } from "@/features/auth/utils/tokenStorage"
+import { getFacebookAccessToken, getGoogleAccessToken, loadSocialSdk } from "@/features/auth/utils/socialSdk"
 
 const FOCUS =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
@@ -44,32 +51,96 @@ export function AuthLayout({
 }
 
 const PROVIDERS = [
-  { name: "Google", Icon: GoogleIcon },
-  { name: "Facebook", Icon: FacebookIcon },
-]
+  { id: "google", name: "Google", Icon: GoogleIcon },
+  { id: "facebook", name: "Facebook", Icon: FacebookIcon },
+] as const
 
 /**
- * Chưa nối OAuth (nối sau khi deploy). Nút khoá cùng nhãn "Sắp có": nhìn là biết chưa dùng được, không
- * cần thêm câu báo khi bấm.
+ * Nút nào server chưa cấu hình (thiếu Client ID, App ID trong .env) thì khoá kèm nhãn "Sắp có", như trước khi nối
+ * OAuth. Có cấu hình thì bấm mở cửa sổ Google/Facebook, xong vào app như đăng nhập thường; người mới bị
+ * RequireOnboarding đưa về /onboarding (doc/design-dang-nhap-mxh-v1.md).
  */
 export function SocialButtons() {
+  const { data: config } = useSocialConfig()
+  const { socialLogin } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [busy, setBusy] = useState<SocialProvider | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const ids: Record<SocialProvider, string | null> = {
+    google: config?.googleClientId ?? null,
+    facebook: config?.facebookAppId ?? null,
+  }
+
+  const [ready, setReady] = useState<Record<SocialProvider, boolean>>({ google: false, facebook: false })
+
+  useEffect(() => {
+    if (!config) return
+    const providers: [SocialProvider, string | null][] = [
+      ["google", config.googleClientId],
+      ["facebook", config.facebookAppId],
+    ]
+    for (const [provider, id] of providers) {
+      if (!id) continue
+      loadSocialSdk(provider).then(
+        () => setReady((r) => ({ ...r, [provider]: true })),
+        () => setError("Không tải được nút đăng nhập " + (provider === "google" ? "Google" : "Facebook") + ", tải lại trang"),
+      )
+    }
+  }, [config])
+
+  async function signIn(provider: SocialProvider, id: string) {
+    setError(null)
+    setBusy(provider)
+    try {
+      const token = provider === "google" ? await getGoogleAccessToken(id) : await getFacebookAccessToken(id)
+      if (!token) return
+      await socialLogin(provider, token)
+      // Đọc role từ kho như LoginPage: state của context chưa kịp render lại trong hàm này.
+      const from = (location.state as { from?: string } | null)?.from
+      navigate(landingPath(from, getStoredSession()?.role ?? null), { replace: true })
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Đăng nhập thất bại")
+    } finally {
+      setBusy(null)
+    }
+  }
+
   return (
-    <div className="grid grid-cols-2 gap-2.5">
-      {PROVIDERS.map(({ name, Icon }) => (
-        <button
-          key={name}
-          type="button"
-          disabled
-          className="relative flex h-12 cursor-not-allowed items-center justify-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-semibold opacity-70"
-        >
-          <Icon />
-          {name}
-          <span className="absolute -top-2 right-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] px-1.5 text-[10px] font-bold text-[var(--color-text-muted)]">
-            Sắp có
-          </span>
-        </button>
-      ))}
-    </div>
+    <>
+      <div className="grid grid-cols-2 gap-2.5">
+        {PROVIDERS.map(({ id: provider, name, Icon }) => {
+          const id = ids[provider]
+          return (
+            <button
+              key={provider}
+              type="button"
+              disabled={!id || !ready[provider] || busy !== null}
+              aria-busy={busy === provider}
+              onClick={id ? () => signIn(provider, id) : undefined}
+              className={cn(
+                "relative flex h-12 items-center justify-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-semibold",
+                id ? "hover:bg-[var(--color-surface-2)] disabled:opacity-70" : "cursor-not-allowed opacity-70",
+                FOCUS,
+              )}
+            >
+              <Icon />
+              {name}
+              {!id && (
+                <span className="absolute -top-2 right-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] px-1.5 text-[10px] font-bold text-[var(--color-text-muted)]">
+                  Sắp có
+                </span>
+              )}
+            </button>
+          )
+        })}
+      </div>
+      {error && (
+        <p role="alert" className="mt-2 text-sm text-[var(--color-danger)]">
+          {error}
+        </p>
+      )}
+    </>
   )
 }
 
