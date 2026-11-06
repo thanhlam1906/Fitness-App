@@ -30,6 +30,10 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:?Thiếu DB_PASSWORD trong .env}
       JWT_SECRET: ${JWT_SECRET:?Thiếu JWT_SECRET trong .env}
       OPENAI_API_KEY: ${OPENAI_API_KEY:?Thiếu OPENAI_API_KEY trong .env}
+      # Không bắt buộc: thiếu thì nút Google/Facebook hiện "Sắp có" (doc/design-dang-nhap-mxh-v1.md).
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      FACEBOOK_APP_ID: ${FACEBOOK_APP_ID:-}
+      FACEBOOK_APP_SECRET: ${FACEBOOK_APP_SECRET:-}
       CLIP_STORAGE_PATH: /data
     volumes:
       # Thư mục clip dùng chung với analyzer: backend ghi, analyzer đọc rồi xoá ngay sau khi chấm.

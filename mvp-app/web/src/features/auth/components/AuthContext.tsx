@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { useQueryClient } from "@tanstack/react-query"
 import { onLoggedOut } from "@/api/client"
 import { authApi } from "@/features/auth/api/authApi"
-import type { AuthTokens } from "@/features/auth/types"
+import type { AuthTokens, SocialProvider } from "@/features/auth/types"
 import type { RegisterPayload } from "@/features/auth/types/registerSchema"
 import { clearSession, getRefreshToken, getStoredSession, setSession } from "@/features/auth/utils/tokenStorage"
 
@@ -12,6 +12,8 @@ type AuthContextValue = {
   isAuthenticated: boolean
   login: (email: string, password: string) => Promise<void>
   register: (payload: RegisterPayload) => Promise<void>
+  /** Token Google/Facebook → server xác minh, tạo hoặc tìm tài khoản theo email → vào app như đăng nhập thường. */
+  socialLogin: (provider: SocialProvider, accessToken: string) => Promise<void>
   logout: () => void
   /** Đăng nhập bằng mật khẩu tạm → đặt mật khẩu mới → vào app như đăng nhập thường. */
   completePasswordChange: (email: string, currentPassword: string, newPassword: string) => Promise<void>
@@ -50,6 +52,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     applyTokens(await authApi.register(payload))
   }
 
+  async function socialLogin(provider: SocialProvider, accessToken: string) {
+    applyTokens(await authApi.socialLogin(provider, accessToken))
+  }
+
   async function completePasswordChange(email: string, currentPassword: string, newPassword: string) {
     applyTokens(await authApi.changePasswordAtLogin(email, currentPassword, newPassword))
   }
@@ -77,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: session !== null,
         login,
         register,
+        socialLogin,
         logout,
         completePasswordChange,
         changePassword,

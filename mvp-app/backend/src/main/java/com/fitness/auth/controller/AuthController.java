@@ -4,11 +4,14 @@ import com.fitness.auth.dto.FirstLoginPasswordRequest;
 import com.fitness.auth.dto.LoginRequest;
 import com.fitness.auth.dto.RefreshRequest;
 import com.fitness.auth.dto.RegisterRequest;
+import com.fitness.auth.dto.SocialConfigResponse;
+import com.fitness.auth.dto.SocialLoginRequest;
 import com.fitness.auth.dto.TokenResponse;
 import com.fitness.auth.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,6 +38,21 @@ public class AuthController {
 	@PostMapping("/login")
 	public TokenResponse login(@Valid @RequestBody LoginRequest request, HttpServletRequest http) {
 		return authService.login(request.email(), request.password(), http.getRemoteAddr());
+	}
+
+	@GetMapping("/social-config")
+	public SocialConfigResponse socialConfig() {
+		return authService.socialConfig();
+	}
+
+	@PostMapping("/google")
+	public TokenResponse google(@Valid @RequestBody SocialLoginRequest request, HttpServletRequest http) {
+		return authService.googleLogin(request.accessToken(), http.getRemoteAddr());
+	}
+
+	@PostMapping("/facebook")
+	public TokenResponse facebook(@Valid @RequestBody SocialLoginRequest request, HttpServletRequest http) {
+		return authService.facebookLogin(request.accessToken(), http.getRemoteAddr());
 	}
 
 	@PostMapping("/change-password")
