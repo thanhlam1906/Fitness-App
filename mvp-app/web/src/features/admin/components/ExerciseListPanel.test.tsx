@@ -58,6 +58,16 @@ describe("ExerciseListPanel: bài chưa duyệt và đã xoá", () => {
     expect(screen.getByText("Squat").closest("a")).not.toHaveTextContent(/Chưa duyệt|đã tắt/)
   })
 
+  it("gõ không dấu vẫn ra bài có tên Việt có dấu", async () => {
+    api.get.mockResolvedValue([{ ...exercise("Bench Press", "ACTIVE"), nameVi: "Đẩy ngực" }, exercise("Squat", "ACTIVE")])
+    renderPanel()
+    await screen.findByText("Bench Press")
+
+    fireEvent.change(screen.getByPlaceholderText("Tìm bài"), { target: { value: "day nguc" } })
+    expect(screen.getByText("Bench Press")).toBeInTheDocument()
+    expect(screen.queryByText("Squat")).not.toBeInTheDocument()
+  })
+
   it("lọc Chưa duyệt chỉ còn bài chưa duyệt; lọc Đã xoá chỉ còn bài đã xoá", async () => {
     renderPanel()
     await screen.findByText("Calf Raise")

@@ -20,10 +20,8 @@ export function CorpusPage() {
         <div className="min-w-0 flex-1 overflow-auto px-7 pt-6 pb-10">
           {uploadId ? (
             <UploadDetail key={uploadId} id={uploadId} />
-          ) : documentId ? (
-            <DocumentDetail key={documentId} id={documentId} />
           ) : (
-            <p className="pt-24 text-center text-sm text-[var(--color-text-muted)]">Chọn một tài liệu ở cột trái.</p>
+            documentId && <DocumentDetail key={documentId} id={documentId} />
           )}
         </div>
       </div>

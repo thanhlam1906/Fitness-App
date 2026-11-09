@@ -43,7 +43,7 @@ export function FormCheckEditor({ exerciseId }: { exerciseId: string }) {
           </p>
         ) : (
           <Notice icon={TriangleAlert} tone="warn" className="mt-2">
-            Chưa chấm form được. Chọn góc quay rồi thêm khớp cần kiểm.
+            Chưa chấm form được.
           </Notice>
         ))}
 

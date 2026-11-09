@@ -198,7 +198,7 @@ function InsightsBody({ data }: { data: WorkoutInsights }) {
           icon={Flame}
           tone="var(--color-warn)"
           title="RPE vượt mức"
-          hint="RPE set cuối cao hơn mục tiêu + mức vượt của template."
+          hint="Tính trên RPE set cuối."
         >
           <BarList
             color="var(--color-warn)"

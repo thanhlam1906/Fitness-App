@@ -40,7 +40,7 @@ type Item = {
  */
 function useGroups(): { title: string; items: Item[] }[] {
   // Chỉ bài đang bật: dùng `all` thì mọi màn admin đều tải cả ~1.3k bài kèm cách tập chỉ để đếm một con số.
-  // Nên số này khác "N bài tập" ở đầu danh sách bài, vốn đếm cả bài chưa duyệt và đã xoá.
+  // Nên số này khác nút lọc "Tất cả N" ở danh sách bài, vốn đếm cả bài chưa duyệt và đã xoá.
   const exercises = useExercises()
   const templates = useTemplates()
   const overview = useAdminOverview()

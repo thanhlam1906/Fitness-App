@@ -113,7 +113,7 @@ function DayCard({
           <div key={row.id} className="mt-1.5 grid grid-cols-[22px_minmax(170px,1fr)_70px_140px_100px_92px] items-center gap-2">
             <span className="text-right text-xs text-[var(--color-text-muted)]">{i + 1}</span>
             <select {...register(`${p}.slug`)} aria-label={`Bài thứ ${i + 1}`} className={cn(FIELD, "w-full", err?.slug && "border-[var(--color-danger)]")}>
-              <option value="">— Chọn bài —</option>
+              <option value="">Chọn bài</option>
               {retired && <option value={retired.slug}>{name(retired)} (đã tắt)</option>}
               <optgroup label="Có dụng cụ">
                 {withGear.map((e) => (

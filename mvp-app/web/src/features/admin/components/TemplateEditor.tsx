@@ -136,7 +136,7 @@ export function TemplateEditor({
             </Button>
           )}
           <Button type="submit" size="sm" disabled={save.isPending || !ready}>
-            {save.isPending ? "Đang lưu…" : "Lưu template"}
+            {save.isPending ? "Đang lưu…" : "Lưu"}
           </Button>
         </AdminHeader>
 
@@ -231,7 +231,7 @@ export function TemplateEditor({
                       FOCUS,
                     )}
                   >
-                    {v ? "Đang bật" : "Tắt — người tập không thấy"}
+                    {v ? "Đang bật" : "Tắt (người tập không thấy)"}
                   </button>
                 ))}
               </div>

@@ -73,14 +73,14 @@ describe("ExerciseFormPage: lưu xong khi đã sang bài khác", () => {
     fireEvent.change(screen.getAllByLabelText(/Chọn ảnh/)[0], {
       target: { files: [new File(["x"], "anh.png", { type: "image/png" })] },
     })
-    fireEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }))
+    fireEvent.click(screen.getByRole("button", { name: "Lưu" }))
     await waitFor(() => expect(api.postForm).toHaveBeenCalled())
 
     fireEvent.click(screen.getByText("sang bài B"))
     const nameEn = await screen.findByDisplayValue("Bài b")
     fireEvent.change(nameEn, { target: { value: "đang gõ dở" } })
     // Ảnh của A còn đang lên mà nút của B đã dùng được.
-    expect(screen.getByRole("button", { name: "Lưu thay đổi" })).toBeEnabled()
+    expect(screen.getByRole("button", { name: "Lưu" })).toBeEnabled()
 
     finishUpload()
     await waitFor(() => expect(api.postForm).toHaveBeenCalledTimes(1))
@@ -95,19 +95,19 @@ describe("ExerciseFormPage: tạo bài mới", () => {
   it("tạo xong mở trang bài vừa tạo vẫn hiện Đã lưu", async () => {
     api.post.mockResolvedValue(exercise("c"))
     renderAt("/admin/exercises/new")
-    fireEvent.change(await screen.findByLabelText("slug"), { target: { value: "c" } })
+    fireEvent.change(await screen.findByLabelText("Mã bài"), { target: { value: "c" } })
     fireEvent.change(screen.getByLabelText("Tên (EN)"), { target: { value: "Bài c" } })
     fireEvent.click(screen.getByRole("radio", { name: "Đùi trước" }))
     fireEvent.click(screen.getByRole("button", { name: "Tạo bài" }))
 
     // Header đã đổi sang tên bài vừa tạo (trang /admin/exercises/c) mà chữ Đã lưu không bị xoá theo.
     expect(await screen.findByText("Bài c")).toBeInTheDocument()
-    expect(screen.getByText("Đã lưu — không cần tải lại")).toBeInTheDocument()
+    expect(screen.getByText("Đã lưu")).toBeInTheDocument()
   })
 
   it("chưa chọn cơ chính thì không gửi, báo ngay dưới hàng nút", async () => {
     renderAt("/admin/exercises/new")
-    fireEvent.change(await screen.findByLabelText("slug"), { target: { value: "d" } })
+    fireEvent.change(await screen.findByLabelText("Mã bài"), { target: { value: "d" } })
     fireEvent.change(screen.getByLabelText("Tên (EN)"), { target: { value: "Bài d" } })
     fireEvent.click(screen.getByRole("button", { name: "Tạo bài" }))
 
@@ -118,7 +118,7 @@ describe("ExerciseFormPage: tạo bài mới", () => {
   it("gửi cơ chính đứng đầu, cơ phụ và thiết bị theo thứ tự nút", async () => {
     api.post.mockResolvedValue(exercise("e"))
     renderAt("/admin/exercises/new")
-    fireEvent.change(await screen.findByLabelText("slug"), { target: { value: "e" } })
+    fireEvent.change(await screen.findByLabelText("Mã bài"), { target: { value: "e" } })
     fireEvent.change(screen.getByLabelText("Tên (EN)"), { target: { value: "Bài e" } })
     fireEvent.click(screen.getByRole("radio", { name: "Mông" }))
     fireEvent.click(screen.getByRole("button", { name: "Bụng", pressed: false }))
@@ -144,7 +144,7 @@ describe("ExerciseFormPage: cách tập, lỗi hay gặp, bài chưa duyệt", (
     expect(screen.getByLabelText("Lỗi hay gặp, mỗi dòng một lỗi")).toHaveValue("Cong lưng")
 
     fireEvent.change(steps, { target: { value: "Đứng thẳng\n\n  Hạ người chậm \n" } })
-    fireEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }))
+    fireEvent.click(screen.getByRole("button", { name: "Lưu" }))
 
     await waitFor(() => expect(api.put).toHaveBeenCalled())
     expect(api.put.mock.calls[0][1]).toMatchObject({
@@ -156,7 +156,7 @@ describe("ExerciseFormPage: cách tập, lỗi hay gặp, bài chưa duyệt", (
   it("bài mới tạo không điền hai ô thì gửi hai danh sách rỗng", async () => {
     api.post.mockResolvedValue(exercise("f"))
     renderAt("/admin/exercises/new")
-    fireEvent.change(await screen.findByLabelText("slug"), { target: { value: "f" } })
+    fireEvent.change(await screen.findByLabelText("Mã bài"), { target: { value: "f" } })
     fireEvent.change(screen.getByLabelText("Tên (EN)"), { target: { value: "Bài f" } })
     fireEvent.click(screen.getByRole("radio", { name: "Đùi trước" }))
     fireEvent.click(screen.getByRole("button", { name: "Tạo bài" }))
@@ -165,7 +165,7 @@ describe("ExerciseFormPage: cách tập, lỗi hay gặp, bài chưa duyệt", (
     expect(api.post.mock.calls[0][1]).toMatchObject({ stepsVi: [], mistakesVi: [] })
   })
 
-  it("bài chưa duyệt có dòng phụ dưới ô Đang hoạt động, bài đang bật thì không", async () => {
+  it("bài chưa duyệt có dòng phụ dưới ô Đang bật, bài đang bật thì không", async () => {
     api.get.mockResolvedValue({ ...exercise("a"), active: false, draft: true })
     renderAt("/admin/exercises/a?tab=info")
     expect(await screen.findByText("Bài mới nạp, chưa duyệt: bật để người tập chọn được.")).toBeInTheDocument()

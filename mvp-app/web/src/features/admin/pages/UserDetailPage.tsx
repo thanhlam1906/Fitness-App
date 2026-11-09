@@ -5,11 +5,11 @@ import { useAdminUser, useAuditLog } from "@/features/admin/api/useAdminUsers"
 import { AdminHeader } from "@/features/admin/components/AdminShell"
 import { AuditLogTable } from "@/features/admin/components/AuditLogTable"
 import { UserActionsCard } from "@/features/admin/components/UserActionsCard"
-import { ROLE_LABEL, STATUS_LABEL } from "@/features/admin/utils/userLabels"
+import { ONBOARDING_STEP_LABEL, ROLE_LABEL, STATUS_LABEL } from "@/features/admin/utils/userLabels"
 import { useAuth } from "@/features/auth/components/AuthContext"
 import { Card } from "@/components/ui/card"
 import { Skeleton, TableSkeleton } from "@/components/ui/skeleton"
-import { EQUIPMENT_OPTIONS, EXPERIENCE_LEVELS, GOALS, labelOf } from "@/features/profile/types"
+import { EQUIPMENT_OPTIONS, EXPERIENCE_LEVELS, GENDERS, GOALS, labelOf } from "@/features/profile/types"
 import { formatDate } from "@/lib/format"
 
 /**
@@ -26,7 +26,7 @@ export function UserDetailPage() {
   const audit = useAuditLog(userId, auditPage)
 
   if (detail.isLoading) {
-    // Khung của trang: header, thẻ tài khoản (2 dòng), thẻ hồ sơ (5 dòng), ghi chú cuối.
+    // Khung của trang: header, thẻ tài khoản (2 dòng), thẻ hồ sơ (5 dòng).
     return (
       <>
         <AdminHeader group="Theo dõi · người dùng" title={<Skeleton className="h-6 w-56" />}>
@@ -37,7 +37,6 @@ export function UserDetailPage() {
         <div role="status" aria-label="Đang tải" className="space-y-4 overflow-auto px-7 py-5.5">
           <Skeleton className="h-[104px]" />
           <Skeleton className="h-[300px]" />
-          <Skeleton className="h-4 w-80" />
         </div>
       </>
     )
@@ -83,7 +82,7 @@ export function UserDetailPage() {
           }
         />
         <Row label="Năm sinh" value={d.birthYear?.toString() ?? "—"} />
-        <Row label="Giới tính" value={d.gender ?? "—"} />
+        <Row label="Giới tính" value={labelOf(GENDERS, d.gender)} />
         <Row
           label="Chiều cao / cân nặng"
           value={
@@ -92,7 +91,14 @@ export function UserDetailPage() {
               : `${d.heightCm ?? "—"} cm / ${d.weightKg ?? "—"} kg (${d.measuredOn ?? "—"})`
           }
         />
-        <Row label="Bước onboarding" value={d.onboardingStep} />
+        <Row
+          label="Khai hồ sơ"
+          value={
+            d.onboardingStep === "DONE"
+              ? "Xong"
+              : `Đang ở bước ${ONBOARDING_STEP_LABEL[d.onboardingStep] ?? d.onboardingStep}`
+          }
+        />
         <Row
           label="Đã đồng ý cam kết"
           value={d.disclaimerAt ? formatDate(d.disclaimerAt) : "chưa"}
@@ -106,10 +112,6 @@ export function UserDetailPage() {
       {audit.isLoading && <TableSkeleton rows={3} />}
       {audit.isError && <IconText>{audit.error.message}</IconText>}
       {audit.data && <AuditLogTable page={audit.data} showTarget={false} onPage={setAuditPage} />}
-
-      <p className="text-xs text-[var(--color-text-muted)]">
-        Web admin không xem clip và không chấm bài — toàn bộ do rule engine thực hiện.
-      </p>
       </div>
     </>
   )

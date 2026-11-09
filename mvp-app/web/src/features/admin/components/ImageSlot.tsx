@@ -13,7 +13,7 @@ const TEXT: Record<ExerciseImageKind, { title: string; formats: string; use: str
   },
   animated: {
     title: "Ảnh động",
-    formats: "GIF, WebP · tối đa 5 MB · không bắt buộc",
+    formats: "GIF, WebP · tối đa 5 MB · tuỳ chọn",
     use: "Chỉ hiện ở khung chi tiết bài.",
   },
 }
@@ -125,7 +125,6 @@ export function ImageSlot({
         >
           <Upload className="size-6" aria-hidden />
           <span>Chọn ảnh</span>
-          <small className="text-[11px]">{kind === "still" ? "JPG, PNG, WebP" : "GIF, WebP"}</small>
           {fileInput}
         </label>
       )}

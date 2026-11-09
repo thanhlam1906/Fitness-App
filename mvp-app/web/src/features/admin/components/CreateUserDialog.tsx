@@ -58,7 +58,7 @@ export function CreateUserDialog({ onClose }: { onClose: () => void }) {
         <Field label="Email" error={errors.email?.message}>
           <Input type="email" {...register("email")} aria-invalid={!!errors.email} />
         </Field>
-        <Field label="Số điện thoại (không bắt buộc)" error={errors.phone?.message}>
+        <Field label="Số điện thoại (tuỳ chọn)" error={errors.phone?.message}>
           <Input inputMode="tel" {...register("phone")} aria-invalid={!!errors.phone} />
         </Field>
         <Field label="Vai trò">

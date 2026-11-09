@@ -163,9 +163,7 @@ export function ExerciseFormPage() {
         <AdminHeader group="Bài tập và quy chuẩn" title={title}>
           {/* Phần ảnh của lần lưu chưa xong hoặc hỏng thì chưa được nói "đã lưu". */}
           {save.isSuccess && !images.isPending && !images.isError && (
-            <span className="text-xs whitespace-nowrap text-[var(--color-text-muted)]">
-              Đã lưu — không cần tải lại
-            </span>
+            <span className="text-xs whitespace-nowrap text-[var(--color-text-muted)]">Đã lưu</span>
           )}
         </AdminHeader>
 
@@ -216,7 +214,7 @@ export function ExerciseFormPage() {
               )}
               {isNew && (
                 <div className="space-y-1.5">
-                  <Label htmlFor="slug">slug</Label>
+                  <Label htmlFor="slug">Mã bài</Label>
                   <Input id="slug" placeholder="goblet-squat" {...register("slug")} />
                 </div>
               )}
@@ -248,12 +246,7 @@ export function ExerciseFormPage() {
                 <Textarea id="description" rows={2} {...register("description")} />
               </div>
               <section className="space-y-3 border-t border-[var(--color-border)] pt-4.5">
-                <div>
-                  <h2 className="text-[15px] font-bold">Ảnh minh hoạ</h2>
-                  <p className="mt-1 text-xs text-[var(--color-text-muted)]">
-                    Người tập thấy ảnh ở ô nhỏ cạnh tên bài trong buổi tập, và ở khung lớn khi bấm xem chi tiết bài.
-                  </p>
-                </div>
+                <h2 className="text-[15px] font-bold">Ảnh minh hoạ</h2>
                 {/* key theo id: báo lỗi chọn file của bài trước không theo sang bài khác. */}
                 <div className="grid grid-cols-2 gap-3">
                   <ImageSlot
@@ -275,7 +268,7 @@ export function ExerciseFormPage() {
               <FilmingGuideFields register={register} checkViews={existing.data?.checkViews ?? []} />
               <div className="space-y-1.5">
                 <label className="flex items-center gap-2 text-sm">
-                  <Checkbox {...register("active")} /> Đang hoạt động
+                  <Checkbox {...register("active")} /> Đang bật
                 </label>
                 {/* Cờ lấy từ server, không từ ô tick: bài chưa duyệt vẫn chưa duyệt cho tới khi lưu với ô này bật. */}
                 {existing.data?.draft && (
@@ -292,7 +285,7 @@ export function ExerciseFormPage() {
 
               <div className="flex gap-2.5">
                 <Button type="submit" size="sm" disabled={save.isPending || images.isPending}>
-                  {save.isPending || images.isPending ? "Đang lưu…" : isNew ? "Tạo bài" : "Lưu thay đổi"}
+                  {save.isPending || images.isPending ? "Đang lưu…" : isNew ? "Tạo bài" : "Lưu"}
                 </Button>
                 {!isNew && (
                   <Button

@@ -3,6 +3,7 @@ import { IconText } from "@/components/StatusViews"
 import { Link } from "react-router"
 import { ListRowsSkeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/cn"
+import { normalizeVi } from "@/lib/exerciseFilter"
 import { formatEditedAt } from "@/lib/format"
 import { useExercises } from "@/features/exercise/api/useExercises"
 
@@ -29,27 +30,26 @@ export function ExerciseListPanel({ activeId }: { activeId?: string }) {
   const deletedCount = rows.filter(isDeleted).length
 
   const visible = (() => {
-    const needle = query.trim().toLowerCase()
+    const needle = normalizeVi(query.trim())
     return rows.filter((ex) => {
       if (filter === "ANALYZABLE" && ex.formCheckCount === 0) return false
       if (filter === "PLAIN" && ex.formCheckCount > 0) return false
       if (filter === "DRAFT" && !ex.draft) return false
       if (filter === "DELETED" && !isDeleted(ex)) return false
       if (needle === "") return true
-      return `${ex.nameEn} ${ex.nameVi ?? ""} ${ex.slug}`.toLowerCase().includes(needle)
+      return normalizeVi(`${ex.nameEn} ${ex.nameVi ?? ""} ${ex.slug}`).includes(needle)
     })
   })()
 
   return (
     <div className="flex w-[290px] flex-none flex-col border-r border-[var(--color-border)]">
       <div className="border-b border-[var(--color-border)] p-4">
-        <div className="kicker num">{rows.length} bài tập</div>
         <input
           type="search"
           placeholder="Tìm bài"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="mt-2.5 h-9 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-[13px] outline-none focus:border-[var(--color-accent)]"
+          className="h-9 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-[13px] outline-none focus:border-[var(--color-accent)]"
         />
         <div className="mt-2.5 flex flex-wrap gap-1.5">
           <FilterPill active={filter === "ALL"} onClick={() => setFilter("ALL")}>

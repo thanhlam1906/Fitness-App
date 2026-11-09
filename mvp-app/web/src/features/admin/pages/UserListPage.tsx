@@ -164,7 +164,7 @@ export function UserListPage() {
                   <th className="px-4 py-3 font-normal">Chương trình</th>
                   <th className="px-4 py-3 font-normal">Tuần</th>
                   <SortHeader column="sessionCount" label="Buổi" params={params} onSort={(s) => update(s)} right />
-                  <th className="px-4 py-3 text-right font-normal">Clip</th>
+                  <th className="px-4 py-3 text-right font-normal">Video</th>
                   <th className="px-4 py-3 font-normal">Tuân thủ lịch</th>
                   <th className="px-4 py-3 font-normal">Trạng thái</th>
                   <th className="px-4 py-3 font-normal" />
@@ -255,10 +255,6 @@ export function UserListPage() {
             </Button>
           </div>
         )}
-
-        <p className="mt-3.5 text-xs text-[var(--color-text-muted)]">
-          Không có nút xem video ở bất cứ đâu — HLV chỉ đọc verdict và độ tin cậy.
-        </p>
       </div>
       {creating && <CreateUserDialog onClose={() => setCreating(false)} />}
     </>

@@ -185,7 +185,7 @@ export function ProgressionPreview({
                 )}
               >
                 {result.direction === "SUBSTITUTE"
-                  ? "Đổi bài"
+                  ? "Thay bài"
                   : result.direction === "HOLD"
                     ? `Giữ ${KG.format(result.newLoadKg)} kg`
                     : `${KG.format(result.newLoadKg)} kg (${(result.deltaKg ?? 0) > 0 ? "+" : "−"}${KG.format(Math.abs(result.deltaKg ?? 0))})`}

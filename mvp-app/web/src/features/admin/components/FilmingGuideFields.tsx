@@ -29,7 +29,7 @@ export function FilmingGuideFields({
       <div>
         <h2 className="text-[15px] font-bold">Hướng dẫn quay</h2>
         <p className="mt-1 text-xs text-[var(--color-text-muted)]">
-          Hiện ở màn gửi clip. Ô bỏ trống thì người tập thấy câu dặn mặc định (chữ mờ trong ô).
+          Hiện ở màn gửi video. Ô bỏ trống thì người tập thấy câu dặn mặc định (chữ mờ trong ô).
         </p>
       </div>
       <div className="space-y-1.5">
@@ -42,7 +42,7 @@ export function FilmingGuideFields({
           <Input id="guide-lighting" placeholder={PLACEHOLDER.lighting} {...register("guide.lighting")} />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="guide-duration">Độ dài clip</Label>
+          <Label htmlFor="guide-duration">Độ dài video</Label>
           <Input id="guide-duration" placeholder={PLACEHOLDER.duration} {...register("guide.duration")} />
         </div>
       </div>

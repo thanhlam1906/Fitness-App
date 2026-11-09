@@ -16,8 +16,9 @@ export const TEMPLATE_HELP: Record<TemplateHelpKey, string[]> = {
     "Tăng mỗi lần: số kg cộng thêm khi quy tắc quyết định tăng. Thường tạ đòn 2.5, đẩy vai 1.25, tạ đơn 2.",
     "Không tự tăng: máy không đổi tạ bài này, người tập tự lên quả nặng hơn (hợp với tạ ấm vì quả nhảy cách xa).",
   ],
+  // Thứ tự xét đã ghi ở dòng luôn hiện ngay dưới tiêu đề (ProgressionRulesEditor), ở đây chỉ nói hệ quả.
   rules: [
-    "Sau mỗi buổi, máy xét từng bài có tạ theo thứ tự 1 → 4. Gặp quy tắc khớp đầu tiên thì dừng, nên mỗi lần đổi tạ chỉ do một quy tắc và luôn có một câu giải thích.",
+    "Chỉ xét bài có tạ. Mỗi lần đổi tạ chỉ do một quy tắc nên luôn có một câu giải thích.",
     "Mặc định là các số đang chạy hiện nay.",
   ],
   r1: ["Người tập bấm “Báo đau” trong buổi. Giảm theo % rồi làm tròn xuống theo bước tăng của bài, ví dụ 60 kg giảm 10% → 52.5 kg."],

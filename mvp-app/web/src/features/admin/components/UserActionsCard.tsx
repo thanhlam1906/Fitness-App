@@ -37,9 +37,6 @@ export function UserActionsCard({ user, isSelf }: { user: AdminUserRow; isSelf: 
   return (
     <Card>
       <p className="text-sm font-semibold">Quản lý tài khoản</p>
-      {isSelf && (
-        <p className="mt-1 text-xs text-[var(--color-text-muted)]">Không thao tác trên tài khoản của chính bạn.</p>
-      )}
       <div className="mt-3 flex flex-wrap gap-2">
         <Button size="sm" variant="secondary" disabled={isSelf} onClick={() => setOpen("status")}>
           {user.active ? "Khoá tài khoản" : "Mở khoá"}
@@ -54,6 +51,10 @@ export function UserActionsCard({ user, isSelf }: { user: AdminUserRow; isSelf: 
           Xoá tài khoản
         </Button>
       </div>
+      {/* Lý do nút bị khoá nằm dưới nút (luật chữ 6, doc/design-gon-giao-dien-user-v1.md §3). */}
+      {isSelf && (
+        <p className="mt-2 text-xs text-[var(--color-text-muted)]">Không thao tác trên tài khoản của chính bạn.</p>
+      )}
 
       {open === "status" &&
         (user.active ? (

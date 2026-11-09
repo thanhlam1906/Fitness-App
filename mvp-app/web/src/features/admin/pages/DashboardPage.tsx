@@ -107,14 +107,12 @@ export function DashboardPage() {
                 count={overview.data?.notStartedTrainees}
                 loading={overview.isLoading}
                 text="Người đăng ký chưa tập buổi nào"
-                sub="Mở danh sách lọc “Chưa bắt đầu”"
                 to="/admin/users?status=NOT_STARTED&role=USER"
               />
               <AttentionTile
                 count={data?.missedWorkouts}
                 loading={dashboard.isLoading}
                 text={`Buổi bị lỡ trong ${shownDays} ngày qua`}
-                sub="Mở trang Buổi tập"
                 to={`/admin/sessions?${writeInsightsFilter({ templateId: null, days: shownDays })}`}
               />
               {/* Chưa có trang xử lý góp ý nên ô này chỉ báo số, không bấm được. */}
@@ -122,7 +120,6 @@ export function DashboardPage() {
                 count={overview.data?.wrongFeedbackCount}
                 loading={overview.isLoading}
                 text="Góp ý bị báo sai, từ trước tới nay"
-                sub="Chưa có trang xử lý riêng"
               />
             </div>
           </section>
@@ -153,13 +150,11 @@ function AttentionTile({
   count,
   loading,
   text,
-  sub,
   to,
 }: {
   count: number | undefined
   loading: boolean
   text: string
-  sub: string
   to?: string
 }) {
   const body = (
@@ -176,10 +171,7 @@ function AttentionTile({
           {count ?? "—"}
         </span>
       )}
-      <span className="min-w-0 flex-1 text-[13px] leading-snug">
-        {text}
-        <span className="mt-0.5 block text-[11px] text-[var(--color-text-muted)]">{sub}</span>
-      </span>
+      <span className="min-w-0 flex-1 text-[13px] leading-snug">{text}</span>
       {to && <ChevronRight aria-hidden className="size-4 text-[var(--color-text-muted)]" />}
     </>
   )
@@ -260,7 +252,7 @@ function Charts({ data, days }: { data: AdminDashboard; days: InsightDays }) {
         icon={ScanLine}
         tone="var(--color-chart-1)"
         title="Bài được chấm form nhiều nhất"
-        hint="Top 5 bài theo số lượt chấm xong. Số góc phải là mọi lượt chấm xong."
+        hint="Chỉ tính lượt chấm xong. Số góc phải là tổng lượt của mọi bài."
         aside={data.formCheckTotal || undefined}
       >
         {data.topFormChecks.length === 0 ? (
@@ -281,7 +273,7 @@ function Charts({ data, days }: { data: AdminDashboard; days: InsightDays }) {
         icon={ThumbsDown}
         tone="var(--color-danger)"
         title="Góp ý bị báo sai"
-        hint="Số lần người tập bấm “cái này sai”, theo nơi sinh ra góp ý."
+        hint="Số lần người tập bấm “Góp ý này sai?”, theo nơi sinh ra góp ý."
         aside={wrongSum || undefined}
       >
         {/* Một đường tổng: mỗi ngày chỉ vài góp ý, ba đường riêng chồng nhau khó đọc (người dùng duyệt 10-09). */}
@@ -318,7 +310,7 @@ function Charts({ data, days }: { data: AdminDashboard; days: InsightDays }) {
         icon={MessageCircle}
         tone="var(--color-accent)"
         title="Trợ lý được hỏi"
-        hint={`Số câu người tập gửi cho trợ lý, mỗi điểm một ${unit}.${questionSum > 0 ? ` ${data.assistantAskers} người đã hỏi ít nhất một câu.` : ""}`}
+        hint={`Mỗi điểm một ${unit}.${questionSum > 0 ? ` ${data.assistantAskers} người đã hỏi ít nhất một câu.` : ""}`}
         aside={questionSum || undefined}
         className="xl:col-span-2"
       >

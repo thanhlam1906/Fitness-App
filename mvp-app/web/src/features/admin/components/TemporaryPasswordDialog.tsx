@@ -32,7 +32,7 @@ export function TemporaryPasswordDialog({
       <h2 className="text-lg font-bold">Mật khẩu tạm</h2>
       <p className="mt-2 text-sm text-[var(--color-text-muted)]">
         Gửi mật khẩu này cho <span className="font-semibold">{email}</span>. Lần đăng nhập đầu tiên họ phải đặt mật
-        khẩu mới. <strong>Chỉ hiện một lần</strong> — đóng hộp này là không xem lại được.
+        khẩu mới. <strong>Chỉ hiện một lần</strong>, đóng hộp này là không xem lại được.
       </p>
       <div className="num mt-4 rounded-lg bg-[var(--color-surface-2)] px-4 py-3 text-center text-xl font-bold tracking-[0.12em] select-all">
         {password}

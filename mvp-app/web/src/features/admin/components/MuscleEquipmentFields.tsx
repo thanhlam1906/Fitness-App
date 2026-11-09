@@ -59,9 +59,8 @@ export function MuscleEquipmentFields({ control }: { control: Control<ExerciseFo
 
       <div className="space-y-1.5">
         <div id="muscle-secondary" className="text-sm font-medium">
-          Cơ phụ
+          Cơ phụ (tuỳ chọn)
         </div>
-        <p className="text-xs text-[var(--color-text-muted)]">Bấm để bật hoặc tắt, chọn bao nhiêu cũng được. Không bắt buộc.</p>
         <div role="group" aria-labelledby="muscle-secondary" className="flex flex-wrap gap-1.5">
           {MUSCLE_OPTIONS.map((m) => {
             const isPrimary = primary === m.value
@@ -89,8 +88,7 @@ export function MuscleEquipmentFields({ control }: { control: Control<ExerciseFo
           Thiết bị
         </div>
         <p className="text-xs text-[var(--color-text-muted)]">
-          Bấm để bật hoặc tắt. Không chọn gì = tập tay không. Gợi ý bài thay thế chỉ đưa ra bài mà người tập có đủ
-          thiết bị.
+          Không chọn gì = tập tay không. Gợi ý bài thay thế chỉ đưa ra bài mà người tập có đủ thiết bị.
         </p>
         <div role="group" aria-labelledby="equipment" className="flex flex-wrap gap-1.5">
           {EXERCISE_EQUIPMENT_OPTIONS.map((o) => {

@@ -15,7 +15,7 @@ import type { HelpKey } from "@/features/admin/utils/formCheckHelp"
 
 const MOMENTS: Moment[] = ["START", "PEAK"]
 
-/** Sửa hoặc thêm MỘT khớp cần kiểm (mockup doc/mockup-form-check-admin/demo.html). Lưu ngay khi bấm Xong. */
+/** Sửa hoặc thêm MỘT khớp cần kiểm (mockup doc/mockup-form-check-admin/demo.html). Bấm Lưu là lưu ngay khớp này. */
 export function FormCheckForm({
   exerciseId,
   view,
@@ -145,7 +145,7 @@ export function FormCheckForm({
         {save.isError && <IconText className="col-span-2">{save.error.message}</IconText>}
         <div className="col-span-2 flex gap-2.5">
           <Button size="sm" onClick={submit} disabled={save.isPending}>
-            {save.isPending ? "Đang lưu…" : "Xong"}
+            {save.isPending ? "Đang lưu…" : "Lưu"}
           </Button>
           <Button size="sm" variant="secondary" onClick={onDone}>
             Huỷ
@@ -167,17 +167,13 @@ export function FormCheckForm({
         <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-1">
           <MeasureFigure view={view} measure={draft.measure} />
         </div>
-        <p className="mt-2 text-xs leading-relaxed text-[var(--color-text-muted)]">
-          {measure ? (
-            <>
-              <b className="text-[var(--color-text)]">{measure.name}</b>
-              <br />
-              {measure.ref}
-            </>
-          ) : (
-            "Chọn khớp để xem chỗ đo."
-          )}
-        </p>
+        {measure && (
+          <p className="mt-2 text-xs leading-relaxed text-[var(--color-text-muted)]">
+            <b className="text-[var(--color-text)]">{measure.name}</b>
+            <br />
+            {measure.ref}
+          </p>
+        )}
       </div>
     </div>
   )

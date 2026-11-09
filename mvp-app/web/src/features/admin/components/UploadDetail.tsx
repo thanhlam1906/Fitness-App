@@ -39,8 +39,7 @@ export function UploadDetail({ id }: { id: string }) {
         {heading("Đang trích")}
         <p className="mt-4 flex items-center gap-3 text-sm text-[var(--color-warn)]">
           <span className="size-4 flex-none animate-spin rounded-full border-2 border-current border-r-transparent" />
-          Máy trích đang đọc từng trang (chế độ hybrid). Bài giảng vài chục trang mất vài phút, sách
-          dày có thể mất cả giờ.
+          Bài giảng vài chục trang mất vài phút, sách dày có thể mất cả giờ.
         </p>
         <p className="mt-2.5 text-sm text-[var(--color-text-muted)]">
           Có thể rời màn này, quay lại sau. Xong sẽ chuyển sang “Chờ duyệt”.
@@ -57,7 +56,7 @@ export function UploadDetail({ id }: { id: string }) {
           <Notice icon={CircleAlert} tone="danger" className="text-sm">
             {u.error}
           </Notice>
-          <p className="text-sm text-[var(--color-text-muted)]">File PDF đã xoá khỏi máy chủ. Sửa xong thì thả lại.</p>
+          <p className="text-sm text-[var(--color-text-muted)]">File đã bị xoá, sửa xong thì thả lại.</p>
           <Button variant="secondary" size="sm" onClick={onDiscard} disabled={discard.isPending}>
             Bỏ
           </Button>

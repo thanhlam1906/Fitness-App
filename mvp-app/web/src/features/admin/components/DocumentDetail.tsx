@@ -55,11 +55,7 @@ export function DocumentDetail({ id }: { id: string }) {
             >
               {w.question && <div className="text-[13px] font-bold">“{w.question}”</div>}
               <p className="mt-1.5 text-[13px] leading-relaxed">{w.answer}</p>
-              {w.note ? (
-                <p className="mt-2 text-[13px] text-[var(--color-danger)]">Người dùng ghi: {w.note}</p>
-              ) : (
-                <p className="mt-2 text-xs text-[var(--color-text-muted)]">Người dùng không ghi chú.</p>
-              )}
+              {w.note && <p className="mt-2 text-[13px] text-[var(--color-danger)]">Người dùng ghi: {w.note}</p>}
               <p className="num mt-2 text-xs text-[var(--color-text-muted)]">
                 {formatDate(w.createdAt)} · đoạn đã dùng:{" "}
                 {w.chunkOrds.map((ord, i) => (
