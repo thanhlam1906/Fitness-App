@@ -62,7 +62,7 @@ export function PickerField({
         aria-label={`${title}: ${display ?? "chưa chọn"}`}
         onClick={openSheet}
         className={cn(
-          "flex h-12 w-full items-center justify-between rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] pr-3 pl-3.5 text-left text-[15px]",
+          "flex h-12 w-full items-center justify-between rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] pr-3 pl-3.5 text-left text-title",
           SHEET_FOCUS,
           display ? "num font-semibold text-[var(--color-text)]" : "text-[var(--color-text-muted)]",
         )}
@@ -81,7 +81,7 @@ export function PickerField({
           {columns.map((values, i) => (
             <Fragment key={i}>
               {i > 0 && separator && (
-                <span aria-hidden className="relative grid w-3 place-items-center text-[22px] font-extrabold">
+                <span aria-hidden className="relative grid w-3 place-items-center text-stat font-extrabold">
                   {separator}
                 </span>
               )}
@@ -96,7 +96,7 @@ export function PickerField({
           {unit && (
             <span
               aria-hidden
-              className="pointer-events-none absolute top-[101px] right-4 text-[13px] text-[var(--color-text-muted)]"
+              className="pointer-events-none absolute top-[101px] right-4 text-meta text-[var(--color-text-muted)]"
             >
               {unit}
             </span>
@@ -173,7 +173,7 @@ function WheelColumn({
           className={cn(
             "num grid h-11 cursor-pointer snap-center place-items-center",
             i === index
-              ? "text-[22px] font-extrabold text-[var(--color-text)]"
+              ? "text-stat font-extrabold text-[var(--color-text)]"
               : "text-lg text-[var(--color-text-muted)]",
           )}
         >

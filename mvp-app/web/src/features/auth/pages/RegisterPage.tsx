@@ -89,7 +89,7 @@ export function RegisterPage() {
           />
         </AuthField>
         <div>
-          <label className="flex items-start gap-2.5 pt-1 text-[13px] leading-snug text-[var(--color-text-muted)]">
+          <label className="flex items-start gap-2.5 pt-1 text-meta leading-snug text-[var(--color-text-muted)]">
             <Checkbox
               className="mt-0.5 flex-none"
               aria-invalid={!!errors.acceptTerms}
@@ -102,7 +102,7 @@ export function RegisterPage() {
             </span>
           </label>
           {errors.acceptTerms && (
-            <p className="mt-1.5 text-[13px] text-[var(--color-danger)]">
+            <p className="mt-1.5 text-meta text-[var(--color-danger)]">
               {errors.acceptTerms.message}
             </p>
           )}
@@ -116,7 +116,7 @@ export function RegisterPage() {
           {isSubmitting ? "Đang tạo tài khoản…" : "Tạo tài khoản"}
         </Button>
       </form>
-      <p className="mt-4 text-center text-[13px] text-[var(--color-text-muted)]">
+      <p className="mt-4 text-center text-meta text-[var(--color-text-muted)]">
         Đã có tài khoản?{" "}
         <Link to="/login" className="font-semibold text-[var(--color-accent)]">
           Đăng nhập

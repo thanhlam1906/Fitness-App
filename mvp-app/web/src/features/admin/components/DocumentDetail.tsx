@@ -27,7 +27,7 @@ export function DocumentDetail({ id }: { id: string }) {
   return (
     <>
       <div className="kicker">Trong kho</div>
-      <h2 className="mt-1 text-[22px] leading-tight font-extrabold break-words">{d.title}</h2>
+      <h2 className="mt-1 text-stat leading-tight font-extrabold break-words">{d.title}</h2>
       <p className="num mt-1.5 text-sm text-[var(--color-text-muted)]">
         {d.source} · nạp {formatDate(d.ingestedAt)} · {d.chunkCount} đoạn
       </p>
@@ -45,7 +45,7 @@ export function DocumentDetail({ id }: { id: string }) {
       {d.wrongAnswers.length > 0 && (
         <>
           <div className="mt-6.5 flex items-baseline gap-2.5">
-            <b className="text-[15px] text-[var(--color-danger)]">Câu trả lời bị báo sai</b>
+            <b className="text-title text-[var(--color-danger)]">Câu trả lời bị báo sai</b>
             <span className="kicker num">{d.wrongAnswers.length}</span>
           </div>
           {d.wrongAnswers.map((w) => (
@@ -53,9 +53,9 @@ export function DocumentDetail({ id }: { id: string }) {
               key={w.messageId}
               className="mt-2.5 rounded-[var(--radius-lg)] border border-[var(--color-danger)]/35 bg-[var(--color-surface)] px-3.5 py-3"
             >
-              {w.question && <div className="text-[13px] font-bold">“{w.question}”</div>}
-              <p className="mt-1.5 text-[13px] leading-relaxed">{w.answer}</p>
-              {w.note && <p className="mt-2 text-[13px] text-[var(--color-danger)]">Người dùng ghi: {w.note}</p>}
+              {w.question && <div className="text-meta font-bold">“{w.question}”</div>}
+              <p className="mt-1.5 text-meta leading-relaxed">{w.answer}</p>
+              {w.note && <p className="mt-2 text-meta text-[var(--color-danger)]">Người dùng ghi: {w.note}</p>}
               <p className="num mt-2 text-xs text-[var(--color-text-muted)]">
                 {formatDate(w.createdAt)} · đoạn đã dùng:{" "}
                 {w.chunkOrds.map((ord, i) => (
@@ -81,7 +81,7 @@ export function DocumentDetail({ id }: { id: string }) {
       )}
 
       <div className="mt-6.5">
-        <b className="text-[15px]">Các đoạn trợ lý đang đọc</b>
+        <b className="text-title">Các đoạn trợ lý đang đọc</b>
       </div>
       <ChunkList
         chunks={d.chunks.map((c) => ({

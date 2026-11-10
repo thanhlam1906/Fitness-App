@@ -41,11 +41,21 @@
   --color-glass: rgba(20, 24, 27, 0.62);
   --color-glass-border: rgba(255, 255, 255, 0.08);
 
+  /* Thang cỡ chữ 13 bậc (doc/design-gon-giao-dien-admin-v1.md §2, người dùng duyệt 11-10). Chỉ dùng các
+     bậc này, không viết px tay: cỡ lệch nhau 1–2px giữa các màn là thứ làm giao diện trông không đều tay.
+     Bậc mới không kèm line-height nên chữ cao dòng theo phần tử cha, như bản px tay trước đây. */
+  --text-2xs: 11px;
   --text-xs: 12px;
+  --text-meta: 13px;
   --text-sm: 14px;
+  --text-title: 15px;
   --text-base: 16px;
+  --text-title-lg: 17px;
   --text-lg: 20px;
+  --text-stat: 22px;
+  --text-page: 28px;
   --text-2xl: 32px;
+  --text-hero: 40px;
   /* Số tải trên màn buổi tập — design để 64px, to gấp đôi mọi thứ quanh nó. */
   --text-load: 64px;
 
@@ -67,7 +77,7 @@ body {
 
 /* Nhãn nhỏ in hoa giãn chữ — lặp ở cả 12 màn của design. */
 .kicker {
-  font-size: 11px;
+  font-size: var(--text-2xs);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--color-text-muted);
@@ -76,7 +86,7 @@ body {
 /* Tiêu đề mục ở màn người tập: chữ thường. Nhãn in hoa .kicker trên mọi khối là dấu hiệu
    giao diện máy làm (doc/design-gon-giao-dien-user-v1.md §4), giữ .kicker cho admin. */
 .section-title {
-  font-size: 13px;
+  font-size: var(--text-meta);
   font-weight: 600;
   color: var(--color-text-muted);
 }

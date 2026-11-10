@@ -92,11 +92,11 @@ export function ProgramSelectionPage() {
 
   return (
     <FlowScreen>
-      <h1 className="num text-[28px] leading-tight font-extrabold tracking-[-0.02em]">
+      <h1 className="num text-page leading-tight font-extrabold tracking-[-0.02em]">
         {exact.length > 0 ? `${exact.length} chương trình phù hợp` : "Chọn chương trình gần nhất"}
       </h1>
       {exact.length === 0 && (
-        <p className="mt-2 text-[13px] leading-relaxed text-[var(--color-text-muted)]">
+        <p className="mt-2 text-meta leading-relaxed text-[var(--color-text-muted)]">
           Chưa có chương trình đúng số buổi/tuần bạn chọn.
         </p>
       )}
@@ -131,7 +131,7 @@ export function ProgramSelectionPage() {
                 <label
                   key={d.value}
                   className={cn(
-                    "flex-1 cursor-pointer rounded-lg py-3 text-center text-[13px]",
+                    "flex-1 cursor-pointer rounded-lg py-3 text-center text-meta",
                     on
                       ? "bg-[var(--color-accent)] font-bold text-[var(--color-accent-fg)]"
                       : "bg-[var(--color-surface)] text-[var(--color-text-muted)]",
@@ -154,7 +154,7 @@ export function ProgramSelectionPage() {
               )
             })}
           </div>
-          <p className="mt-2 text-[11px] text-[var(--color-text-muted)]">
+          <p className="mt-2 text-2xs text-[var(--color-text-muted)]">
             Đổi được sau, không mất tiến độ.
           </p>
           {trainingDays.length === 0 && (
@@ -176,13 +176,13 @@ export function ProgramSelectionPage() {
           {loadable.length > 0 && (
             <>
               <div className="section-title mt-6">Mức tạ khởi điểm</div>
-              <p className="mt-2 text-[13px] leading-relaxed text-[var(--color-text-muted)]">
+              <p className="mt-2 text-meta leading-relaxed text-[var(--color-text-muted)]">
                 Mức bạn làm 2 set mà còn dư sức. Bỏ trống thì lịch không gợi ý tạ.
               </p>
               <div className="mt-3 space-y-3">
                 {loadable.map((exercise) => (
                   <div key={exercise.slug} className="flex items-center gap-3">
-                    <Label htmlFor={`load-${exercise.slug}`} className="flex-1 text-[15px]">
+                    <Label htmlFor={`load-${exercise.slug}`} className="flex-1 text-title">
                       {exercise.name}
                     </Label>
                     <Input
@@ -285,21 +285,21 @@ function TemplateCard({
       <div className="flex items-center justify-between">
         <span
           className={cn(
-            "text-[13px] font-semibold",
+            "text-meta font-semibold",
             selected ? "text-[var(--color-accent)]" : "text-[var(--color-text-muted)]",
           )}
         >
           {rank}
         </span>
         {selected && (
-          <span className="rounded-full bg-[var(--color-accent)] px-2.5 py-0.5 text-[11px] font-bold text-[var(--color-accent-fg)]">
+          <span className="rounded-full bg-[var(--color-accent)] px-2.5 py-0.5 text-2xs font-bold text-[var(--color-accent-fg)]">
             Đang chọn
           </span>
         )}
       </div>
-      <div className="mt-2 text-[19px] font-bold">{template.name}</div>
+      <div className="mt-2 text-lg leading-7 font-bold">{template.name}</div>
       {template.methodology && (
-        <p className="mt-2 text-[13px] leading-relaxed text-[var(--color-text-muted)]">
+        <p className="mt-2 text-meta leading-relaxed text-[var(--color-text-muted)]">
           {template.methodology}
         </p>
       )}
@@ -318,7 +318,7 @@ function TemplateCard({
         <div className="mt-4 space-y-2 border-t border-[var(--color-border)] pt-4">
           {template.days.map((day) => (
             <div key={day.order}>
-              <p className="text-[13px] font-semibold">Buổi {day.label}</p>
+              <p className="text-meta font-semibold">Buổi {day.label}</p>
               <p className="num mt-0.5 text-xs leading-relaxed text-[var(--color-text-muted)]">
                 {day.exercises
                   .map(
@@ -346,7 +346,7 @@ function Tag({ selected, children }: { selected: boolean; children: React.ReactN
   return (
     <span
       className={cn(
-        "num rounded-full px-2.5 py-1 text-[11px] text-[var(--color-text-muted)]",
+        "num rounded-full px-2.5 py-1 text-2xs text-[var(--color-text-muted)]",
         selected ? "bg-[var(--color-surface)]" : "bg-[var(--color-surface-2)]",
       )}
     >

@@ -15,7 +15,7 @@ export function Logo({ className }: { className?: string }) {
           strokeLinejoin="round"
         />
       </svg>
-      <span className="text-[21px] font-extrabold tracking-[-0.02em]">VFit</span>
+      <span className="text-stat font-extrabold tracking-[-0.02em]">VFit</span>
     </span>
   )
 }

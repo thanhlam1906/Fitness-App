@@ -125,11 +125,11 @@ function DoneCard({ cell, workout }: { cell: MonthCell; workout: ScheduledWorkou
                 </span>
               </div>
               <div className="mt-1.5 flex flex-wrap items-center justify-end gap-1.5">
-                <span className="num mr-auto text-[11px] text-[var(--color-text-muted)]">
+                <span className="num mr-auto text-2xs text-[var(--color-text-muted)]">
                   Mục tiêu {exercise.targetSets}×{exercise.targetReps}
                 </span>
                 {sets.length === 0 && (
-                  <IconText icon={Minus} tone="muted" className="text-[11px]">
+                  <IconText icon={Minus} tone="muted" className="text-2xs">
                     Không log set nào
                   </IconText>
                 )}
@@ -137,7 +137,7 @@ function DoneCard({ cell, workout }: { cell: MonthCell; workout: ScheduledWorkou
                   s.skipped ? (
                     <span
                       key={s.setIndex}
-                      className="rounded-[var(--radius-sm)] bg-[var(--color-surface-2)] px-1.5 py-1 text-[11px] text-[var(--color-text-muted)]"
+                      className="rounded-[var(--radius-sm)] bg-[var(--color-surface-2)] px-1.5 py-1 text-2xs text-[var(--color-text-muted)]"
                     >
                       bỏ · {skipLabel(s.skipReason)}
                     </span>
@@ -146,7 +146,7 @@ function DoneCard({ cell, workout }: { cell: MonthCell; workout: ScheduledWorkou
                       key={s.setIndex}
                       title={s.loadKg === null ? undefined : formatKg(s.loadKg)}
                       className={cn(
-                        "num grid h-6.5 min-w-7 place-items-center rounded-[var(--radius-sm)] px-1.5 text-[13px] font-bold",
+                        "num grid h-6.5 min-w-7 place-items-center rounded-[var(--radius-sm)] px-1.5 text-meta font-bold",
                         s.short
                           ? "bg-[var(--color-warn-tint)] text-[var(--color-warn)]"
                           : "bg-[var(--color-success-tint)] text-[var(--color-success)]",
@@ -181,7 +181,7 @@ function NoWorkoutCard({ cell, workouts }: { cell: MonthCell; workouts: Schedule
         icon={inProgram && cell.isRestDay ? BedDouble : CalendarMinus}
         className="size-12 [&>svg]:size-5.5"
       />
-      <div className="mt-2.5 text-[15px] font-semibold text-[var(--color-text)]">
+      <div className="mt-2.5 text-title font-semibold text-[var(--color-text)]">
         {dayTitle(cell.date)}
         {inProgram && (cell.isRestDay ? " · Ngày nghỉ" : " · Không có buổi")}
       </div>
@@ -220,7 +220,7 @@ function CardShell({
       <div className="flex items-center justify-between gap-2">
         <span
           className={cn(
-            "num text-[13px] font-semibold",
+            "num text-meta font-semibold",
             highlight ? "text-[var(--color-accent)]" : "text-[var(--color-text-muted)]",
           )}
         >
@@ -228,7 +228,7 @@ function CardShell({
         </span>
         {pill}
       </div>
-      <div className="mt-0.5 text-[19px] font-extrabold">Buổi {workout.label ?? ""}</div>
+      <div className="mt-0.5 text-lg leading-7 font-extrabold">Buổi {workout.label ?? ""}</div>
       {children}
     </section>
   )
@@ -241,7 +241,7 @@ function Pill({ tone, children }: { tone: "accent" | "success" | "danger" | "mut
     danger: "bg-[var(--color-danger-tint)] text-[var(--color-danger)]",
     muted: "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]",
   }
-  return <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-bold whitespace-nowrap", tones[tone])}>{children}</span>
+  return <span className={cn("rounded-full px-2 py-0.5 text-2xs font-bold whitespace-nowrap", tones[tone])}>{children}</span>
 }
 
 function PlanList({ workout }: { workout: ScheduledWorkoutView }) {
@@ -295,7 +295,7 @@ function EditLink({ workout }: { workout: ScheduledWorkoutView }) {
         type="button"
         onClick={() => setOpen(true)}
         className={cn(
-          "mt-2.5 flex h-10 w-full items-center justify-center gap-1.5 rounded-[var(--radius-md)] text-[13px] font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)]",
+          "mt-2.5 flex h-10 w-full items-center justify-center gap-1.5 rounded-[var(--radius-md)] text-meta font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)]",
           SHEET_FOCUS,
         )}
       >
@@ -311,7 +311,7 @@ function Stat({ value, label }: { value: string; label: string }) {
   return (
     <div className="rounded-[var(--radius-md)] bg-[var(--color-bg)] px-2.5 py-2">
       <div className="num text-lg font-bold">{value}</div>
-      <div className="text-[11px] text-[var(--color-text-muted)]">{label}</div>
+      <div className="text-2xs text-[var(--color-text-muted)]">{label}</div>
     </div>
   )
 }

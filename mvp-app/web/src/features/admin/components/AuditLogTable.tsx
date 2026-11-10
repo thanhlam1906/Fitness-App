@@ -29,7 +29,7 @@ export function AuditLogTable({
       <div className="overflow-x-auto rounded-[var(--radius-md)] bg-[var(--color-surface)]">
         <table className="w-full min-w-[700px] text-sm">
           <thead>
-            <tr className="border-b border-[var(--color-border)] text-left text-[10px] tracking-[0.1em] text-[var(--color-text-muted)] uppercase">
+            <tr className="border-b border-[var(--color-border)] text-left text-2xs tracking-[0.1em] text-[var(--color-text-muted)] uppercase">
               <th className="px-4 py-3 font-normal">Thời gian</th>
               <th className="px-4 py-3 font-normal">Người làm</th>
               <th className="px-4 py-3 font-normal">Thao tác</th>
@@ -68,7 +68,7 @@ export function AuditLogTable({
         </table>
       </div>
       {pageCount > 1 && (
-        <div className="mt-3 flex items-center gap-3 text-[13px] text-[var(--color-text-muted)]">
+        <div className="mt-3 flex items-center gap-3 text-meta text-[var(--color-text-muted)]">
           <span className="num">
             Trang {page.page + 1} / {pageCount}
           </span>

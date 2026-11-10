@@ -6,7 +6,7 @@ export function TableEmpty({ icon: Icon, colSpan, children }: { icon: LucideIcon
   return (
     <tr>
       <td colSpan={colSpan} className="px-4 py-7">
-        <div className="flex flex-col items-center gap-2 text-[13px] text-[var(--color-text-muted)]">
+        <div className="flex flex-col items-center gap-2 text-meta text-[var(--color-text-muted)]">
           <Icon aria-hidden className="size-6.5" strokeWidth={1.8} />
           {children}
         </div>

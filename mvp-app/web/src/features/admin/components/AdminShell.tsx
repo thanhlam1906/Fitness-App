@@ -139,7 +139,7 @@ export function AdminHeader({
     <div className="flex items-center gap-4 border-b border-[var(--color-border)] px-7 py-4.5">
       <div className="min-w-0 flex-1">
         <div className="kicker">{group}</div>
-        <div className="mt-0.5 truncate text-xl font-bold">{title}</div>
+        <div className="mt-0.5 truncate text-lg leading-7 font-bold">{title}</div>
       </div>
       {children}
     </div>
@@ -151,7 +151,7 @@ const ROW =
 const ICON = "size-4 shrink-0"
 
 function GroupTitle({ children }: { children: ReactNode }) {
-  return <div className="kicker px-3 pt-4 pb-2 text-[10px] tracking-[0.12em]">{children}</div>
+  return <div className="kicker px-3 pt-4 pb-2 tracking-[0.12em]">{children}</div>
 }
 
 function NavItem({ item }: { item: Item }) {

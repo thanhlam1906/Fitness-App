@@ -51,10 +51,10 @@ export function DonutChart({
             </circle>
           ) : null,
         )}
-        <text x="66" y="66" textAnchor="middle" className="num fill-[var(--color-text)] text-[22px] font-bold">
+        <text x="66" y="66" textAnchor="middle" className="num fill-[var(--color-text)] text-stat font-bold">
           {center}
         </text>
-        <text x="66" y="82" textAnchor="middle" className="fill-[var(--color-text-muted)] text-[10px]">
+        <text x="66" y="82" textAnchor="middle" className="fill-[var(--color-text-muted)] text-2xs">
           {centerLabel}
         </text>
       </svg>
@@ -68,7 +68,7 @@ export function DonutChart({
             <li
               key={s.key}
               title={describe(s)}
-              className="grid grid-cols-[10px_minmax(0,1fr)_auto] items-center gap-2 text-[12.5px]"
+              className="grid grid-cols-[10px_minmax(0,1fr)_auto] items-center gap-2 text-xs leading-normal"
             >
               <span className="size-2.5 rounded-[2px]" style={{ background: s.color }} />
               <span className="truncate">{s.label}</span>

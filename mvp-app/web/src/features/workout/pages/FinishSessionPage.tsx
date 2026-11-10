@@ -66,8 +66,8 @@ export function FinishSessionPage() {
 
   return (
     <FlowScreen>
-      <div className="num text-[13px] text-[var(--color-text-muted)]">{formatDayMonth(workout.scheduledOn)}</div>
-      <h1 className="mt-1 text-[28px] leading-tight font-extrabold tracking-[-0.02em]">
+      <div className="num text-meta text-[var(--color-text-muted)]">{formatDayMonth(workout.scheduledOn)}</div>
+      <h1 className="mt-1 text-page leading-tight font-extrabold tracking-[-0.02em]">
         Xong buổi {workout.label ?? ""}.
       </h1>
 
@@ -79,7 +79,7 @@ export function FinishSessionPage() {
       </div>
 
       <div className="mt-6">
-        <div className="text-[17px] font-bold">
+        <div className="text-title-lg font-bold">
           Buổi này nặng cỡ nào? <span className="font-normal text-[var(--color-text-muted)]">(tuỳ chọn)</span>
         </div>
         <div className="mt-1 text-xs text-[var(--color-text-muted)]">
@@ -95,7 +95,7 @@ export function FinishSessionPage() {
               className={cn(
                 "num flex-1 rounded-lg py-3 text-center",
                 sessionRpe === value
-                  ? "bg-[var(--color-accent)] text-[15px] font-bold text-[var(--color-accent-fg)]"
+                  ? "bg-[var(--color-accent)] text-title font-bold text-[var(--color-accent-fg)]"
                   : "bg-[var(--color-surface)] text-sm text-[var(--color-text-muted)]",
               )}
             >
@@ -109,7 +109,7 @@ export function FinishSessionPage() {
       </div>
 
       <div className="mt-6">
-        <div className="text-[17px] font-bold">Có đau ở đâu không?</div>
+        <div className="text-title-lg font-bold">Có đau ở đâu không?</div>
         <p className="mt-1 text-xs text-[var(--color-text-muted)]">
           Không đau thì bỏ qua. Báo đau sẽ giảm tạ, không phải chẩn đoán y tế.
         </p>
@@ -122,7 +122,7 @@ export function FinishSessionPage() {
 
         {bodyArea && (
           <div className="mt-3.5 flex items-center gap-2.5">
-            <span className="text-[13px] text-[var(--color-text-muted)]">Mức độ</span>
+            <span className="text-meta text-[var(--color-text-muted)]">Mức độ</span>
             <div className="flex flex-1 gap-1.5">
               {SEVERITIES.map((s) => (
                 <button
@@ -131,7 +131,7 @@ export function FinishSessionPage() {
                   aria-pressed={severity === s.value}
                   onClick={() => setSeverity(s.value)}
                   className={cn(
-                    "num flex-1 rounded-lg py-2.5 text-[13px]",
+                    "num flex-1 rounded-lg py-2.5 text-meta",
                     severity === s.value
                       ? "border border-[var(--color-danger)] bg-[var(--color-danger-tint)] font-semibold text-[var(--color-danger)]"
                       : "bg-[var(--color-surface)] text-[var(--color-text-muted)]",
@@ -201,7 +201,7 @@ function elapsed(startedAt: string): string {
 function Stat({ value, label }: { value: string; label: string }) {
   return (
     <div className="rounded-[var(--radius-md)] bg-[var(--color-surface)] p-3.5">
-      <div className="num text-[26px] leading-none font-bold">{value}</div>
+      <div className="num text-page leading-none font-bold">{value}</div>
       <div className="mt-1 text-xs text-[var(--color-text-muted)]">{label}</div>
     </div>
   )

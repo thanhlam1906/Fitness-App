@@ -67,11 +67,11 @@ function Card({
 }) {
   return (
     <section className="mt-2.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5 first-of-type:mt-4">
-      <h2 className="flex items-center gap-2 text-[15px] font-bold">
+      <h2 className="flex items-center gap-2 text-title font-bold">
         <Icon className="size-[18px] text-[var(--color-accent)]" aria-hidden />
         {title}
       </h2>
-      <div className="mt-1.5 text-[13px] leading-relaxed text-[var(--color-text-muted)]">{children}</div>
+      <div className="mt-1.5 text-meta leading-relaxed text-[var(--color-text-muted)]">{children}</div>
     </section>
   )
 }

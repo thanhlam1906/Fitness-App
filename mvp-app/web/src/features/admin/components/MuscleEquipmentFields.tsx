@@ -7,7 +7,7 @@ import { setPrimaryMuscle, toggleEquipment, toggleSecondaryMuscle } from "@/feat
 
 // Cùng kiểu nút với "Cần thiết bị" của TemplateEditor: admin gặp một kiểu chọn ở mọi màn.
 const CHIP =
-  "rounded-full border px-3 py-1.5 text-[13px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+  "rounded-full border px-3 py-1.5 text-meta focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
 const ON = "border-[var(--color-accent)] bg-[var(--color-accent)] font-bold text-[var(--color-accent-fg)]"
 const OFF = "border-[var(--color-border)] hover:border-[var(--color-text-muted)]"
 

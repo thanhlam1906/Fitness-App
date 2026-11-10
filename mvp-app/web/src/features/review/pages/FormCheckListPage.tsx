@@ -38,7 +38,7 @@ export function FormCheckListPage() {
 
   return (
     <div>
-      <h1 className="text-[28px] leading-tight font-extrabold tracking-[-0.02em]">Chấm form</h1>
+      <h1 className="text-page leading-tight font-extrabold tracking-[-0.02em]">Chấm form</h1>
 
       {exercises.isLoading && (
         <div role="status" aria-label="Đang tải" className="mt-5 flex flex-col gap-1.5">
@@ -85,7 +85,7 @@ export function FormCheckListPage() {
                 <span className="block truncate text-base font-semibold">{exercise.nameEn}</span>
                 {/* Tìm "day nguc" mà ra Bench Press: thấy tên Việt mới hiểu vì sao khớp. */}
                 {exercise.nameVi && (
-                  <span className="block truncate text-[13px] text-[var(--color-text-muted)]">{exercise.nameVi}</span>
+                  <span className="block truncate text-meta text-[var(--color-text-muted)]">{exercise.nameVi}</span>
                 )}
               </span>
               <ChevronRight className="size-4.5 flex-none text-[var(--color-text-muted)]" aria-hidden />

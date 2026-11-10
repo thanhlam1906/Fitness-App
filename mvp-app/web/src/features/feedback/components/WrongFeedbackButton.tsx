@@ -32,7 +32,7 @@ export function WrongFeedbackButton({ source, hint }: { source: FeedbackSource; 
         >
           Góp ý này sai?
         </button>
-        {hint && <span className="text-[11px] text-[var(--color-text-muted)]">{hint}</span>}
+        {hint && <span className="text-2xs text-[var(--color-text-muted)]">{hint}</span>}
       </span>
     )
   }

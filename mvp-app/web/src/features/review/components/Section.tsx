@@ -15,7 +15,7 @@ export function Section({
 }) {
   return (
     <details open={open} className="group rounded-[var(--radius-lg)] bg-[var(--color-surface)] px-3.5">
-      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-[var(--radius-md)] py-4 text-[15px] font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-[var(--radius-md)] py-4 text-title font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] [&::-webkit-details-marker]:hidden">
         {title}
         <span className="num font-semibold text-[var(--color-text-muted)]">· {meta}</span>
         <ChevronRight

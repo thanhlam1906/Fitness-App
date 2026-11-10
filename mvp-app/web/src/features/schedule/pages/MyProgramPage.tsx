@@ -72,8 +72,8 @@ export function MyProgramPage() {
   return (
     <div>
       <BackLink to="/schedule">Lịch</BackLink>
-      <h1 className="mt-3 text-[28px] leading-tight font-extrabold tracking-[-0.02em]">{current.templateName}</h1>
-      <p className="num mt-2 text-[13px] text-[var(--color-text-muted)]">
+      <h1 className="mt-3 text-page leading-tight font-extrabold tracking-[-0.02em]">{current.templateName}</h1>
+      <p className="num mt-2 text-meta text-[var(--color-text-muted)]">
         {progress.weekIndex !== null && `Tuần ${progress.weekIndex}/${progress.totalWeeks} · `}
         từ <b className="font-semibold text-[var(--color-text)]">{dayMonth(startDate)}</b>
         {lastDate && (
@@ -84,7 +84,7 @@ export function MyProgramPage() {
       </p>
       <span
         className={cn(
-          "mt-2.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-bold",
+          "mt-2.5 inline-block rounded-full px-2 py-0.5 text-2xs font-bold",
           isCustom ? "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]" : "bg-[var(--color-accent-tint)] text-[var(--color-accent)]",
         )}
       >
@@ -94,7 +94,7 @@ export function MyProgramPage() {
       <SectionTitle
         action={
           !isCustom && (
-            <button type="button" onClick={() => setDaysOpen(true)} className={cn("-my-3 rounded-[var(--radius-sm)] px-1 py-3 text-[13px] font-bold text-[var(--color-accent)]", SHEET_FOCUS)}>
+            <button type="button" onClick={() => setDaysOpen(true)} className={cn("-my-3 rounded-[var(--radius-sm)] px-1 py-3 text-meta font-bold text-[var(--color-accent)]", SHEET_FOCUS)}>
               Sửa
             </button>
           )
@@ -108,7 +108,7 @@ export function MyProgramPage() {
             key={w}
             aria-label={`${w}: ${trainingDays.includes(i + 1) ? "ngày tập" : "nghỉ"}`}
             className={cn(
-              "grid h-9 place-items-center rounded-[var(--radius-md)] text-[13px] font-bold",
+              "grid h-9 place-items-center rounded-[var(--radius-md)] text-meta font-bold",
               trainingDays.includes(i + 1)
                 ? "bg-[var(--color-accent-tint)] text-[var(--color-accent)]"
                 : "bg-[var(--color-surface)] text-[var(--color-text-muted)] opacity-60",
@@ -140,7 +140,7 @@ export function MyProgramPage() {
             <Icon className="size-5.5" aria-hidden />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-[15px] font-bold">{title}</span>
+            <span className="block text-title font-bold">{title}</span>
             <span className="mt-0.5 block text-xs leading-snug text-[var(--color-text-muted)]">{desc}</span>
           </span>
           <ChevronRight className="size-4.5 flex-none text-[var(--color-text-muted)]" aria-hidden />
@@ -222,7 +222,7 @@ function ProgramDayCard({
             type="button"
             onClick={onEdit}
             aria-label={`Sửa buổi ${day.label}`}
-            className={cn("relative flex h-8 flex-none items-center gap-1.5 rounded-[var(--radius-sm)] border after:absolute after:-inset-1.5 border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 text-[13px] font-bold", SHEET_FOCUS)}
+            className={cn("relative flex h-8 flex-none items-center gap-1.5 rounded-[var(--radius-sm)] border after:absolute after:-inset-1.5 border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 text-meta font-bold", SHEET_FOCUS)}
           >
             <Pencil className="size-3.5" aria-hidden />
             Sửa
@@ -239,7 +239,7 @@ function ProgramDayCard({
           >
             <ExerciseImage slug={ex.exerciseSlug} alt="" variant="thumb" />
             <span className="min-w-0 flex-1 text-sm">{ex.exerciseName}</span>
-            <span className="num text-[13px] whitespace-nowrap text-[var(--color-text-muted)]">{formatTarget(ex)}</span>
+            <span className="num text-meta whitespace-nowrap text-[var(--color-text-muted)]">{formatTarget(ex)}</span>
             <ChevronRight className="size-4 flex-none text-[var(--color-text-muted)]" aria-hidden />
           </button>
         ))}

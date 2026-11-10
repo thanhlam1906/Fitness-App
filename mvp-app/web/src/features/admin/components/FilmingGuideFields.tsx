@@ -27,7 +27,7 @@ export function FilmingGuideFields({
   return (
     <section className="space-y-3 border-t border-[var(--color-border)] pt-4.5">
       <div>
-        <h2 className="text-[15px] font-bold">Hướng dẫn quay</h2>
+        <h2 className="text-title font-bold">Hướng dẫn quay</h2>
         <p className="mt-1 text-xs text-[var(--color-text-muted)]">
           Hiện ở màn gửi video. Ô bỏ trống thì người tập thấy câu dặn mặc định (chữ mờ trong ô).
         </p>
@@ -59,7 +59,7 @@ export function FilmingGuideFields({
                 {VIEW_NAME[view]}
                 <span
                   className={cn(
-                    "mt-0.5 block text-[11px] font-normal",
+                    "mt-0.5 block text-2xs font-normal",
                     used ? "text-[var(--color-accent)]" : "text-[var(--color-text-muted)]",
                   )}
                 >

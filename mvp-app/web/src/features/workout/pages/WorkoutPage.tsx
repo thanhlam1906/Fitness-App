@@ -76,7 +76,7 @@ export function WorkoutPage() {
 
   return (
     <FlowScreen>
-      <div className="flex justify-between text-[13px] text-[var(--color-text-muted)]">
+      <div className="flex justify-between text-meta text-[var(--color-text-muted)]">
         <span>Buổi {workout.label ?? ""}</span>
         <span className="num">
           Bài {index + 1} / {exercises.length}
@@ -135,7 +135,7 @@ export function WorkoutPage() {
         <Link
           to={`/workout/${scheduledWorkoutId}/finish`}
           className={cn(
-            "flex min-h-11 items-center rounded-[var(--radius-sm)] text-[13px] font-semibold text-[var(--color-accent)]",
+            "flex min-h-11 items-center rounded-[var(--radius-sm)] text-meta font-semibold text-[var(--color-accent)]",
             SHEET_FOCUS,
           )}
         >

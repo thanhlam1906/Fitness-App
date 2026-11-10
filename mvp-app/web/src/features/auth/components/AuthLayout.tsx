@@ -33,7 +33,7 @@ export function AuthLayout({
       />
       <div className="relative mx-auto w-full max-w-[430px] px-4 pt-6 pb-10">
         <Logo className="px-1" />
-        <h1 className="mt-30 px-1 text-[28px] leading-tight font-extrabold tracking-[-0.02em]">{title}</h1>
+        <h1 className="mt-30 px-1 text-page leading-tight font-extrabold tracking-[-0.02em]">{title}</h1>
         {subtitle && <p className="mt-1.5 px-1 text-sm text-[var(--color-text-muted)]">{subtitle}</p>}
         <div className="mt-5 rounded-[var(--radius-lg)] border border-[var(--color-glass-border)] bg-[var(--color-glass)] p-4 backdrop-blur-[16px]">
           {children}
@@ -64,7 +64,7 @@ export function SocialButtons() {
         >
           <Icon />
           {name}
-          <span className="absolute -top-2 right-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] px-1.5 text-[10px] font-bold text-[var(--color-text-muted)]">
+          <span className="absolute -top-2 right-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] px-1.5 text-2xs font-bold text-[var(--color-text-muted)]">
             Sắp có
           </span>
         </button>
@@ -123,11 +123,11 @@ export function AuthField({
 }) {
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-[13px] font-semibold">
+      <Label htmlFor={id} className="text-meta font-semibold">
         {label}
       </Label>
       {children}
-      {error && <p className="text-[13px] text-[var(--color-danger)]">{error}</p>}
+      {error && <p className="text-meta text-[var(--color-danger)]">{error}</p>}
     </div>
   )
 }

@@ -18,7 +18,7 @@ export function AboutPage() {
       </div>
 
       {acceptedAt && (
-        <p className="num mt-4 flex items-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-success-tint)] px-3 py-2.5 text-[13px] font-semibold text-[var(--color-success)]">
+        <p className="num mt-4 flex items-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-success-tint)] px-3 py-2.5 text-meta font-semibold text-[var(--color-success)]">
           <Check className="size-4 flex-none" aria-hidden />
           Bạn đã đồng ý cam kết an toàn ngày {formatDate(acceptedAt)}
         </p>

@@ -135,7 +135,7 @@ export function UserListPage() {
                 type="button"
                 onClick={() => update({ status: value })}
                 className={cn(
-                  "num px-4 py-2.5 text-[13px] focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]",
+                  "num px-4 py-2.5 text-meta focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]",
                   i > 0 && "border-l border-[var(--color-border)]",
                   params.status === value
                     ? "bg-[var(--color-accent)] font-bold text-[var(--color-accent-fg)]"
@@ -156,7 +156,7 @@ export function UserListPage() {
           <div className="mt-4 overflow-x-auto rounded-[var(--radius-md)] bg-[var(--color-surface)]">
             <table className="w-full min-w-[1080px] text-sm">
               <thead>
-                <tr className="border-b border-[var(--color-border)] text-left text-[10px] tracking-[0.1em] text-[var(--color-text-muted)] uppercase">
+                <tr className="border-b border-[var(--color-border)] text-left text-2xs tracking-[0.1em] text-[var(--color-text-muted)] uppercase">
                   <SortHeader column="email" label="Người dùng" params={params} onSort={(s) => update(s)} />
                   <th className="px-4 py-3 font-normal">Vai trò</th>
                   <SortHeader column="createdAt" label="Tham gia" params={params} onSort={(s) => update(s)} />
@@ -232,7 +232,7 @@ export function UserListPage() {
         )}
 
         {page && (
-          <div className="mt-3.5 flex items-center gap-3 text-[13px] text-[var(--color-text-muted)]">
+          <div className="mt-3.5 flex items-center gap-3 text-meta text-[var(--color-text-muted)]">
             <span className="num">
               Trang {params.page + 1} / {pageCount} · {page.total} người
             </span>
@@ -326,14 +326,14 @@ function Stat({
 }) {
   return (
     <div className="rounded-[var(--radius-md)] bg-[var(--color-surface)] p-4">
-      <div className="kicker text-[11px] tracking-[0.08em]">{label}</div>
+      <div className="kicker tracking-[0.08em]">{label}</div>
       <div
-        className="num mt-1.5 text-[28px] font-extrabold"
+        className="num mt-1.5 text-page font-extrabold"
         style={tone ? { color: tone } : undefined}
       >
         {value}
         {suffix && (
-          <span className="text-[15px] font-semibold text-[var(--color-text-muted)]">{suffix}</span>
+          <span className="text-title font-semibold text-[var(--color-text-muted)]">{suffix}</span>
         )}
       </div>
     </div>

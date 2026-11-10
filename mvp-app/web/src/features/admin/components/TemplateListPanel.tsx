@@ -36,7 +36,7 @@ export function TemplateListPanel({ activeId }: { activeId?: string }) {
               <div className={cn("truncate text-sm", active && "font-bold")}>{t.name}</div>
               <div
                 className={cn(
-                  "num mt-px truncate text-[11px]",
+                  "num mt-px truncate text-2xs",
                   t.active ? "text-[var(--color-text-muted)]" : "text-[var(--color-warn)]",
                 )}
               >

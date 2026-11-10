@@ -60,7 +60,7 @@ export function AssistantPage() {
     <div className="flex min-h-[calc(100dvh-144px)] flex-col">
       <div className="flex items-center gap-2.5">
         <AssistantMark size={34} />
-        <h1 className="min-w-0 flex-1 text-[17px] font-extrabold tracking-[-0.01em]">Trợ lý VFit</h1>
+        <h1 className="min-w-0 flex-1 text-title-lg font-extrabold tracking-[-0.01em]">Trợ lý VFit</h1>
         <button
           type="button"
           aria-label="Cuộc trò chuyện mới"
@@ -146,7 +146,7 @@ export function AssistantPage() {
           <ArrowRight className="size-4" strokeWidth={2.4} aria-hidden />
         </button>
       </div>
-      <p className="mt-2 text-center text-[11px] text-[var(--color-text-muted)]">
+      <p className="mt-2 text-center text-2xs text-[var(--color-text-muted)]">
         Không thay được bác sĩ hay huấn luyện viên.
       </p>
     </div>
@@ -156,7 +156,7 @@ export function AssistantPage() {
 function MessageRow({ message }: { message: ChatMessage }) {
   if (message.role === "USER") {
     return (
-      <div className="max-w-[80%] self-end rounded-[18px] rounded-br-md bg-[var(--color-surface-2)] px-3.5 py-2.5 text-[15px] leading-relaxed">
+      <div className="max-w-[80%] self-end rounded-[18px] rounded-br-md bg-[var(--color-surface-2)] px-3.5 py-2.5 text-title leading-relaxed">
         <p className="whitespace-pre-wrap">{message.text}</p>
       </div>
     )
@@ -166,7 +166,7 @@ function MessageRow({ message }: { message: ChatMessage }) {
       <AssistantMark />
       <div
         className={cn(
-          "min-w-0 flex-1 text-[15px] leading-relaxed",
+          "min-w-0 flex-1 text-title leading-relaxed",
           message.blocked && "border-l-2 border-[var(--color-danger)] pl-2.5",
         )}
       >
@@ -182,7 +182,7 @@ function MessageRow({ message }: { message: ChatMessage }) {
             {message.sourceTitles.map((title) => (
               <span
                 key={title}
-                className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-1.5 py-0.5 text-[11px] text-[var(--color-text-muted)]"
+                className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-1.5 py-0.5 text-2xs text-[var(--color-text-muted)]"
               >
                 <BookOpen className="size-3 flex-none" aria-hidden />
                 {title}

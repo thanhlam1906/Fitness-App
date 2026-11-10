@@ -92,13 +92,13 @@ export function ProgressionPreview({
 
   if (candidates.length === 0) {
     return (
-      <IconText icon={TrendingUp} tone="muted" className="mt-2 text-[13px]">
+      <IconText icon={TrendingUp} tone="muted" className="mt-2 text-meta">
         Cần ít nhất một bài có “Tăng mỗi lần” để thử
       </IconText>
     )
   }
 
-  const label = "text-[13px] text-[var(--color-text-muted)]"
+  const label = "text-meta text-[var(--color-text-muted)]"
   return (
     <div className="mt-3 flex gap-4.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5">
       <div className="grid min-w-0 flex-1 grid-cols-[170px_1fr] items-center gap-x-3 gap-y-2.5">
@@ -178,7 +178,7 @@ export function ProgressionPreview({
               <div className="text-xs text-[var(--color-text-muted)]">Buổi tới</div>
               <div
                 className={cn(
-                  "num text-[22px] font-extrabold",
+                  "num text-stat font-extrabold",
                   result.direction === "UP" && "text-[var(--color-success)]",
                   result.direction === "DOWN" && "text-[var(--color-danger)]",
                   result.direction === "SUBSTITUTE" && "text-[var(--color-warn)]",
@@ -190,7 +190,7 @@ export function ProgressionPreview({
                     ? `Giữ ${KG.format(result.newLoadKg)} kg`
                     : `${KG.format(result.newLoadKg)} kg (${(result.deltaKg ?? 0) > 0 ? "+" : "−"}${KG.format(Math.abs(result.deltaKg ?? 0))})`}
               </div>
-              <p className="mt-1.5 text-[13px] leading-normal">
+              <p className="mt-1.5 text-meta leading-normal">
                 <b className="text-[var(--color-accent)]">Quy tắc {hit}</b> · {result.messageVi}
               </p>
             </>

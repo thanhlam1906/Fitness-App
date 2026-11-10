@@ -80,14 +80,14 @@ function DayCard({
           className={cn(FIELD, "w-40 font-bold")}
         />
         <span className="flex-1" />
-        <button type="button" onClick={onDuplicate} className={cn("text-[13px] font-semibold text-[var(--color-accent)]", FOCUS)}>
+        <button type="button" onClick={onDuplicate} className={cn("text-meta font-semibold text-[var(--color-accent)]", FOCUS)}>
           Nhân đôi buổi
         </button>
         <button
           type="button"
           onClick={onDelete}
           disabled={!canDelete}
-          className={cn("text-[13px] font-semibold text-[var(--color-danger)] disabled:opacity-30", FOCUS)}
+          className={cn("text-meta font-semibold text-[var(--color-danger)] disabled:opacity-30", FOCUS)}
         >
           Xoá buổi
         </button>
@@ -95,7 +95,7 @@ function DayCard({
       {dayErrors?.label && <p className="mt-1 text-xs text-[var(--color-danger)]">{dayErrors.label.message}</p>}
 
       {rows.fields.length > 0 && (
-        <div className="mt-2.5 grid grid-cols-[22px_minmax(170px,1fr)_70px_140px_100px_92px] gap-2 px-0.5 text-[11.5px] text-[var(--color-text-muted)]">
+        <div className="mt-2.5 grid grid-cols-[22px_minmax(170px,1fr)_70px_140px_100px_92px] gap-2 px-0.5 text-2xs text-[var(--color-text-muted)]">
           <span />
           <span>Bài</span>
           <span>Set</span>
@@ -150,7 +150,7 @@ function DayCard({
       <button
         type="button"
         onClick={() => rows.append(newExercise())}
-        className={cn("mt-2 text-[13px] font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)]", FOCUS)}
+        className={cn("mt-2 text-meta font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)]", FOCUS)}
       >
         + Thêm bài
       </button>

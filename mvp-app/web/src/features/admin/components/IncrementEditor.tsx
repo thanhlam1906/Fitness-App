@@ -18,7 +18,7 @@ export function IncrementEditor({ slugs, nameOf }: { slugs: string[]; nameOf: (s
 
   if (slugs.length === 0) {
     return (
-      <IconText icon={Dumbbell} tone="muted" className="mt-1 text-[13px]">
+      <IconText icon={Dumbbell} tone="muted" className="mt-1 text-meta">
         Template không có bài nào cần tạ
       </IconText>
     )
@@ -73,7 +73,7 @@ function IncrementRow({
       {!chosen && <span className="text-xs text-[var(--color-warn)]">Chưa chọn</span>}
       <label
         className={cn(
-          "flex items-center gap-1.5 rounded-full border py-1 pr-1.5 pl-3 text-[13px]",
+          "flex items-center gap-1.5 rounded-full border py-1 pr-1.5 pl-3 text-meta",
           isInc ? "border-[var(--color-accent)] bg-[var(--color-accent-tint)]" : "border-[var(--color-border)]",
         )}
       >
@@ -106,7 +106,7 @@ function IncrementRow({
       </label>
       <label
         className={cn(
-          "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px]",
+          "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-meta",
           value === null ? "border-[var(--color-accent)] bg-[var(--color-accent-tint)]" : "border-[var(--color-border)]",
         )}
       >

@@ -40,8 +40,8 @@ export function InsightCard({
     <section className={cn("rounded-[var(--radius-md)] bg-[var(--color-surface)] p-4", className)}>
       <div className="flex items-center gap-2.5">
         <IconChip icon={icon} tone={tone} />
-        <h2 className="flex-1 text-[15px] font-bold">{title}</h2>
-        {aside !== undefined && <span className="num text-[22px] leading-none font-bold">{aside}</span>}
+        <h2 className="flex-1 text-title font-bold">{title}</h2>
+        {aside !== undefined && <span className="num text-stat leading-none font-bold">{aside}</span>}
       </div>
       <p className="mt-1.5 mb-3 text-xs text-[var(--color-text-muted)]">{hint}</p>
       {children}
@@ -70,9 +70,9 @@ export function StatTile({
       <IconChip icon={icon} tone={tone} size="lg" />
       <div className="min-w-0">
         <div className="text-xs text-[var(--color-text-muted)]">{label}</div>
-        <div className="mt-0.5 text-[26px] leading-tight font-bold">
+        <div className="mt-0.5 text-page leading-tight font-bold">
           {value}
-          <span className="num ml-1 text-[13px] font-medium text-[var(--color-text-muted)]">{unit}</span>
+          <span className="num ml-1 text-meta font-medium text-[var(--color-text-muted)]">{unit}</span>
         </div>
         <div className="mt-0.5 text-xs text-[var(--color-text-muted)]">{detail}</div>
       </div>

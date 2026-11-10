@@ -172,10 +172,10 @@ export function LiveCheckPage() {
     <FlowScreen>
       {/* Bấm nhầm bài thì quay lại chọn bài khác; rời trang thì effect dọn dẹp tự tắt camera. */}
       <BackLink to="/form-check">Chấm form</BackLink>
-      <h1 className="mt-3 text-[28px] leading-tight font-extrabold tracking-[-0.02em]">
+      <h1 className="mt-3 text-page leading-tight font-extrabold tracking-[-0.02em]">
         {exercise.data?.nameEn ?? "Chấm form"}
       </h1>
-      <p className="num mt-1.5 text-[13px] leading-relaxed text-[var(--color-text-muted)]">
+      <p className="num mt-1.5 text-meta leading-relaxed text-[var(--color-text-muted)]">
         Cách máy 2–3 m
         {views.length > 0 && ` · ${REPS_PER_VIEW} rep mỗi góc: ${views.map((v) => VIEW_NAME[v]).join(" → ")}`}
       </p>

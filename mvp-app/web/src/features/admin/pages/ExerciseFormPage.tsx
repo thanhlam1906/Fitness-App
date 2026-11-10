@@ -246,7 +246,7 @@ export function ExerciseFormPage() {
                 <Textarea id="description" rows={2} {...register("description")} />
               </div>
               <section className="space-y-3 border-t border-[var(--color-border)] pt-4.5">
-                <h2 className="text-[15px] font-bold">Ảnh minh hoạ</h2>
+                <h2 className="text-title font-bold">Ảnh minh hoạ</h2>
                 {/* key theo id: báo lỗi chọn file của bài trước không theo sang bài khác. */}
                 <div className="grid grid-cols-2 gap-3">
                   <ImageSlot

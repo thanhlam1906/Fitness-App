@@ -22,7 +22,7 @@ export function RangeBar({ range, max, mini = false }: { range: Range; max: numb
       </div>
       {!mini && (
         <>
-          <div className="num relative mt-1 h-4 text-[11px] text-[var(--color-text-muted)]">
+          <div className="num relative mt-1 h-4 text-2xs text-[var(--color-text-muted)]">
             {[0, 0.25, 0.5, 0.75, 1].map((f, i) => (
               <span
                 key={f}

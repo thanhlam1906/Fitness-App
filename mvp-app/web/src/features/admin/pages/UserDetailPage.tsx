@@ -30,7 +30,7 @@ export function UserDetailPage() {
     return (
       <>
         <AdminHeader group="Theo dõi · người dùng" title={<Skeleton className="h-6 w-56" />}>
-          <Link to="/admin/users" className="text-[13px] whitespace-nowrap text-[var(--color-text-muted)] hover:text-[var(--color-text)]">
+          <Link to="/admin/users" className="text-meta whitespace-nowrap text-[var(--color-text-muted)] hover:text-[var(--color-text)]">
             ← Danh sách
           </Link>
         </AdminHeader>
@@ -50,7 +50,7 @@ export function UserDetailPage() {
   return (
     <>
       <AdminHeader group="Theo dõi · người dùng" title={d.user.email}>
-        <Link to={(location.state as { back?: string } | null)?.back ?? "/admin/users"} className="text-[13px] whitespace-nowrap text-[var(--color-text-muted)] hover:text-[var(--color-text)]">
+        <Link to={(location.state as { back?: string } | null)?.back ?? "/admin/users"} className="text-meta whitespace-nowrap text-[var(--color-text-muted)] hover:text-[var(--color-text)]">
           ← Danh sách
         </Link>
       </AdminHeader>

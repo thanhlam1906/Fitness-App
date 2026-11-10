@@ -66,7 +66,7 @@ export function ExerciseGuideBody({
       )}
 
       {equipment && (
-        <div className="mt-2.5 flex items-center gap-1.5 text-[13px] text-[var(--color-text-muted)]">
+        <div className="mt-2.5 flex items-center gap-1.5 text-meta text-[var(--color-text-muted)]">
           <Dumbbell aria-hidden className="size-4 flex-none" />
           <span>
             Dụng cụ:{" "}
@@ -99,7 +99,7 @@ export function ExerciseGuideBody({
           <div className="section-title mt-5">Lỗi hay gặp</div>
           <ul className="mt-2 rounded-[var(--radius-md)] border border-[color-mix(in_srgb,var(--color-warn)_30%,transparent)] bg-[var(--color-warn-tint)] px-3 py-1">
             {mistakesVi.map((m, i) => (
-              <li key={i} className="flex gap-2 py-1.5 text-[13px] leading-relaxed">
+              <li key={i} className="flex gap-2 py-1.5 text-meta leading-relaxed">
                 <CircleAlert aria-hidden className="mt-[0.2em] size-4 flex-none text-[var(--color-warn)]" />
                 {m}
               </li>

@@ -37,7 +37,7 @@ export function FormCheckEditor({ exerciseId }: { exerciseId: string }) {
       {formChecks.isError && <IconText className="mt-1">{formChecks.error.message}</IconText>}
       {formChecks.data &&
         (order.length > 0 ? (
-          <p className="mt-1 text-[13px] text-[var(--color-text-muted)]">
+          <p className="mt-1 text-meta text-[var(--color-text-muted)]">
             Người tập sẽ quay:{" "}
             <b className="text-[var(--color-text)]">{order.map((v) => VIEW_NAME[v]).join(" → ")}</b>
           </p>
@@ -47,7 +47,7 @@ export function FormCheckEditor({ exerciseId }: { exerciseId: string }) {
           </Notice>
         ))}
 
-      <div className="mt-4 flex items-center text-[13px] text-[var(--color-text-muted)]">
+      <div className="mt-4 flex items-center text-meta text-[var(--color-text-muted)]">
         Góc camera
         <HelpButton open={help.isOpen("view")} onClick={() => help.toggle("view")} />
       </div>
@@ -85,7 +85,7 @@ export function FormCheckEditor({ exerciseId }: { exerciseId: string }) {
         ))}
       </div>
       {view === "DIAGONAL" && (
-        <p className="mt-2 text-[13px] text-[var(--color-text-muted)]">Góc chéo đo kém chính xác hơn. Chỉ dùng khi thật cần.</p>
+        <p className="mt-2 text-meta text-[var(--color-text-muted)]">Góc chéo đo kém chính xác hơn. Chỉ dùng khi thật cần.</p>
       )}
 
       {formChecks.isLoading && (
@@ -95,7 +95,7 @@ export function FormCheckEditor({ exerciseId }: { exerciseId: string }) {
         </div>
       )}
       {formChecks.data && inView.length === 0 && editing !== "new" && (
-        <IconText icon={Crosshair} tone="muted" className="mt-2.5 text-[13px]">
+        <IconText icon={Crosshair} tone="muted" className="mt-2.5 text-meta">
           Góc {VIEW_NAME[view].toLowerCase()} chưa có khớp nào
         </IconText>
       )}
@@ -126,8 +126,8 @@ function CheckRow({ check, onEdit }: { check: FormCheck; onEdit: () => void }) {
   return (
     <div className="mt-2.5 flex items-center gap-3.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-3">
       <div className="min-w-0 flex-1">
-        <div className="truncate text-[15px] font-bold">{check.nameVi}</div>
-        <div className="mt-0.5 text-[13px] text-[var(--color-text-muted)]">
+        <div className="truncate text-title font-bold">{check.nameVi}</div>
+        <div className="mt-0.5 text-meta text-[var(--color-text-muted)]">
           {measure.name} · {MOMENT_NAME[check.moment].toLowerCase()} · đạt {shortRule(check)}
         </div>
       </div>
@@ -137,7 +137,7 @@ function CheckRow({ check, onEdit }: { check: FormCheck; onEdit: () => void }) {
       <button
         type="button"
         onClick={onEdit}
-        className="rounded-[var(--radius-sm)] p-1 text-[13px] font-semibold text-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+        className="rounded-[var(--radius-sm)] p-1 text-meta font-semibold text-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
       >
         Sửa
       </button>

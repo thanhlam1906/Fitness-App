@@ -88,7 +88,7 @@ export function SchedulePage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-2 text-[13px] text-[var(--color-text-muted)]">
+      <div className="flex items-center justify-between gap-2 text-meta text-[var(--color-text-muted)]">
         <span className="num">
           {progress.weekIndex === null ? `${progress.totalWeeks} tuần` : `Tuần ${progress.weekIndex} / ${progress.totalWeeks}`}
         </span>
@@ -100,12 +100,12 @@ export function SchedulePage() {
       </div>
 
       <div className="mt-2.5 flex items-center gap-3">
-        <h1 className="flex-1 text-[28px] leading-tight font-extrabold tracking-[-0.02em]">Lịch</h1>
+        <h1 className="flex-1 text-page leading-tight font-extrabold tracking-[-0.02em]">Lịch</h1>
         {/* Sửa cả chương trình ở màn riêng (doc/design-chuong-trinh-v1.md); sửa một ngày ở thẻ ngày. */}
         <Link
           to="/my-program"
           className={cn(
-            "relative flex h-9 items-center gap-1.5 rounded-full border after:absolute after:-inset-1 border-[var(--color-border)] px-3.5 text-[13px] font-semibold hover:bg-[var(--color-surface)]",
+            "relative flex h-9 items-center gap-1.5 rounded-full border after:absolute after:-inset-1 border-[var(--color-border)] px-3.5 text-meta font-semibold hover:bg-[var(--color-surface)]",
             SHEET_FOCUS,
           )}
         >
@@ -126,7 +126,7 @@ export function SchedulePage() {
         </MonthNav>
       </div>
 
-      <div className="mt-3 grid grid-cols-7 text-center text-[11px] text-[var(--color-text-muted)]">
+      <div className="mt-3 grid grid-cols-7 text-center text-2xs text-[var(--color-text-muted)]">
         {WEEKDAY_LABELS.map((d) => (
           <span key={d} className={d === "CN" ? "text-[var(--color-danger)]" : undefined}>
             {d}
@@ -168,7 +168,7 @@ function DayButton({ cell, selected, onSelect }: { cell: MonthCell; selected: bo
     >
       <span
         className={cn(
-          "num grid size-8 place-items-center rounded-full text-[15px]",
+          "num grid size-8 place-items-center rounded-full text-title",
           !cell.inMonth && "opacity-35",
           todayToGo && "bg-[var(--color-accent)] font-extrabold text-[var(--color-accent-fg)]",
           !todayToGo && status === "DONE" && "bg-[var(--color-success-tint)] font-bold text-[var(--color-success)]",
@@ -215,7 +215,7 @@ function MonthNav({
 function Legend() {
   const dot = "inline-block size-2.5 rounded-full align-[-1px] mr-1.5"
   return (
-    <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-[var(--color-text-muted)]">
+    <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1 text-2xs text-[var(--color-text-muted)]">
       <span>
         <i className={cn(dot, "bg-[var(--color-success)]")} />
         Đã tập

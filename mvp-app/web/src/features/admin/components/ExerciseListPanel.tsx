@@ -49,7 +49,7 @@ export function ExerciseListPanel({ activeId }: { activeId?: string }) {
           placeholder="Tìm bài"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="h-9 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-[13px] outline-none focus:border-[var(--color-accent)]"
+          className="h-9 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-meta outline-none focus:border-[var(--color-accent)]"
         />
         <div className="mt-2.5 flex flex-wrap gap-1.5">
           <FilterPill active={filter === "ALL"} onClick={() => setFilter("ALL")}>
@@ -100,12 +100,12 @@ export function ExerciseListPanel({ activeId }: { activeId?: string }) {
                   {ex.nameEn}
                 </div>
                 {ex.draft && (
-                  <span className="shrink-0 rounded-full bg-[var(--color-warn-tint)] px-1.5 py-px text-[10px] text-[var(--color-warn)]">
+                  <span className="shrink-0 rounded-full bg-[var(--color-warn-tint)] px-1.5 py-px text-2xs text-[var(--color-warn)]">
                     Chưa duyệt
                   </span>
                 )}
               </div>
-              <div className="num mt-px truncate text-[11px] text-[var(--color-text-muted)]">
+              <div className="num mt-px truncate text-2xs text-[var(--color-text-muted)]">
                 {ex.formCheckCount > 0 ? `${ex.formCheckCount} khớp cần kiểm` : "chưa chấm form"}
                 {` · sửa ${formatEditedAt(ex.updatedAt)}`}
                 {!ex.hasStillImage && <span className="text-[var(--color-warn)]"> · chưa có ảnh</span>}
@@ -141,7 +141,7 @@ function FilterPill({
       type="button"
       onClick={onClick}
       className={cn(
-        "num rounded-full px-2.5 py-1 text-[11px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]",
+        "num rounded-full px-2.5 py-1 text-2xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]",
         active
           ? "bg-[var(--color-accent)] font-bold text-[var(--color-accent-fg)]"
           : "bg-[var(--color-surface)] text-[var(--color-text-muted)]",

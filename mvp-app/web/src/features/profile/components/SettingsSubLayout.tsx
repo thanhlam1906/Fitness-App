@@ -8,7 +8,7 @@ export function SettingsSubLayout({ title, children }: { title: string; children
   return (
     <div>
       <BackLink to="/settings">Cài đặt</BackLink>
-      <h1 className="mt-3 text-[28px] leading-tight font-extrabold tracking-[-0.02em]">{title}</h1>
+      <h1 className="mt-3 text-page leading-tight font-extrabold tracking-[-0.02em]">{title}</h1>
       {children}
     </div>
   )

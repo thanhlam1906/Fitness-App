@@ -155,7 +155,7 @@ export function TemplateEditor({
         <div className="overflow-auto px-7 py-5 pb-16">
           <div className="max-w-[900px]">
             {activeUsers > 0 && (
-              <p className="rounded-[var(--radius-md)] bg-[var(--color-warn-tint)] px-3 py-2.5 text-[13px]">
+              <p className="rounded-[var(--radius-md)] bg-[var(--color-warn-tint)] px-3 py-2.5 text-meta">
                 <b className="text-[var(--color-warn)]">{activeUsers} người đang dùng.</b> Sửa bước tăng tạ hay quy tắc sẽ áp ngay từ buổi tới của họ.
               </p>
             )}
@@ -169,10 +169,10 @@ export function TemplateEditor({
 
             {section("Thông tin", "desc")}
             <div className="mt-3 grid grid-cols-[150px_1fr] items-center gap-3">
-              <span className="text-[13px] text-[var(--color-text-muted)]">Mô tả</span>
+              <span className="text-meta text-[var(--color-text-muted)]">Mô tả</span>
               <textarea {...form.register("methodology")} rows={2} aria-label="Mô tả" className={INPUT} />
 
-              <span className="flex items-center text-[13px] text-[var(--color-text-muted)]">
+              <span className="flex items-center text-meta text-[var(--color-text-muted)]">
                 Số buổi / tuần
                 <HelpButton open={help.isOpen("sess")} onClick={() => help.toggle("sess")} />
               </span>
@@ -185,7 +185,7 @@ export function TemplateEditor({
               </div>
               {help.isOpen("sess") && <HelpText lines={TEMPLATE_HELP.sess} className="col-span-2" />}
 
-              <span className="flex items-center text-[13px] text-[var(--color-text-muted)]">
+              <span className="flex items-center text-meta text-[var(--color-text-muted)]">
                 Cần thiết bị
                 <HelpButton open={help.isOpen("equip")} onClick={() => help.toggle("equip")} />
               </span>
@@ -205,7 +205,7 @@ export function TemplateEditor({
                         )
                       }
                       className={cn(
-                        "rounded-full border px-3 py-1.5 text-[13px]",
+                        "rounded-full border px-3 py-1.5 text-meta",
                         on ? "border-[var(--color-accent)] bg-[var(--color-accent)] font-bold text-[var(--color-accent-fg)]" : "border-[var(--color-border)]",
                         FOCUS,
                       )}
@@ -217,7 +217,7 @@ export function TemplateEditor({
               </div>
               {help.isOpen("equip") && <HelpText lines={TEMPLATE_HELP.equip} className="col-span-2" />}
 
-              <span className="text-[13px] text-[var(--color-text-muted)]">Trạng thái</span>
+              <span className="text-meta text-[var(--color-text-muted)]">Trạng thái</span>
               <div className="flex gap-1.5">
                 {[true, false].map((v) => (
                   <button
@@ -226,7 +226,7 @@ export function TemplateEditor({
                     aria-pressed={active === v}
                     onClick={() => form.setValue("active", v, { shouldDirty: true })}
                     className={cn(
-                      "rounded-full border px-3 py-1.5 text-[13px]",
+                      "rounded-full border px-3 py-1.5 text-meta",
                       active === v ? "border-[var(--color-accent)] bg-[var(--color-accent)] font-bold text-[var(--color-accent-fg)]" : "border-[var(--color-border)]",
                       FOCUS,
                     )}
@@ -282,7 +282,7 @@ export function TemplateEditor({
           aria-labelledby="confirm-title"
           className="m-auto w-[440px] rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 text-[var(--color-text)] backdrop:bg-black/60"
         >
-          <h3 id="confirm-title" className="text-[17px] font-bold">
+          <h3 id="confirm-title" className="text-title-lg font-bold">
             {activeUsers} người đang dùng “{template?.name}”
           </h3>
           <ul className="mt-2.5 ml-4.5 list-disc text-sm leading-relaxed text-[var(--color-text-muted)]">

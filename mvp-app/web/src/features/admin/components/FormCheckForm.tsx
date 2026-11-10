@@ -48,7 +48,7 @@ export function FormCheckForm({
 
   const row = (label: string, key: HelpKey, body: ReactNode) => (
     <>
-      <div className="flex items-center text-[13px] text-[var(--color-text-muted)]">
+      <div className="flex items-center text-meta text-[var(--color-text-muted)]">
         {label}
         <HelpButton open={help.isOpen(key)} onClick={() => help.toggle(key)} />
       </div>
@@ -186,7 +186,7 @@ function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; chi
       onClick={onClick}
       aria-pressed={on}
       className={cn(
-        "rounded-full border px-3 py-1.5 text-[13px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]",
+        "rounded-full border px-3 py-1.5 text-meta focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]",
         on
           ? "border-[var(--color-accent)] bg-[var(--color-accent)] font-bold text-[var(--color-accent-fg)]"
           : "border-[var(--color-border)] bg-[var(--color-bg)] hover:border-[var(--color-text-muted)]",

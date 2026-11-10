@@ -110,7 +110,7 @@ export function LineChart({
           </>
         )}
       </div>
-      <div className="num mt-1.5 flex justify-between text-[11px] text-[var(--color-text-muted)]">
+      <div className="num mt-1.5 flex justify-between text-2xs text-[var(--color-text-muted)]">
         <span>{labels[0].short}</span>
         <span>{labels[Math.floor(n / 2)].short}</span>
         <span>{labels[n - 1].short}</span>

@@ -19,7 +19,7 @@ const TEXT: Record<ExerciseImageKind, { title: string; formats: string; use: str
 }
 
 const FOCUS = "focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--color-accent)]"
-const BUTTON = "inline-flex h-8 cursor-pointer items-center rounded-lg border border-[var(--color-border)] px-3 text-[13px]"
+const BUTTON = "inline-flex h-8 cursor-pointer items-center rounded-lg border border-[var(--color-border)] px-3 text-meta"
 
 /**
  * Một ô ảnh của form "Thông tin bài" (mockup doc/mockup-anh-bai-tap). Chỉ giữ bản nháp; gửi lên khi
@@ -68,9 +68,9 @@ export function ImageSlot({
     <div className="flex flex-col gap-2.5 rounded-[var(--radius-lg)] bg-[var(--color-surface)] p-3.5">
       <div className="flex items-baseline gap-2">
         <b className="text-sm">{text.title}</b>
-        <small className="text-[11px] text-[var(--color-text-muted)]">{text.formats}</small>
+        <small className="text-2xs text-[var(--color-text-muted)]">{text.formats}</small>
         {kind === "still" && !shown && (
-          <span className="ml-auto rounded-full bg-[var(--color-warn-tint)] px-2 py-0.5 text-[11px] text-[var(--color-warn)]">
+          <span className="ml-auto rounded-full bg-[var(--color-warn-tint)] px-2 py-0.5 text-2xs text-[var(--color-warn)]">
             Chưa có
           </span>
         )}
@@ -82,7 +82,7 @@ export function ImageSlot({
           <div className="relative grid h-[170px] place-items-center overflow-hidden rounded-[var(--radius-md)] bg-white">
             <img src={shown} alt={`Xem trước ${text.title.toLowerCase()}`} className="max-h-full max-w-full object-contain" />
             {draft instanceof File && (
-              <span className="absolute top-2 left-2 rounded-full bg-[var(--color-accent)] px-2 py-0.5 text-[11px] font-bold text-[var(--color-accent-fg)]">
+              <span className="absolute top-2 left-2 rounded-full bg-[var(--color-accent)] px-2 py-0.5 text-2xs font-bold text-[var(--color-accent-fg)]">
                 Chưa lưu
               </span>
             )}
@@ -103,7 +103,7 @@ export function ImageSlot({
         </>
       ) : draft === "remove" ? (
         <>
-          <div className="grid h-[170px] place-items-center rounded-[var(--radius-md)] bg-[var(--color-surface-2)] px-4 text-center text-[13px] text-[var(--color-text-muted)]">
+          <div className="grid h-[170px] place-items-center rounded-[var(--radius-md)] bg-[var(--color-surface-2)] px-4 text-center text-meta text-[var(--color-text-muted)]">
             Ảnh sẽ bị xoá khi bấm Lưu.
           </div>
           <div>
@@ -119,7 +119,7 @@ export function ImageSlot({
       ) : (
         <label
           className={cn(
-            "flex h-[170px] cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[var(--radius-md)] border-[1.5px] border-dashed border-[var(--color-border)] px-3 text-center text-[13px] text-[var(--color-text-muted)] hover:text-[var(--color-text)]",
+            "flex h-[170px] cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[var(--radius-md)] border-[1.5px] border-dashed border-[var(--color-border)] px-3 text-center text-meta text-[var(--color-text-muted)] hover:text-[var(--color-text)]",
             FOCUS,
           )}
         >

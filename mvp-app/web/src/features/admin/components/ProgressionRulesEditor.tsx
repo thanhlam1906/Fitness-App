@@ -26,7 +26,7 @@ export function ProgressionRulesEditor({ hit }: { hit: 1 | 2 | 3 | 4 | null }) {
         aria-label={label}
         className="num w-10 bg-transparent text-right font-bold outline-none"
       />
-      {unit && <span className="ml-1 text-[13px] text-[var(--color-text-muted)]">{unit}</span>}
+      {unit && <span className="ml-1 text-meta text-[var(--color-text-muted)]">{unit}</span>}
     </label>
   )
 
@@ -34,7 +34,7 @@ export function ProgressionRulesEditor({ hit }: { hit: 1 | 2 | 3 | 4 | null }) {
     const key = `r${k}` as TemplateHelpKey
     return (
       <div className={cn("mt-2.5 flex gap-3 rounded-[var(--radius-md)] border bg-[var(--color-surface)] px-3.5 py-3", hit === k ? "border-[var(--color-accent)]" : "border-[var(--color-border)]")}>
-        <div className={cn("grid size-[26px] flex-none place-items-center rounded-full text-[13px] font-extrabold", hit === k ? "bg-[var(--color-accent)] text-[var(--color-accent-fg)]" : "bg-[var(--color-surface-2)]")}>
+        <div className={cn("grid size-[26px] flex-none place-items-center rounded-full text-meta font-extrabold", hit === k ? "bg-[var(--color-accent)] text-[var(--color-accent-fg)]" : "bg-[var(--color-surface-2)]")}>
           {k}
         </div>
         <div className="min-w-0 flex-1">
@@ -54,7 +54,7 @@ export function ProgressionRulesEditor({ hit }: { hit: 1 | 2 | 3 | 4 | null }) {
 
   return (
     <div>
-      <p className="mt-1 text-[13px] text-[var(--color-text-muted)]">Xét sau mỗi buổi, từ 1 xuống 4, dừng ở quy tắc khớp đầu tiên.</p>
+      <p className="mt-1 text-meta text-[var(--color-text-muted)]">Xét sau mỗi buổi, từ 1 xuống 4, dừng ở quy tắc khớp đầu tiên.</p>
       {card(1, "Báo đau", <>Buổi có báo đau{arrow}giảm{n("deloadPct", "%", "Phần trăm giảm")}tạ. Buổi sau vẫn báo đau{arrow}đề xuất bài thay thế.</>)}
       {card(2, "Tỉ lệ hoàn thành", <>Hoàn thành dưới{n("minCompletionPct", "%", "Tỉ lệ hoàn thành tối thiểu")}số set{arrow}giữ tạ.</>)}
       {card(3, "RPE", <>RPE mục tiêu{n("targetRpe", "", "RPE mục tiêu")}. Thấp hơn mục tiêu{n("rpeLowStreak", "buổi liền", "Số buổi RPE thấp")}{arrow}tăng một bước. Cao hơn mục tiêu quá{n("rpeOver", "", "Độ vượt RPE")}{arrow}giữ tạ.</>)}

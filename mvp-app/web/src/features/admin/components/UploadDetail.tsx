@@ -29,7 +29,7 @@ export function UploadDetail({ id }: { id: string }) {
   const heading = (kicker: string) => (
     <>
       <div className="kicker">{kicker}</div>
-      <h2 className="mt-1 text-[22px] leading-tight font-extrabold break-words">{u.fileName}</h2>
+      <h2 className="mt-1 text-stat leading-tight font-extrabold break-words">{u.fileName}</h2>
     </>
   )
 
@@ -112,7 +112,7 @@ export function UploadDetail({ id }: { id: string }) {
         </div>
       </Card>
       <div className="mt-6.5 flex items-baseline gap-2.5">
-        <b className="text-[15px]">Các đoạn trợ lý sẽ đọc</b>
+        <b className="text-title">Các đoạn trợ lý sẽ đọc</b>
         <span className="kicker">soát dấu tiếng Việt ở đây</span>
       </div>
       <ChunkList

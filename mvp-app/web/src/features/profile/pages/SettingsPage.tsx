@@ -27,7 +27,7 @@ export function SettingsPage() {
 
   return (
     <div>
-      <h1 className="text-[28px] leading-tight font-extrabold tracking-[-0.02em]">Cài đặt</h1>
+      <h1 className="text-page leading-tight font-extrabold tracking-[-0.02em]">Cài đặt</h1>
 
       <div className="mt-4 flex items-center gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5">
         <span
@@ -92,13 +92,13 @@ export function SettingsPage() {
         type="button"
         onClick={logout}
         className={cn(
-          "mt-6 h-12 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] text-[15px] font-bold text-[var(--color-danger)] hover:bg-[var(--color-surface)]",
+          "mt-6 h-12 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] text-title font-bold text-[var(--color-danger)] hover:bg-[var(--color-surface)]",
           SHEET_FOCUS,
         )}
       >
         Đăng xuất
       </button>
-      <p className="mt-3 text-center text-[11px] text-[var(--color-text-muted)]">VFit · bản thử nghiệm</p>
+      <p className="mt-3 text-center text-2xs text-[var(--color-text-muted)]">VFit · bản thử nghiệm</p>
     </div>
   )
 }
@@ -151,7 +151,7 @@ function Row({
         <Icon className="size-[18px]" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-[15px] font-semibold">{title}</span>
+        <span className="block text-title font-semibold">{title}</span>
         {sub && <span className="num block truncate text-xs text-[var(--color-text-muted)]">{sub}</span>}
       </span>
       <ChevronRight className="size-4 flex-none text-[var(--color-text-muted)]" aria-hidden />

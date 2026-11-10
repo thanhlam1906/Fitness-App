@@ -75,7 +75,7 @@ function Body({
                 aria-pressed={on}
                 onClick={() => setDays((prev) => (on ? prev.filter((d) => d !== day) : [...prev, day]))}
                 className={cn(
-                  "h-12 rounded-[var(--radius-lg)] border text-[13px] font-bold",
+                  "h-12 rounded-[var(--radius-lg)] border text-meta font-bold",
                   on
                     ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-accent-fg)]"
                     : "border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-muted)]",
@@ -98,7 +98,7 @@ function Body({
             <div className="section-title mt-5">Các buổi tới</div>
             <div className="mt-2 rounded-[var(--radius-md)] bg-[var(--color-bg)] px-3">
               {preview.map((p) => (
-                <div key={p.date} className="flex justify-between border-t border-[var(--color-border)] py-2 text-[13px] first:border-t-0">
+                <div key={p.date} className="flex justify-between border-t border-[var(--color-border)] py-2 text-meta first:border-t-0">
                   <span className="num">{shortDayTitle(p.date)}</span>
                   <span className="text-[var(--color-text-muted)]">{p.label}</span>
                 </div>

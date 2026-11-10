@@ -52,10 +52,10 @@ export function ReviewResultPage() {
 
   return (
     <FlowScreen>
-      <h1 className="text-[28px] leading-tight font-extrabold tracking-[-0.02em]">
+      <h1 className="text-page leading-tight font-extrabold tracking-[-0.02em]">
         {data.exerciseName ?? "Kết quả chấm form"}
       </h1>
-      <p className="num mt-1 text-[13px] text-[var(--color-text-muted)]">{subtitle(data)}</p>
+      <p className="num mt-1 text-meta text-[var(--color-text-muted)]">{subtitle(data)}</p>
 
       {(data.status === "PENDING" || data.status === "PROCESSING") && (
         <ResultCard
@@ -104,9 +104,9 @@ export function ReviewResultPage() {
 
           {primary ? (
             <>
-              <h2 className="mt-5.5 text-[17px] font-bold">Sửa trước</h2>
+              <h2 className="mt-5.5 text-title-lg font-bold">Sửa trước</h2>
               <div className="mt-2.5 rounded-[var(--radius-lg)] bg-[var(--color-surface)] p-4">
-                <div className="text-[19px] leading-tight font-bold">{checkLabel(primary)}</div>
+                <div className="text-lg leading-tight font-bold">{checkLabel(primary)}</div>
                 <p className="mt-2 text-sm leading-relaxed">{primary.cueTextVi}</p>
                 {checkDetails(primary).map((line) => (
                   <p key={line} className="num mt-1 text-xs text-[var(--color-text-muted)]">
@@ -124,12 +124,12 @@ export function ReviewResultPage() {
 
           {others.length > 0 && (
             <>
-              {primary && <h2 className="mt-5.5 text-[17px] font-bold">Các mục khác</h2>}
+              {primary && <h2 className="mt-5.5 text-title-lg font-bold">Các mục khác</h2>}
               <div className="mt-2.5 flex flex-col gap-2">
                 {others.map((check) => (
                   <div key={check.id} className="rounded-[var(--radius-md)] bg-[var(--color-surface)] p-3.5">
                     <div className="flex items-center justify-between gap-2.5">
-                      <span className="text-[15px] font-semibold">{checkLabel(check)}</span>
+                      <span className="text-title font-semibold">{checkLabel(check)}</span>
                       <VerdictChip verdict={check.verdict} />
                     </div>
                     {check.cueTextVi && (
@@ -248,8 +248,8 @@ function ResultCard({
           )}
         </IconCircle>
         <div className="min-w-0">
-          <b className="block text-[15px]">{title}</b>
-          {detail && <p className="mt-0.5 text-[13px] text-[var(--color-text-muted)]">{detail}</p>}
+          <b className="block text-title">{title}</b>
+          {detail && <p className="mt-0.5 text-meta text-[var(--color-text-muted)]">{detail}</p>}
         </div>
       </div>
       {children}

@@ -100,7 +100,7 @@ export function DashboardPage() {
           <section className="rounded-[var(--radius-md)] bg-[var(--color-surface)] p-4">
             <div className="flex items-center gap-2.5">
               <IconChip icon={TriangleAlert} tone="var(--color-warn)" />
-              <h2 className="text-[15px] font-bold">Cần để ý</h2>
+              <h2 className="text-title font-bold">Cần để ý</h2>
             </div>
             <div className="mt-3 grid gap-2.5 md:grid-cols-3">
               <AttentionTile
@@ -171,7 +171,7 @@ function AttentionTile({
           {count ?? "—"}
         </span>
       )}
-      <span className="min-w-0 flex-1 text-[13px] leading-snug">{text}</span>
+      <span className="min-w-0 flex-1 text-meta leading-snug">{text}</span>
       {to && <ChevronRight aria-hidden className="size-4 text-[var(--color-text-muted)]" />}
     </>
   )

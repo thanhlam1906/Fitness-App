@@ -42,7 +42,7 @@ export function HelpText({ id, lines, className }: { id?: HelpKey; lines?: strin
   return (
     <div
       className={cn(
-        "rounded-lg border-l-[3px] border-[var(--color-accent)] bg-[var(--color-surface-2)] px-3 py-2.5 text-[13px] leading-relaxed",
+        "rounded-lg border-l-[3px] border-[var(--color-accent)] bg-[var(--color-surface-2)] px-3 py-2.5 text-meta leading-relaxed",
         className,
       )}
     >

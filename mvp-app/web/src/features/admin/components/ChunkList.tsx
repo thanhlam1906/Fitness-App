@@ -34,11 +34,11 @@ export function ChunkList({ chunks }: { chunks: ChunkItem[] }) {
             c.flagged ? "border-[var(--color-danger)]" : "border-[var(--color-border)]",
           )}
         >
-          <div className="flex items-baseline gap-2.5 text-[13px] font-bold">
+          <div className="flex items-baseline gap-2.5 text-meta font-bold">
             <span className="num flex-none text-[var(--color-text-muted)]">#{c.number}</span>
             {c.heading}
           </div>
-          <p className="mt-1.5 text-[13px] leading-relaxed whitespace-pre-line text-[var(--color-text)]">
+          <p className="mt-1.5 text-meta leading-relaxed whitespace-pre-line text-[var(--color-text)]">
             {c.content}
           </p>
         </div>

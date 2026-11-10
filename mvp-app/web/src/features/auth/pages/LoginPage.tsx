@@ -101,7 +101,7 @@ export function LoginPage() {
           {isSubmitting ? "Đang đăng nhập…" : "Đăng nhập"}
         </Button>
       </form>
-      <p className="mt-4 text-center text-[13px] text-[var(--color-text-muted)]">
+      <p className="mt-4 text-center text-meta text-[var(--color-text-muted)]">
         Chưa có tài khoản?{" "}
         <Link to="/register" className="font-semibold text-[var(--color-accent)]">
           Đăng ký
@@ -161,7 +161,7 @@ function NewPasswordStep({
       <button
         type="button"
         onClick={onBack}
-        className="mt-2 flex min-h-11 w-full items-center justify-center gap-0.5 text-[13px] text-[var(--color-text-muted)] hover:text-[var(--color-text)] focus-visible:underline"
+        className="mt-2 flex min-h-11 w-full items-center justify-center gap-0.5 text-meta text-[var(--color-text-muted)] hover:text-[var(--color-text)] focus-visible:underline"
       >
         <ChevronLeft className="size-4" aria-hidden />
         Quay lại đăng nhập

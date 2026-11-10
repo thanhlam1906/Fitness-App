@@ -24,7 +24,7 @@ export function Stepper({
 }) {
   return (
     <div>
-      <div className="flex items-center justify-between text-[13px] text-[var(--color-text-muted)]">
+      <div className="flex items-center justify-between text-meta text-[var(--color-text-muted)]">
         <span>{label}</span>
         <span className="num">
           Bước {current + 1} / {steps}

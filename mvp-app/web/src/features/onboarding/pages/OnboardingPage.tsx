@@ -152,10 +152,10 @@ export function OnboardingPage() {
         <div className="mt-6 grid size-13 place-items-center rounded-[var(--radius-lg)] border border-[color-mix(in_srgb,var(--color-accent)_25%,transparent)] bg-[var(--color-accent-tint)] text-[var(--color-accent)]">
           <heading.icon className="size-6.5" />
         </div>
-        <h1 className="mt-3.5 text-[28px] leading-tight font-extrabold tracking-[-0.02em]">
+        <h1 className="mt-3.5 text-page leading-tight font-extrabold tracking-[-0.02em]">
           {heading.title}
         </h1>
-        {heading.hint && <p className="mt-2.5 text-[13px] text-[var(--color-text-muted)]">{heading.hint}</p>}
+        {heading.hint && <p className="mt-2.5 text-meta text-[var(--color-text-muted)]">{heading.hint}</p>}
 
         <div className="mt-5 flex flex-1 flex-col">
           {current === "DISCLAIMER" && (
@@ -287,7 +287,7 @@ function OptionRow({
   return (
     <label
       className={cn(
-        "flex cursor-pointer items-center gap-3 rounded-[var(--radius-md)] border p-3 text-[15px]",
+        "flex cursor-pointer items-center gap-3 rounded-[var(--radius-md)] border p-3 text-title",
         HAS_FOCUS,
         checked
           ? "border-[var(--color-accent)] bg-[var(--color-surface-2)]"
@@ -589,7 +589,7 @@ function ExperienceStep({
               <label
                 key={n}
                 className={cn(
-                  "num grid h-13 cursor-pointer place-items-center rounded-[var(--radius-lg)] border text-xl",
+                  "num grid h-13 cursor-pointer place-items-center rounded-[var(--radius-lg)] border text-lg",
                   HAS_FOCUS,
                   sessions === n
                     ? "border-[var(--color-accent)] bg-[var(--color-accent)] font-extrabold text-[var(--color-accent-fg)]"

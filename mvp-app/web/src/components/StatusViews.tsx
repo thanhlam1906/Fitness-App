@@ -66,8 +66,8 @@ export function StatusBlock({
       className={cn("flex flex-col items-center rounded-[var(--radius-lg)] bg-[var(--color-surface)] px-5 py-7 text-center", className)}
     >
       <IconCircle icon={icon} tone={tone} />
-      <b className="mt-3.5 text-[17px]">{title}</b>
-      {detail && <p className="mt-1 max-w-[300px] text-[13px] text-[var(--color-text-muted)]">{detail}</p>}
+      <b className="mt-3.5 text-title-lg">{title}</b>
+      {detail && <p className="mt-1 max-w-[300px] text-meta text-[var(--color-text-muted)]">{detail}</p>}
       {children && <div className="mt-4.5 flex flex-wrap justify-center gap-2">{children}</div>}
     </div>
   )
@@ -113,7 +113,7 @@ export function Notice({
   return (
     <p
       role={role}
-      className={cn("flex items-start gap-2.5 rounded-[var(--radius-md)] px-3 py-2.5 text-[13px]", TINT[tone], className)}
+      className={cn("flex items-start gap-2.5 rounded-[var(--radius-md)] px-3 py-2.5 text-meta", TINT[tone], className)}
     >
       <Icon aria-hidden className="mt-[0.15em] size-[1.2em] shrink-0" />
       <span className="min-w-0">{children}</span>

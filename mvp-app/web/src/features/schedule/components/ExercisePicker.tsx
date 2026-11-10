@@ -61,9 +61,9 @@ export function ExercisePicker({
           >
             <ExerciseImage slug={exercise.slug} alt="" variant="thumb" />
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-[15px] font-semibold">{exercise.nameEn}</span>
+              <span className="block truncate text-title font-semibold">{exercise.nameEn}</span>
               {exercise.nameVi && (
-                <span className="block truncate text-[13px] text-[var(--color-text-muted)]">{exercise.nameVi}</span>
+                <span className="block truncate text-meta text-[var(--color-text-muted)]">{exercise.nameVi}</span>
               )}
             </span>
             <ChevronRight className="size-4.5 flex-none text-[var(--color-text-muted)]" aria-hidden />

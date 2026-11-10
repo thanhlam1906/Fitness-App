@@ -52,7 +52,7 @@ export function WeightHistoryPage() {
       {latest ? (
         <>
           <div className="mt-4 flex items-baseline gap-2.5">
-            <span className="num text-[40px] leading-none font-extrabold">{KG.format(latest.weightKg!)}</span>
+            <span className="num text-hero leading-none font-extrabold">{KG.format(latest.weightKg!)}</span>
             <span className="text-sm text-[var(--color-text-muted)]">kg · {formatDayMonth(latest.measuredOn)}</span>
           </div>
           {series.delta != null && (

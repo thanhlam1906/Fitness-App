@@ -11,8 +11,8 @@ export function MySchedulePage() {
   return (
     <div>
       <BackLink to="/schedule">Lịch</BackLink>
-      <h1 className="mt-3 text-[28px] leading-tight font-extrabold tracking-[-0.02em]">Tự thiết kế lịch</h1>
-      <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--color-text-muted)]">Tuần nào cũng lặp lại y hệt.</p>
+      <h1 className="mt-3 text-page leading-tight font-extrabold tracking-[-0.02em]">Tự thiết kế lịch</h1>
+      <p className="mt-1.5 text-meta leading-relaxed text-[var(--color-text-muted)]">Tuần nào cũng lặp lại y hệt.</p>
       <div className="mt-5">
         <ScheduleBuilder onCreated={openFirstWorkout} />
       </div>

@@ -32,7 +32,7 @@ export function ExerciseGuideSheet({
         <div className="section-title mt-5">Trong chương trình</div>
         <div className="mt-2 rounded-[var(--radius-md)] bg-[var(--color-bg)] px-3">
           {usedIn.map((u) => (
-            <div key={u.label} className="flex justify-between border-t border-[var(--color-border)] py-2 text-[13px] first:border-t-0">
+            <div key={u.label} className="flex justify-between border-t border-[var(--color-border)] py-2 text-meta first:border-t-0">
               <span>Buổi {u.label}</span>
               <span className="num text-[var(--color-text-muted)]">{u.target}</span>
             </div>

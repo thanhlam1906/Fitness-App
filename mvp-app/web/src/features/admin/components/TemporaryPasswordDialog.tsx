@@ -34,7 +34,7 @@ export function TemporaryPasswordDialog({
         Gửi mật khẩu này cho <span className="font-semibold">{email}</span>. Lần đăng nhập đầu tiên họ phải đặt mật
         khẩu mới. <strong>Chỉ hiện một lần</strong>, đóng hộp này là không xem lại được.
       </p>
-      <div className="num mt-4 rounded-lg bg-[var(--color-surface-2)] px-4 py-3 text-center text-xl font-bold tracking-[0.12em] select-all">
+      <div className="num mt-4 rounded-lg bg-[var(--color-surface-2)] px-4 py-3 text-center text-lg leading-7 font-bold tracking-[0.12em] select-all">
         {password}
       </div>
       <div className="mt-5 flex justify-end gap-2">

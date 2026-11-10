@@ -32,13 +32,13 @@ function InsightRow({
   below?: boolean
 }) {
   const label = (
-    <span className="min-w-0 text-[13px] leading-tight">
+    <span className="min-w-0 text-meta leading-tight">
       {name}
-      {to && <span className="ml-1.5 text-[11px] text-[var(--color-accent)]">sửa ›</span>}
-      <span className="mt-0.5 block truncate text-[11px] text-[var(--color-text-muted)]">{sub}</span>
+      {to && <span className="ml-1.5 text-2xs text-[var(--color-accent)]">sửa ›</span>}
+      <span className="mt-0.5 block truncate text-2xs text-[var(--color-text-muted)]">{sub}</span>
     </span>
   )
-  const number = <span className="num text-right text-[13px] font-bold">{value}</span>
+  const number = <span className="num text-right text-meta font-bold">{value}</span>
   const body = below ? (
     <>
       {label}
@@ -147,7 +147,7 @@ export function StackedList({ rows }: { rows: StackedRow[] }) {
               value={
                 <>
                   {percent(r.down, total)}
-                  <span className="block text-[10px] font-normal text-[var(--color-text-muted)]">giảm</span>
+                  <span className="block text-2xs font-normal text-[var(--color-text-muted)]">giảm</span>
                 </>
               }
               graphic={

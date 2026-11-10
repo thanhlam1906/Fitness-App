@@ -80,13 +80,13 @@ export function BodyMap({
                 })}
               </g>
             </svg>
-            <figcaption className="mt-1 text-center text-[11px] text-[var(--color-text-muted)]">{view.label}</figcaption>
+            <figcaption className="mt-1 text-center text-2xs text-[var(--color-text-muted)]">{view.label}</figcaption>
           </figure>
         ))}
       </div>
 
       {/* Màu thôi thì phải đoán — nói thẳng tên vùng đang chọn bằng chữ. */}
-      <p className="mt-2 text-center text-[13px] text-[var(--color-text-muted)]">
+      <p className="mt-2 text-center text-meta text-[var(--color-text-muted)]">
         {selected ? (
           <>
             Đang chọn{" "}
@@ -109,7 +109,7 @@ export function BodyMap({
               aria-pressed={on}
               onClick={() => onChange(area.value)}
               className={cn(
-                "rounded-full px-3.5 py-2 text-[13px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]",
+                "rounded-full px-3.5 py-2 text-meta focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]",
                 on
                   ? "border border-[var(--color-danger)] bg-[var(--color-danger-tint)] font-semibold text-[var(--color-danger)]"
                   : "bg-[var(--color-surface)] text-[var(--color-text-muted)]",

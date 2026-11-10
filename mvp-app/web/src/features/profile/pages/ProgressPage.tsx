@@ -32,7 +32,7 @@ export function ProgressPage() {
             aria-checked={weeks === r}
             onClick={() => setWeeks(r)}
             className={cn(
-              "flex-1 rounded-[var(--radius-sm)] py-2 text-[13px] font-bold",
+              "flex-1 rounded-[var(--radius-sm)] py-2 text-meta font-bold",
               weeks === r ? "bg-[var(--color-surface-2)] text-[var(--color-text)]" : "text-[var(--color-text-muted)]",
               SHEET_FOCUS,
             )}
@@ -72,7 +72,7 @@ export function ProgressPage() {
                       style={{ height: Math.max(heights[i], 2) }}
                     />
                     {/* 12 tuần: chỉ ghi nhãn cách một để chữ không đè nhau. */}
-                    <em className="num text-[10px] whitespace-nowrap text-[var(--color-text-muted)] not-italic">
+                    <em className="num text-2xs whitespace-nowrap text-[var(--color-text-muted)] not-italic">
                       {p.weekly.length > 8 && i % 2 === 1 ? " " : formatDayMonth(w.from)}
                     </em>
                   </div>
@@ -100,8 +100,8 @@ function Tile({ label, value, note }: { label: string; value: string; note: stri
 function TileHead({ label, value, note }: { label: string; value: string; note: string }) {
   return (
     <>
-      <div className="text-[11px] text-[var(--color-text-muted)]">{label}</div>
-      <div className="num mt-1 text-[26px] leading-tight font-extrabold">{value}</div>
+      <div className="text-2xs text-[var(--color-text-muted)]">{label}</div>
+      <div className="num mt-1 text-page leading-tight font-extrabold">{value}</div>
       <div className="text-xs text-[var(--color-text-muted)]">{note}</div>
     </>
   )
