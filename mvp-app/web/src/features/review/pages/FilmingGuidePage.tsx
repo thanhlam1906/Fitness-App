@@ -87,6 +87,9 @@ export function FilmingGuidePage() {
   const missing = files.length > 0 ? missingViews(views, viewpoints) : []
   const sizeProblem = clipSizeProblem(files.map((f) => f.size))
   const quotaExceeded = submit.error instanceof ApiError && submit.error.status === 429
+  // Người dùng tự bấm Huỷ: không phải lỗi, không hiện câu nào.
+  const cancelled = submit.error instanceof DOMException && submit.error.name === "AbortError"
+  const sentPercent = Math.round(submit.progress * 100)
 
   function pickFiles(fileList: FileList | null) {
     const picked = Array.from(fileList ?? []).slice(0, MAX_CLIPS)
@@ -221,11 +224,30 @@ export function FilmingGuidePage() {
           Bạn đã dùng hết lượt chấm trong 7 ngày qua. Thử lại vào tuần sau.
         </IconText>
       )}
-      {submit.isError && !quotaExceeded && (
+      {submit.isError && !quotaExceeded && !cancelled && (
         <IconText className="mt-3">{submit.error.message}</IconText>
       )}
 
       <div className="flex-1" />
+
+      {submit.isPending && (
+        <div className="mt-6 flex items-center gap-3">
+          <div
+            role="progressbar"
+            aria-label="Đã gửi"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={sentPercent}
+            className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--color-surface-2)]"
+          >
+            <div
+              className="h-full rounded-full bg-[var(--color-accent)] transition-[width] duration-300"
+              style={{ width: `${sentPercent}%` }}
+            />
+          </div>
+          <span className="num w-10 text-right text-[13px] text-[var(--color-text-muted)]">{sentPercent}%</span>
+        </div>
+      )}
 
       {files.length === 0 ? (
         <label className={buttonVariants({ className: cn("mt-6 w-full", FILE_FOCUS) })}>
@@ -233,12 +255,20 @@ export function FilmingGuidePage() {
           Chọn video
         </label>
       ) : (
-        <div className="mt-6 flex gap-2.5">
-          {/* Chọn thiếu hoặc nhầm video thì phải chọn lại được, không thì bị kẹt ở cảnh báo thiếu góc. */}
-          <label className={buttonVariants({ variant: "secondary", className: cn("flex-1", FILE_FOCUS) })}>
-            {fileInput}
-            Chọn lại
-          </label>
+        <div className={cn("flex gap-2.5", submit.isPending ? "mt-3" : "mt-6")}>
+          {submit.isPending ? (
+            // Đủ 100% là máy chủ đã nhận video: Huỷ lúc này không huỷ được lần chấm, chỉ khiến người dùng tưởng
+            // đã huỷ rồi gửi lại, mất thêm một lượt trong tuần.
+            <Button variant="secondary" className="flex-1" onClick={submit.cancel} disabled={submit.progress >= 1}>
+              Huỷ
+            </Button>
+          ) : (
+            // Chọn thiếu hoặc nhầm video thì phải chọn lại được, không thì bị kẹt ở cảnh báo thiếu góc.
+            <label className={buttonVariants({ variant: "secondary", className: cn("flex-1", FILE_FOCUS) })}>
+              {fileInput}
+              Chọn lại
+            </label>
+          )}
           <Button
             className="flex-1"
             disabled={!optIn || views.length === 0 || missing.length > 0 || sizeProblem !== null || submit.isPending}

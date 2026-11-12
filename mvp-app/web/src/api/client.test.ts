@@ -267,3 +267,97 @@ describe("api client — refresh khi mở nhiều tab", () => {
     expect(store["fitness.accessToken"]).toBeUndefined()
   })
 })
+
+/** XHR giả: test tự bắn các sự kiện mà trình duyệt bắn khi gửi video. */
+class FakeXhr {
+  static last: FakeXhr
+  upload: { onprogress: ((e: { lengthComputable: boolean; loaded: number; total: number }) => void) | null } = {
+    onprogress: null,
+  }
+  status = 0
+  statusText = ""
+  response: unknown = null
+  responseType = ""
+  timeout = 0
+  headers: Record<string, string> = {}
+  onload: (() => void) | null = null
+  ontimeout: (() => void) | null = null
+  onerror: (() => void) | null = null
+  onabort: (() => void) | null = null
+
+  constructor() {
+    FakeXhr.last = this
+  }
+  open() {}
+  setRequestHeader(name: string, value: string) {
+    this.headers[name] = value
+  }
+  send() {}
+  abort() {
+    this.onabort?.()
+  }
+  respond(status: number, body: unknown) {
+    this.status = status
+    this.response = body
+    this.onload?.()
+  }
+}
+
+/**
+ * Gửi video qua 4G: Cloudflare cắt request tải lên quá ~125 s, Safari iPhone bị cắt thì không báo gì nên
+ * nút "Đang gửi…" đứng mãi (doc/bay-trien-khai-v1.md 2.14). Phải có tiến độ, Huỷ, và câu lỗi rõ.
+ */
+describe("api.uploadForm — gửi video có tiến độ", () => {
+  beforeEach(() => vi.stubGlobal("XMLHttpRequest", FakeXhr))
+
+  function send(onProgress = vi.fn(), controller = new AbortController()) {
+    return api.uploadForm<{ id: string }>("/reviews", new FormData(), { onProgress, signal: controller.signal })
+  }
+
+  it("báo tiến độ, gắn token, trả JSON khi xong", async () => {
+    storeTokens("A1")
+    const onProgress = vi.fn()
+    const done = send(onProgress)
+
+    FakeXhr.last.upload.onprogress!({ lengthComputable: true, loaded: 25, total: 100 })
+    FakeXhr.last.respond(202, { id: "r1" })
+
+    await expect(done).resolves.toEqual({ id: "r1" })
+    expect(onProgress).toHaveBeenCalledWith(0.25)
+    expect(FakeXhr.last.headers.Authorization).toBe("Bearer A1")
+  })
+
+  it("gửi quá lâu thì tự dừng, báo mạng chậm thay vì đứng mãi", async () => {
+    const done = send()
+
+    expect(FakeXhr.last.timeout).toBeGreaterThan(0)
+    FakeXhr.last.ontimeout!()
+
+    await expect(done).rejects.toThrow(/Mạng chậm/)
+  })
+
+  it("Cloudflare trả 524 cũng là mạng chậm, không phải máy chủ hỏng", async () => {
+    const done = send()
+    FakeXhr.last.respond(524, null)
+
+    await expect(done).rejects.toThrow(/Mạng chậm/)
+  })
+
+  it("đã huỷ từ trước thì không gửi gì", async () => {
+    const controller = new AbortController()
+    controller.abort()
+    const before = FakeXhr.last
+
+    await expect(send(vi.fn(), controller)).rejects.toMatchObject({ name: "AbortError" })
+    expect(FakeXhr.last).toBe(before)
+  })
+
+  it("bấm Huỷ thì dừng gửi", async () => {
+    const controller = new AbortController()
+    const done = send(vi.fn(), controller)
+
+    controller.abort()
+
+    await expect(done).rejects.toMatchObject({ name: "AbortError" })
+  })
+})

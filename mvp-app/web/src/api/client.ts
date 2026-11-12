@@ -109,29 +109,86 @@ async function request<T>(path: string, init?: RequestInit, isRetry = false, as:
   }
 
   if (!res.ok) {
-    let detail: string | undefined
-    // 500 là lỗi chưa ai bắt: Spring đưa nguyên câu của exception (câu SQL, tên bảng, lớp Java) vào body.
-    // Không đọc body để câu đó không tới tay người dùng. Câu tiếng Việt có chủ đích ở 5xx đi bằng 502, 503.
+    let body: unknown
     if (res.status !== 500) {
       try {
-        const body = await res.json()
-        detail = body.detail ?? body.message ?? body.error
+        body = await res.json()
       } catch {
         // body rỗng hoặc không phải JSON — bỏ qua, dùng statusText
       }
     }
-    // 413 luôn dùng câu tiếng Việt: backend tự chặn thì body JSON mang câu tiếng Anh của Spring.
-    // 5xx không có câu (nginx, Cloudflare trả trang HTML) thì nói chung là máy chủ lỗi, không hiện "Bad Gateway".
-    const message =
-      res.status === 413
-        ? STATUS_MESSAGE_VI[413]
-        : detail ?? STATUS_MESSAGE_VI[res.status] ?? (res.status >= 500 ? STATUS_MESSAGE_VI[500] : res.statusText)
-    throw new ApiError(res.status, message, detail)
+    throw errorFor(res.status, body, res.statusText)
   }
 
   if (res.status === 204) return undefined as T
   if (as === "blob") return (await res.blob()) as T
   return (await res.json()) as T
+}
+
+/** Câu lỗi cho người dùng từ mã trạng thái và body JSON nếu có. Dùng chung cho fetch và XHR gửi video. */
+function errorFor(status: number, body: unknown, statusText: string): ApiError {
+  let detail: string | undefined
+  // 500 là lỗi chưa ai bắt: Spring đưa nguyên câu của exception (câu SQL, tên bảng, lớp Java) vào body.
+  // Không đọc body để câu đó không tới tay người dùng. Câu tiếng Việt có chủ đích ở 5xx đi bằng 502, 503.
+  if (status !== 500 && body !== null && typeof body === "object") {
+    const fields = body as { detail?: string; message?: string; error?: string }
+    detail = fields.detail ?? fields.message ?? fields.error
+  }
+  // 413 luôn dùng câu tiếng Việt: backend tự chặn thì body JSON mang câu tiếng Anh của Spring.
+  // 5xx không có câu (nginx, Cloudflare trả trang HTML) thì nói chung là máy chủ lỗi, không hiện "Bad Gateway".
+  const message =
+    status === 413
+      ? STATUS_MESSAGE_VI[413]
+      : detail ?? STATUS_MESSAGE_VI[status] ?? (status >= 500 ? STATUS_MESSAGE_VI[500] : statusText)
+  return new ApiError(status, message, detail)
+}
+
+// Cloudflare cắt request tải lên kéo dài quá khoảng 125 s (đo thật 10-23, doc/bay-trien-khai-v1.md 2.14).
+const UPLOAD_TIMEOUT_MS = 120_000
+const UPLOAD_TOO_SLOW = "Mạng chậm quá, video chưa gửi xong. Thử Wi-Fi hoặc quay video ngắn hơn."
+const UPLOAD_LOST = "Mất kết nối khi đang gửi. Kiểm tra mạng rồi gửi lại."
+
+export type UploadOptions = { onProgress: (fraction: number) => void; signal: AbortSignal }
+
+/**
+ * Gửi form kèm tiến độ tải lên (video chấm form). fetch không báo được tiến độ tải lên nên chỗ này dùng XHR,
+ * vẫn giữ luật của request(): gắn token, 401 thì refresh một lần rồi gửi lại, lỗi ra ApiError câu tiếng Việt.
+ */
+function upload<T>(path: string, form: FormData, opts: UploadOptions, isRetry = false): Promise<T> {
+  return new Promise<XMLHttpRequest>((resolve, reject) => {
+    // Bấm Huỷ đúng lúc đang làm mới phiên đăng nhập: lần gửi lại không được bắt đầu. Signal đã huỷ thì không bắn
+    // sự kiện abort lần nữa, nên nếu gửi tiếp thì nút Huỷ thành vô dụng.
+    if (opts.signal.aborted) {
+      reject(new DOMException("Đã huỷ gửi", "AbortError"))
+      return
+    }
+    const xhr = new XMLHttpRequest()
+    xhr.open("POST", `/api/v1${path}`)
+    const accessToken = getAccessToken()
+    if (accessToken) xhr.setRequestHeader("Authorization", `Bearer ${accessToken}`)
+    xhr.responseType = "json"
+    // Safari iPhone bị Cloudflare cắt giữa chừng thì không báo gì, nút đứng mãi: tự dừng trước để còn nói lý do.
+    xhr.timeout = UPLOAD_TIMEOUT_MS
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) opts.onProgress(e.loaded / e.total)
+    }
+    xhr.onload = () => resolve(xhr)
+    xhr.ontimeout = () => reject(new ApiError(0, UPLOAD_TOO_SLOW))
+    xhr.onerror = () => reject(new ApiError(0, UPLOAD_LOST))
+    xhr.onabort = () => reject(new DOMException("Đã huỷ gửi", "AbortError"))
+    opts.signal.addEventListener("abort", () => xhr.abort(), { once: true })
+    xhr.send(form)
+  }).then(async (xhr) => {
+    if (xhr.status === 401 && !isRetry) {
+      if (await tryRefresh()) return upload<T>(path, form, opts, true)
+      clearSession()
+      window.dispatchEvent(new Event(LOGGED_OUT_EVENT))
+    }
+    // 524 là Cloudflare chờ quá lâu: với một lần gửi video thì là mạng tải lên chậm, không phải máy chủ hỏng.
+    if (xhr.status === 524) throw new ApiError(524, UPLOAD_TOO_SLOW)
+    if (xhr.status < 200 || xhr.status >= 300) throw errorFor(xhr.status, xhr.response, xhr.statusText)
+    return xhr.response as T
+  })
 }
 
 export function onLoggedOut(handler: () => void): () => void {
@@ -149,6 +206,7 @@ export const api = {
     request<T>(path, { method: "PATCH", body: JSON.stringify(body) }),
   postForm: <T>(path: string, form: FormData) =>
     request<T>(path, { method: "POST", body: form }),
+  uploadForm: <T>(path: string, form: FormData, opts: UploadOptions) => upload<T>(path, form, opts),
   // DELETE có body: xoá tài khoản phải kèm lý do (doc/design-quan-ly-user-v1.md §5).
   del: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: "DELETE", ...(body === undefined ? {} : { body: JSON.stringify(body) }) }),
