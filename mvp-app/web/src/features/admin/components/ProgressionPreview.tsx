@@ -99,102 +99,106 @@ export function ProgressionPreview({
   }
 
   const label = "text-meta text-[var(--color-text-muted)]"
+  // Đo theo bề rộng khung chứ không theo màn hình: khung chưa đủ chỗ cho form + thẻ 300px thì thẻ kết quả
+  // xuống dưới form. Trước đây form bị co, ô nhập tràn xuống dưới thẻ kết quả (che ô "Bài", "Tạ đang tập").
   return (
-    <div className="mt-3 flex gap-4.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5">
-      <div className="grid min-w-0 flex-1 grid-cols-[170px_1fr] items-center gap-x-3 gap-y-2.5">
-        <span className={label}>Bài</span>
-        <select
-          value={current}
-          onChange={(e) => {
-            setSlug(e.target.value)
-            setReps([])
-          }}
-          aria-label="Bài để thử"
-          className={cn(
-            "h-[34px] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-2 text-sm outline-none focus:border-[var(--color-accent)]",
-            FOCUS,
-          )}
-        >
-          {candidates.map((s) => (
-            <option key={s} value={s}>{nameOf(s)}</option>
-          ))}
-        </select>
+    <div className="@container mt-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5">
+      <div className="flex flex-col gap-4.5 @3xl:flex-row">
+        <div className="grid min-w-0 flex-1 grid-cols-[170px_1fr] items-center gap-x-3 gap-y-2.5">
+          <span className={label}>Bài</span>
+          <select
+            value={current}
+            onChange={(e) => {
+              setSlug(e.target.value)
+              setReps([])
+            }}
+            aria-label="Bài để thử"
+            className={cn(
+              "h-[34px] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-2 text-sm outline-none focus:border-[var(--color-accent)]",
+              FOCUS,
+            )}
+          >
+            {candidates.map((s) => (
+              <option key={s} value={s}>{nameOf(s)}</option>
+            ))}
+          </select>
 
-        <span className={label}>Tạ đang tập</span>
-        <span className="flex items-center gap-1.5 text-sm">
-          <input value={loadKg} onChange={(e) => setLoadKg(e.target.value)} inputMode="decimal" aria-label="Tạ đang tập (kg)" className={BOX} /> kg
-        </span>
+          <span className={label}>Tạ đang tập</span>
+          <span className="flex items-center gap-1.5 text-sm">
+            <input value={loadKg} onChange={(e) => setLoadKg(e.target.value)} inputMode="decimal" aria-label="Tạ đang tập (kg)" className={BOX} /> kg
+          </span>
 
-        <span className={label}>Rep từng set</span>
-        <span className="flex flex-wrap items-center gap-1.5">
-          {repValues.map((v, i) => (
-            <input
-              key={i}
-              value={v}
-              onChange={(e) => setReps(repValues.map((r, j) => (j === i ? e.target.value : r)))}
-              inputMode="numeric"
-              aria-label={`Rep set ${i + 1}`}
-              className={BOX}
-            />
-          ))}
-          {row && <span className="text-xs text-[var(--color-text-muted)]">mục tiêu {row.repsMin}–{row.repsMax}</span>}
-        </span>
+          <span className={label}>Rep từng set</span>
+          <span className="flex flex-wrap items-center gap-1.5">
+            {repValues.map((v, i) => (
+              <input
+                key={i}
+                value={v}
+                onChange={(e) => setReps(repValues.map((r, j) => (j === i ? e.target.value : r)))}
+                inputMode="numeric"
+                aria-label={`Rep set ${i + 1}`}
+                className={BOX}
+              />
+            ))}
+            {row && <span className="text-xs text-[var(--color-text-muted)]">mục tiêu {row.repsMin}–{row.repsMax}</span>}
+          </span>
 
-        <span className={label}>RPE set cuối</span>
-        <span className="flex items-center gap-1.5">
-          <input value={rpe} onChange={(e) => setRpe(e.target.value)} inputMode="decimal" aria-label="RPE set cuối" className={BOX} />
-          <span className="text-xs text-[var(--color-text-muted)]">bỏ trống = không ghi</span>
-        </span>
+          <span className={label}>RPE set cuối</span>
+          <span className="flex items-center gap-1.5">
+            <input value={rpe} onChange={(e) => setRpe(e.target.value)} inputMode="decimal" aria-label="RPE set cuối" className={BOX} />
+            <span className="text-xs text-[var(--color-text-muted)]">bỏ trống = không ghi</span>
+          </span>
 
-        <span className={label}>Báo đau</span>
-        <span className="flex gap-4 text-sm">
-          <label className="flex items-center gap-2"><input type="checkbox" checked={pain} onChange={(e) => setPain(e.target.checked)} className={CHECK} />Buổi này</label>
-          <label className="flex items-center gap-2"><input type="checkbox" checked={painBefore} onChange={(e) => setPainBefore(e.target.checked)} className={CHECK} />Cả buổi trước</label>
-        </span>
+          <span className={label}>Báo đau</span>
+          <span className="flex gap-4 text-sm">
+            <label className="flex items-center gap-2"><input type="checkbox" checked={pain} onChange={(e) => setPain(e.target.checked)} className={CHECK} />Buổi này</label>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={painBefore} onChange={(e) => setPainBefore(e.target.checked)} className={CHECK} />Cả buổi trước</label>
+          </span>
 
-        <span className={label}>Trước buổi này</span>
-        <span className="flex flex-wrap items-center gap-1.5 text-sm">
-          hụt rep <input value={failBefore} onChange={(e) => setFailBefore(e.target.value)} inputMode="numeric" aria-label="Số buổi hụt rep liền trước đó" className={BOX} /> buổi liền ·
-          RPE thấp <input value={lowBefore} onChange={(e) => setLowBefore(e.target.value)} inputMode="numeric" aria-label="Số buổi RPE thấp liền trước đó" className={BOX} /> buổi liền
-        </span>
-      </div>
+          <span className={label}>Trước buổi này</span>
+          <span className="flex flex-wrap items-center gap-1.5 text-sm">
+            hụt rep <input value={failBefore} onChange={(e) => setFailBefore(e.target.value)} inputMode="numeric" aria-label="Số buổi hụt rep liền trước đó" className={BOX} /> buổi liền ·
+            RPE thấp <input value={lowBefore} onChange={(e) => setLowBefore(e.target.value)} inputMode="numeric" aria-label="Số buổi RPE thấp liền trước đó" className={BOX} /> buổi liền
+          </span>
+        </div>
 
-      <div className="w-[300px] flex-none" aria-live="polite">
-        <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg)] p-3.5">
-          {!input ? (
-            <p className="text-xs text-[var(--color-text-muted)]">Sửa các ô đang lỗi để thử.</p>
-          ) : preview.isError ? (
-            <IconText className="text-xs">{preview.error.message}</IconText>
-          ) : !result ? (
-            // Khung của kết quả: nhãn "Buổi tới", số tải lớn, hai dòng lý do.
-            <div role="status" aria-label="Đang tải">
-              <Skeleton className="h-3 w-14" />
-              <Skeleton className="mt-1.5 h-7 w-36" />
-              <Skeleton className="mt-2 h-4 w-full" />
-              <Skeleton className="mt-1 h-4 w-3/4" />
-            </div>
-          ) : (
-            <>
-              <div className="text-xs text-[var(--color-text-muted)]">Buổi tới</div>
-              <div
-                className={cn(
-                  "num text-stat font-extrabold",
-                  result.direction === "UP" && "text-[var(--color-success)]",
-                  result.direction === "DOWN" && "text-[var(--color-danger)]",
-                  result.direction === "SUBSTITUTE" && "text-[var(--color-warn)]",
-                )}
-              >
-                {result.direction === "SUBSTITUTE"
-                  ? "Thay bài"
-                  : result.direction === "HOLD"
-                    ? `Giữ ${KG.format(result.newLoadKg)} kg`
-                    : `${KG.format(result.newLoadKg)} kg (${(result.deltaKg ?? 0) > 0 ? "+" : "−"}${KG.format(Math.abs(result.deltaKg ?? 0))})`}
+        <div className="@3xl:w-[300px] @3xl:flex-none" aria-live="polite">
+          <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg)] p-3.5">
+            {!input ? (
+              <p className="text-xs text-[var(--color-text-muted)]">Sửa các ô đang lỗi để thử.</p>
+            ) : preview.isError ? (
+              <IconText className="text-xs">{preview.error.message}</IconText>
+            ) : !result ? (
+              // Khung của kết quả: nhãn "Buổi tới", số tải lớn, hai dòng lý do.
+              <div role="status" aria-label="Đang tải">
+                <Skeleton className="h-3 w-14" />
+                <Skeleton className="mt-1.5 h-7 w-36" />
+                <Skeleton className="mt-2 h-4 w-full" />
+                <Skeleton className="mt-1 h-4 w-3/4" />
               </div>
-              <p className="mt-1.5 text-meta leading-normal">
-                <b className="text-[var(--color-accent)]">Quy tắc {hit}</b> · {result.messageVi}
-              </p>
-            </>
-          )}
+            ) : (
+              <>
+                <div className="text-xs text-[var(--color-text-muted)]">Buổi tới</div>
+                <div
+                  className={cn(
+                    "num text-stat font-extrabold",
+                    result.direction === "UP" && "text-[var(--color-success)]",
+                    result.direction === "DOWN" && "text-[var(--color-danger)]",
+                    result.direction === "SUBSTITUTE" && "text-[var(--color-warn)]",
+                  )}
+                >
+                  {result.direction === "SUBSTITUTE"
+                    ? "Thay bài"
+                    : result.direction === "HOLD"
+                      ? `Giữ ${KG.format(result.newLoadKg)} kg`
+                      : `${KG.format(result.newLoadKg)} kg (${(result.deltaKg ?? 0) > 0 ? "+" : "−"}${KG.format(Math.abs(result.deltaKg ?? 0))})`}
+                </div>
+                <p className="mt-1.5 text-meta leading-normal">
+                  <b className="text-[var(--color-accent)]">Quy tắc {hit}</b> · {result.messageVi}
+                </p>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
