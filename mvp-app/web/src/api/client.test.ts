@@ -343,6 +343,18 @@ describe("api.uploadForm — gửi video có tiến độ", () => {
     await expect(done).rejects.toThrow(/Mạng chậm/)
   })
 
+  it("phiên hết hạn giữa lúc gửi thì tiến độ về 0, nút Huỷ không bị khoá ở 100%", async () => {
+    // Cloudflare nhận trọn video rồi mới trả 401: thanh đã lên 100% nhưng máy chủ chưa nhận gì.
+    const onProgress = vi.fn()
+    const done = send(onProgress)
+
+    FakeXhr.last.upload.onprogress!({ lengthComputable: true, loaded: 100, total: 100 })
+    FakeXhr.last.respond(401, null)
+
+    await expect(done).rejects.toBeInstanceOf(ApiError)
+    expect(onProgress.mock.calls.map((call) => call[0])).toEqual([1, 0])
+  })
+
   it("đã huỷ từ trước thì không gửi gì", async () => {
     const controller = new AbortController()
     controller.abort()

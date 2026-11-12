@@ -180,6 +180,9 @@ function upload<T>(path: string, form: FormData, opts: UploadOptions, isRetry = 
     xhr.send(form)
   }).then(async (xhr) => {
     if (xhr.status === 401 && !isRetry) {
+      // Cloudflare nhận trọn video rồi mới trả 401: thanh đã 100% nhưng máy chủ chưa nhận gì. Đưa về 0 để nút Huỷ
+      // (khoá ở 100%) mở lại trong lúc làm mới phiên, không thì mạng đứt lúc này là người dùng kẹt.
+      opts.onProgress(0)
       if (await tryRefresh()) return upload<T>(path, form, opts, true)
       clearSession()
       window.dispatchEvent(new Event(LOGGED_OUT_EVENT))
