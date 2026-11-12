@@ -13,16 +13,21 @@ import com.fitness.review.repository.VideoClipRepository;
 import com.fitness.review.repository.VideoReviewRequestRepository;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -33,6 +38,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class ReviewService {
 
+	private static final Logger log = LoggerFactory.getLogger(ReviewService.class);
 	private static final int MAX_CLIPS = 3;
 	// Nặng trước nhẹ sau: người dùng đọc lỗi trước, mục đạt cuối cùng.
 	private static final List<String> SEVERITY = List.of("FAIL", "WARN", "LOW_CONFIDENCE", "NOT_APPLICABLE", "PASS");
@@ -95,12 +101,39 @@ public class ReviewService {
 		}
 
 		VideoReviewRequest request = requests.save(new VideoReviewRequest(userId, exerciseId));
+		List<String> storedKeys = new ArrayList<>();
+		deleteIfRolledBack(storedKeys);
 		for (int i = 0; i < files.size(); i++) {
 			MultipartFile file = files.get(i);
 			String viewpoint = viewpoints != null && i < viewpoints.size() ? viewpoints.get(i) : null;
-			clips.save(new VideoClip(request.getId(), clipStorage.store(file), viewpoint, file.getSize()));
+			String key = clipStorage.store(file);
+			storedKeys.add(key);
+			clips.save(new VideoClip(request.getId(), key, viewpoint, file.getSize()));
 		}
 		return toResponse(request, exercise);
+	}
+
+	/**
+	 * File clip ghi ra đĩa trước khi giao dịch chốt. Giao dịch lùi lại (clip sau ghi lỗi, DB lỗi lúc chốt) thì không còn
+	 * dòng video_clips nào trỏ tới các file đã ghi, ClipCleanupJob chỉ dọn theo dòng nên không bao giờ thấy chúng.
+	 * Còn sót: tiến trình chết giữa lúc ghi file và lúc chốt.
+	 */
+	private void deleteIfRolledBack(List<String> storedKeys) {
+		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+			@Override
+			public void afterCompletion(int status) {
+				if (status != STATUS_ROLLED_BACK) {
+					return;
+				}
+				for (String key : storedKeys) {
+					try {
+						clipStorage.delete(key);
+					} catch (RuntimeException e) {
+						log.warn("Không xoá được clip {} của lần gửi bị huỷ", key, e);
+					}
+				}
+			}
+		});
 	}
 
 	public List<ReviewResponse> list(UUID userId) {

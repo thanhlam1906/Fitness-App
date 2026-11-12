@@ -34,6 +34,12 @@ public class ClipStorage {
 			Files.createDirectories(target.getParent());
 			file.transferTo(target);
 		} catch (IOException e) {
+			// Ghi dở (đĩa đầy giữa chừng): không dòng video_clips nào trỏ tới phần đã ghi, ClipCleanupJob không thấy.
+			try {
+				Files.deleteIfExists(target);
+			} catch (IOException cleanup) {
+				e.addSuppressed(cleanup);
+			}
 			throw new UncheckedIOException("Không ghi được clip " + key, e);
 		}
 		return key;
