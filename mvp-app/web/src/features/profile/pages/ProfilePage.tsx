@@ -47,7 +47,7 @@ export function ProfilePage() {
   return (
     <SettingsSubLayout title="Hồ sơ">
       <div className="mt-5 flex flex-col gap-2">
-        <EditableRow label="Cân nặng" value={formatKg(metric?.weightKg)} accent>
+        <EditableRow label="Cân nặng" value={formatKg(metric?.weightKg)}>
           {(close) => (
             <MetricEditor
               unit="kg"
@@ -154,12 +154,10 @@ export function ProfilePage() {
 function EditableRow({
   label,
   value,
-  accent = false,
   children,
 }: {
   label: string
   value: string
-  accent?: boolean
   children: (close: () => void) => ReactNode
 }) {
   const [open, setOpen] = useState(false)
@@ -168,14 +166,14 @@ function EditableRow({
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="text-[11px] text-[var(--color-text-muted)]">{label}</div>
-          <div className="num mt-0.5 truncate text-[19px] font-bold">{value}</div>
+          {/* Xuống dòng thay vì cắt: dòng Thiết bị khai đủ 4–5 món là bị cắt mất món cuối. */}
+          <div className="num mt-0.5 text-[19px] font-bold">{value}</div>
         </div>
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
           className={cn(
-            "-my-3 flex-none rounded-[var(--radius-sm)] py-3 text-[13px]",
-            accent ? "text-[var(--color-accent)]" : "text-[var(--color-text-muted)]",
+            "-my-3 flex-none rounded-[var(--radius-sm)] py-3 text-[13px] text-[var(--color-text-muted)]",
             SHEET_FOCUS,
           )}
         >

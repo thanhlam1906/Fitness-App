@@ -195,7 +195,8 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
         </div>
       </div>
 
-      {error && <IconText className="mt-3 text-xs">{error}</IconText>}
+      {/* Chưa chọn ngày nào thì nút Tạo đã mờ sẵn; báo lỗi khi người dùng chưa kịp làm gì là mắng oan. */}
+      {error && Object.keys(draft).length > 0 && <IconText className="mt-3 text-xs">{error}</IconText>}
       {createProgram.isError && (
         <IconText className="mt-3">Tạo lịch thất bại: {createProgram.error.message}</IconText>
       )}

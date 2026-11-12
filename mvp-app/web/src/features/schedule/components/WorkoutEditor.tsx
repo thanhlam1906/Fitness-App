@@ -1,4 +1,4 @@
-import { useState, type Dispatch, type ReactNode, type SetStateAction } from "react"
+import { useEffect, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react"
 import { Plus, X } from "lucide-react"
 import { Sheet, SHEET_FOCUS, SheetHeader } from "@/components/ui/sheet"
 import { ExercisePicker } from "@/features/schedule/components/ExercisePicker"
@@ -168,6 +168,20 @@ function EditBody({
     setPicking(false)
     setFromPicker(true)
   }
+  // Esc ở trang con là "Quay lại": để <dialog> nhận thì đóng cả khung, mất nháp đang sửa. Bắt ở sự kiện cancel
+  // của <dialog> chứ không ở keydown: bấm vào chỗ trống thì focus rời trang con, keydown không đi qua đây nữa.
+  const pickerRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!picking) return
+    const dialog = pickerRef.current?.closest("dialog")
+    const back = (e: Event) => {
+      e.preventDefault()
+      setPicking(false)
+      setFromPicker(true)
+    }
+    dialog?.addEventListener("cancel", back)
+    return () => dialog?.removeEventListener("cancel", back)
+  }, [picking])
 
   const changes = diffDraft(original, rows)
   const dirty = changes.updates.length + changes.adds.length + changes.removes.length > 0
@@ -197,7 +211,7 @@ function EditBody({
     return (
       <>
         <SheetHeader title="Thêm bài" cancelLabel="Quay lại" onCancel={closePicker} />
-        <div className="overflow-y-auto px-4 pb-7">
+        <div ref={pickerRef} className="overflow-y-auto px-4 pb-7">
           <ExercisePicker
             autoFocus
             exercises={active}

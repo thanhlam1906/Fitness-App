@@ -38,6 +38,10 @@ export function ExerciseLogger({
   const setIndexes = Array.from({ length: exercise.targetSets }, (_, i) => i + 1)
   // Set đang làm = set đầu tiên chưa log. Xong hết thì không set nào nổi lên.
   const activeSetIndex = setIndexes.find((i) => !loggedSets.some((s) => s.setIndex === i))
+  const reps =
+    exercise.targetRepsMax > exercise.targetReps
+      ? `${exercise.targetReps}–${exercise.targetRepsMax}`
+      : `${exercise.targetReps}`
 
   return (
     <div>
@@ -50,13 +54,13 @@ export function ExerciseLogger({
 
       <CoachingPanel exercise={exercise} />
 
+      {/* Chưa có tạ gợi ý thì số to là rep: một dấu "—" to cạnh ô Tạ đang ghi 0 đọc như hai số nói ngược nhau. */}
       <div className="mt-1.5 flex items-end gap-2.5">
         <span className="num text-[length:var(--text-load)] leading-none font-extrabold tracking-[-0.03em]">
-          {exercise.targetLoadKg == null ? "—" : formatKg(exercise.targetLoadKg).replace(" kg", "")}
+          {exercise.targetLoadKg == null ? reps : formatKg(exercise.targetLoadKg).replace(" kg", "")}
         </span>
         <span className="num pb-2 text-xl font-semibold text-[var(--color-text-muted)]">
-          kg × {exercise.targetReps}
-          {exercise.targetRepsMax > exercise.targetReps && `–${exercise.targetRepsMax}`} rep
+          {exercise.targetLoadKg == null ? "rep" : `kg × ${reps} rep`}
         </span>
       </div>
 

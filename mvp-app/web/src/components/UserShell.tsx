@@ -3,6 +3,7 @@ import { CalendarDays, Camera, Settings } from "lucide-react"
 import { AssistantTabIcon } from "@/components/AssistantMark"
 import { NavLink, useLocation } from "react-router"
 import { cn } from "@/lib/cn"
+import { SHEET_FOCUS } from "@/components/ui/sheet"
 
 /**
  * Bản user là màn điện thoại (design dựng trong khung 402×874), nên nội dung
@@ -39,8 +40,10 @@ export function UserShell({ children }: { children: ReactNode }) {
                 to={tab.to}
                 className={({ isActive }) =>
                   cn(
-                    "flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-semibold",
+                    "flex flex-1 flex-col items-center gap-1 rounded-[var(--radius-sm)] py-2.5 text-[11px] font-semibold",
                     isActive ? "text-[var(--color-accent)]" : "text-[var(--color-text-muted)]",
+                    // Cùng kiểu viền focus với nút: viền mặc định của trình duyệt lạc tông.
+                    SHEET_FOCUS,
                   )
                 }
               >
