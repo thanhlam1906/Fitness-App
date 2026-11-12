@@ -58,7 +58,9 @@ def delete_clips(db, storage, request_id: str) -> None:
         try:
             storage.delete(clip.storage_key)
         except OSError:
+            # Không đánh dấu: ClipCleanupJob chỉ dọn dòng chưa đánh dấu, đánh dấu ở đây là file nằm mãi.
             log.exception("Không xoá được clip %s — ClipCleanupJob sẽ dọn sau", clip.storage_key)
+            continue
         db.mark_clip_deleted(clip.id)
 
 

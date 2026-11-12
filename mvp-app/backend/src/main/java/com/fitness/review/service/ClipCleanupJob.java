@@ -63,13 +63,22 @@ public class ClipCleanupJob {
 	@Transactional
 	public void deleteOrphanClips() {
 		List<VideoClip> orphans = clips.findOrphans(Instant.now().minus(ORPHAN_AFTER));
+		int deleted = 0;
 		for (VideoClip clip : orphans) {
-			clipStorage.delete(clip.getStorageKey());
+			// Một file kẹt (sai quyền, ổ chỉ đọc) không được chặn cả lượt: để lỗi ném ra thì giao dịch lùi lại, mọi clip
+			// đứng sau nó nằm mãi trên đĩa. Dòng của file kẹt để nguyên chưa đánh dấu, lượt sau thử lại.
+			try {
+				clipStorage.delete(clip.getStorageKey());
+			} catch (RuntimeException e) {
+				log.warn("Không xoá được clip mồ côi {}", clip.getStorageKey(), e);
+				continue;
+			}
 			clip.markDeleted();
 			clips.save(clip);
+			deleted++;
 		}
-		if (!orphans.isEmpty()) {
-			log.warn("Xoá {} clip mồ côi quá 24h — analyzer lẽ ra phải xoá ngay sau khi chấm", orphans.size());
+		if (deleted > 0) {
+			log.warn("Xoá {} clip mồ côi quá 24h — analyzer lẽ ra phải xoá ngay sau khi chấm", deleted);
 		}
 	}
 

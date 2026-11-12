@@ -149,6 +149,24 @@ def test_no_active_checks_fails_after_deleting_clips():
         assert db.deleted == {"c1"} and not any(root.iterdir())
 
 
+def test_clip_that_cannot_be_deleted_stays_unmarked():
+    # Đánh dấu đã xoá trong khi file còn nằm đó thì ClipCleanupJob (chỉ dọn dòng chưa đánh dấu)
+    # không bao giờ dọn lại: file nằm mãi.
+    with tempfile.TemporaryDirectory() as d:
+        root = Path(d)
+        db, storage = setup(root, {"a.json": (SIDE, "SAGITTAL"), "b.json": (SIDE, "SAGITTAL")})
+        real_delete = storage.delete
+
+        def delete_fails_on_a(key):
+            if key == "a.json":
+                raise PermissionError("giả lỗi ổ đĩa")
+            real_delete(key)
+
+        storage.delete = delete_fails_on_a
+        process(job(), db, storage, NoReader(), CFG)
+        assert db.deleted == {"c2"} and (root / "a.json").exists()
+
+
 def test_request_without_exercise_fails():
     with tempfile.TemporaryDirectory() as d:
         db, storage = setup(Path(d), {"sagittal.json": (SIDE, "SAGITTAL")})
