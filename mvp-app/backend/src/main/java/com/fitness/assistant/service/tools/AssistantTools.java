@@ -218,29 +218,45 @@ public class AssistantTools {
 
 	// ── B1: "Tại sao tuần này giảm tải?" ────────────────────────────────────
 
+	/**
+	 * loadBeforeKg, loadAfterKg đọc từ lịch: thiếu chúng thì câu "từ 40 lên 42,5 kg" hay "mức tạ hiện tại" không
+	 * có số nào để dựa, model tự cộng và NumberGuard chặn (NF14 staging 11-10).
+	 */
 	public record LoadChangeExplanation(
 			boolean exerciseFound, boolean decisionFound, String exerciseName, String direction,
-			BigDecimal deltaKg, String explanation) {
+			BigDecimal deltaKg, BigDecimal loadBeforeKg, BigDecimal loadAfterKg, String explanation) {
 	}
 
 	@Tool(description = "Giải thích vì sao tải (mức tạ) của MỘT bài tập cụ thể vừa tăng, giảm, hay giữ nguyên "
-			+ "ở lần gần nhất. Trả về đúng lời giải thích đã lưu trong hệ thống, không tự bịa lý do khác.")
+			+ "ở lần gần nhất, và mức tạ hiện tại của bài đó. Trả về đúng lời giải thích đã lưu trong hệ thống, "
+			+ "không tự bịa lý do khác. loadBeforeKg là mức tạ ở buổi dẫn tới quyết định, loadAfterKg là mức tạ "
+			+ "các buổi sau đó (mức tạ hiện tại); null nghĩa là lịch đang chạy không có buổi đó, KHÔNG tự cộng trừ deltaKg.")
 	public LoadChangeExplanation explainLoadChange(
 			@ToolParam(description = "slug của bài tập, ví dụ 'barbell-back-squat'") String exerciseSlug) {
 		Optional<Exercise> exercise = exercises.findBySlug(exerciseSlug);
 		if (exercise.isEmpty()) {
-			return logAndReturn(new LoadChangeExplanation(false, false, null, null, null,
+			return logAndReturn(new LoadChangeExplanation(false, false, null, null, null, null, null,
 					"Không tìm thấy bài tập với slug '" + exerciseSlug + "'."));
 		}
 		Optional<LoadDecision> decision = loadDecisions
 				.findFirstByUserIdAndExerciseIdOrderByEffectiveFromDesc(currentUser.id(), exercise.get().getId());
 		if (decision.isEmpty()) {
-			return logAndReturn(new LoadChangeExplanation(true, false, exercise.get().getNameEn(), null, null,
-					"Chưa có quyết định thay đổi tải nào được ghi nhận cho bài này."));
+			return logAndReturn(new LoadChangeExplanation(true, false, exercise.get().getNameEn(), null, null, null,
+					null, "Chưa có quyết định thay đổi tải nào được ghi nhận cho bài này."));
 		}
 		LoadDecision d = decision.get();
+		// Quyết định ghi theo ngày buổi vừa tập, mức tạ mới áp cho các buổi sau ngày đó (ProgressionApplicationService).
+		List<Object[]> loads = scheduledExercises.loadsByDate(d.getProgramId(), d.getExerciseId());
+		BigDecimal before = loads.stream().filter(row -> d.getEffectiveFrom().equals(row[0]))
+				.findFirst().map(row -> (BigDecimal) row[1]).orElse(null);
+		// Quyết định thuộc chương trình cũ thì mức tạ sau đó không còn là mức tạ hiện tại.
+		boolean activeProgram = programs.findByUserIdAndStatus(currentUser.id(), "ACTIVE")
+				.map(p -> p.getId().equals(d.getProgramId())).orElse(false);
+		BigDecimal after = !activeProgram ? null : loads.stream()
+				.filter(row -> d.getEffectiveFrom().isBefore((LocalDate) row[0]))
+				.findFirst().map(row -> (BigDecimal) row[1]).orElse(null);
 		return logAndReturn(new LoadChangeExplanation(true, true, exercise.get().getNameEn(), d.getDirection(),
-				d.getDeltaKg(), d.getMessageVi()));
+				d.getDeltaKg(), before, after, d.getMessageVi()));
 	}
 
 	private LoadChangeExplanation logAndReturn(LoadChangeExplanation result) {

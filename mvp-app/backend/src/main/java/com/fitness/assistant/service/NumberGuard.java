@@ -28,7 +28,14 @@ public class NumberGuard {
 		Matcher m = NUMBER.matcher(text == null ? "" : text);
 		while (m.find()) {
 			// "2026-10-05" tách ra "05", người đọc viết "5/10": cùng một số, so như nhau.
-			numbers.add(m.group().replaceFirst("^0+(?=\\d)", ""));
+			// Tool trả BigDecimal "42.50", người Việt viết "42,5": cũng cùng một số (NF14 staging 11-10).
+			String number = m.group().replaceFirst("^0+(?=\\d)", "");
+			// Chỉ 1-2 chữ số sau dấu mới chắc là thập phân ("42,5", "42.50" như cột tải scale 2). Nhóm 3 chữ số
+			// có thể là phân cách nghìn ("2.000 kcal"): đổi thì thành "2" và khớp nhầm ngày, số hiệp.
+			if (number.matches("\\d+[.,]\\d{1,2}")) {
+				number = number.replace(',', '.').replaceFirst("\\.?0+$", "");
+			}
+			numbers.add(number);
 		}
 		return numbers;
 	}

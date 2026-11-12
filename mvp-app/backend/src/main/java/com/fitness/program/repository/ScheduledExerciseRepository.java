@@ -11,6 +11,14 @@ public interface ScheduledExerciseRepository extends JpaRepository<ScheduledExer
 
 	List<ScheduledExercise> findByScheduledWorkoutId(UUID scheduledWorkoutId);
 
+	/** Trợ lý (explainLoadChange): mức tạ của một bài qua từng buổi trong lịch. Cột: scheduledOn, targetLoadKg. */
+	@Query("select sw.scheduledOn, se.targetLoadKg "
+			+ "from ScheduledExercise se join ScheduledWorkout sw on sw.id = se.scheduledWorkoutId "
+			+ "where sw.programId = :programId and se.exerciseId = :exerciseId "
+			// Dời lịch có thể để buổi vừa tập và một buổi chưa tập cùng ngày: buổi đã tập mang mức tạ trước khi đổi.
+			+ "order by sw.scheduledOn, case when sw.status = 'DONE' then 0 else 1 end")
+	List<Object[]> loadsByDate(UUID programId, UUID exerciseId);
+
 	/**
 	 * Trang "Buổi tập" của admin: mọi bài trong lịch các ngày [from, to].
 	 * Cột: userId, templateId, exerciseId, substitutedFrom.

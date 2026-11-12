@@ -39,4 +39,26 @@ class NumberGuardTest {
 		assertThat(guard.isGrounded("Chương trình kết thúc ngày 9/11/2026.", "programEnd=2026-11-09")).isTrue();
 		assertThat(guard.isGrounded("Nghỉ 0.5 phút.", "nghỉ 5 phút")).isFalse(); // 0.5 không thành 5
 	}
+
+	/** Kết quả tool là BigDecimal "42.50", người Việt viết "42,5": cùng một giá trị, so như nhau. */
+	@Test
+	void decimalWrittenVietnameseStyle_groundedByBigDecimalFromTool() {
+		String toolResult = "deltaKg=2.50, loadBeforeKg=40.00, loadNowKg=42.50";
+		assertThat(guard.isGrounded("Tăng 2,5 kg, từ 40 kg lên 42,5 kg.", toolResult)).isTrue();
+		assertThat(guard.isGrounded("Tăng 2.5 kg lên 42.5kg.", toolResult)).isTrue();
+	}
+
+	@Test
+	void decimalNormalizing_doesNotMakeDifferentValuesEqual() {
+		String toolResult = "loadNowKg=42.50";
+		assertThat(guard.isGrounded("Mức tạ là 47,5 kg.", toolResult)).isFalse();
+		assertThat(guard.isGrounded("Mức tạ là 4,25 kg.", toolResult)).isFalse();
+		assertThat(guard.isGrounded("Mức tạ là 425 kg.", toolResult)).isFalse();
+		assertThat(guard.isGrounded("Mức tạ là 42 kg.", toolResult)).isFalse();
+		assertThat(guard.isGrounded("Làm 10 rep.", "1.0")).isFalse(); // bỏ số 0 sau dấu thập phân, không bỏ số 0 của số nguyên
+		// Dấu chấm phân cách nghìn kiểu Việt không phải dấu thập phân.
+		assertThat(guard.isGrounded("Bạn cần 2.000 kcal.", "ngày 2026-11-02, 2 hiệp")).isFalse();
+		assertThat(guard.isGrounded("Đốt 2.500 kcal.", "deltaKg=2.50")).isFalse();
+		assertThat(guard.isGrounded("Làm 10 rep.", "đi 10.000 bước")).isFalse();
+	}
 }

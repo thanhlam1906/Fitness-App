@@ -15,11 +15,22 @@ import com.fitness.assistant.entity.AssistantMessage;
 import com.fitness.assistant.repository.AssistantMessageRepository;
 import com.fitness.assistant.service.tools.AssistantTools;
 import com.fitness.auth.entity.Role;
+import com.fitness.content.repository.ExerciseRepository;
+import com.fitness.program.entity.LoadDecision;
+import com.fitness.program.entity.Program;
+import com.fitness.program.entity.ScheduledExercise;
+import com.fitness.program.entity.ScheduledWorkout;
+import com.fitness.program.repository.LoadDecisionRepository;
+import com.fitness.program.repository.ProgramRepository;
+import com.fitness.program.repository.ScheduledExerciseRepository;
+import com.fitness.program.repository.ScheduledWorkoutRepository;
 import com.fitness.support.PostgresIntegrationTest;
 import io.github.resilience4j.bulkhead.Bulkhead;
 import io.github.resilience4j.bulkhead.BulkheadRegistry;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -63,6 +74,16 @@ class AssistantServiceIntegrationTest extends PostgresIntegrationTest {
 	private CircuitBreakerRegistry circuitBreakers;
 	@Autowired
 	private BulkheadRegistry bulkheads;
+	@Autowired
+	private ProgramRepository programs;
+	@Autowired
+	private ScheduledWorkoutRepository scheduledWorkouts;
+	@Autowired
+	private ScheduledExerciseRepository scheduledExercises;
+	@Autowired
+	private ExerciseRepository exercises;
+	@Autowired
+	private LoadDecisionRepository loadDecisions;
 
 	// Bậc 2 (§5.2): HybridRetriever gọi VectorRetriever gọi embeddingModel.embed()
 	// cho mọi câu KHÔNG bị SafetyGate chặn. Test không cần đúng nghĩa embedding,
@@ -339,6 +360,79 @@ class AssistantServiceIntegrationTest extends PostgresIntegrationTest {
 		assertThat(answer.guardResult()).isEqualTo("OK");
 		// Bản lưu là câu cuối, không phải câu model chép.
 		assertThat(messages.findById(answer.messageId()).orElseThrow().getContent()).isEqualTo(answer.text());
+	}
+
+	/**
+	 * NF14 staging 11-10: squat vừa tăng 40 → 42,5 kg. Model viết số kiểu Việt ("2,5", "42,5") trong khi kết quả tool
+	 * là BigDecimal "2.50", và tool không trả mức tạ trước/sau, nên câu đúng bị NumberGuard chặn oan.
+	 */
+	@Test
+	void ask_viSaoTaiSquatThayDoi_traLoiDungSoCuaTool_khongBiChan() {
+		UUID userId = squatVuaTangTai();
+		when(chatModel.call(any(org.springframework.ai.chat.prompt.Prompt.class))).thenAnswer(inv -> {
+			assistantTools.explainLoadChange("barbell-back-squat");
+			return reply("Tải squat của bạn tăng 2,5 kg, từ 40 kg lên 42,5 kg, vì bạn đủ rep mọi set tuần trước.");
+		});
+
+		AssistantService.Answer answer = assistantService.ask(userId, UUID.randomUUID(),
+				"Vì sao tải squat của tôi vừa thay đổi?");
+
+		assertThat(answer.guardResult()).isEqualTo("OK");
+		assertThat(answer.text()).contains("42,5 kg");
+	}
+
+	@Test
+	void ask_mucTaSquatHienTai_traLoiDungSoCuaTool_khongBiChan() {
+		UUID userId = squatVuaTangTai();
+		when(chatModel.call(any(org.springframework.ai.chat.prompt.Prompt.class))).thenAnswer(inv -> {
+			assistantTools.explainLoadChange("barbell-back-squat");
+			return reply("Mức tạ squat hiện tại của bạn là 42,5 kg.");
+		});
+
+		AssistantService.Answer answer = assistantService.ask(userId, UUID.randomUUID(),
+				"Mức tạ squat hiện tại của tôi là bao nhiêu?");
+
+		assertThat(answer.guardResult()).isEqualTo("OK");
+	}
+
+	/** Đọc được số kiểu Việt không có nghĩa là nới chốt: mức tạ tool không trả vẫn là số bịa. */
+	@Test
+	void ask_mucTaSquatHienTai_soBia_vanBiChan() {
+		UUID userId = squatVuaTangTai();
+		when(chatModel.call(any(org.springframework.ai.chat.prompt.Prompt.class))).thenAnswer(inv -> {
+			assistantTools.explainLoadChange("barbell-back-squat");
+			return reply("Mức tạ squat hiện tại của bạn là 47,5 kg.");
+		});
+
+		AssistantService.Answer answer = assistantService.ask(userId, UUID.randomUUID(),
+				"Mức tạ squat hiện tại của tôi là bao nhiêu?");
+
+		assertThat(answer.guardResult()).isEqualTo("NUMBERS_UNGROUNDED");
+		assertThat(answer.text()).doesNotContain("47,5");
+	}
+
+	/** Buổi hôm qua squat 40 kg, đủ rep → quyết định tăng 2,5 kg, buổi tới squat 42,5 kg (như ProgressionApplicationService). */
+	private UUID squatVuaTangTai() {
+		UUID squatId = exercises.findBySlug("barbell-back-squat").orElseThrow().getId();
+		UUID userId = newAuthedUser(Role.USER).userId();
+		LocalDate today = LocalDate.now();
+		Program program = programs.save(new Program(userId, null, "{}", new Short[0], today.minusDays(7)));
+		ScheduledWorkout done = saveSquatWorkout(program.getId(), today.minusDays(1), squatId, new BigDecimal("40.00"));
+		done.updateStatus("DONE");
+		scheduledWorkouts.save(done);
+		saveSquatWorkout(program.getId(), today.plusDays(1), squatId, new BigDecimal("42.50"));
+		loadDecisions.save(new LoadDecision(userId, program.getId(), squatId, today.minusDays(1), "UP",
+				new BigDecimal("2.50"), "DOUBLE_PROGRESSION_ALL_REPS_MET", "{}",
+				"Đủ rep mọi set tuần trước → tăng tải"));
+		asUser(userId);
+		return userId;
+	}
+
+	private ScheduledWorkout saveSquatWorkout(UUID programId, LocalDate date, UUID squatId, BigDecimal loadKg) {
+		ScheduledWorkout workout = scheduledWorkouts.save(new ScheduledWorkout(programId, date, (short) 1, "Full Body"));
+		scheduledExercises.save(new ScheduledExercise(workout.getId(), squatId, (short) 1, (short) 3, (short) 5,
+				(short) 5, loadKg, (short) 180));
+		return workout;
 	}
 
 	// DB Testcontainers dùng chung mọi test class: bài thử chèn bằng JDBC thì xoá, không để lại cho class khác.

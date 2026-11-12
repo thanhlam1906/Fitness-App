@@ -77,6 +77,10 @@ public class LoadDecision {
 		return id;
 	}
 
+	public UUID getProgramId() {
+		return programId;
+	}
+
 	public UUID getExerciseId() {
 		return exerciseId;
 	}
