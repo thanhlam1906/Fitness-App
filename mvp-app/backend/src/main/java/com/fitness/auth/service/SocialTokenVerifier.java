@@ -6,10 +6,15 @@ import java.util.HexFormat;
 import java.util.Map;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.json.JsonParseException;
+import org.springframework.boot.json.JsonParserFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.server.ResponseStatusException;
@@ -24,6 +29,8 @@ public class SocialTokenVerifier {
 
 	public record Identity(String email, String name) {
 	}
+
+	private static final Logger log = LoggerFactory.getLogger(SocialTokenVerifier.class);
 
 	private static final String INVALID = "Phiên đăng nhập Google/Facebook không hợp lệ, thử lại";
 
@@ -57,7 +64,7 @@ public class SocialTokenVerifier {
 		}
 		Map<?, ?> info = call("Google", () -> http.get()
 				.uri("https://oauth2.googleapis.com/tokeninfo?access_token={t}", accessToken)
-				.retrieve().body(Map.class));
+				.retrieve().body(byte[].class));
 		if (!googleClientId.equals(info.get("aud"))) {
 			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, INVALID);
 		}
@@ -69,7 +76,7 @@ public class SocialTokenVerifier {
 		Map<?, ?> user = call("Google", () -> http.get()
 				.uri("https://openidconnect.googleapis.com/v1/userinfo")
 				.header("Authorization", "Bearer " + accessToken)
-				.retrieve().body(Map.class));
+				.retrieve().body(byte[].class));
 		return new Identity(email, nameOr(user.get("name"), email));
 	}
 
@@ -80,7 +87,7 @@ public class SocialTokenVerifier {
 		Map<?, ?> debug = call("Facebook", () -> http.get()
 				.uri("https://graph.facebook.com/debug_token?input_token={t}&access_token={app}",
 						accessToken, facebookAppId + "|" + facebookAppSecret)
-				.retrieve().body(Map.class));
+				.retrieve().body(byte[].class));
 		Map<?, ?> data = debug.get("data") instanceof Map<?, ?> d ? d : Map.of();
 		if (!Boolean.TRUE.equals(data.get("is_valid")) || !facebookAppId.equals(text(data.get("app_id")))) {
 			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, INVALID);
@@ -89,7 +96,7 @@ public class SocialTokenVerifier {
 		Map<?, ?> me = call("Facebook", () -> http.get()
 				.uri("https://graph.facebook.com/me?fields=name,email&access_token={t}&appsecret_proof={p}",
 						accessToken, hmacSha256Hex(facebookAppSecret, accessToken))
-				.retrieve().body(Map.class));
+				.retrieve().body(byte[].class));
 		String email = text(me.get("email"));
 		if (email == null) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -99,13 +106,32 @@ public class SocialTokenVerifier {
 	}
 
 	/** Nhà cung cấp trả 4xx = token sai hay hết hạn; còn lại (5xx, mất mạng) là lỗi phía họ, người dùng thử lại. */
-	private static Map<?, ?> call(String provider, java.util.function.Supplier<Map<?, ?>> request) {
+	private static Map<?, ?> call(String provider, java.util.function.Supplier<byte[]> request) {
 		try {
-			Map<?, ?> body = request.get();
-			return body == null ? Map.of() : body;
+			// Đọc byte rồi tự parse: Graph API có lúc trả JSON mà nhãn Content-Type không phải application/json
+			// (thử thật 11-07, RestClient ném UnknownContentTypeException). Giải mã UTF-8 vì JSON luôn là UTF-8;
+			// đọc thẳng thành String thì nhãn thiếu charset làm Spring dùng ISO-8859-1, vỡ dấu tên tiếng Việt.
+			byte[] raw = request.get();
+			String body = raw == null ? "" : new String(raw, StandardCharsets.UTF_8);
+			// Thân là chữ null (JSON hợp lệ) thì parser trả null; về Map rỗng để các phép kiểm phía sau từ chối, không NPE.
+			Map<?, ?> parsed = body.isBlank() ? null : JsonParserFactory.getJsonParser().parseMap(body);
+			return parsed == null ? Map.of() : parsed;
+		} catch (JsonParseException e) {
+			// Thân không phải JSON (trang bảo trì, proxy chặn): lỗi phía họ, như 5xx, không phải lỗi 500 của mình.
+			log.warn("Gọi {} lỗi: thân trả về không phải JSON", provider);
+			throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+					"Không kết nối được " + provider + ", thử lại sau");
 		} catch (HttpClientErrorException e) {
+			// Chỉ ghi mã: đặt sai APP_SECRET thì mọi lần gọi đều 4xx, không có dòng này thì log trống, khó ra nguyên nhân.
+			log.warn("Gọi {} bị từ chối: {}", provider, e.getStatusCode());
 			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, INVALID);
 		} catch (RestClientException e) {
+			// Không ghi e.getMessage() lẫn thân lỗi: URL debug_token chứa APP_ID|SECRET, và thân lỗi Graph API
+			// có thể chép lại token nhận được. Chỉ ghi mã, độ dài thân, tên lớp lỗi.
+			String detail = e instanceof HttpStatusCodeException h
+					? h.getStatusCode() + " (" + h.getResponseBodyAsByteArray().length + " byte)"
+					: e.getClass().getSimpleName() + (e.getCause() == null ? "" : " / " + e.getCause().getClass().getSimpleName());
+			log.warn("Gọi {} lỗi: {}", provider, detail);
 			throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
 					"Không kết nối được " + provider + ", thử lại sau");
 		}

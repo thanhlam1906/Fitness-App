@@ -72,6 +72,13 @@ class SocialTokenVerifierTest {
 	}
 
 	@Test
+	void google_nullBody_is401NotCrash() {
+		json(GOOGLE_INFO, "null");
+
+		assertStatus(() -> verifier.google("tok"), HttpStatus.UNAUTHORIZED);
+	}
+
+	@Test
 	void google_missingName_fallsBackToEmailPrefix() {
 		json(GOOGLE_INFO, "{\"aud\":\"google-client\",\"email\":\"lam@gmail.com\",\"email_verified\":true}");
 		json(GOOGLE_USER, "{}");
@@ -86,6 +93,25 @@ class SocialTokenVerifierTest {
 				"{\"name\":\"Trần B\",\"email\":\"b@x.com\"}");
 
 		assertThat(verifier.facebook("tok")).isEqualTo(new SocialTokenVerifier.Identity("b@x.com", "Trần B"));
+	}
+
+	@Test
+	void facebook_jsonWithNonJsonContentType_stillParsed() {
+		// Không ghi charset: tên tiếng Việt vẫn phải đọc đúng vì JSON luôn là UTF-8.
+		MediaType js = MediaType.parseMediaType("text/javascript");
+		server.expect(requestTo(FB_DEBUG))
+				.andRespond(withSuccess("{\"data\":{\"app_id\":\"app-id\",\"is_valid\":true}}", js));
+		server.expect(requestTo("https://graph.facebook.com/me?fields=name,email&access_token=tok&appsecret_proof=" + FB_PROOF))
+				.andRespond(withSuccess("{\"name\":\"Trần B\",\"email\":\"b@x.com\"}", js));
+
+		assertThat(verifier.facebook("tok")).isEqualTo(new SocialTokenVerifier.Identity("b@x.com", "Trần B"));
+	}
+
+	@Test
+	void facebook_nonJsonBody_is502() {
+		server.expect(requestTo(FB_DEBUG)).andRespond(withSuccess("<html>bảo trì</html>", MediaType.TEXT_HTML));
+
+		assertStatus(() -> verifier.facebook("tok"), HttpStatus.BAD_GATEWAY);
 	}
 
 	@Test
