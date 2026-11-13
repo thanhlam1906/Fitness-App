@@ -1,3 +1,4 @@
+import { useRef, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import type { Exercise, Review } from "@/features/review/types"
 import { stillRunning } from "@/features/review/utils/reviewView"
@@ -36,18 +37,28 @@ export type Clip = { uri: string; name: string; type: string }
 /**
  * C4 — opt-in gửi clip nằm ở màn hướng dẫn quay, không ở nơi khác. Backend từ chối nếu thiếu, nên
  * không có đường nào gửi clip mà chưa đồng ý.
+ *
+ * Video vài chục MB qua 4G mất cả phút: trả thêm tiến độ tải lên (0–1) và `cancel` cho nút Huỷ, như web.
  */
 export function useSubmitReview() {
   const queryClient = useQueryClient()
-  return useMutation({
+  const [progress, setProgress] = useState(0)
+  const abort = useRef<AbortController | null>(null)
+  const mutation = useMutation({
     mutationFn: ({ exerciseId, clips, viewpoints }: { exerciseId: string; clips: Clip[]; viewpoints: string[] }) => {
       const form = new FormData()
       // FormData của React Native nhận { uri, name, type } thay cho File: nó tự đọc file từ uri khi gửi.
       clips.forEach((clip) => form.append("clips", clip as unknown as Blob))
       const query = new URLSearchParams({ exerciseId, optIn: "true" })
       viewpoints.forEach((v) => query.append("viewpoints", v))
-      return api.postForm<Review>(`/reviews?${query}`, form)
+      abort.current = new AbortController()
+      setProgress(0)
+      return api.uploadForm<Review>(`/reviews?${query}`, form, {
+        onProgress: setProgress,
+        signal: abort.current.signal,
+      })
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["reviews"] }),
   })
+  return { ...mutation, progress, cancel: () => abort.current?.abort() }
 }

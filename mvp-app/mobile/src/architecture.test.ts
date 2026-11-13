@@ -6,8 +6,8 @@ import path from "node:path"
 // Màn nằm ở app/ (expo-router), nên feature không có pages/.
 const MOBILE = path.resolve(__dirname, "..")
 const FOLDERS = new Set(["components", "api", "utils", "types"])
-// Đúng tên hàm của src/api/client.ts: del, postForm (không có delete).
-const API_CALL = /\bapi\.(get|post|postForm|put|patch|del)\b/
+// Đúng tên hàm của src/api/client.ts: del, postForm, uploadForm (không có delete).
+const API_CALL = /\bapi\.(get|post|postForm|uploadForm|put|patch|del)\b/
 
 function walk(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {

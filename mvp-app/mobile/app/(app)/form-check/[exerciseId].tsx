@@ -101,6 +101,9 @@ export default function FilmingGuideScreen() {
   // Quá cỡ thì máy chủ (hoặc Cloudflare, trên 100 MB) cắt kết nối, người dùng chỉ đọc được câu mất mạng sai lý do.
   const sizeProblem = clipSizeProblem(clips.map((c) => c.bytes))
   const quotaExceeded = submit.error instanceof ApiError && submit.error.status === 429
+  // Người dùng tự bấm Huỷ: không phải lỗi, không hiện câu nào.
+  const cancelled = submit.error?.name === "AbortError"
+  const sentPercent = Math.round(submit.progress * 100)
 
   /** Thêm video vào cuối, ô góc điền sẵn theo thứ tự thẻ hướng dẫn: quay đúng thứ tự thì không phải chỉnh. */
   function addClips(assets: ImagePicker.ImagePickerAsset[]) {
@@ -286,10 +289,26 @@ export default function FilmingGuideScreen() {
           Bạn đã dùng hết lượt chấm trong 7 ngày qua. Thử lại vào tuần sau.
         </IconText>
       )}
-      {submit.isError && !quotaExceeded && <IconText className="mt-3">{submit.error.message}</IconText>}
+      {submit.isError && !quotaExceeded && !cancelled && <IconText className="mt-3">{submit.error.message}</IconText>}
 
       <View className="mt-auto pt-6">
-        {clips.length < MAX_CLIPS && (
+        {submit.isPending && (
+          <View className="mb-3 flex-row items-center gap-3">
+            <View
+              accessibilityRole="progressbar"
+              accessibilityLabel="Đã gửi"
+              accessibilityValue={{ min: 0, max: 100, now: sentPercent }}
+              className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-2"
+            >
+              <View className="h-full rounded-full bg-accent" style={{ width: `${sentPercent}%` }} />
+            </View>
+            <Text className="w-10 text-right text-[13px] text-text-muted" style={{ fontVariant: ["tabular-nums"] }}>
+              {sentPercent}%
+            </Text>
+          </View>
+        )}
+        {/* Đang gửi thì thêm, bớt video cũng không đổi được lần gửi này: ẩn để khỏi tưởng là được. */}
+        {clips.length < MAX_CLIPS && !submit.isPending && (
           <View className="flex-row gap-2.5">
             <Button variant={clips.length === 0 ? "primary" : "secondary"} className="flex-1" onPress={record}>
               Quay video
@@ -300,18 +319,27 @@ export default function FilmingGuideScreen() {
           </View>
         )}
         {clips.length > 0 && (
-          <Button
-            className="mt-2.5 w-full"
-            disabled={!optIn || views.length === 0 || missing.length > 0 || tooLong || sizeProblem !== null || submit.isPending}
-            onPress={() =>
-              submit.mutate(
-                { exerciseId, clips: clips.map(({ uri, name, type }) => ({ uri, name, type })), viewpoints },
-                { onSuccess: (review) => router.replace(`/form-check/result/${review.id}`) },
-              )
-            }
-          >
-            {submit.isPending ? "Đang gửi…" : "Gửi chấm"}
-          </Button>
+          <View className={cn("flex-row gap-2.5", !submit.isPending && "mt-2.5")}>
+            {submit.isPending && (
+              // Đủ 100% là máy chủ đã nhận video: Huỷ lúc này không huỷ được lần chấm, chỉ khiến người dùng tưởng
+              // đã huỷ rồi gửi lại, mất thêm một lượt trong tuần.
+              <Button variant="secondary" className="flex-1" onPress={submit.cancel} disabled={submit.progress >= 1}>
+                Huỷ
+              </Button>
+            )}
+            <Button
+              className="flex-1"
+              disabled={!optIn || views.length === 0 || missing.length > 0 || tooLong || sizeProblem !== null || submit.isPending}
+              onPress={() =>
+                submit.mutate(
+                  { exerciseId, clips: clips.map(({ uri, name, type }) => ({ uri, name, type })), viewpoints },
+                  { onSuccess: (review) => router.replace(`/form-check/result/${review.id}`) },
+                )
+              }
+            >
+              {submit.isPending ? "Đang gửi…" : "Gửi chấm"}
+            </Button>
+          </View>
         )}
       </View>
     </Screen>
