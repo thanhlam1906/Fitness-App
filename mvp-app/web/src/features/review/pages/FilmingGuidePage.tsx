@@ -50,9 +50,10 @@ const ANGLE_GUIDE: Record<ViewCode, { image: string; alt: string; steps: string[
 }
 
 const BULLET = "flex gap-2 before:text-[var(--color-accent)] before:content-['•']"
-// <label> bọc ô chọn file: ô thật ẩn (sr-only) nên viền focus vẽ trên nhãn.
+// <label> bọc ô chọn file: ô thật ẩn (sr-only) nên viền focus vẽ trên nhãn. relative để nhãn là khung định vị
+// của ô sr-only (position: absolute): không có thì ô lấy body làm khung, bấm chọn video là trang bị cuộn đi.
 const FILE_FOCUS =
-  "cursor-pointer has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--color-accent)]"
+  "relative cursor-pointer has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--color-accent)]"
 
 /**
  * Màn 8 concept-frontend-v1.md — hướng dẫn quay và gửi video.

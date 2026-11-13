@@ -19,6 +19,9 @@ const TEXT: Record<ExerciseImageKind, { title: string; formats: string; use: str
 }
 
 const FOCUS = "focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--color-accent)]"
+// Nhãn bọc ô file sr-only (position: absolute) phải là khung định vị của nó. Không có thì ô file lấy body làm khung,
+// thoát khỏi cột cuộn của trang admin: bấm chọn ảnh, trình duyệt focus ô file và cuộn cả trang đi, khung app đen.
+const FILE_LABEL = "relative"
 const BUTTON = "inline-flex h-8 cursor-pointer items-center rounded-lg border border-[var(--color-border)] px-3 text-meta"
 
 /**
@@ -88,7 +91,7 @@ export function ImageSlot({
             )}
           </div>
           <div className="flex gap-2">
-            <label className={cn(BUTTON, "bg-[var(--color-surface-2)]", FOCUS)}>
+            <label className={cn(BUTTON, FILE_LABEL, "bg-[var(--color-surface-2)]", FOCUS)}>
               Thay ảnh
               {fileInput}
             </label>
@@ -119,6 +122,7 @@ export function ImageSlot({
       ) : (
         <label
           className={cn(
+            FILE_LABEL,
             "flex h-[170px] cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[var(--radius-md)] border-[1.5px] border-dashed border-[var(--color-border)] px-3 text-center text-meta text-[var(--color-text-muted)] hover:text-[var(--color-text)]",
             FOCUS,
           )}

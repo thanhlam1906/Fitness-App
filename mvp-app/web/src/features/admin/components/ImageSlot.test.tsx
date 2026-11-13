@@ -22,6 +22,15 @@ describe("ImageSlot", () => {
     expect(onDraft).toHaveBeenCalledWith(png)
   })
 
+  it("ô file ẩn định vị theo chính nhãn bấm, không theo body", () => {
+    // sr-only là position: absolute. Nhãn không có relative thì ô file lấy body làm khung, thoát khỏi cột cuộn
+    // của trang admin: bấm Chọn ảnh, trình duyệt focus ô file và cuộn cả trang đi, khung app thành vùng đen.
+    const { rerender } = render(<ImageSlot kind="still" savedUrl={null} draft={null} onDraft={vi.fn()} />)
+    expect(screen.getByLabelText(/Chọn ảnh/).closest("label")).toHaveClass("relative")
+    rerender(<ImageSlot kind="still" savedUrl="/anh.png" draft={null} onDraft={vi.fn()} />)
+    expect(screen.getByLabelText(/Thay ảnh/).closest("label")).toHaveClass("relative")
+  })
+
   it("file sai loại thì báo ngay, không đưa vào bản nháp", () => {
     const onDraft = vi.fn()
     render(<ImageSlot kind="still" savedUrl={null} draft={null} onDraft={onDraft} />)
