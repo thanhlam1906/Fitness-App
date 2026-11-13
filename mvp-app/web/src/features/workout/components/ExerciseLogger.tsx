@@ -45,7 +45,7 @@ export function ExerciseLogger({
 
   return (
     <div>
-      <div className="mt-5 text-[22px] font-bold">{exercise.exerciseName}</div>
+      <div className="mt-5 text-stat font-bold">{exercise.exerciseName}</div>
       {exercise.substitutedFromName && (
         <p className="mt-1 text-xs text-[var(--color-text-muted)]">
           thay cho {exercise.substitutedFromName}
@@ -59,7 +59,7 @@ export function ExerciseLogger({
         <span className="num text-[length:var(--text-load)] leading-none font-extrabold tracking-[-0.03em]">
           {exercise.targetLoadKg == null ? reps : formatKg(exercise.targetLoadKg).replace(" kg", "")}
         </span>
-        <span className="num pb-2 text-xl font-semibold text-[var(--color-text-muted)]">
+        <span className="num pb-2 text-lg font-semibold text-[var(--color-text-muted)]">
           {exercise.targetLoadKg == null ? "rep" : `kg × ${reps} rep`}
         </span>
       </div>
@@ -185,7 +185,7 @@ function ActiveSet({
   return (
     <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4">
       <div className="flex items-baseline justify-between">
-        <span className="text-[15px] font-bold">Set {setIndex}</span>
+        <span className="text-title font-bold">Set {setIndex}</span>
         {restSeconds != null && (
           <span className="num text-xs text-[var(--color-text-muted)]">
             nghỉ {formatRest(restSeconds)}
@@ -292,7 +292,7 @@ function NumberStepper({
 }) {
   const button =
     cn(
-      "size-11 flex-none rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] text-xl hover:border-[var(--color-text-muted)]",
+      "size-11 flex-none rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] text-lg hover:border-[var(--color-text-muted)]",
       SHEET_FOCUS,
     )
   return (
@@ -316,7 +316,7 @@ function NumberStepper({
           min={min}
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
-          className="num w-full min-w-0 bg-transparent text-center text-[26px] font-bold outline-none"
+          className="num w-full min-w-0 bg-transparent text-center text-page font-bold outline-none"
         />
         <button
           type="button"

@@ -257,7 +257,7 @@ function EditBody({
           .map((r) => (
             <div key={r.key} className="mt-2.5 rounded-[var(--radius-lg)] bg-[var(--color-bg)] p-3 first:mt-0">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[15px] font-bold">{r.name}</span>
+                <span className="text-title font-bold">{r.name}</span>
                 <button
                   type="button"
                   aria-label={`Xoá ${r.name} khỏi buổi này`}
@@ -299,7 +299,7 @@ function EditBody({
             autoFocus={fromPicker}
             onClick={() => setPicking(true)}
             className={cn(
-              "mt-3 flex h-12 w-full items-center justify-center gap-1.5 rounded-[var(--radius-lg)] border-[1.5px] border-dashed border-[var(--color-border)] text-[15px] font-bold",
+              "mt-3 flex h-12 w-full items-center justify-center gap-1.5 rounded-[var(--radius-lg)] border-[1.5px] border-dashed border-[var(--color-border)] text-title font-bold",
               SHEET_FOCUS,
             )}
           >
@@ -334,7 +334,7 @@ function Stepper({
         <button type="button" aria-label={`Giảm ${label}`} className={button} onClick={() => onStep(-1)}>
           −
         </button>
-        <span className="num text-[15px] font-extrabold" aria-live="polite">
+        <span className="num text-title font-extrabold" aria-live="polite">
           {value}
         </span>
         <button type="button" aria-label={`Tăng ${label}`} className={button} onClick={() => onStep(1)}>

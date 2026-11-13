@@ -40,7 +40,7 @@ export function UserShell({ children }: { children: ReactNode }) {
                 to={tab.to}
                 className={({ isActive }) =>
                   cn(
-                    "flex flex-1 flex-col items-center gap-1 rounded-[var(--radius-sm)] py-2.5 text-[11px] font-semibold",
+                    "flex flex-1 flex-col items-center gap-1 rounded-[var(--radius-sm)] py-2.5 text-2xs font-semibold",
                     isActive ? "text-[var(--color-accent)]" : "text-[var(--color-text-muted)]",
                     // Cùng kiểu viền focus với nút: viền mặc định của trình duyệt lạc tông.
                     SHEET_FOCUS,

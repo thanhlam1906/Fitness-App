@@ -114,9 +114,9 @@ export function FilmingGuidePage() {
   return (
     <FlowScreen>
       <BackLink to={`/form-check/${exerciseId}/live`}>Quay lại</BackLink>
-      <h1 className="mt-3 text-[28px] leading-tight font-extrabold tracking-[-0.02em]">{name}</h1>
+      <h1 className="mt-3 text-page leading-tight font-extrabold tracking-[-0.02em]">{name}</h1>
       {views.length > 0 && (
-        <p className="num mt-1.5 text-[13px] text-[var(--color-text-muted)]">
+        <p className="num mt-1.5 text-meta text-[var(--color-text-muted)]">
           Cần {views.length} video, mỗi góc một video.
         </p>
       )}
@@ -136,7 +136,7 @@ export function FilmingGuidePage() {
           return (
             <Section key={view} title={`Góc ${VIEW_NAME[view].toLowerCase()}`} meta={`video ${i + 1}`} open={i === 0}>
               <img src={angle.image} alt={angle.alt} className="block w-full rounded-[var(--radius-md)]" />
-              <ul className="mt-2.5 flex flex-col gap-1.5 text-[13px] leading-snug">
+              <ul className="mt-2.5 flex flex-col gap-1.5 text-meta leading-snug">
                 {angle.steps.map((step) => (
                   <li key={step} className={BULLET}>
                     {step}
@@ -151,7 +151,7 @@ export function FilmingGuidePage() {
         })}
       </div>
 
-      <ul className="mt-3 flex flex-col gap-1.5 rounded-[var(--radius-lg)] bg-[var(--color-surface)] px-3.5 py-3 text-[13px] leading-snug text-[var(--color-text-muted)]">
+      <ul className="mt-3 flex flex-col gap-1.5 rounded-[var(--radius-lg)] bg-[var(--color-surface)] px-3.5 py-3 text-meta leading-snug text-[var(--color-text-muted)]">
         {tips.map((tip) => (
           <li key={tip} className={BULLET}>
             {tip}
@@ -159,7 +159,7 @@ export function FilmingGuidePage() {
         ))}
       </ul>
 
-      <label className="mt-3 flex cursor-pointer gap-2.5 rounded-[var(--radius-lg)] bg-[var(--color-surface)] p-3.5 text-[13px] leading-relaxed">
+      <label className="mt-3 flex cursor-pointer gap-2.5 rounded-[var(--radius-lg)] bg-[var(--color-surface)] p-3.5 text-meta leading-relaxed">
         <Checkbox className="mt-0.5" checked={optIn} onChange={(e) => setOptIn(e.target.checked)} />
         Đồng ý gửi video để máy chấm. Video bị xoá ngay sau khi chấm.
       </label>
@@ -245,7 +245,7 @@ export function FilmingGuidePage() {
               style={{ width: `${sentPercent}%` }}
             />
           </div>
-          <span className="num w-10 text-right text-[13px] text-[var(--color-text-muted)]">{sentPercent}%</span>
+          <span className="num w-10 text-right text-meta text-[var(--color-text-muted)]">{sentPercent}%</span>
         </div>
       )}
 

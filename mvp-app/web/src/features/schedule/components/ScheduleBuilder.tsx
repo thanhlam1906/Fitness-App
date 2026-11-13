@@ -89,7 +89,7 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
             aria-pressed={d.value in draft}
             onClick={() => toggleDay(d.value)}
             className={cn(
-              "flex-1 rounded-lg py-3 text-center text-[13px]",
+              "flex-1 rounded-lg py-3 text-center text-meta",
               d.value in draft
                 ? "bg-[var(--color-accent)] font-bold text-[var(--color-accent-fg)]"
                 : "bg-[var(--color-surface)] text-[var(--color-text-muted)]",
@@ -102,7 +102,7 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
 
       {WEEKDAYS.filter((d) => d.value in draft).map((d) => (
         <div key={d.value} className="mt-5 rounded-[var(--radius-lg)] bg-[var(--color-surface)] p-3.5">
-          <span className="text-[15px] font-bold">Buổi {d.label}</span>
+          <span className="text-title font-bold">Buổi {d.label}</span>
 
           <div className="mt-3 space-y-3">
             {draft[d.value].map((ex, i) => (
@@ -112,7 +112,7 @@ export function ScheduleBuilder({ onCreated }: { onCreated: () => void }) {
                   aria-label={`Bài tập: ${nameOf(ex.exerciseId)}. Bấm để đổi`}
                   onClick={() => setPicking({ day: d.value, index: i })}
                   className={cn(
-                    "flex h-11 w-full items-center justify-between gap-2 rounded-[var(--radius-md)] bg-[var(--color-surface-2)] px-3 text-left text-[15px] font-semibold",
+                    "flex h-11 w-full items-center justify-between gap-2 rounded-[var(--radius-md)] bg-[var(--color-surface-2)] px-3 text-left text-title font-semibold",
                     SHEET_FOCUS,
                   )}
                 >
