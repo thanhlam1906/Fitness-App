@@ -150,7 +150,7 @@ class CorpusAdminControllerIntegrationTest extends PostgresIntegrationTest {
 		assertThat(detail.chunks()).extracting(ChunkPreviewResponse::heading)
 				.containsExactly("Giấc ngủ", "Tuần giảm tải");
 		assertThat(detail.replaces()).isNull();
-		assertThat(Files.exists(seen.get())).isFalse();
+		awaitDeleted(seen.get());
 	}
 
 	@Test
@@ -166,7 +166,7 @@ class CorpusAdminControllerIntegrationTest extends PostgresIntegrationTest {
 		assertThat(awaitDone(created.id())).isEqualTo("FAILED");
 		assertThat(jdbc.queryForObject("SELECT error FROM corpus_uploads WHERE id = ?", String.class, created.id()))
 				.isEqualTo(PdfExtractor.HYBRID_DOWN);
-		assertThat(Files.exists(seen.get())).isFalse();
+		awaitDeleted(seen.get());
 	}
 
 	@Test
@@ -341,6 +341,17 @@ class CorpusAdminControllerIntegrationTest extends PostgresIntegrationTest {
 			Thread.sleep(100);
 		}
 		throw new AssertionError("Quá 5 s vẫn PROCESSING: " + id);
+	}
+
+	/**
+	 * Luồng nền ghi trạng thái rồi mới xoá PDF tạm ở finally: thấy dòng đã xong chưa chắc file đã đi. Kiểm ngay
+	 * thì thỉnh thoảng rơi đúng khe giữa hai bước (CI 43396657900 đỏ), nên chờ như awaitDone.
+	 */
+	private static void awaitDeleted(Path pdf) throws InterruptedException {
+		for (int i = 0; i < 50 && Files.exists(pdf); i++) {
+			Thread.sleep(100);
+		}
+		assertThat(Files.exists(pdf)).as("PDF tạm phải bị xoá: " + pdf).isFalse();
 	}
 
 	private static HttpEntity<MultiValueMap<String, Object>> multipart(HttpHeaders headers, String fileName, byte[] bytes) {
