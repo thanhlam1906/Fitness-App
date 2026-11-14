@@ -1,10 +1,11 @@
-import { useFieldArray, useFormContext, useWatch } from "react-hook-form"
+import { Controller, useFieldArray, useFormContext } from "react-hook-form"
 import { TriangleAlert } from "lucide-react"
 import { Notice } from "@/components/StatusViews"
 import { cn } from "@/lib/cn"
 import type { ProgramTemplateInput } from "@/features/admin/types"
 import type { Exercise } from "@/features/exercise/types"
 import { newExercise } from "@/features/admin/utils/templateForm"
+import { ExerciseCombobox } from "@/features/admin/components/ExerciseCombobox"
 
 const FOCUS = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
 const FIELD =
@@ -64,10 +65,6 @@ function DayCard({
   const { control, register, formState } = useFormContext<ProgramTemplateInput>()
   const rows = useFieldArray({ control, name: `days.${index}.exercises` })
   const dayErrors = formState.errors.days?.[index]
-  const current = useWatch({ control, name: `days.${index}.exercises` })
-  const withGear = catalog.filter((e) => e.active && e.equipment.length > 0)
-  const noGear = catalog.filter((e) => e.active && e.equipment.length === 0)
-  const name = (e: Exercise) => e.nameEn
 
   return (
     <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-3">
@@ -108,24 +105,24 @@ function DayCard({
         const err = dayErrors?.exercises?.[i]
         const message = err?.slug?.message ?? err?.sets?.message ?? err?.repsMin?.message ?? err?.repsMax?.message ?? err?.restSec?.message
         const p = `days.${index}.exercises.${i}` as const
-        const retired = catalog.find((e) => e.slug === current?.[i]?.slug && !e.active)
         return (
           <div key={row.id} className="mt-1.5 grid grid-cols-[22px_minmax(170px,1fr)_70px_140px_100px_92px] items-center gap-2">
             <span className="text-right text-xs text-[var(--color-text-muted)]">{i + 1}</span>
-            <select {...register(`${p}.slug`)} aria-label={`Bài thứ ${i + 1}`} className={cn(FIELD, "w-full", err?.slug && "border-[var(--color-danger)]")}>
-              <option value="">Chọn bài</option>
-              {retired && <option value={retired.slug}>{name(retired)} (đã tắt)</option>}
-              <optgroup label="Có dụng cụ">
-                {withGear.map((e) => (
-                  <option key={e.slug} value={e.slug}>{name(e)}</option>
-                ))}
-              </optgroup>
-              <optgroup label="Không dụng cụ">
-                {noGear.map((e) => (
-                  <option key={e.slug} value={e.slug}>{name(e)}</option>
-                ))}
-              </optgroup>
-            </select>
+            <Controller
+              control={control}
+              name={`${p}.slug`}
+              render={({ field }) => (
+                <ExerciseCombobox
+                  inputRef={field.ref}
+                  catalog={catalog}
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  label={`Bài thứ ${i + 1}`}
+                  invalid={!!err?.slug}
+                />
+              )}
+            />
             <input {...register(`${p}.sets`, { valueAsNumber: true })} inputMode="numeric" aria-label="Số set" className={NUM} />
             <span className="flex items-center gap-1">
               <input {...register(`${p}.repsMin`, { valueAsNumber: true })} inputMode="numeric" aria-label="Rep từ" className={NUM} />

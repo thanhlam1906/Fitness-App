@@ -5,7 +5,7 @@ import { ExerciseSearch, NoMatch } from "@/components/ExerciseSearch"
 import { SHEET_FOCUS } from "@/components/ui/sheet"
 import type { Exercise } from "@/features/exercise/types"
 import { cn } from "@/lib/cn"
-import { filterExercises } from "@/lib/exerciseFilter"
+import { filterExercises, moreMatches, PICKER_LIMIT } from "@/lib/exerciseFilter"
 
 /**
  * Chọn một bài trong khung trượt (sửa buổi, tự thiết kế lịch): ô tìm không dấu và chip nhóm cơ thay cho
@@ -32,7 +32,9 @@ export function ExercisePicker({
     return () => cancelAnimationFrame(id)
   }, [autoFocus])
   const sorted = [...exercises].sort((a, b) => a.nameEn.localeCompare(b.nameEn))
-  const visible = filterExercises(sorted, query, muscle)
+  const matches = filterExercises(sorted, query, muscle)
+  const visible = matches.slice(0, PICKER_LIMIT)
+  const more = moreMatches(matches.length)
 
   return (
     <>
@@ -69,6 +71,7 @@ export function ExercisePicker({
             <ChevronRight className="size-4.5 flex-none text-[var(--color-text-muted)]" aria-hidden />
           </button>
         ))}
+        {more && <p className="px-1 pt-1.5 pb-1 text-meta text-[var(--color-text-muted)]">{more}</p>}
       </div>
     </>
   )

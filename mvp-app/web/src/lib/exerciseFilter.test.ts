@@ -29,6 +29,26 @@ describe("filterExercises", () => {
   it("ô tìm trống và không chọn nhóm thì trả cả danh sách", () => {
     expect(filterExercises(all, "  ", null)).toEqual(all)
   })
+
+  it("gõ nhiều từ, thứ tự nào cũng khớp", () => {
+    expect(filterExercises(all, "squat bodyweight", null)).toEqual([squat])
+    expect(filterExercises(all, "squat bench", null)).toEqual([])
+  })
+
+  it("xếp theo độ khớp: đầu tên, rồi đầu một từ, rồi giữa từ; cùng mức giữ thứ tự đưa vào", () => {
+    // Danh sách đưa vào đã theo ABC như ở nơi gọi: cùng mức khớp thì vẫn ABC.
+    const arrow = { nameEn: "arrow stretch", nameVi: null, muscleGroups: [] }
+    const upright = { nameEn: "barbell upright row", nameVi: null, muscleGroups: [] }
+    const bentOver = { nameEn: "Bent-over Row", nameVi: null, muscleGroups: [] }
+    const rowing = { nameEn: "Rowing machine", nameVi: null, muscleGroups: [] }
+    expect(filterExercises([arrow, upright, bentOver, rowing], "row", null)).toEqual([rowing, upright, bentOver, arrow])
+  })
+
+  it("từ gõ có gạch nối vẫn tính là đầu từ: 'wide push-up' xếp trên bài chỉ khớp giữa từ", () => {
+    const wide = { nameEn: "Wide Grip Push-up", nameVi: null, muscleGroups: [] }
+    const mid = { nameEn: "awide xpush-up drill", nameVi: null, muscleGroups: [] }
+    expect(filterExercises([mid, wide], "wide push-up", null)).toEqual([wide, mid])
+  })
 })
 
 describe("muscleChips", () => {

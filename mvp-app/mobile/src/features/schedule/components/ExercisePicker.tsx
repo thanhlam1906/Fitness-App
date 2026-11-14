@@ -2,7 +2,7 @@ import { useRef, useState } from "react"
 import { Pressable, ScrollView, Text, View, type TextInput } from "react-native"
 import { ChevronRight } from "lucide-react-native"
 import type { Exercise } from "@/features/exercise/types"
-import { filterExercises } from "@/lib/exerciseFilter"
+import { filterExercises, moreMatches, PICKER_LIMIT } from "@/lib/exerciseFilter"
 import { ExerciseImage } from "~/components/ExerciseImage"
 import { ExerciseSearch, NoMatch } from "~/components/ExerciseSearch"
 import { colors } from "~/theme"
@@ -26,7 +26,10 @@ export function ExercisePicker({
   const [muscle, setMuscle] = useState<string | null>(null)
   const searchRef = useRef<TextInput>(null)
   const sorted = [...exercises].sort((a, b) => a.nameEn.localeCompare(b.nameEn))
-  const visible = filterExercises(sorted, query, muscle)
+  // Điện thoại càng không vẽ nổi 1.328 dòng kèm ảnh: chỉ vẽ PICKER_LIMIT dòng, như web.
+  const matches = filterExercises(sorted, query, muscle)
+  const visible = matches.slice(0, PICKER_LIMIT)
+  const more = moreMatches(matches.length)
 
   return (
     <View className="flex-shrink">
@@ -77,6 +80,7 @@ export function ExercisePicker({
             <ChevronRight size={18} color={colors["text-muted"]} />
           </Pressable>
         ))}
+        {more && <Text className="px-1 pt-1.5 text-[13px] text-text-muted">{more}</Text>}
       </ScrollView>
     </View>
   )
