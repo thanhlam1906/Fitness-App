@@ -80,6 +80,29 @@ public class SocialTokenVerifier {
 		return new Identity(email, nameOr(user.get("name"), email));
 	}
 
+	/**
+	 * App Android: thư viện Google native chỉ trả ID token cấp cho Client ID WEB (cấu hình webClientId), không trả
+	 * access token có aud của web. tokeninfo kiểm chữ ký và hạn; ở đây kiểm thêm app nhận và nơi cấp.
+	 */
+	public Identity googleIdToken(String idToken) {
+		if (config().googleClientId() == null) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Chưa bật đăng nhập bằng Google");
+		}
+		Map<?, ?> claims = call("Google", () -> http.get()
+				.uri("https://oauth2.googleapis.com/tokeninfo?id_token={t}", idToken)
+				.retrieve().body(byte[].class));
+		Object iss = claims.get("iss");
+		if (!googleClientId.equals(claims.get("aud"))
+				|| !("accounts.google.com".equals(iss) || "https://accounts.google.com".equals(iss))) {
+			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, INVALID);
+		}
+		String email = text(claims.get("email"));
+		if (email == null || !"true".equals(String.valueOf(claims.get("email_verified")))) {
+			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email Google chưa được xác minh");
+		}
+		return new Identity(email, nameOr(claims.get("name"), email));
+	}
+
 	public Identity facebook(String accessToken) {
 		if (config().facebookAppId() == null) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Chưa bật đăng nhập bằng Facebook");

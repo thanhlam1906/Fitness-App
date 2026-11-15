@@ -1,6 +1,7 @@
 package com.fitness.auth.controller;
 
 import com.fitness.auth.dto.FirstLoginPasswordRequest;
+import com.fitness.auth.dto.GoogleIdTokenRequest;
 import com.fitness.auth.dto.LoginRequest;
 import com.fitness.auth.dto.RefreshRequest;
 import com.fitness.auth.dto.RegisterRequest;
@@ -48,6 +49,11 @@ public class AuthController {
 	@PostMapping("/google")
 	public TokenResponse google(@Valid @RequestBody SocialLoginRequest request, HttpServletRequest http) {
 		return authService.googleLogin(request.accessToken(), http.getRemoteAddr());
+	}
+
+	@PostMapping("/google/id-token")
+	public TokenResponse googleIdToken(@Valid @RequestBody GoogleIdTokenRequest request, HttpServletRequest http) {
+		return authService.googleIdTokenLogin(request.idToken(), http.getRemoteAddr());
 	}
 
 	@PostMapping("/facebook")

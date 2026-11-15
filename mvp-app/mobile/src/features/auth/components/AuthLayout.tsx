@@ -1,14 +1,19 @@
 import { useState, type ReactNode } from "react"
-import { KeyboardAvoidingView, Pressable, ScrollView, Text, View } from "react-native"
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import Svg, { Path } from "react-native-svg"
 import { Eye, EyeOff } from "lucide-react-native"
+import { useQuery } from "@tanstack/react-query"
 import { Controller, type Control, type FieldValues, type Path as FieldPath } from "react-hook-form"
+import type { SocialProvider } from "@/features/auth/types"
 import { cn } from "@/lib/cn"
 import { FadedImage } from "~/components/FadedImage"
 import { Logo } from "~/components/Logo"
 import { Input, type InputProps } from "~/components/ui/Input"
 import { Label } from "~/components/ui/Label"
+import { authApi } from "~/features/auth/api/authApi"
+import { useAuth } from "~/features/auth/components/AuthContext"
+import { getSocialToken } from "~/features/auth/utils/socialSdk"
 import { colors } from "~/theme"
 
 /**
@@ -45,32 +50,78 @@ export function AuthLayout({
 }
 
 const PROVIDERS = [
-  { name: "Google", Icon: GoogleIcon },
-  { name: "Facebook", Icon: FacebookIcon },
-]
+  { id: "google", name: "Google", Icon: GoogleIcon },
+  { id: "facebook", name: "Facebook", Icon: FacebookIcon },
+] as const
 
 /**
- * Chưa nối OAuth (nối sau khi deploy). Nút khoá cùng nhãn "Sắp có": nhìn là biết chưa dùng được, không
- * cần thêm câu báo khi bấm.
+ * Chỉ bản Android (APK) có thư viện native và client Android đã khai báo ở Google, Facebook; iPhone giữ "Sắp có".
+ * Nút nào server chưa cấu hình (thiếu Client ID, App ID) cũng khoá kèm "Sắp có", như bản web. Đăng nhập xong màn
+ * login/register tự chuyển vào app khi isAuthenticated đổi; người mới bị cổng onboarding của (app) đưa về /onboarding.
  */
 export function SocialButtons() {
+  const { data: config } = useQuery({
+    queryKey: ["social-config"],
+    queryFn: authApi.socialConfig,
+    staleTime: Infinity,
+    // Để React Query tự thử lại: mở app lúc mạng chập chờn mà lỗi một lần là hai nút kẹt "Sắp có" như chưa có tính năng.
+    enabled: Platform.OS === "android",
+  })
+  const { socialLogin } = useAuth()
+  const [busy, setBusy] = useState<SocialProvider | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const ids: Record<SocialProvider, string | null> = {
+    google: config?.googleClientId ?? null,
+    facebook: config?.facebookAppId ?? null,
+  }
+
+  async function signIn(provider: SocialProvider) {
+    setError(null)
+    setBusy(provider)
+    try {
+      const token = await getSocialToken(provider, ids.google ?? "")
+      if (token) await socialLogin(provider, token)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Đăng nhập thất bại")
+    } finally {
+      setBusy(null)
+    }
+  }
+
   return (
-    <View className="flex-row gap-2.5">
-      {PROVIDERS.map(({ name, Icon }) => (
-        <Pressable
-          key={name}
-          accessibilityRole="button"
-          accessibilityState={{ disabled: true }}
-          disabled
-          className="relative h-12 flex-1 flex-row items-center justify-center gap-2 rounded-md border border-border bg-surface opacity-70"
-        >
-          <Icon />
-          <Text className="text-sm font-semibold text-text">{name}</Text>
-          <View className="absolute -top-2 right-2 rounded-full border border-border bg-surface-2 px-1.5">
-            <Text className="text-[10px] font-bold text-text-muted">Sắp có</Text>
-          </View>
-        </Pressable>
-      ))}
+    <View>
+      <View className="flex-row gap-2.5">
+        {PROVIDERS.map(({ id: provider, name, Icon }) => {
+          const on = ids[provider] !== null
+          return (
+            <Pressable
+              key={provider}
+              accessibilityRole="button"
+              accessibilityLabel={on ? `Đăng nhập bằng ${name}` : `${name}, sắp có`}
+              accessibilityState={{ disabled: !on || busy !== null, busy: busy === provider }}
+              disabled={!on || busy !== null}
+              onPress={() => signIn(provider)}
+              className={cn(
+                "relative h-12 flex-1 flex-row items-center justify-center gap-2 rounded-md border border-border bg-surface",
+                (!on || busy !== null) && "opacity-70",
+              )}
+            >
+              {busy === provider ? <ActivityIndicator size="small" color={colors.text} /> : <Icon />}
+              <Text className="text-sm font-semibold text-text">{name}</Text>
+              {!on && (
+                <View className="absolute -top-2 right-2 rounded-full border border-border bg-surface-2 px-1.5">
+                  <Text className="text-[10px] font-bold text-text-muted">Sắp có</Text>
+                </View>
+              )}
+            </Pressable>
+          )
+        })}
+      </View>
+      {error && (
+        <Text accessibilityRole="alert" className="mt-2 text-sm text-danger">
+          {error}
+        </Text>
+      )}
     </View>
   )
 }

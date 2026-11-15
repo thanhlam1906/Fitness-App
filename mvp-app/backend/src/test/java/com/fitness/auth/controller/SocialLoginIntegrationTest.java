@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
+import com.fitness.auth.dto.GoogleIdTokenRequest;
 import com.fitness.auth.dto.LoginRequest;
 import com.fitness.auth.dto.RefreshRequest;
 import com.fitness.auth.dto.RegisterRequest;
@@ -155,6 +156,17 @@ class SocialLoginIntegrationTest extends PostgresIntegrationTest {
 		var resp = rest.postForEntity("/api/v1/auth/google", new SocialLoginRequest(" "), Map.class);
 
 		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+	}
+
+	@Test
+	void googleIdToken_fromMobile_logsInLikeWeb() {
+		String email = "idt-" + UUID.randomUUID() + "@gmail.com";
+		when(verifier.googleIdToken("idt")).thenReturn(new Identity(email, "A"));
+
+		var resp = rest.postForEntity("/api/v1/auth/google/id-token", new GoogleIdTokenRequest("idt"), TokenResponse.class);
+
+		assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(resp.getBody().accessToken()).isNotBlank();
 	}
 
 	@Test

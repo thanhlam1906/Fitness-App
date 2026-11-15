@@ -114,6 +114,11 @@ public class AuthService {
 		return socialLogin(socialVerifier.google(accessToken));
 	}
 
+	public TokenResponse googleIdTokenLogin(String idToken, String clientIp) {
+		rateLimits.check("login-ip", clientIp);
+		return socialLogin(socialVerifier.googleIdToken(idToken));
+	}
+
 	public TokenResponse facebookLogin(String accessToken, String clientIp) {
 		rateLimits.check("login-ip", clientIp);
 		return socialLogin(socialVerifier.facebook(accessToken));

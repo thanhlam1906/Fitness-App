@@ -147,6 +147,39 @@ class SocialTokenVerifierTest {
 		assertThat(off.config().facebookAppId()).isNull();
 	}
 
+	private static final String GOOGLE_ID = "https://oauth2.googleapis.com/tokeninfo?id_token=idt";
+
+	@Test
+	void googleIdToken_valid_returnsEmailAndNameFromClaims() {
+		json(GOOGLE_ID, "{\"aud\":\"google-client\",\"iss\":\"https://accounts.google.com\",\"email\":\"a@gmail.com\",\"email_verified\":\"true\",\"name\":\"Nguyễn A\"}");
+
+		assertThat(verifier.googleIdToken("idt")).isEqualTo(new SocialTokenVerifier.Identity("a@gmail.com", "Nguyễn A"));
+	}
+
+	@Test
+	void googleIdToken_tokenForAnotherApp_rejected() {
+		json(GOOGLE_ID, "{\"aud\":\"app-khac\",\"iss\":\"accounts.google.com\",\"email\":\"a@gmail.com\",\"email_verified\":true}");
+
+		assertStatus(() -> verifier.googleIdToken("idt"), HttpStatus.UNAUTHORIZED);
+	}
+
+	@Test
+	void googleIdToken_notIssuedByGoogle_rejected() {
+		json(GOOGLE_ID, "{\"aud\":\"google-client\",\"iss\":\"https://evil.example\",\"email\":\"a@gmail.com\",\"email_verified\":true}");
+
+		assertStatus(() -> verifier.googleIdToken("idt"), HttpStatus.UNAUTHORIZED);
+	}
+
+	@Test
+	void googleIdToken_unverifiedEmail_rejected_andExpired_is401() {
+		json(GOOGLE_ID, "{\"aud\":\"google-client\",\"iss\":\"accounts.google.com\",\"email\":\"a@gmail.com\",\"email_verified\":\"false\"}");
+		assertStatus(() -> verifier.googleIdToken("idt"), HttpStatus.UNAUTHORIZED);
+
+		server.reset();
+		server.expect(requestTo(GOOGLE_ID)).andRespond(withBadRequest());
+		assertStatus(() -> verifier.googleIdToken("idt"), HttpStatus.UNAUTHORIZED);
+	}
+
 	private static void assertStatus(Runnable call, HttpStatus status) {
 		assertThatThrownBy(call::run).isInstanceOfSatisfying(ResponseStatusException.class,
 				e -> assertThat(e.getStatusCode()).isEqualTo(status));

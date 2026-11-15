@@ -3,7 +3,7 @@
     "name": "VFit",
     "slug": "vfit",
     "scheme": "vfit",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -16,7 +16,8 @@
       "expo-status-bar"
     ],
     "android": {
-      "package": "vn.id.thanhlam.vfit"
+      "package": "vn.id.thanhlam.vfit",
+      "versionCode": 2
     },
     "extra": {
       "router": {},
