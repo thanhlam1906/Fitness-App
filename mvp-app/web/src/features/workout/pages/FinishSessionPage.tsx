@@ -21,6 +21,7 @@ const SEVERITIES = [
   { value: 4, label: "4" },
   { value: 5, label: "5 nặng" },
 ]
+const SEVERE = 5
 
 /**
  * Màn 6 concept-frontend-v1.md — kết buổi: tóm tắt, rồi báo đau (chọn vùng và
@@ -37,7 +38,7 @@ export function FinishSessionPage() {
   const session = useWorkoutSession(scheduledWorkoutId!)
   const finish = useFinishSession(session.data?.id)
 
-  const [bodyArea, setBodyArea] = useState<string | null>(null)
+  const [bodyAreas, setBodyAreas] = useState<string[]>([])
   const [severity, setSeverity] = useState(2)
   const [sessionRpe, setSessionRpe] = useState<number | null>(null)
 
@@ -115,12 +116,14 @@ export function FinishSessionPage() {
         </p>
         <div className="mt-3">
           <BodyMap
-            value={bodyArea}
-            onChange={(area) => setBodyArea(bodyArea === area ? null : area)}
+            value={bodyAreas}
+            onChange={(area) =>
+              setBodyAreas(bodyAreas.includes(area) ? bodyAreas.filter((a) => a !== area) : [...bodyAreas, area])
+            }
           />
         </div>
 
-        {bodyArea && (
+        {bodyAreas.length > 0 && (
           <div className="mt-3.5 flex items-center gap-2.5">
             <span className="text-meta text-[var(--color-text-muted)]">Mức độ</span>
             <div className="flex flex-1 gap-1.5">
@@ -143,6 +146,12 @@ export function FinishSessionPage() {
             </div>
           </div>
         )}
+        {/* Câu cố định, không chặn: người tập tự quyết có tập tiếp hay không (người dùng chốt 11-18). */}
+        {bodyAreas.length > 0 && severity === SEVERE && (
+          <p role="status" className="mt-2.5 text-xs text-[var(--color-danger)]">
+            Đau nhói hoặc kéo dài vài ngày thì nên nghỉ và hỏi bác sĩ.
+          </p>
+        )}
       </div>
 
       {finish.isError && (
@@ -156,7 +165,7 @@ export function FinishSessionPage() {
         onClick={() =>
           finish.mutate(
             {
-              painReports: bodyArea ? [{ bodyArea, severity, note: "" }] : [],
+              painReports: bodyAreas.map((bodyArea) => ({ bodyArea, severity, note: "" })),
               sessionRpe,
             },
             { onSuccess: () => navigate("/schedule") },

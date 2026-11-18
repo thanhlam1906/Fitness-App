@@ -18,10 +18,12 @@ import com.fitness.program.repository.ScheduledExerciseRepository;
 import com.fitness.program.repository.ScheduledWorkoutRepository;
 import com.fitness.program.service.progression.Direction;
 import com.fitness.program.service.progression.LoadDecisionResult;
+import com.fitness.program.service.progression.PainAreas;
 import com.fitness.program.service.progression.ProgressionConfig;
 import com.fitness.program.service.progression.ProgressionEngine;
 import com.fitness.program.service.progression.ProgressionSignal;
 import com.fitness.program.service.progression.ProgressionSignals;
+import com.fitness.workout.entity.PainReport;
 import com.fitness.workout.entity.SetLog;
 import com.fitness.workout.entity.WorkoutSession;
 import com.fitness.workout.repository.PainReportRepository;
@@ -97,7 +99,8 @@ public class ProgressionApplicationService {
 		ProgressionConfig config = ProgressionConfig.from(readJson(template.getProgression()));
 		ProgressionEngine engine = new ProgressionEngine(config);
 
-		boolean painThisSession = !painReports.findBySessionId(session.getId()).isEmpty();
+		List<String> painAreas = painReports.findBySessionId(session.getId()).stream()
+				.map(PainReport::getBodyArea).toList();
 		List<SetLog> sessionLogs = setLogs.findBySessionId(session.getId());
 		Map<UUID, List<SetLog>> byExercise = sessionLogs.stream().collect(Collectors.groupingBy(SetLog::getExerciseId));
 		List<ScheduledExercise> workoutExercises = scheduledExercises.findByScheduledWorkoutId(workout.getId());
@@ -108,6 +111,8 @@ public class ProgressionApplicationService {
 			}
 			UUID exerciseId = scheduledExercise.getExerciseId();
 			Exercise exercise = exercises.findById(exerciseId).orElseThrow();
+			// Đau gối không làm giảm tạ bài đẩy ngực: chỉ bài dùng vùng đau mới tính là có đau.
+			boolean painThisSession = PainAreas.affects(painAreas, exercise.getMuscleGroups());
 			BigDecimal incrementKg = config.incrementFor(exercise.getSlug());
 			if (incrementKg == null) {
 				continue; // admin chọn "Không tự tăng" hoặc template cũ thiếu bước tăng — bỏ qua an toàn

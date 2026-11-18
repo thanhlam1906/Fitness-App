@@ -23,6 +23,7 @@ const SEVERITIES = [
   { value: 4, label: "4" },
   { value: 5, label: "5 nặng" },
 ]
+const SEVERE = 5
 
 /**
  * Màn 6 concept-frontend-v1.md — kết buổi: tóm tắt, rồi báo đau (vùng + mức độ). Bản mobile của
@@ -36,7 +37,7 @@ export default function FinishSessionScreen() {
   const session = useWorkoutSession(scheduledWorkoutId)
   const finish = useFinishSession(session.data?.id)
 
-  const [bodyArea, setBodyArea] = useState<string | null>(null)
+  const [bodyAreas, setBodyAreas] = useState<string[]>([])
   const [severity, setSeverity] = useState(2)
   const [sessionRpe, setSessionRpe] = useState<number | null>(null)
 
@@ -113,10 +114,15 @@ export default function FinishSessionScreen() {
           Không đau thì bỏ qua. Báo đau sẽ giảm tạ, không phải chẩn đoán y tế.
         </Text>
         <View className="mt-3">
-          <BodyMap value={bodyArea} onChange={(area) => setBodyArea(bodyArea === area ? null : area)} />
+          <BodyMap
+            value={bodyAreas}
+            onChange={(area) =>
+              setBodyAreas(bodyAreas.includes(area) ? bodyAreas.filter((a) => a !== area) : [...bodyAreas, area])
+            }
+          />
         </View>
 
-        {bodyArea && (
+        {bodyAreas.length > 0 && (
           <View className="mt-3.5 flex-row items-center gap-2.5">
             <Text className="text-[13px] text-text-muted">Mức độ</Text>
             <View className="flex-1 flex-row gap-1.5">
@@ -139,6 +145,12 @@ export default function FinishSessionScreen() {
             </View>
           </View>
         )}
+        {/* Câu cố định, không chặn: người tập tự quyết có tập tiếp hay không (người dùng chốt 11-18). */}
+        {bodyAreas.length > 0 && severity === SEVERE && (
+          <Text accessibilityLiveRegion="polite" className="mt-2.5 text-xs text-danger">
+            Đau nhói hoặc kéo dài vài ngày thì nên nghỉ và hỏi bác sĩ.
+          </Text>
+        )}
       </View>
 
       {finish.isError && <IconText className="mt-3">{finish.error.message}</IconText>}
@@ -148,7 +160,7 @@ export default function FinishSessionScreen() {
         disabled={finish.isPending}
         onPress={() =>
           finish.mutate(
-            { painReports: bodyArea ? [{ bodyArea, severity, note: "" }] : [], sessionRpe },
+            { painReports: bodyAreas.map((bodyArea) => ({ bodyArea, severity, note: "" })), sessionRpe },
             { onSuccess: () => router.dismissTo("/schedule") },
           )
         }

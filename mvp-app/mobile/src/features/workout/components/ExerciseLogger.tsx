@@ -378,9 +378,13 @@ function CoachingPanel({ exercise }: { exercise: ScheduledExerciseView }) {
   )
 }
 
-/** §5.5 — người dùng báo thiếu thiết bị, hệ thống đề xuất, NGƯỜI DÙNG xác nhận rồi mới đổi. */
+/**
+ * §5.5 — người dùng báo thiếu thiết bị, hệ thống đề xuất, NGƯỜI DÙNG xác nhận rồi mới đổi.
+ * Bài đau hai buổi liền (quyết định SUBSTITUTE) thì mở sẵn danh sách, đổi là đổi cả các buổi sau.
+ */
 function SubstitutePanel({ exercise }: { exercise: ScheduledExerciseView }) {
-  const [open, setOpen] = useState(false)
+  const painSwap = exercise.loadDecision?.direction === "SUBSTITUTE"
+  const [open, setOpen] = useState(painSwap)
   const suggestions = useSubstitutes(open ? exercise.exerciseId : null)
   const substitute = useSubstitute()
 
@@ -395,7 +399,7 @@ function SubstitutePanel({ exercise }: { exercise: ScheduledExerciseView }) {
   return (
     <View className="mt-3 gap-2 rounded-md bg-surface p-3">
       <Text className="text-xs leading-5 text-text-muted">
-        Set và rep giữ nguyên, tạ nhập lại.
+        {painSwap && "Đổi cho buổi này và các buổi sau. "}Set và rep giữ nguyên, tạ nhập lại.
       </Text>
       {suggestions.isLoading && (
         // Khung của hàng nút bài gợi ý.

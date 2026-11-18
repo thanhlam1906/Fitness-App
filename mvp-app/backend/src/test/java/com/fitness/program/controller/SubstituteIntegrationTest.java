@@ -13,6 +13,8 @@ import com.fitness.profile.repository.ProfileRepository;
 import com.fitness.program.dto.ScheduleResponse;
 import com.fitness.program.dto.ScheduledExerciseResponse;
 import com.fitness.program.dto.SubstituteRequest;
+import com.fitness.program.entity.LoadDecision;
+import com.fitness.program.repository.LoadDecisionRepository;
 import com.fitness.program.service.ProgramService;
 import com.fitness.support.PostgresIntegrationTest;
 import java.time.LocalDate;
@@ -41,6 +43,8 @@ class SubstituteIntegrationTest extends PostgresIntegrationTest {
 	private ProgramTemplateRepository templates;
 	@Autowired
 	private ProgramService programService;
+	@Autowired
+	private LoadDecisionRepository loadDecisions;
 
 	@Test
 	void substitutes_onlyOfferExercisesTheUserHasEquipmentFor() {
@@ -91,6 +95,32 @@ class SubstituteIntegrationTest extends PostgresIntegrationTest {
 		ScheduleResponse after = getSchedule(user.headers());
 		assertThat(after.workouts().get(1).exercises())
 				.anyMatch(e -> e.exerciseSlug().equals("barbell-back-squat"));
+	}
+
+	/** Đau lặp lại (quyết định SUBSTITUTE) thì đổi một lần là đổi luôn mọi buổi sau, không phải đổi lại từng buổi. */
+	@Test
+	void substitute_sauKhiDauLapLai_doiMoiBuoiSau() {
+		var user = newAuthedUser(Role.USER);
+		saveProfile(user.userId(), "BARBELL_RACK", "DUMBBELL", "BENCH");
+		UUID templateId = templates.findBySlug("full-body-3x").orElseThrow().getId();
+		LocalDate start = LocalDate.now();
+		UUID programId = programService.createProgram(user.userId(), templateId,
+				Map.of("barbell-back-squat", 60.0), Set.of(), start);
+		UUID squatId = exercises.findBySlug("barbell-back-squat").orElseThrow().getId();
+		loadDecisions.save(new LoadDecision(user.userId(), programId, squatId, start.minusDays(1), "SUBSTITUTE",
+				null, "PAIN_REPEATED", "{}", "Báo đau lặp lại tuần thứ hai → đề xuất bài thay thế"));
+
+		ScheduledExerciseResponse squat = getSchedule(user.headers()).workouts().get(0).exercises().stream()
+				.filter(e -> e.exerciseSlug().equals("barbell-back-squat")).findFirst().orElseThrow();
+		UUID replacement = exercises.findBySlug("romanian-deadlift").orElseThrow().getId();
+		rest.exchange("/api/v1/schedule/exercises/" + squat.id() + "/substitute", HttpMethod.POST,
+				new HttpEntity<>(new SubstituteRequest(replacement), user.headers()), ScheduledExerciseResponse.class);
+
+		ScheduleResponse after = getSchedule(user.headers());
+		assertThat(after.workouts()).allSatisfy(w ->
+				assertThat(w.exercises()).noneMatch(e -> e.exerciseSlug().equals("barbell-back-squat")));
+		assertThat(after.workouts().get(1).exercises())
+				.anyMatch(e -> e.exerciseId().equals(replacement) && "Barbell Back Squat".equals(e.substitutedFromName()));
 	}
 
 	@Test

@@ -28,6 +28,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 /** Màn 4 concept-frontend-v1.md — "Lịch tuần", màn chính, nguồn sự thật. */
@@ -90,8 +91,10 @@ public class ScheduleService {
 
 	/**
 	 * §5.5 — thay bài khi thiếu thiết bị. Chỉ đổi ĐÚNG buổi đang mở: người dùng
-	 * thiếu thiết bị hôm nay không có nghĩa là thiếu cả 4 tuần tới.
+	 * thiếu thiết bị hôm nay không có nghĩa là thiếu cả 4 tuần tới. Riêng bài đang
+	 * có gợi ý đổi vì đau lặp lại thì đổi cả các buổi sau.
 	 */
+	@Transactional
 	public ScheduledExerciseResponse substitute(UUID userId, UUID scheduledExerciseId, SubstituteRequest request) {
 		Program program = activeProgramOrThrow(userId);
 		ScheduledExercise target = scheduledExercises.findById(scheduledExerciseId)
@@ -107,8 +110,22 @@ public class ScheduleService {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Bài thay thế không tồn tại");
 		}
 
+		UUID painfulExerciseId = target.getExerciseId();
+		boolean painRepeated = painSubstituteSuggested(program.getId(), painfulExerciseId, workout.getScheduledOn());
 		target.substituteWith(request.exerciseId());
 		scheduledExercises.save(target);
+		if (painRepeated) {
+			// Đau lặp lại thì đổi luôn mọi buổi sau (người dùng chốt 11-18). Đổi vì thiếu thiết bị vẫn
+			// chỉ đổi đúng buổi đó như trước.
+			scheduledWorkouts.findByProgramIdOrderByScheduledOn(program.getId()).stream()
+					.filter(w -> w.getScheduledOn().isAfter(workout.getScheduledOn()) && "PLANNED".equals(w.getStatus()))
+					.flatMap(w -> scheduledExercises.findByScheduledWorkoutId(w.getId()).stream())
+					.filter(se -> se.getExerciseId().equals(painfulExerciseId))
+					.forEach(se -> {
+						se.substituteWith(request.exerciseId());
+						scheduledExercises.save(se);
+					});
+		}
 		return toView(target, exerciseCatalog(Map.of(workout.getId(), List.of(target))), null);
 	}
 
@@ -192,6 +209,15 @@ public class ScheduleService {
 				.distinct()
 				.toList();
 		return exercises.findAllById(ids).stream().collect(Collectors.toMap(Exercise::getId, e -> e));
+	}
+
+	/** Quyết định đang áp cho bài này ở buổi đó là "đổi bài vì đau lặp lại". */
+	private boolean painSubstituteSuggested(UUID programId, UUID exerciseId, LocalDate scheduledOn) {
+		return loadDecisions.findByProgramId(programId).stream()
+				.filter(d -> d.getExerciseId().equals(exerciseId) && !d.getEffectiveFrom().isAfter(scheduledOn))
+				.max(Comparator.comparing(LoadDecision::getEffectiveFrom))
+				.map(d -> "SUBSTITUTE".equals(d.getDirection()))
+				.orElse(false);
 	}
 
 	/** Quyết định gần nhất KHÔNG SAU ngày buổi này — buổi cũ hơn giữ nguyên lý do đã áp dụng lúc đó. */

@@ -66,8 +66,8 @@ export const BODY_AREAS = [
   { value: "HIP", label: "Hông" },
   { value: "ELBOW", label: "Khuỷu tay" },
   { value: "WRIST", label: "Cổ tay" },
-  // 10-08: thêm để chỗ nào trên hình cơ bắp cũng bấm được. Engine chỉ xem buổi có báo đau hay
-  // không, nên thêm vùng không đổi gì ở phía tăng giảm tải.
+  // 10-08: thêm để chỗ nào trên hình cơ bắp cũng bấm được. Mã vùng trùng PainAreas ở backend:
+  // đổi hay thêm mã thì sửa bảng đó, mã không có trong bảng sẽ giảm tạ cả buổi.
   { value: "HEAD", label: "Đầu" },
   { value: "NECK", label: "Cổ" },
   { value: "CHEST", label: "Ngực" },

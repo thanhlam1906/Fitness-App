@@ -7,8 +7,10 @@ import static org.mockito.Mockito.doThrow;
 import com.fitness.auth.entity.Role;
 import com.fitness.content.entity.Exercise;
 import com.fitness.content.repository.ExerciseRepository;
+import com.fitness.content.repository.ProgramTemplateRepository;
 import com.fitness.program.dto.CreateCustomProgramRequest;
 import com.fitness.program.dto.ScheduleResponse;
+import com.fitness.program.repository.LoadDecisionRepository;
 import com.fitness.program.repository.ScheduledWorkoutRepository;
 import com.fitness.program.service.ProgramService;
 import com.fitness.program.service.ProgressionApplicationService;
@@ -50,6 +52,10 @@ class WorkoutSessionControllerIntegrationTest extends PostgresIntegrationTest {
 	private ScheduledWorkoutRepository scheduledWorkoutRepository;
 	@Autowired
 	private PainReportRepository painReportRepository;
+	@Autowired
+	private ProgramTemplateRepository templateRepository;
+	@Autowired
+	private LoadDecisionRepository loadDecisionRepository;
 	// Spy: các ca khác vẫn chạy tăng tải thật, chỉ ca lỗi giữa chừng mới ép ném lỗi.
 	@MockitoSpyBean
 	private ProgressionApplicationService progression;
@@ -223,6 +229,39 @@ class WorkoutSessionControllerIntegrationTest extends PostgresIntegrationTest {
 		assertThat(sessionRepository.findById(sessionId).orElseThrow().getStatus()).isEqualTo("IN_PROGRESS");
 		assertThat(scheduledWorkoutRepository.findById(workoutId).orElseThrow().getStatus()).isEqualTo("PLANNED");
 		assertThat(painReportRepository.findBySessionId(sessionId)).isEmpty();
+	}
+
+	/** Đau gối chỉ giảm tạ bài chân; bài trên trong cùng buổi đi theo rule thường. */
+	@Test
+	void finish_dauGoi_chiGiamTaBaiLienQuan() {
+		var user = newAuthedUser(Role.USER);
+		UUID templateId = templateRepository.findBySlug("full-body-3x").orElseThrow().getId();
+		UUID programId = programService.createProgram(user.userId(), templateId,
+				java.util.Map.of("barbell-back-squat", 60.0, "overhead-press", 30.0, "bent-over-row", 40.0),
+				java.util.Set.of(), LocalDate.now());
+		var workout = rest.exchange("/api/v1/schedule", HttpMethod.GET, new HttpEntity<>(user.headers()),
+				ScheduleResponse.class).getBody().workouts().get(0);
+		UUID sessionId = start(workout.id(), user.headers()).getBody().id();
+		for (var ex : workout.exercises()) {
+			for (short i = 1; i <= ex.targetSets(); i++) {
+				rest.exchange("/api/v1/sessions/" + sessionId + "/sets", HttpMethod.POST, new HttpEntity<>(
+						new SetLogRequest(ex.exerciseId(), i, (short) ex.targetReps(), (short) ex.targetReps(),
+								ex.targetLoadKg(), (short) 8, false, null), user.headers()), SetLogResponse.class);
+			}
+		}
+
+		rest.exchange("/api/v1/sessions/" + sessionId + "/finish", HttpMethod.POST,
+				new HttpEntity<>(new FinishSessionRequest(
+						List.of(new FinishSessionRequest.PainReportRequest("KNEE_L", (short) 3, null)), null),
+						user.headers()), SessionResponse.class);
+
+		var messageBySlug = loadDecisionRepository.findByProgramId(programId).stream().collect(
+				java.util.stream.Collectors.toMap(
+						d -> exerciseRepository.findById(d.getExerciseId()).orElseThrow().getSlug(),
+						d -> d.getMessageVi()));
+		assertThat(messageBySlug.get("barbell-back-squat")).contains("báo đau");
+		assertThat(messageBySlug.get("overhead-press")).isNotNull().doesNotContain("báo đau");
+		assertThat(messageBySlug.get("bent-over-row")).isNotNull().doesNotContain("báo đau");
 	}
 
 	private org.springframework.http.ResponseEntity<SessionResponse> start(UUID workoutId, HttpHeaders headers) {

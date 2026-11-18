@@ -16,11 +16,11 @@ const HIT_STROKE = 60
 /**
  * Hình người mặt trước và mặt sau cho bộ chọn vùng đau (màn kết buổi) — chuyển từ
  * web/src/features/workout/components/BodyMap.tsx, cùng hai lớp: lớp dưới bắt chạm phình ra, lớp
- * trên là hình thật bấm trúng chính xác. Khác web: không có focus bàn phím. Chỉ báo "vừa bấm vùng
- * nào", việc bấm lại để bỏ chọn do màn gọi quyết định.
+ * trên là hình thật bấm trúng chính xác. Khác web: không có focus bàn phím. Chọn được nhiều vùng
+ * (11-18). Chỉ báo "vừa bấm vùng nào", việc bật tắt do màn gọi quyết định.
  */
-export function BodyMap({ value, onChange }: { value: string | null; onChange: (value: string) => void }) {
-  const selected = BODY_AREAS.find((area) => area.value === value)
+export function BodyMap({ value, onChange }: { value: readonly string[]; onChange: (value: string) => void }) {
+  const selected = BODY_AREAS.filter((area) => value.includes(area.value))
   const onMap = new Set(BODY_VIEWS.flatMap((view) => view.areas.map((a) => a.area.value as string)))
   const ink = colors.text
   const reader = useScreenReader()
@@ -58,7 +58,7 @@ export function BodyMap({ value, onChange }: { value: string | null; onChange: (
                   {/* Theo thứ tự vẽ của hình gốc để mảng chồng nhau (háng trên đùi trong) không bị đè. */}
                   <G strokeWidth={5}>
                     {view.shapes.map(({ d, area }, i) => {
-                      const on = value === area
+                      const on = value.includes(area)
                       return (
                         <Path
                           key={i}
@@ -81,9 +81,10 @@ export function BodyMap({ value, onChange }: { value: string | null; onChange: (
 
       {/* Màu thôi thì phải đoán — nói thẳng tên vùng đang chọn bằng chữ. */}
       <Text className="mt-2 text-center text-[13px] text-text-muted">
-        {selected ? (
+        {selected.length > 0 ? (
           <>
-            Đang chọn <Text className="font-semibold text-danger">{selected.label}</Text>
+            Đang chọn{" "}
+            <Text className="font-semibold text-danger">{selected.map((area) => area.label).join(", ")}</Text>
           </>
         ) : reader ? (
           // Khác web: VoiceOver ẩn hình nên vẫn cần câu chỉ chỗ chọn.
@@ -98,7 +99,7 @@ export function BodyMap({ value, onChange }: { value: string | null; onChange: (
           vùng đều thành nút ở đây, vì hình đã ẩn khỏi VoiceOver. */}
       <View className="mt-3 flex-row flex-wrap justify-center gap-2">
         {BODY_AREAS.filter((area) => reader || !onMap.has(area.value)).map((area) => {
-          const on = value === area.value
+          const on = value.includes(area.value)
           return (
             <Pressable
               key={area.value}

@@ -15,16 +15,16 @@ const HIT_STROKE = 60
  * Hình người mặt trước và mặt sau cho bộ chọn vùng đau (màn kết buổi). Mỗi vùng là một nhóm
  * path bấm được: role="button", được bàn phím, focus thấy được.
  *
- * Chỉ báo "vừa bấm vùng nào", việc bấm lại để bỏ chọn do trang gọi quyết định.
+ * Chọn được nhiều vùng (11-18). Chỉ báo "vừa bấm vùng nào", việc bật tắt do trang gọi quyết định.
  */
 export function BodyMap({
   value,
   onChange,
 }: {
-  value: string | null
+  value: readonly string[]
   onChange: (value: string) => void
 }) {
-  const selected = BODY_AREAS.find((area) => area.value === value)
+  const selected = BODY_AREAS.filter((area) => value.includes(area.value))
   const onMap = new Set(BODY_VIEWS.flatMap((view) => view.areas.map((a) => a.area.value as string)))
 
   function onKey(event: KeyboardEvent, area: string) {
@@ -47,7 +47,7 @@ export function BodyMap({
                   role={primary ? "button" : undefined}
                   tabIndex={primary ? 0 : -1}
                   aria-label={primary ? area.label : undefined}
-                  aria-pressed={primary ? value === area.value : undefined}
+                  aria-pressed={primary ? value.includes(area.value) : undefined}
                   aria-hidden={primary ? undefined : true}
                   onClick={() => onChange(area.value)}
                   onKeyDown={(event) => onKey(event, area.value)}
@@ -66,7 +66,7 @@ export function BodyMap({
               {/* Lớp trên: hình thật, currentColor pha mờ để tự hợp theme, không chốt màu riêng. */}
               <g aria-hidden="true" strokeWidth={5} className="cursor-pointer">
                 {view.shapes.map(({ d, area }, i) => {
-                  const on = value === area
+                  const on = value.includes(area)
                   return (
                     <path
                       key={i}
@@ -87,10 +87,12 @@ export function BodyMap({
 
       {/* Màu thôi thì phải đoán — nói thẳng tên vùng đang chọn bằng chữ. */}
       <p className="mt-2 text-center text-meta text-[var(--color-text-muted)]">
-        {selected ? (
+        {selected.length > 0 ? (
           <>
             Đang chọn{" "}
-            <span className="font-semibold text-[var(--color-danger)]">{selected.label}</span>
+            <span className="font-semibold text-[var(--color-danger)]">
+              {selected.map((area) => area.label).join(", ")}
+            </span>
           </>
         ) : (
           // Giữ chỗ dòng trống để chọn vùng không đẩy nút bên dưới.
@@ -101,7 +103,7 @@ export function BodyMap({
       {/* Vùng không nằm trên cơ thể (Chỗ khác) thành nút riêng dưới sơ đồ. */}
       <div className="mt-3 flex justify-center">
         {BODY_AREAS.filter((area) => !onMap.has(area.value)).map((area) => {
-          const on = value === area.value
+          const on = value.includes(area.value)
           return (
             <button
               key={area.value}
